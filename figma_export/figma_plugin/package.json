@@ -1,0 +1,14 @@
+{
+  "name": "thktree-figma-node-importer",
+  "version": "1.0.0",
+  "description": "Figma plugin that imports a Figma Node Export JSON and recreates editable layers.",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json -w"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "typescript": "^5.4.0"
+  }
+}

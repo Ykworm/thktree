@@ -1,0 +1,975 @@
+{
+  "name": "ThkTree Flutter UI - Figma Node Export",
+  "description": "从 ThkTree Flutter 项目 lib/ui 目录提取的 UI 结构。仅包含视觉/布局，业务逻辑与状态管理已剔除。坐标为相对父节点的逻辑像素，参照 iOS-first 移动端 390×844 viewport。",
+  "schemaVersion": 1,
+  "document": {
+    "id": "0:0",
+    "name": "ThkTree",
+    "type": "DOCUMENT",
+    "children": [
+      {
+        "id": "1:0",
+        "name": "Page · Mobile Screens",
+        "type": "CANVAS",
+        "backgroundColor": { "r": 0.96, "g": 0.96, "b": 0.96, "a": 1 },
+        "children": [
+
+          {
+            "id": "S1",
+            "name": "ThemeListScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 0, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "primaryAxisSizingMode": "FIXED",
+            "counterAxisSizingMode": "FIXED",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S1.appBar",
+                "name": "AppBar",
+                "type": "FRAME",
+                "layoutMode": "HORIZONTAL",
+                "primaryAxisAlignItems": "SPACE_BETWEEN",
+                "counterAxisAlignItems": "CENTER",
+                "paddingLeft": 16, "paddingRight": 8, "paddingTop": 0, "paddingBottom": 0,
+                "absoluteBoundingBox": { "x": 0, "y": 0, "width": 390, "height": 56 },
+                "fills": [{ "type": "SOLID", "color": { "r": 0.98, "g": 0.98, "b": 0.99 } }],
+                "children": [
+                  { "id": "S1.title", "name": "Title", "type": "TEXT", "characters": "ThkTree", "style": { "fontFamily": "Roboto", "fontSize": 20, "fontWeight": 500 } },
+                  {
+                    "id": "S1.actions",
+                    "name": "Actions",
+                    "type": "FRAME",
+                    "layoutMode": "HORIZONTAL",
+                    "itemSpacing": 4,
+                    "children": [
+                      { "id": "S1.icon.sync", "name": "IconButton(Icons.sync)", "type": "INSTANCE", "componentName": "IconButton", "iconName": "sync", "absoluteBoundingBox": { "width": 48, "height": 48 } },
+                      { "id": "S1.icon.settings", "name": "IconButton(Icons.settings)", "type": "INSTANCE", "componentName": "IconButton", "iconName": "settings", "absoluteBoundingBox": { "width": 48, "height": 48 } }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "S1.body",
+                "name": "Body · ListView (responsive maxWidth=800)",
+                "type": "FRAME",
+                "layoutMode": "VERTICAL",
+                "itemSpacing": 8,
+                "paddingLeft": 12, "paddingRight": 12, "paddingTop": 12, "paddingBottom": 12,
+                "absoluteBoundingBox": { "x": 0, "y": 56, "width": 390, "height": 700 },
+                "children": [
+                  {
+                    "id": "S1.tile.1", "name": "ListTile · Theme",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "primaryAxisAlignItems": "SPACE_BETWEEN", "counterAxisAlignItems": "CENTER",
+                    "paddingLeft": 16, "paddingRight": 16, "paddingTop": 12, "paddingBottom": 12,
+                    "absoluteBoundingBox": { "width": 366, "height": 64 },
+                    "children": [
+                      {
+                        "id": "S1.tile.1.text", "name": "Text Column", "type": "FRAME",
+                        "layoutMode": "VERTICAL",
+                        "children": [
+                          { "id": "S1.tile.1.title", "name": "title", "type": "TEXT", "characters": "Theme title", "style": { "fontSize": 16, "fontWeight": 400 } },
+                          { "id": "S1.tile.1.sub", "name": "subtitle (debug only: themeId)", "type": "TEXT", "characters": "01J… (debug)", "style": { "fontSize": 12 }, "visible": false }
+                        ]
+                      },
+                      { "id": "S1.tile.1.trail", "name": "Icons.chevron_right", "type": "INSTANCE", "componentName": "Icon", "iconName": "chevron_right" }
+                    ]
+                  },
+                  { "id": "S1.tile.empty", "name": "Empty State Text", "type": "TEXT", "characters": "noThemesYet (条件渲染：列表为空时居中)", "visible": false }
+                ]
+              },
+              {
+                "id": "S1.fab",
+                "name": "FloatingActionButton(Icons.add)",
+                "type": "INSTANCE",
+                "componentName": "FAB",
+                "iconName": "add",
+                "absoluteBoundingBox": { "x": 318, "y": 760, "width": 56, "height": 56 }
+              }
+            ]
+          },
+
+          {
+            "id": "S2",
+            "name": "ThemeDetailScreen (Tree View)",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 430, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S2.appBar", "name": "AppBar", "type": "FRAME",
+                "layoutMode": "HORIZONTAL", "counterAxisAlignItems": "CENTER",
+                "paddingLeft": 4, "paddingRight": 8,
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S2.back", "name": "IconButton(arrow_back)", "type": "INSTANCE", "componentName": "IconButton", "iconName": "arrow_back" },
+                  { "id": "S2.title", "name": "Title", "type": "TEXT", "characters": "treeTitle(themeTitle)", "style": { "fontSize": 20, "fontWeight": 500 } },
+                  { "id": "S2.refresh", "name": "IconButton(refresh)", "type": "INSTANCE", "componentName": "IconButton", "iconName": "refresh" }
+                ]
+              },
+              {
+                "id": "S2.tree", "name": "Tree ListView (maxWidth 800)", "type": "FRAME",
+                "layoutMode": "VERTICAL",
+                "paddingTop": 8, "paddingBottom": 80,
+                "children": [
+                  {
+                    "id": "S2.row", "name": "_TreeRowView (recursive)",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "counterAxisAlignItems": "FLEX_START",
+                    "itemSpacing": 0,
+                    "children": [
+                      { "id": "S2.row.indent", "name": "Indent Spacer (28px × depth)", "type": "RECTANGLE", "absoluteBoundingBox": { "width": 28, "height": 32 }, "fills": [] },
+                      { "id": "S2.row.line", "name": "Branch Connector (CustomPaint)", "type": "VECTOR", "strokes": [{ "type": "SOLID", "color": { "r": 0.7, "g": 0.7, "b": 0.74 } }], "strokeWeight": 1.5 },
+                      {
+                        "id": "S2.row.text", "name": "Title Column", "type": "FRAME", "layoutMode": "VERTICAL",
+                        "children": [
+                          { "id": "S2.row.title", "name": "node.title", "type": "TEXT", "characters": "Node Title", "style": { "fontSize": 14, "fontWeight": 600 } },
+                          { "id": "S2.row.debug", "name": "debug subtitle: kind · nodeId", "type": "TEXT", "characters": "chat · 01J…", "style": { "fontSize": 12 }, "visible": false }
+                        ]
+                      },
+                      { "id": "S2.row.branch", "name": "IconButton(call_split)", "type": "INSTANCE", "componentName": "IconButton", "iconName": "call_split" },
+                      { "id": "S2.row.delete", "name": "IconButton(delete_outline)", "type": "INSTANCE", "componentName": "IconButton", "iconName": "delete_outline" }
+                    ]
+                  },
+                  { "id": "S2.empty", "name": "emptyTree text", "type": "TEXT", "characters": "emptyTree", "visible": false }
+                ]
+              },
+              { "id": "S2.fab", "name": "FAB(add)", "type": "INSTANCE", "componentName": "FAB", "iconName": "add", "absoluteBoundingBox": { "x": 318, "y": 760, "width": 56, "height": 56 } }
+            ]
+          },
+
+          {
+            "id": "S3",
+            "name": "ChatScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 860, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S3.appBar", "name": "AppBar", "type": "FRAME",
+                "layoutMode": "HORIZONTAL", "counterAxisAlignItems": "CENTER",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S3.back", "name": "IconButton(arrow_back)", "type": "INSTANCE", "iconName": "arrow_back" },
+                  {
+                    "id": "S3.titleCol", "name": "Title Column", "type": "FRAME", "layoutMode": "VERTICAL",
+                    "children": [
+                      { "id": "S3.title", "name": "title", "type": "TEXT", "characters": "Conversation Title", "style": { "fontSize": 20, "fontWeight": 500 } },
+                      { "id": "S3.subtitle", "name": "modelSubtitle", "type": "TEXT", "characters": "modelId · providerName", "style": { "fontSize": 12 } }
+                    ]
+                  },
+                  { "id": "S3.tree", "name": "IconButton(account_tree)", "type": "INSTANCE", "iconName": "account_tree" },
+                  { "id": "S3.branch", "name": "IconButton(call_split)", "type": "INSTANCE", "iconName": "call_split" }
+                ]
+              },
+              {
+                "id": "S3.list", "name": "ChatListView", "type": "INSTANCE", "componentName": "ChatListView",
+                "absoluteBoundingBox": { "width": 390, "height": 600 },
+                "children": [
+                  { "id": "S3.empty", "name": "Empty: noMessagesYet", "type": "TEXT", "characters": "noMessagesYet", "visible": false },
+                  { "id": "S3.bubble.user", "name": "MessageBubble · user", "type": "INSTANCE", "componentName": "MessageBubble", "variant": "user" },
+                  { "id": "S3.bubble.assistant", "name": "MessageBubble · assistant", "type": "INSTANCE", "componentName": "MessageBubble", "variant": "assistant" }
+                ]
+              },
+              {
+                "id": "S3.contextBar", "name": "_ContextUsageBar", "type": "RECTANGLE",
+                "absoluteBoundingBox": { "width": 390, "height": 2.5 },
+                "fills": [{ "type": "SOLID", "color": { "r": 0, "g": 0.59, "b": 0.53 } }],
+                "description": "Tooltip: contextUsagePercent(percent). Color teal/orange/red by ratio."
+              },
+              { "id": "S3.composer", "name": "ChatComposer", "type": "INSTANCE", "componentName": "ChatComposer" },
+              {
+                "id": "S3.modelPanel", "name": "ModelSelectorPanel (conditional, push-up)",
+                "type": "INSTANCE", "componentName": "ModelSelectorPanel",
+                "visible": false
+              }
+            ]
+          },
+
+          {
+            "id": "S4",
+            "name": "SummaryChatScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 1290, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S4.appBar", "name": "AppBar", "type": "FRAME",
+                "layoutMode": "HORIZONTAL",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S4.close", "name": "IconButton(close)", "type": "INSTANCE", "iconName": "close" },
+                  { "id": "S4.title", "name": "Title", "type": "TEXT", "characters": "polishSummary" }
+                ]
+              },
+              {
+                "id": "S4.banner", "name": "Banner Container",
+                "type": "FRAME",
+                "paddingLeft": 12, "paddingRight": 12, "paddingTop": 12, "paddingBottom": 12,
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "fills": [{ "type": "SOLID", "color": { "r": 0.86, "g": 0.91, "b": 0.96 } }],
+                "children": [
+                  { "id": "S4.banner.text", "name": "summaryBanner(branchTitle)", "type": "TEXT", "characters": "summaryBanner(branchTitle)" }
+                ]
+              },
+              { "id": "S4.list", "name": "ChatListView", "type": "INSTANCE", "componentName": "ChatListView", "absoluteBoundingBox": { "width": 390, "height": 540 } },
+              { "id": "S4.contextBar", "name": "_SummaryContextBar", "type": "RECTANGLE", "absoluteBoundingBox": { "width": 390, "height": 2.5 } },
+              { "id": "S4.composer", "name": "ChatComposer", "type": "INSTANCE", "componentName": "ChatComposer" },
+              {
+                "id": "S4.actions", "name": "Action Row",
+                "type": "FRAME", "layoutMode": "HORIZONTAL", "itemSpacing": 8,
+                "paddingLeft": 12, "paddingRight": 12,
+                "children": [
+                  { "id": "S4.btn.cancel", "name": "OutlinedButton(cancel)", "type": "INSTANCE", "componentName": "OutlinedButton", "characters": "cancel" },
+                  { "id": "S4.btn.blank", "name": "OutlinedButton(blankBranch)", "type": "INSTANCE", "componentName": "OutlinedButton", "characters": "blankBranch" },
+                  { "id": "S4.btn.skip", "name": "OutlinedButton(skipSummary)", "type": "INSTANCE", "componentName": "OutlinedButton", "characters": "skipSummary" },
+                  { "id": "S4.btn.confirm", "name": "FilledButton.tonal(confirmSummary)", "type": "INSTANCE", "componentName": "FilledButtonTonal", "characters": "confirmSummary" }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "S5",
+            "name": "SettingsScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 1720, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S5.appBar", "name": "AppBar", "type": "FRAME",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S5.title", "name": "Title", "type": "TEXT", "characters": "settingsTitle" }
+                ]
+              },
+              {
+                "id": "S5.body", "name": "ListView (maxWidth 600)",
+                "type": "FRAME", "layoutMode": "VERTICAL",
+                "children": [
+                  {
+                    "id": "S5.lang", "name": "_LanguageTile · ListTile",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S5.lang.icon", "name": "Icon(language)", "type": "INSTANCE", "iconName": "language" },
+                      { "id": "S5.lang.title", "name": "title=language", "type": "TEXT", "characters": "language" },
+                      { "id": "S5.lang.sub", "name": "subtitle=languageSubtitle(currentName)", "type": "TEXT", "characters": "currentLanguage" },
+                      { "id": "S5.lang.trail", "name": "Icon(chevron_right)", "type": "INSTANCE", "iconName": "chevron_right" }
+                    ]
+                  },
+                  {
+                    "id": "S5.llm", "name": "_LlmProvidersEntry · ListTile",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S5.llm.icon", "name": "Icon(cloud)", "type": "INSTANCE", "iconName": "cloud" },
+                      { "id": "S5.llm.title", "name": "title=llmProvidersTitle", "type": "TEXT", "characters": "llmProvidersTitle" },
+                      { "id": "S5.llm.sub", "name": "subtitle=modelCount", "type": "TEXT", "characters": "modelCount" },
+                      { "id": "S5.llm.trail", "name": "Icon(chevron_right)", "type": "INSTANCE", "iconName": "chevron_right" }
+                    ]
+                  },
+                  {
+                    "id": "S5.logs", "name": "_LogsTile (group of 3 ListTile + Divider)",
+                    "type": "FRAME", "layoutMode": "VERTICAL",
+                    "children": [
+                      {
+                        "id": "S5.logs.file", "name": "ListTile · logFile",
+                        "type": "FRAME", "layoutMode": "HORIZONTAL",
+                        "children": [
+                          { "id": "S5.logs.file.title", "type": "TEXT", "characters": "logFile" },
+                          { "id": "S5.logs.file.sub", "type": "TEXT", "characters": "logger.logFilePath" },
+                          { "id": "S5.logs.file.trail", "type": "INSTANCE", "iconName": "copy" }
+                        ]
+                      },
+                      {
+                        "id": "S5.logs.remote", "name": "ListTile · remoteLogging",
+                        "type": "FRAME", "layoutMode": "HORIZONTAL",
+                        "children": [
+                          { "id": "S5.logs.remote.title", "type": "TEXT", "characters": "remoteLogging" },
+                          { "id": "S5.logs.remote.sub", "type": "TEXT", "characters": "enabled / disabled" },
+                          { "id": "S5.logs.remote.trail", "type": "INSTANCE", "iconName": "cloud_done | cloud_off" }
+                        ]
+                      },
+                      {
+                        "id": "S5.logs.view", "name": "ListTile · viewLogs",
+                        "type": "FRAME", "layoutMode": "HORIZONTAL",
+                        "children": [
+                          { "id": "S5.logs.view.title", "type": "TEXT", "characters": "viewLogs" },
+                          { "id": "S5.logs.view.trail", "type": "INSTANCE", "iconName": "article" }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "S5.paths", "name": "_PathsTile · ListTile",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S5.paths.title", "type": "TEXT", "characters": "dataRoot" },
+                      { "id": "S5.paths.sub", "type": "TEXT", "characters": "paths.rootDir.path" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "S6",
+            "name": "LlmProvidersScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 2150, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S6.appBar", "name": "AppBar", "type": "FRAME",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S6.title", "type": "TEXT", "characters": "llmProvidersTitle" }
+                ]
+              },
+              {
+                "id": "S6.body", "name": "ListView (maxWidth 600)", "type": "FRAME", "layoutMode": "VERTICAL",
+                "children": [
+                  {
+                    "id": "S6.tile", "name": "_ProviderTile · ListTile",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S6.tile.icon", "name": "Icon(cloud|extension)", "type": "INSTANCE", "iconName": "cloud" },
+                      { "id": "S6.tile.title", "type": "TEXT", "characters": "provider.name" },
+                      { "id": "S6.tile.sub", "type": "TEXT", "characters": "modelCount | noModels" },
+                      { "id": "S6.tile.trail", "type": "INSTANCE", "iconName": "chevron_right" }
+                    ]
+                  },
+                  { "id": "S6.empty", "name": "Empty Text", "type": "TEXT", "characters": "noModels", "visible": false }
+                ]
+              },
+              { "id": "S6.fab", "name": "FAB(add) addCustomProvider", "type": "INSTANCE", "componentName": "FAB", "iconName": "add", "absoluteBoundingBox": { "x": 318, "y": 760, "width": 56, "height": 56 } }
+            ]
+          },
+
+          {
+            "id": "S7",
+            "name": "LlmProviderDetailScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 2580, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S7.appBar", "name": "AppBar", "type": "FRAME",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S7.title", "type": "TEXT", "characters": "addCustomProvider | editProvider" },
+                  { "id": "S7.delete", "name": "IconButton(delete_outline) (custom only)", "type": "INSTANCE", "iconName": "delete_outline", "visible": false }
+                ]
+              },
+              {
+                "id": "S7.body", "name": "SingleChildScrollView (maxWidth 600)",
+                "type": "FRAME", "layoutMode": "VERTICAL",
+                "paddingLeft": 16, "paddingRight": 16, "paddingTop": 16, "paddingBottom": 16,
+                "itemSpacing": 16,
+                "children": [
+                  { "id": "S7.field.name", "name": "TextField · providerName (custom only)", "type": "INSTANCE", "componentName": "TextField", "characters": "providerName", "visible": false },
+                  {
+                    "id": "S7.urlRow", "name": "_DefaultUrlRow (preset only)",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL", "itemSpacing": 8,
+                    "children": [
+                      { "id": "S7.urlRow.text", "type": "INSTANCE", "componentName": "InputDecorator", "characters": "providerDefaultUrl" },
+                      { "id": "S7.urlRow.copy", "type": "INSTANCE", "iconName": "copy" }
+                    ]
+                  },
+                  { "id": "S7.field.baseUrl", "name": "TextField · baseUrl", "type": "INSTANCE", "componentName": "TextField", "characters": "providerBaseUrl" },
+                  { "id": "S7.field.apiKey", "name": "TextField · apiKey (obscure)", "type": "INSTANCE", "componentName": "TextField", "characters": "providerApiKey" },
+                  { "id": "S7.btn.fetch", "name": "FilledButton.icon · fetchModels", "type": "INSTANCE", "componentName": "FilledButtonIcon", "iconName": "download", "characters": "fetchModels" },
+                  {
+                    "id": "S7.modelList", "name": "Selectable Model CheckboxListTile list",
+                    "type": "FRAME", "layoutMode": "VERTICAL",
+                    "children": [
+                      { "id": "S7.modelList.title", "type": "TEXT", "characters": "selectModel", "style": { "fontSize": 16, "fontWeight": 500 } },
+                      {
+                        "id": "S7.modelList.item", "name": "CheckboxListTile · model",
+                        "type": "FRAME", "layoutMode": "HORIZONTAL",
+                        "children": [
+                          { "id": "S7.modelList.item.cb", "type": "INSTANCE", "componentName": "Checkbox" },
+                          { "id": "S7.modelList.item.title", "type": "TEXT", "characters": "model.name" },
+                          { "id": "S7.modelList.item.sub", "type": "TEXT", "characters": "model.id" }
+                        ]
+                      }
+                    ]
+                  },
+                  { "id": "S7.btn.save", "name": "FilledButton · saveProvider (custom only)", "type": "INSTANCE", "componentName": "FilledButton", "characters": "saveProvider", "visible": false }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "S8",
+            "name": "NoteBrowseScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 3010, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S8.appBar", "name": "AppBar", "type": "FRAME",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [{ "id": "S8.title", "type": "TEXT", "characters": "notes" }]
+              },
+              {
+                "id": "S8.body", "name": "RefreshIndicator > ListView.separated", "type": "FRAME",
+                "layoutMode": "VERTICAL",
+                "paddingLeft": 12, "paddingRight": 12, "paddingTop": 12, "paddingBottom": 12,
+                "children": [
+                  {
+                    "id": "S8.tile", "name": "ListTile · ThemeNotes",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S8.tile.title", "type": "TEXT", "characters": "localizedThemeTitle" },
+                      { "id": "S8.tile.sub", "type": "TEXT", "characters": "noteCount" },
+                      { "id": "S8.tile.trail", "type": "INSTANCE", "iconName": "chevron_right" }
+                    ]
+                  },
+                  { "id": "S8.divider", "name": "Divider", "type": "RECTANGLE", "absoluteBoundingBox": { "height": 1 } },
+                  { "id": "S8.empty", "type": "TEXT", "characters": "noNotesYet", "visible": false },
+                  { "id": "S8.loading", "type": "INSTANCE", "componentName": "CircularProgressIndicator", "visible": false }
+                ]
+              },
+              { "id": "S8.fab", "name": "FAB(add) newNote", "type": "INSTANCE", "componentName": "FAB", "iconName": "add", "absoluteBoundingBox": { "x": 318, "y": 760, "width": 56, "height": 56 } }
+            ]
+          },
+
+          {
+            "id": "S9",
+            "name": "ThemeNoteListScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 3440, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S9.appBar", "name": "AppBar", "type": "FRAME",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [{ "id": "S9.title", "type": "TEXT", "characters": "notes" }]
+              },
+              {
+                "id": "S9.body", "name": "ListView.separated", "type": "FRAME", "layoutMode": "VERTICAL",
+                "paddingLeft": 12, "paddingRight": 12, "paddingTop": 12, "paddingBottom": 12,
+                "children": [
+                  {
+                    "id": "S9.tile", "name": "ListTile · NoteMeta",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S9.tile.title", "type": "TEXT", "characters": "meta.title" },
+                      { "id": "S9.tile.sub", "type": "TEXT", "characters": "noteId · updatedAt" },
+                      { "id": "S9.tile.trail", "type": "INSTANCE", "iconName": "chevron_right" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "S10",
+            "name": "NoteDetailScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 3870, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S10.appBar", "name": "AppBar", "type": "FRAME",
+                "layoutMode": "HORIZONTAL",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S10.title", "type": "TEXT", "characters": "notes" },
+                  { "id": "S10.act.chat", "name": "IconButton(forum)", "type": "INSTANCE", "iconName": "forum" },
+                  { "id": "S10.act.edit", "name": "IconButton(edit | check)", "type": "INSTANCE", "iconName": "edit" }
+                ]
+              },
+              {
+                "id": "S10.body.read", "name": "Read Mode · ListView (SelectableText)",
+                "type": "FRAME", "layoutMode": "VERTICAL",
+                "paddingLeft": 16, "paddingRight": 16, "paddingTop": 16, "paddingBottom": 16,
+                "children": [
+                  { "id": "S10.body.read.text", "type": "TEXT", "characters": "_body (markdown plain)", "style": { "fontSize": 14 } },
+                  { "id": "S10.body.empty", "type": "TEXT", "characters": "noMessagesYet", "visible": false }
+                ]
+              },
+              {
+                "id": "S10.body.edit", "name": "Edit Mode · TextField (expanded)",
+                "type": "INSTANCE", "componentName": "TextField",
+                "absoluteBoundingBox": { "width": 358, "height": 600 },
+                "visible": false
+              }
+            ]
+          },
+
+          {
+            "id": "S11",
+            "name": "NoteSelectScreen",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 4300, "y": 0, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "S11.appBar", "name": "AppBar", "type": "FRAME",
+                "layoutMode": "HORIZONTAL",
+                "absoluteBoundingBox": { "width": 390, "height": 56 },
+                "children": [
+                  { "id": "S11.title", "type": "TEXT", "characters": "notes" },
+                  { "id": "S11.act.add", "name": "IconButton(add) newNote", "type": "INSTANCE", "iconName": "add" }
+                ]
+              },
+              {
+                "id": "S11.body", "name": "ListView.separated",
+                "type": "FRAME", "layoutMode": "VERTICAL",
+                "children": [
+                  {
+                    "id": "S11.tile", "name": "ListTile · NoteEntry",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S11.tile.title", "type": "TEXT", "characters": "meta.title | meta.noteId" },
+                      { "id": "S11.tile.sub", "type": "TEXT", "characters": "themeTitle · updatedAt" },
+                      { "id": "S11.tile.trail", "type": "INSTANCE", "iconName": "chevron_right" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "S12",
+            "name": "NodeLocationPicker (BottomSheet)",
+            "type": "FRAME",
+            "absoluteBoundingBox": { "x": 4730, "y": 338, "width": 390, "height": 506 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "cornerRadius": 16,
+            "description": "showModalBottomSheet maxHeight 60% screen. Two phases.",
+            "children": [
+              {
+                "id": "S12.phase1", "name": "Phase 1 · Theme Selection",
+                "type": "FRAME", "layoutMode": "VERTICAL",
+                "children": [
+                  {
+                    "id": "S12.phase1.head", "name": "Header",
+                    "type": "FRAME",
+                    "paddingLeft": 16, "paddingRight": 16, "paddingTop": 16, "paddingBottom": 8,
+                    "children": [{ "id": "S12.phase1.title", "type": "TEXT", "characters": "selectTheme", "style": { "fontSize": 16, "fontWeight": 500 } }]
+                  },
+                  { "id": "S12.phase1.divider", "type": "RECTANGLE", "absoluteBoundingBox": { "height": 1 } },
+                  {
+                    "id": "S12.phase1.list", "name": "ListView.builder", "type": "FRAME", "layoutMode": "VERTICAL",
+                    "children": [
+                      {
+                        "id": "S12.phase1.tile", "name": "ListTile · theme",
+                        "type": "FRAME", "layoutMode": "HORIZONTAL",
+                        "children": [
+                          { "id": "S12.phase1.tile.title", "type": "TEXT", "characters": "theme.title" },
+                          { "id": "S12.phase1.tile.trail", "type": "INSTANCE", "iconName": "chevron_right" }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "S12.phase2", "name": "Phase 2 · Node Tree Selection",
+                "type": "FRAME", "layoutMode": "VERTICAL",
+                "visible": false,
+                "children": [
+                  {
+                    "id": "S12.phase2.head", "name": "Header Row",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S12.phase2.title", "type": "TEXT", "characters": "selectLocation" },
+                      { "id": "S12.phase2.back", "type": "INSTANCE", "componentName": "TextButton", "characters": "back" }
+                    ]
+                  },
+                  {
+                    "id": "S12.phase2.asRoot", "name": "ListTile · asRootChat",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "S12.phase2.asRoot.icon", "type": "INSTANCE", "iconName": "chat_bubble_outline" },
+                      { "id": "S12.phase2.asRoot.title", "type": "TEXT", "characters": "asRootChat" }
+                    ]
+                  },
+                  {
+                    "id": "S12.phase2.tree", "name": "Indented Node Tile (recursive)",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "paddingLeft": 16,
+                    "children": [
+                      { "id": "S12.phase2.tree.icon", "type": "INSTANCE", "iconName": "subdirectory_arrow_right" },
+                      { "id": "S12.phase2.tree.title", "type": "TEXT", "characters": "node.title" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+
+        ]
+      },
+
+      {
+        "id": "2:0",
+        "name": "Page · Components",
+        "type": "CANVAS",
+        "backgroundColor": { "r": 0.96, "g": 0.96, "b": 0.96, "a": 1 },
+        "children": [
+
+          {
+            "id": "C1",
+            "name": "Component · ChatComposer",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 0, "y": 0, "width": 390, "height": 80 },
+            "layoutMode": "HORIZONTAL",
+            "primaryAxisAlignItems": "CENTER",
+            "counterAxisAlignItems": "CENTER",
+            "paddingLeft": 12, "paddingRight": 12, "paddingTop": 8, "paddingBottom": 12,
+            "itemSpacing": 8,
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              {
+                "id": "C1.input", "name": "TextField (multiline 1-6 lines)",
+                "type": "INSTANCE", "componentName": "TextField",
+                "absoluteBoundingBox": { "width": 240, "height": 56 },
+                "strokes": [{ "type": "SOLID", "color": { "r": 0.7, "g": 0.7, "b": 0.74 } }],
+                "strokeWeight": 1,
+                "cornerRadius": 4,
+                "characters": "hintText"
+              },
+              { "id": "C1.modelBtn", "name": "IconButton(auto_awesome) Model (optional)", "type": "INSTANCE", "iconName": "auto_awesome" },
+              { "id": "C1.send", "name": "FilledButton(send | stop)", "type": "INSTANCE", "componentName": "FilledButton", "characters": "send" }
+            ]
+          },
+
+          {
+            "id": "C2",
+            "name": "Component · MessageBubble (variants: user/assistant/system)",
+            "type": "COMPONENT_SET",
+            "absoluteBoundingBox": { "x": 0, "y": 100, "width": 520, "height": 200 },
+            "children": [
+              {
+                "id": "C2.user", "name": "Variant=user",
+                "type": "COMPONENT", "layoutMode": "VERTICAL",
+                "absoluteBoundingBox": { "width": 520, "height": 100 },
+                "fills": [{ "type": "SOLID", "color": { "r": 0.91, "g": 0.85, "b": 1 } }],
+                "cornerRadius": 12,
+                "paddingLeft": 12, "paddingRight": 12, "paddingTop": 12, "paddingBottom": 12,
+                "children": [
+                  {
+                    "id": "C2.user.head", "name": "Header Row",
+                    "type": "FRAME", "layoutMode": "HORIZONTAL",
+                    "children": [
+                      { "id": "C2.user.role", "name": "role · status", "type": "TEXT", "characters": "userRole · streaming?", "style": { "fontSize": 12 } },
+                      { "id": "C2.user.expand", "name": "Icon(open_in_full) when hasTable", "type": "INSTANCE", "iconName": "open_in_full", "visible": false }
+                    ]
+                  },
+                  { "id": "C2.user.body", "name": "MarkdownBody", "type": "INSTANCE", "componentName": "MarkdownBody", "characters": "message.body" }
+                ]
+              },
+              {
+                "id": "C2.assistant", "name": "Variant=assistant",
+                "type": "COMPONENT", "layoutMode": "VERTICAL",
+                "absoluteBoundingBox": { "width": 520, "height": 100 },
+                "fills": [{ "type": "SOLID", "color": { "r": 0.93, "g": 0.94, "b": 0.96 } }],
+                "cornerRadius": 12,
+                "paddingLeft": 12, "paddingRight": 12, "paddingTop": 12, "paddingBottom": 12,
+                "children": [
+                  { "id": "C2.assistant.role", "name": "role · status", "type": "TEXT", "characters": "assistantRole · done" },
+                  { "id": "C2.assistant.body", "name": "MarkdownBody", "type": "INSTANCE", "componentName": "MarkdownBody" }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "C3",
+            "name": "Component · ChatListView",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 0, "y": 320, "width": 390, "height": 600 },
+            "layoutMode": "VERTICAL",
+            "paddingLeft": 12, "paddingRight": 12, "paddingTop": 12, "paddingBottom": 12,
+            "itemSpacing": 8,
+            "children": [
+              { "id": "C3.empty", "name": "Empty: noMessagesYet", "type": "TEXT", "characters": "noMessagesYet", "visible": false },
+              { "id": "C3.item", "name": "Slot · MessageBubble", "type": "INSTANCE", "componentName": "MessageBubble" }
+            ]
+          },
+
+          {
+            "id": "C4",
+            "name": "Component · ModelSelectorPanel",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 540, "y": 0, "width": 390, "height": 295 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "strokes": [{ "type": "SOLID", "color": { "r": 0.86, "g": 0.86, "b": 0.86 } }],
+            "strokeWeight": 1,
+            "strokeAlign": "INSIDE",
+            "description": "上推式面板，最大高度=屏幕35%。",
+            "children": [
+              {
+                "id": "C4.head", "name": "Header Row",
+                "type": "FRAME", "layoutMode": "HORIZONTAL",
+                "primaryAxisAlignItems": "SPACE_BETWEEN", "counterAxisAlignItems": "CENTER",
+                "paddingLeft": 16, "paddingRight": 16, "paddingTop": 12, "paddingBottom": 8,
+                "children": [
+                  { "id": "C4.head.title", "name": "selectModel", "type": "TEXT", "characters": "selectModel", "style": { "fontSize": 16, "fontWeight": 500 } },
+                  { "id": "C4.head.close", "name": "IconButton(close)", "type": "INSTANCE", "iconName": "close" }
+                ]
+              },
+              { "id": "C4.divider", "type": "RECTANGLE", "absoluteBoundingBox": { "height": 1 } },
+              {
+                "id": "C4.list", "name": "ListView · _ProviderGroup",
+                "type": "FRAME", "layoutMode": "VERTICAL",
+                "paddingBottom": 16,
+                "children": [
+                  {
+                    "id": "C4.group", "name": "_ProviderGroup",
+                    "type": "FRAME", "layoutMode": "VERTICAL",
+                    "children": [
+                      {
+                        "id": "C4.group.title", "name": "provider.name",
+                        "type": "TEXT", "characters": "provider.name",
+                        "style": { "fontSize": 12, "fontWeight": 600 }
+                      },
+                      {
+                        "id": "C4.group.item", "name": "_ModelItem",
+                        "type": "FRAME", "layoutMode": "HORIZONTAL",
+                        "paddingLeft": 32, "paddingRight": 16, "paddingTop": 10, "paddingBottom": 10,
+                        "children": [
+                          { "id": "C4.group.item.check", "name": "Icon(check_circle) when selected", "type": "INSTANCE", "iconName": "check_circle", "visible": false },
+                          { "id": "C4.group.item.text", "name": "model.name", "type": "TEXT", "characters": "model.name" }
+                        ]
+                      }
+                    ]
+                  },
+                  { "id": "C4.empty", "name": "Empty: pleaseFetchModels", "type": "TEXT", "characters": "pleaseFetchModels", "visible": false }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "C5",
+            "name": "Component · AlertDialog (newTheme/newSession/newBranch/newNote/chatTitle)",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 0, "y": 940, "width": 320, "height": 200 },
+            "layoutMode": "VERTICAL",
+            "cornerRadius": 12,
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "paddingLeft": 24, "paddingRight": 24, "paddingTop": 20, "paddingBottom": 16,
+            "itemSpacing": 16,
+            "children": [
+              { "id": "C5.title", "type": "TEXT", "characters": "Dialog Title" },
+              {
+                "id": "C5.content", "name": "TextField (autofocus)",
+                "type": "INSTANCE", "componentName": "TextField",
+                "characters": "titleHint"
+              },
+              {
+                "id": "C5.actions", "name": "Actions Row",
+                "type": "FRAME", "layoutMode": "HORIZONTAL",
+                "primaryAxisAlignItems": "FLEX_END", "itemSpacing": 8,
+                "children": [
+                  { "id": "C5.cancel", "name": "TextButton(cancel)", "type": "INSTANCE", "componentName": "TextButton", "characters": "cancel" },
+                  { "id": "C5.confirm", "name": "FilledButton(create)", "type": "INSTANCE", "componentName": "FilledButton", "characters": "create" }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "C6",
+            "name": "Component · DeleteNodeConfirmDialog",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 340, "y": 940, "width": 320, "height": 360 },
+            "layoutMode": "VERTICAL",
+            "cornerRadius": 12,
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "paddingLeft": 24, "paddingRight": 24, "paddingTop": 20, "paddingBottom": 16,
+            "itemSpacing": 12,
+            "children": [
+              { "id": "C6.title", "type": "TEXT", "characters": "deleteItem" },
+              { "id": "C6.confirm", "type": "TEXT", "characters": "deleteConfirm(node.title)" },
+              { "id": "C6.desc", "type": "TEXT", "characters": "deleteDescWithChildren | deleteDescOnly" },
+              { "id": "C6.same", "type": "TEXT", "characters": "keptSameTitleNodes (conditional)", "visible": false },
+              { "id": "C6.ack", "name": "CheckboxListTile · deleteUnderstand", "type": "INSTANCE", "componentName": "CheckboxListTile", "characters": "deleteUnderstand", "visible": false },
+              {
+                "id": "C6.actions", "type": "FRAME", "layoutMode": "HORIZONTAL", "primaryAxisAlignItems": "FLEX_END", "itemSpacing": 8,
+                "children": [
+                  { "id": "C6.cancel", "type": "INSTANCE", "componentName": "TextButton", "characters": "cancel" },
+                  { "id": "C6.del", "type": "INSTANCE", "componentName": "FilledButtonTonal", "characters": "delete" }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "C7",
+            "name": "Component · LanguagePickerDialog",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 680, "y": 940, "width": 320, "height": 220 },
+            "layoutMode": "VERTICAL",
+            "cornerRadius": 12,
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "paddingLeft": 24, "paddingRight": 24, "paddingTop": 20, "paddingBottom": 16,
+            "children": [
+              { "id": "C7.title", "type": "TEXT", "characters": "language" },
+              {
+                "id": "C7.opt.system", "name": "_LanguageOption · systemDefault",
+                "type": "FRAME", "layoutMode": "HORIZONTAL",
+                "children": [
+                  { "id": "C7.opt.system.label", "type": "TEXT", "characters": "systemDefault" },
+                  { "id": "C7.opt.system.check", "type": "INSTANCE", "iconName": "check", "visible": false }
+                ]
+              },
+              {
+                "id": "C7.opt.en", "name": "_LanguageOption · english",
+                "type": "FRAME", "layoutMode": "HORIZONTAL",
+                "children": [
+                  { "id": "C7.opt.en.label", "type": "TEXT", "characters": "english" },
+                  { "id": "C7.opt.en.check", "type": "INSTANCE", "iconName": "check", "visible": false }
+                ]
+              },
+              {
+                "id": "C7.opt.zh", "name": "_LanguageOption · chinese",
+                "type": "FRAME", "layoutMode": "HORIZONTAL",
+                "children": [
+                  { "id": "C7.opt.zh.label", "type": "TEXT", "characters": "chinese" },
+                  { "id": "C7.opt.zh.check", "type": "INSTANCE", "iconName": "check", "visible": false }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "C8",
+            "name": "Component · LogsTailDialog",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 0, "y": 1180, "width": 560, "height": 400 },
+            "layoutMode": "VERTICAL",
+            "cornerRadius": 12,
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "paddingLeft": 24, "paddingRight": 24, "paddingTop": 20, "paddingBottom": 16,
+            "itemSpacing": 16,
+            "children": [
+              { "id": "C8.title", "type": "TEXT", "characters": "logsTail" },
+              { "id": "C8.body", "name": "SingleChildScrollView · SelectableText", "type": "INSTANCE", "componentName": "SelectableText", "characters": "pretty (parsed JSON log lines)" },
+              {
+                "id": "C8.actions", "type": "FRAME", "layoutMode": "HORIZONTAL", "primaryAxisAlignItems": "FLEX_END",
+                "children": [
+                  { "id": "C8.close", "type": "INSTANCE", "componentName": "TextButton", "characters": "close" }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "C9",
+            "name": "Component · DeleteProviderConfirmDialog",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 0, "y": 1600, "width": 320, "height": 180 },
+            "layoutMode": "VERTICAL",
+            "cornerRadius": 12,
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "paddingLeft": 24, "paddingRight": 24, "paddingTop": 20, "paddingBottom": 16,
+            "itemSpacing": 16,
+            "children": [
+              { "id": "C9.title", "type": "TEXT", "characters": "deleteProvider" },
+              { "id": "C9.content", "type": "TEXT", "characters": "deleteProviderConfirm" },
+              {
+                "id": "C9.actions", "type": "FRAME", "layoutMode": "HORIZONTAL", "primaryAxisAlignItems": "FLEX_END", "itemSpacing": 8,
+                "children": [
+                  { "id": "C9.cancel", "type": "INSTANCE", "componentName": "TextButton", "characters": "cancel" },
+                  { "id": "C9.del", "type": "INSTANCE", "componentName": "TextButton", "characters": "delete" }
+                ]
+              }
+            ]
+          },
+
+          {
+            "id": "C10",
+            "name": "Component · TableExpandedView",
+            "type": "COMPONENT",
+            "absoluteBoundingBox": { "x": 340, "y": 1600, "width": 390, "height": 844 },
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 } }],
+            "children": [
+              { "id": "C10.appBar", "name": "AppBar(title=expandTable)", "type": "INSTANCE", "componentName": "AppBar", "characters": "expandTable" },
+              { "id": "C10.body", "name": "InteractiveViewer · MarkdownBody", "type": "INSTANCE", "componentName": "MarkdownBody", "characters": "content" }
+            ]
+          }
+
+        ]
+      }
+    ]
+  },
+  "components": {
+    "ChatComposer":      { "key": "C1", "name": "ChatComposer" },
+    "MessageBubble":     { "key": "C2", "name": "MessageBubble" },
+    "ChatListView":      { "key": "C3", "name": "ChatListView" },
+    "ModelSelectorPanel":{ "key": "C4", "name": "ModelSelectorPanel" },
+    "TitleInputDialog":  { "key": "C5", "name": "AlertDialog/Title Input" },
+    "DeleteNodeDialog":  { "key": "C6", "name": "DeleteNodeConfirmDialog" },
+    "LanguageDialog":    { "key": "C7", "name": "LanguagePickerDialog" },
+    "LogsTailDialog":    { "key": "C8", "name": "LogsTailDialog" },
+    "DeleteProviderDialog": { "key": "C9", "name": "DeleteProviderConfirmDialog" },
+    "TableExpandedView": { "key": "C10","name": "TableExpandedView" }
+  },
+  "styles": {
+    "color/primaryContainer":          { "type": "FILL", "description": "Theme.primaryContainer (user bubble)" },
+    "color/surfaceContainerHighest":   { "type": "FILL", "description": "Theme.surfaceContainerHighest (assistant bubble, code bg)" },
+    "color/secondaryContainer":        { "type": "FILL", "description": "Summary banner background" },
+    "color/onSurfaceVariant":          { "type": "FILL", "description": "Subtitles, hints" },
+    "color/outlineVariant":            { "type": "FILL", "description": "Tree connectors / table borders" },
+    "color/dividerColor":              { "type": "FILL", "description": "Divider lines & context bar bg @ 24% alpha" },
+    "color/contextBar.low":            { "type": "FILL", "color": { "r": 0, "g": 0.59, "b": 0.53 }, "description": "ratio<=0.6 (Colors.teal)" },
+    "color/contextBar.mid":            { "type": "FILL", "color": { "r": 1, "g": 0.6, "b": 0 }, "description": "0.6<ratio<=0.85 (Colors.orange)" },
+    "color/contextBar.high":           { "type": "FILL", "color": { "r": 0.96, "g": 0.26, "b": 0.21 }, "description": "ratio>0.85 (Colors.red)" },
+    "text/titleMedium":  { "type": "TEXT", "fontSize": 16, "fontWeight": 500 },
+    "text/labelMedium":  { "type": "TEXT", "fontSize": 12, "fontWeight": 600 },
+    "text/bodyMedium":   { "type": "TEXT", "fontSize": 14 },
+    "text/bodySmall":    { "type": "TEXT", "fontSize": 12 }
+  },
+  "meta": {
+    "source": "lib/ui",
+    "framework": "Flutter (Material 3)",
+    "platformTarget": "iOS-first (390×844 logical px)",
+    "extractedAt": "2026-05-30",
+    "filesProcessed": [
+      "lib/ui/core/shared/chat_list_view.dart",
+      "lib/ui/core/shared/chat_composer.dart",
+      "lib/ui/core/shared/message_bubble.dart",
+      "lib/ui/features/chat/chat_screen.dart",
+      "lib/ui/features/chat/widgets/model_selector_panel.dart",
+      "lib/ui/features/themes/theme_list_screen.dart",
+      "lib/ui/features/themes/theme_detail_screen.dart",
+      "lib/ui/features/settings/settings_screen.dart",
+      "lib/ui/features/llm/llm_providers_screen.dart",
+      "lib/ui/features/llm/llm_provider_detail_screen.dart",
+      "lib/ui/features/notes/note_browse_screen.dart",
+      "lib/ui/features/notes/note_detail_screen.dart",
+      "lib/ui/features/notes/note_select_screen.dart",
+      "lib/ui/features/notes/node_location_picker.dart",
+      "lib/ui/features/summary/summary_chat_screen.dart"
+    ],
+    "ignored": [
+      "All *_controller.dart files (Riverpod state management)",
+      "router.dart, app_services.dart, app_paths.dart, app_logger.dart (infrastructure)",
+      "All Riverpod providers, AsyncValue.when() business branches",
+      "All onPressed/onTap business callbacks (kept only as visual nodes)"
+    ]
+  }
+}
