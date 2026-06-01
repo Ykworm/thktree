@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -8,16 +8,15 @@ import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
 void main() {
   group('ChatListView', () {
     Widget buildListView(List<SessionMessage> messages) {
-      return MaterialApp(
+      return CupertinoApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ChatListView(
+        home: CupertinoPageScaffold(
+          child: ChatListView(
             messages: messages,
             messageBuilder: (context, message) => Text(message.body),
           ),

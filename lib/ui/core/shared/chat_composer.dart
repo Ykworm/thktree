@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
 class ChatComposer extends StatefulWidget {
   const ChatComposer({
@@ -49,12 +50,12 @@ class _ChatComposerState extends State<ChatComposer> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: Focus(
@@ -77,7 +78,7 @@ class _ChatComposerState extends State<ChatComposer> {
                   _send();
                   return KeyEventResult.handled;
                 },
-                child: TextField(
+                child: CupertinoTextField(
                   controller: _controller,
                   focusNode: _inputFocusNode,
                   enabled: widget.enabled,
@@ -90,10 +91,15 @@ class _ChatComposerState extends State<ChatComposer> {
                   textCapitalization: TextCapitalization.none,
                   smartDashesType: SmartDashesType.disabled,
                   smartQuotesType: SmartQuotesType.disabled,
-                  decoration: InputDecoration(
-                    hintText: widget.hintText,
-                    border: const OutlineInputBorder(),
+                  placeholder: widget.hintText,
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey6.resolveFrom(context),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: CupertinoColors.separator.resolveFrom(context),
+                    ),
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   onSubmitted: (_) {
                     final composing = _controller.value.composing;
                     if (composing.isValid && !composing.isCollapsed) return;
@@ -107,27 +113,33 @@ class _ChatComposerState extends State<ChatComposer> {
               ),
             ),
             if (widget.onModelSelectorTap != null) ...[
-              IconButton(
+              CupertinoButton(
+                padding: EdgeInsets.zero,
                 onPressed: widget.isStreaming ? null : widget.onModelSelectorTap,
-                icon: Icon(
-                  Icons.auto_awesome,
+                child: Icon(
+                  CupertinoIcons.bolt,
                   color: widget.isStreaming
-                      ? Theme.of(context).disabledColor
-                      : null,
+                      ? CupertinoColors.systemGrey.resolveFrom(context)
+                      : CupertinoColors.systemBlue.resolveFrom(context),
                 ),
-                tooltip: 'Model',
-                visualDensity: VisualDensity.compact,
               ),
               const SizedBox(width: 4),
             ],
-            const SizedBox(width: 8),
-            FilledButton(
+            const SizedBox(width: 4),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
               onPressed: widget.enabled
                   ? widget.isStreaming
                       ? _stopStreaming
                       : _send
                   : null,
-              child: Text(widget.isStreaming ? l10n.stop : l10n.send),
+              child: Icon(
+                widget.isStreaming ? AppIcons.stop : AppIcons.send,
+                size: 32,
+                color: widget.enabled
+                    ? CupertinoColors.systemBlue.resolveFrom(context)
+                    : CupertinoColors.systemGrey.resolveFrom(context),
+              ),
             ),
           ],
         ),
@@ -148,7 +160,7 @@ class _ChatComposerState extends State<ChatComposer> {
       _controller.text = text;
       if (mounted) {
         _inputFocusNode.requestFocus();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        _showError(e.toString());
       }
     }
   }
@@ -160,8 +172,15 @@ class _ChatComposerState extends State<ChatComposer> {
       // 用户主动取消是正常操作，不显示错误
       if (e is DioException && e.type == DioExceptionType.cancel) return;
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      _showError(e.toString());
     }
+  }
+
+  void _showError(String message) {
+    ThkAlert.show(
+      context: context,
+      message: message,
+    );
   }
 
   void _insertNewline() {

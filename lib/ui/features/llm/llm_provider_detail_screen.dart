@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ulid/ulid.dart';
@@ -7,6 +7,8 @@ import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/model_fetcher.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
 /// 提供商详情/编辑页面
 ///
@@ -34,7 +36,6 @@ class _LlmProviderDetailScreenState
   bool _isFetchingModels = false;
   List<LlmModelConfig> _fetchedModels = [];
   Set<String> _selectedModelIds = {};
-  String? _apiKeyError;
 
   @override
   void initState() {
@@ -92,111 +93,102 @@ class _LlmProviderDetailScreenState
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: _onPopInvoked,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_isNew ? l10n.addCustomProvider : l10n.editProvider),
-          actions: [
-            if (!_isNew && _isCustom)
-              IconButton(
-                tooltip: l10n.deleteProvider,
-                icon: const Icon(Icons.delete_outline),
-                onPressed: _deleteProvider,
-              ),
-          ],
+      child: CupertinoPageScaffold(
+        navigationBar: ThkNavBar.inline(
+          title: _isNew ? l10n.addCustomProvider : l10n.editProvider,
+          trailing: !_isNew && _isCustom
+              ? CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: _deleteProvider,
+                  child: Icon(AppIcons.delete),
+                )
+              : null,
         ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: _isLoadingApiKey
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: SafeArea(
+          child: _isLoadingApiKey
+              ? const Center(child: CupertinoActivityIndicator())
+              : ListView(
+                  children: [
+                    // API 配置区
+                    ThkListSection(
+                      header: l10n.providerBaseUrl,
                       children: [
                         // 自定义提供商：名称输入框
-                        if (_isCustom) ...[
-                          TextField(
+                        if (_isCustom)
+                          ThkTextField(
+                            placeholder: l10n.customProviderHint,
                             controller: _nameController,
-                            decoration: InputDecoration(
-                              labelText: l10n.providerName,
-                              hintText: l10n.customProviderHint,
-                              border: const OutlineInputBorder(),
+                          ),
+                        // 预置提供商：显示默认 URL（只读）+ 复制按钮
+                        if (!_isCustom)
+                          CupertinoListTile(
+                            title: Text(l10n.providerDefaultUrl),
+                            additionalInfo: Text(
+                              widget.provider!.defaultBaseUrl,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: CupertinoColors.secondaryLabel,
+                              ),
+                            ),
+                            trailing: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              onPressed: () {
+                                Clipboard.setData(
+                                  ClipboardData(
+                                    text: widget.provider!.defaultBaseUrl,
+                                  ),
+                                );
+                              },
+                              child: Icon(AppIcons.copy),
                             ),
                           ),
-                          const SizedBox(height: 16),
-                        ],
+                      ],
+                    ),
 
-                        // 预置提供商：显示默认 URL（只读）+ 复制按钮
-                        if (!_isCustom) ...[
-                          _DefaultUrlRow(
-                            defaultBaseUrl: widget.provider!.defaultBaseUrl,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Base URL 输入框
-                        TextField(
+                    // Base URL + API Key 区
+                    ThkListSection(
+                      header: l10n.providerApiKey,
+                      children: [
+                        ThkTextField(
+                          placeholder: l10n.baseUrlHint,
                           controller: _baseUrlController,
-                          decoration: InputDecoration(
-                            labelText: l10n.providerBaseUrl,
-                            hintText: l10n.baseUrlHint,
-                            border: const OutlineInputBorder(),
-                          ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // API Key 输入框
-                        TextField(
+                        ThkTextField(
+                          placeholder: l10n.apiKeyHint,
                           controller: _apiKeyController,
                           obscureText: true,
-                          decoration: InputDecoration(
-                            labelText: l10n.providerApiKey,
-                            hintText: l10n.apiKeyHint,
-                            border: const OutlineInputBorder(),
-                            errorText: _apiKeyError,
-                          ),
                         ),
-                        const SizedBox(height: 24),
+                      ],
+                    ),
 
-                        // 获取模型列表按钮
-                        FilledButton.icon(
-                          onPressed:
-                              _isFetchingModels ? null : _fetchModels,
-                          icon: _isFetchingModels
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimary,
-                                  ),
-                                )
-                              : const Icon(Icons.download),
-                          label: Text(
-                            _isFetchingModels
-                                ? l10n.fetchingModels
-                                : l10n.fetchModels,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                    // 获取模型列表按钮
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: _isFetchingModels
+                          ? const Center(child: CupertinoActivityIndicator())
+                          : ThkButton.filled(
+                              label: l10n.fetchModels,
+                              icon: Icon(AppIcons.download),
+                              onPressed: _fetchModels,
+                            ),
+                    ),
 
-                        // 模型列表
-                        if (_fetchedModels.isNotEmpty) ...[
-                          Text(
-                            l10n.selectModel,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          ..._fetchedModels.map((model) {
-                            final selected =
-                                _selectedModelIds.contains(model.id);
-                            return CheckboxListTile(
+                    // 模型列表
+                    if (_fetchedModels.isNotEmpty)
+                      ThkListSection(
+                        header: l10n.selectModel,
+                        children: _fetchedModels.map((model) {
+                          final selected =
+                              _selectedModelIds.contains(model.id);
+                          return CupertinoListTile(
+                            title: Text(model.name),
+                            subtitle: Text(model.id),
+                            trailing: CupertinoCheckbox(
                               value: selected,
-                              title: Text(model.name),
-                              subtitle: Text(model.id),
                               onChanged: (checked) {
                                 setState(() {
                                   if (checked == true) {
@@ -206,22 +198,25 @@ class _LlmProviderDetailScreenState
                                   }
                                 });
                               },
-                            );
-                          }),
-                        ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
 
-                        // 自定义提供商：保存按钮
-                        if (_isCustom) ...[
-                          const SizedBox(height: 24),
-                          FilledButton(
-                            onPressed: _saveProvider,
-                            child: Text(l10n.saveProvider),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-          ),
+                    // 自定义提供商：保存按钮
+                    if (_isCustom)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        child: ThkButton.filled(
+                          label: l10n.saveProvider,
+                          onPressed: _saveProvider,
+                        ),
+                      ),
+                  ],
+                ),
         ),
       ),
     );
@@ -235,15 +230,15 @@ class _LlmProviderDetailScreenState
     final apiKey = _apiKeyController.text.trim();
 
     if (baseUrl.isEmpty || apiKey.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.apiKeyInvalid)),
+      ThkAlert.show(
+        context: context,
+        title: l10n.apiKeyInvalid,
       );
       return;
     }
 
     setState(() {
       _isFetchingModels = true;
-      _apiKeyError = null;
     });
 
     try {
@@ -264,15 +259,12 @@ class _LlmProviderDetailScreenState
             .toSet();
         _isFetchingModels = false;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.fetchModelsSuccess(models.length))),
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isFetchingModels = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.fetchModelsFailed(e.toString()))),
+      ThkAlert.show(
+        context: context,
+        title: l10n.fetchModelsFailed(e.toString()),
       );
     }
   }
@@ -286,8 +278,9 @@ class _LlmProviderDetailScreenState
     final apiKey = _apiKeyController.text.trim();
 
     if (name.isEmpty || baseUrl.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.apiKeyInvalid)),
+      ThkAlert.show(
+        context: context,
+        title: l10n.apiKeyInvalid,
       );
       return;
     }
@@ -333,8 +326,9 @@ class _LlmProviderDetailScreenState
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.saveFailed(e.toString()))),
+      ThkAlert.show(
+        context: context,
+        title: l10n.saveFailed(e.toString()),
       );
     }
   }
@@ -381,71 +375,22 @@ class _LlmProviderDetailScreenState
 
   Future<void> _deleteProvider() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+
+    ThkAlert.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteProvider),
-        content: Text(l10n.deleteProviderConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
+      title: l10n.deleteProvider,
+      message: l10n.deleteProviderConfirm,
+      destructiveAction: l10n.delete,
+      onDestructive: () async {
+        final store = ref.read(llmConfigStoreProvider);
+        await store.deleteProvider(widget.provider!.id);
+        ref.invalidate(llmProvidersProvider);
 
-    if (confirmed != true || !mounted) return;
-
-    final store = ref.read(llmConfigStoreProvider);
-    await store.deleteProvider(widget.provider!.id);
-    ref.invalidate(llmProvidersProvider);
-
-    if (mounted) {
-      Navigator.of(context).pop(true);
-    }
-  }
-}
-
-/// 默认 URL 行：显示文本 + 复制按钮
-class _DefaultUrlRow extends StatelessWidget {
-  const _DefaultUrlRow({required this.defaultBaseUrl});
-
-  final String defaultBaseUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Row(
-      children: [
-        Expanded(
-          child: InputDecorator(
-            decoration: InputDecoration(
-              labelText: l10n.providerDefaultUrl,
-              border: const OutlineInputBorder(),
-            ),
-            child: SelectableText(
-              defaultBaseUrl,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          tooltip: l10n.copyDefaultUrl,
-          icon: const Icon(Icons.copy),
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: defaultBaseUrl));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.copiedToClipboard)),
-            );
-          },
-        ),
-      ],
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      },
+      cancelAction: l10n.cancel,
     );
   }
 }

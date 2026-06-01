@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
 final _tablePattern = RegExp(r'^\|.+\|', multiLine: true);
 final _tableSepPattern = RegExp(r'^\|[\s\-:]+\|', multiLine: true);
@@ -64,30 +65,33 @@ class MessageBubble extends StatelessWidget {
       SessionMessageStatus.error => l10n.errorStatus(message.errorCode ?? l10n.errorUnknown),
     };
 
-    final color = isUser
-        ? Theme.of(context).colorScheme.primaryContainer
-        : Theme.of(context).colorScheme.surfaceContainerHighest;
+    final backgroundColor = isUser
+        ? CupertinoColors.systemBlue.resolveFrom(context)
+        : CupertinoColors.systemGrey6.resolveFrom(context);
 
     final body = message.body.isEmpty ? ' ' : message.body;
     final hasTable = _hasMarkdownTable(message.body);
-    final cs = Theme.of(context).colorScheme;
     final maxWidth = hasTable
         ? MediaQuery.of(context).size.width - 32
         : 520.0;
 
-    final mdStyle = _buildStyle(context, cs);
+    final mdStyle = _buildStyle(context);
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Card(
-          color: color,
+        child: Container(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: SelectionArea(
+            child: SelectableRegion(
+              selectionControls: cupertinoTextSelectionControls,
               contextMenuBuilder: (ctx, state) {
-                return AdaptiveTextSelectionToolbar.buttonItems(
+                return CupertinoAdaptiveTextSelectionToolbar.buttonItems(
                   anchors: state.contextMenuAnchors,
                   buttonItems: _buildMenuItems(ctx, state, hasTable, body),
                 );
@@ -100,16 +104,24 @@ class MessageBubble extends StatelessWidget {
                       Expanded(
                         child: Text(
                           statusText == null ? title : '$title · $statusText',
-                          style: Theme.of(context).textTheme.labelMedium,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isUser
+                                ? CupertinoColors.white.withValues(alpha: 0.8)
+                                : CupertinoColors.secondaryLabel.resolveFrom(context),
+                          ),
                         ),
                       ),
                       if (hasTable)
-                        InkWell(
-                          onTap: () => _showExpanded(context, body),
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.all(2),
-                            child: Icon(Icons.open_in_full, size: 15, color: cs.onSurfaceVariant),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          onPressed: () => _showExpanded(context, body),
+                          child: Icon(
+                            CupertinoIcons.arrow_up_left_arrow_down_right,
+                            size: 15,
+                            color: CupertinoColors.secondaryLabel.resolveFrom(context),
                           ),
                         ),
                     ],
@@ -184,22 +196,36 @@ class MessageBubble extends StatelessWidget {
     return items;
   }
 
-  MarkdownStyleSheet _buildStyle(BuildContext context, ColorScheme cs) {
-    return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-      p: Theme.of(context).textTheme.bodyMedium,
-      code: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  MarkdownStyleSheet _buildStyle(BuildContext context) {
+    final isUser = message.role == SessionRole.user;
+    final baseStyle = TextStyle(
+      fontSize: 17,
+      color: isUser
+          ? CupertinoColors.white
+          : CupertinoColors.label.resolveFrom(context),
+    );
+    final codeBg = isUser
+        ? CupertinoColors.white.withValues(alpha: 0.15)
+        : CupertinoColors.systemGrey5.resolveFrom(context);
+
+    return MarkdownStyleSheet(
+      p: baseStyle,
+      code: baseStyle.copyWith(
         fontFamily: 'monospace',
-        backgroundColor: cs.surfaceContainerHighest,
+        backgroundColor: codeBg,
       ),
       codeblockDecoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
+        color: codeBg,
         borderRadius: BorderRadius.circular(8),
       ),
-      tableBorder: TableBorder.all(color: cs.outlineVariant, width: 1),
-      tableHead: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.bold,
+      tableBorder: TableBorder.all(
+        color: isUser
+            ? CupertinoColors.white.withValues(alpha: 0.3)
+            : CupertinoColors.separator.resolveFrom(context),
+        width: 1,
       ),
-      tableBody: Theme.of(context).textTheme.bodyMedium,
+      tableHead: baseStyle.copyWith(fontWeight: FontWeight.bold),
+      tableBody: baseStyle,
       tableCellsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       tableColumnWidth: const MaxColumnWidth(FixedColumnWidth(180), FlexColumnWidth()),
     );
@@ -207,7 +233,7 @@ class MessageBubble extends StatelessWidget {
 
   void _showExpanded(BuildContext context, String content) {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (_) => _TableExpandedView(content: content),
       ),
     );
@@ -221,40 +247,43 @@ class _TableExpandedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.expandTable)),
-      body: InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 3.0,
-        boundaryMargin: const EdgeInsets.all(40),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          padding: const EdgeInsets.all(16),
-          child: MarkdownBody(
-            data: content,
-            selectable: true,
-            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-              p: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6),
-              code: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontFamily: 'monospace',
-                backgroundColor: cs.surfaceContainerHighest,
+    return CupertinoPageScaffold(
+      navigationBar: ThkNavBar.inline(
+        title: AppLocalizations.of(context)!.expandTable,
+      ),
+      child: SafeArea(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 3.0,
+          boundaryMargin: const EdgeInsets.all(40),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            padding: const EdgeInsets.all(16),
+            child: MarkdownBody(
+              data: content,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet(
+                p: const TextStyle(fontSize: 17, height: 1.6),
+                code: const TextStyle(
+                  fontFamily: 'monospace',
+                  backgroundColor: CupertinoColors.systemGrey5,
+                ),
+                codeblockDecoration: const BoxDecoration(
+                  color: CupertinoColors.systemGrey5,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                tableBorder: TableBorder.all(
+                  color: CupertinoColors.separator,
+                  width: 1,
+                ),
+                tableHead: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+                tableBody: const TextStyle(fontSize: 17, height: 1.5),
+                tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                tableColumnWidth: const MaxColumnWidth(FixedColumnWidth(180), FlexColumnWidth()),
               ),
-              codeblockDecoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              tableBorder: TableBorder.all(
-                color: cs.outlineVariant,
-                width: 1,
-              ),
-              tableHead: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-              tableBody: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
-              tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              tableColumnWidth: const MaxColumnWidth(FixedColumnWidth(180), FlexColumnWidth()),
             ),
           ),
         ),

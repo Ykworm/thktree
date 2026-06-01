@@ -1,12 +1,14 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_logger.dart';
-import 'package:thk_tree/ui/core/app_paths.dart';
+
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 
@@ -18,99 +20,150 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final pathsAsync = ref.watch(appPathsProvider);
     final loggerAsync = ref.watch(appLoggerProvider);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsTitle)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: ListView(
+
+    return ThkLargeTitlePage(
+      title: l10n.settingsTitle,
+      children: [
+        SliverToBoxAdapter(
+          child: ThkListSection(
+            header: l10n.language,
             children: [
-          _LanguageTile(),
-          _LlmProvidersEntry(),
-          loggerAsync.when(
-            data: (logger) => _LogsTile(logger: logger),
-            error: (e, st) => ListTile(title: Text(e.toString())),
-            loading: () => ListTile(title: Text(l10n.loadingLogger)),
-          ),
-          pathsAsync.when(
-            data: (paths) => _PathsTile(paths: paths),
-            error: (e, st) => ListTile(title: Text(e.toString())),
-            loading: () => ListTile(title: Text(l10n.loadingPaths)),
-          ),
-        ],
+              _LanguageTile(),
+            ],
           ),
         ),
+        SliverToBoxAdapter(
+          child: ThkListSection(
+            children: [
+              _LlmProvidersEntry(),
+            ],
+          ),
+        ),
+        loggerAsync.when(
+          data: (logger) => SliverToBoxAdapter(
+            child: ThkListSection(
+              children: _buildLogTiles(context, logger, l10n),
+            ),
+          ),
+          error: (e, st) => SliverToBoxAdapter(
+            child: ThkListSection(
+              children: [ThkListTile(title: e.toString(), trailing: null)],
+            ),
+          ),
+          loading: () => SliverToBoxAdapter(
+            child: ThkListSection(
+              children: [ThkListTile(title: l10n.loadingLogger, trailing: null)],
+            ),
+          ),
+        ),
+        pathsAsync.when(
+          data: (paths) => SliverToBoxAdapter(
+            child: ThkListSection(
+              children: [
+                ThkListTile(
+                  title: l10n.dataRoot,
+                  subtitle: paths.rootDir.path,
+                  trailing: null,
+                ),
+              ],
+            ),
+          ),
+          error: (e, st) => SliverToBoxAdapter(
+            child: ThkListSection(
+              children: [ThkListTile(title: e.toString(), trailing: null)],
+            ),
+          ),
+          loading: () => SliverToBoxAdapter(
+            child: ThkListSection(
+              children: [ThkListTile(title: l10n.loadingPaths, trailing: null)],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildLogTiles(BuildContext context, AppLogger logger, AppLocalizations l10n) {
+    return [
+      ThkListTile(
+        title: l10n.logFile,
+        subtitle: logger.logFilePath,
+        leading: const Icon(AppIcons.copy),
+        trailing: null,
+        onTap: () async {
+          await Clipboard.setData(ClipboardData(text: logger.logFilePath));
+          if (!context.mounted) return;
+          _showCopiedToast(context, l10n.copied);
+        },
+      ),
+      ThkListTile(
+        title: l10n.remoteLogging,
+        subtitle: logger.hasRemoteLogging
+            ? '${l10n.enabled}\n${logger.remoteLogUrl}'
+            : l10n.disabled,
+        leading: Icon(logger.hasRemoteLogging ? CupertinoIcons.cloud_fill : CupertinoIcons.cloud),
+        trailing: null,
+        onTap: logger.hasRemoteLogging
+            ? () async {
+                await Clipboard.setData(ClipboardData(text: logger.remoteLogUrl));
+                if (!context.mounted) return;
+                _showCopiedToast(context, l10n.copied);
+              }
+            : null,
+      ),
+      ThkListTile(
+        title: l10n.viewLogs,
+        leading: const Icon(CupertinoIcons.doc_text),
+        onTap: () async {
+          final text = await logger.readTail();
+          if (!context.mounted) return;
+          final pretty = _formatLogTail(text);
+          _showLogsDialog(context, l10n, pretty);
+        },
+      ),
+    ];
+  }
+
+  void _showCopiedToast(BuildContext context, String message) {
+    showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => CupertinoAlertDialog(
+        content: Text(message),
       ),
     );
   }
-}
 
-class _LogsTile extends StatelessWidget {
-  const _LogsTile({required this.logger});
-
-  final AppLogger logger;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        ListTile(
-          title: Text(l10n.logFile),
-          subtitle: Text(logger.logFilePath),
-          trailing: const Icon(Icons.copy),
-          onTap: () async {
-            await Clipboard.setData(ClipboardData(text: logger.logFilePath));
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.copied)));
-          },
-        ),
-        ListTile(
-          title: Text(l10n.remoteLogging),
-          subtitle: Text(
-            logger.hasRemoteLogging ? '${l10n.enabled}\n${logger.remoteLogUrl}' : l10n.disabled,
-          ),
-          trailing: Icon(logger.hasRemoteLogging ? Icons.cloud_done : Icons.cloud_off),
-          onTap: logger.hasRemoteLogging
-              ? () async {
-                  await Clipboard.setData(ClipboardData(text: logger.remoteLogUrl));
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.copied)));
-                }
-              : null,
-        ),
-        ListTile(
-          title: Text(l10n.viewLogs),
-          trailing: const Icon(Icons.article),
-          onTap: () async {
-            final text = await logger.readTail();
-            if (!context.mounted) return;
-            final pretty = _formatLogTail(text);
-            await showDialog<void>(
-              context: context,
-              builder: (context) {
-                final l10n = AppLocalizations.of(context)!;
-                return AlertDialog(
-                  title: Text(l10n.logsTail),
-                  content: SizedBox(
-                    width: 560,
-                    child: SingleChildScrollView(
-                      child: SelectableText(pretty.isEmpty ? l10n.emptyLogs : pretty),
-                    ),
+  void _showLogsDialog(BuildContext context, AppLocalizations l10n, String pretty) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(l10n.logsTail),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: SizedBox(
+              width: 560,
+              child: SingleChildScrollView(
+                child: Text(
+                  pretty.isEmpty ? l10n.emptyLogs : pretty,
+                  style: const TextStyle(
+                    fontFamily: 'Menlo',
+                    fontSize: 12,
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(l10n.close),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        ),
-        const Divider(height: 1),
-      ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.close),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -167,38 +220,17 @@ class _LlmProvidersEntry extends ConsumerWidget {
       error: (_, _) => l10n.noModels,
     );
 
-    return Column(
-      children: [
-        ListTile(
-          leading: const Icon(Icons.cloud),
-          title: Text(l10n.llmProvidersTitle),
-          subtitle: Text(subtitle),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const LlmProvidersScreen(),
-              ),
-            );
-          },
-        ),
-        const Divider(height: 1),
-      ],
-    );
-  }
-}
-
-class _PathsTile extends StatelessWidget {
-  const _PathsTile({required this.paths});
-
-  final AppPaths paths;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return ListTile(
-      title: Text(l10n.dataRoot),
-      subtitle: Text(paths.rootDir.path),
+    return ThkListTile(
+      leading: const Icon(AppIcons.cloud),
+      title: l10n.llmProvidersTitle,
+      subtitle: subtitle,
+      onTap: () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(
+            builder: (_) => const LlmProvidersScreen(),
+          ),
+        );
+      },
     );
   }
 }
@@ -212,11 +244,11 @@ class _LanguageTile extends ConsumerWidget {
     final currentLocale = ref.watch(localeProvider);
     final currentName = _localeName(currentLocale, l10n);
 
-    return ListTile(
-      leading: const Icon(Icons.language),
-      title: Text(l10n.language),
-      subtitle: Text(l10n.languageSubtitle(currentName)),
-      trailing: const Icon(Icons.chevron_right),
+    return ThkListTile(
+      leading: const Icon(CupertinoIcons.globe),
+      title: l10n.language,
+      subtitle: l10n.languageSubtitle(currentName),
+      additionalInfo: currentName,
       onTap: () => _showLanguagePicker(context, ref, currentLocale, l10n),
     );
   }
@@ -234,63 +266,71 @@ class _LanguageTile extends ConsumerWidget {
     Locale? currentLocale,
     AppLocalizations l10n,
   ) {
-    showDialog<void>(
+    showCupertinoModalPopup<void>(
       context: context,
       builder: (context) {
-        return AlertDialog(
+        return CupertinoActionSheet(
           title: Text(l10n.language),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _LanguageOption(
-                label: l10n.systemDefault,
-                isSelected: currentLocale == null,
-                onTap: () {
-                  ref.read(settingsControllerProvider.notifier).saveLocale(null);
-                  Navigator.of(context).pop();
-                },
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () {
+                ref.read(settingsControllerProvider.notifier).saveLocale(null);
+                Navigator.of(context).pop();
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(l10n.systemDefault),
+                  if (currentLocale == null)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Icon(AppIcons.check, size: 18, color: CupertinoColors.systemBlue),
+                    ),
+                ],
               ),
-              _LanguageOption(
-                label: l10n.english,
-                isSelected: currentLocale?.languageCode == 'en',
-                onTap: () {
-                  ref.read(settingsControllerProvider.notifier).saveLocale('en');
-                  Navigator.of(context).pop();
-                },
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                ref.read(settingsControllerProvider.notifier).saveLocale('en');
+                Navigator.of(context).pop();
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(l10n.english),
+                  if (currentLocale?.languageCode == 'en')
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Icon(AppIcons.check, size: 18, color: CupertinoColors.systemBlue),
+                    ),
+                ],
               ),
-              _LanguageOption(
-                label: l10n.chinese,
-                isSelected: currentLocale?.languageCode == 'zh',
-                onTap: () {
-                  ref.read(settingsControllerProvider.notifier).saveLocale('zh');
-                  Navigator.of(context).pop();
-                },
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                ref.read(settingsControllerProvider.notifier).saveLocale('zh');
+                Navigator.of(context).pop();
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(l10n.chinese),
+                  if (currentLocale?.languageCode == 'zh')
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Icon(AppIcons.check, size: 18, color: CupertinoColors.systemBlue),
+                    ),
+                ],
               ),
-            ],
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.close),
           ),
         );
       },
-    );
-  }
-}
-
-class _LanguageOption extends StatelessWidget {
-  const _LanguageOption({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(label),
-      trailing: isSelected ? const Icon(Icons.check, color: Colors.green) : null,
-      onTap: onTap,
     );
   }
 }

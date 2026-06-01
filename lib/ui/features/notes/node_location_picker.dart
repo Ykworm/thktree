@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/domain/theme.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_theme.dart';
 
 class NodeLocationResult {
   final String themeId;
@@ -21,13 +23,16 @@ Future<NodeLocationResult?> showNodeLocationPicker(
   BuildContext context,
   WidgetRef ref,
 ) {
-  return showModalBottomSheet<NodeLocationResult>(
+  return showCupertinoModalPopup<NodeLocationResult>(
     context: context,
-    isScrollControlled: true,
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 0.6,
+    builder: (_) => Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      decoration: const BoxDecoration(
+        color: CupertinoColors.systemBackground,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      child: const _NodeLocationPickerContent(),
     ),
-    builder: (_) => const _NodeLocationPickerContent(),
   );
 }
 
@@ -143,7 +148,7 @@ class _NodeLocationPickerContentState
     if (_themesLoading) {
       return const Padding(
         padding: EdgeInsets.all(32),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: CupertinoActivityIndicator()),
       );
     }
     if (_themesError != null) {
@@ -159,27 +164,26 @@ class _NodeLocationPickerContentState
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(l10n.selectTheme,
-              style: Theme.of(context).textTheme.titleMedium),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(l10n.selectTheme, style: AppTheme.headline),
+          ),
         ),
-        const Divider(height: 1),
         Flexible(
           child: themes.isEmpty
               ? Padding(
                   padding: const EdgeInsets.all(32),
                   child: Center(child: Text(l10n.noThemesYet)),
                 )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: themes.length,
-                  itemBuilder: (context, index) {
-                    final theme = themes[index];
-                    return ListTile(
-                      title: Text(theme.title),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _selectTheme(theme),
-                    );
-                  },
+              : CupertinoListSection.insetGrouped(
+                  children: themes
+                      .map((theme) => CupertinoListTile(
+                            title: Text(theme.title),
+                            trailing:
+                                const CupertinoListTileChevron(),
+                            onTap: () => _selectTheme(theme),
+                          ))
+                      .toList(),
                 ),
         ),
       ],
@@ -190,7 +194,7 @@ class _NodeLocationPickerContentState
     if (_nodesLoading) {
       return const Padding(
         padding: EdgeInsets.all(32),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: CupertinoActivityIndicator()),
       );
     }
     if (_nodesError != null) {
@@ -210,24 +214,26 @@ class _NodeLocationPickerContentState
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              Text(l10n.selectLocation,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(l10n.selectLocation, style: AppTheme.headline),
               const Spacer(),
-              TextButton(
+              CupertinoButton(
+                padding: EdgeInsets.zero,
                 onPressed: _backToThemeSelection,
                 child: Text(l10n.back),
               ),
             ],
           ),
         ),
-        const Divider(height: 1),
         // "As root chat" option
-        ListTile(
-          leading: const Icon(Icons.chat_bubble_outline),
-          title: Text(l10n.asRootChat),
-          onTap: () => _selectLocation(parentId: null),
+        CupertinoListSection.insetGrouped(
+          children: [
+            CupertinoListTile(
+              leading: Icon(AppIcons.chat),
+              title: Text(l10n.asRootChat),
+              onTap: () => _selectLocation(parentId: null),
+            ),
+          ],
         ),
-        const Divider(height: 1),
         // Node tree
         if (nodes.isNotEmpty)
           Flexible(
@@ -250,9 +256,8 @@ class _NodeLocationPickerContentState
       items.add(
         Padding(
           padding: EdgeInsets.only(left: depth * 16.0),
-          child: ListTile(
-            dense: true,
-            leading: const Icon(Icons.subdirectory_arrow_right, size: 20),
+          child: CupertinoListTile(
+            leading: Icon(AppIcons.subdirectoryArrowRight, size: 20),
             title: Text(node.title),
             onTap: () => _selectLocation(parentId: node.nodeId),
           ),

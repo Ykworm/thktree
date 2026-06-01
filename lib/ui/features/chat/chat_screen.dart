@@ -1,10 +1,12 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/summary/summary_route_params.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
@@ -107,10 +109,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     final modelSubtitle = _resolveModelSubtitle(currentProviderId, currentModelId);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+    return CupertinoPageScaffold(
+      navigationBar: ThkNavBar.inline(
+        title: widget.title,
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
           onPressed: () {
             if (Navigator.canPop(context)) {
               context.pop();
@@ -118,75 +122,96 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               context.go('/themes/${widget.themeId}/tree');
             }
           },
-          tooltip: l10n.back,
+          child: const Icon(AppIcons.back),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.title),
-            if (modelSubtitle != null)
-              Text(
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              onPressed: () {
+                if (isStreaming) return;
+                FocusScope.of(context).unfocus();
+                setState(() => _showModelPanel = !_showModelPanel);
+              },
+              child: Icon(
+                CupertinoIcons.bolt,
+                size: 22,
+                color: isStreaming
+                    ? CupertinoColors.systemGrey.resolveFrom(context)
+                    : CupertinoColors.systemBlue.resolveFrom(context),
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              onPressed: () => context.go('/themes/${widget.themeId}/tree'),
+              child: const Icon(AppIcons.accountTree, size: 22),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              onPressed: () async {
+                try {
+                  final title = await _promptTitle(context);
+                  if (title == null) return;
+                  
+                  final nodeStore = await ref.read(nodeStoreProvider.future);
+                  final row = await nodeStore.getNodeRow(nodeId: widget.nodeId);
+                  final sessionPath = row['sessionPath'] as String;
+                  final sessionFile = File(sessionPath);
+                  String? parentSessionText;
+                  if (await sessionFile.exists()) {
+                    final rawText = await sessionFile.readAsString();
+                    final doc = parseSessionMarkdown(rawText);
+                    parentSessionText = buildConversationTranscript(doc);
+                  } else {
+                    parentSessionText = '';
+                  }
+                  
+                  if (!context.mounted) return;
+                  
+                  final params = SummaryRouteParams(
+                    themeId: widget.themeId,
+                    parentNodeId: widget.nodeId,
+                    branchTitle: title,
+                    parentSessionText: parentSessionText,
+                  );
+                  
+                  context.push(
+                    '/themes/${widget.themeId}/nodes/${widget.nodeId}/summary',
+                    extra: params,
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ThkAlert.show(
+                    context: context,
+                    message: l10n.branchFailed(e.toString()),
+                  );
+                }
+              },
+              child: const Icon(AppIcons.callSplit, size: 22),
+            ),
+          ],
+        ),
+      ),
+      child: Column(
+        children: [
+          if (modelSubtitle != null)
+            Container(
+              width: double.infinity,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
                 modelSubtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => context.go('/themes/${widget.themeId}/tree'),
-            icon: const Icon(Icons.account_tree),
-            tooltip: l10n.tree,
-          ),
-          IconButton(
-            onPressed: () async {
-              try {
-                final title = await _promptTitle(context);
-                if (title == null) return;
-                
-                final nodeStore = await ref.read(nodeStoreProvider.future);
-                final row = await nodeStore.getNodeRow(nodeId: widget.nodeId);
-                final sessionPath = row['sessionPath'] as String;
-                final sessionFile = File(sessionPath);
-                String? parentSessionText;
-                if (await sessionFile.exists()) {
-                  final rawText = await sessionFile.readAsString();
-                  final doc = parseSessionMarkdown(rawText);
-                  parentSessionText = buildConversationTranscript(doc);
-                } else {
-                  parentSessionText = '';
-                }
-                
-                if (!context.mounted) return;
-                
-                final params = SummaryRouteParams(
-                  themeId: widget.themeId,
-                  parentNodeId: widget.nodeId,
-                  branchTitle: title,
-                  parentSessionText: parentSessionText,
-                );
-                
-                context.push(
-                  '/themes/${widget.themeId}/nodes/${widget.nodeId}/summary',
-                  extra: params,
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(l10n.branchFailed(e.toString()))));
-              }
-            },
-            icon: const Icon(Icons.call_split),
-            tooltip: l10n.branch,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
+            ),
           // 消息列表 - 面板出现时它会被压缩变小
           Expanded(
             child: GestureDetector(
@@ -201,7 +226,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                 ),
                 error: (e, st) => Center(child: Text(e.toString())),
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CupertinoActivityIndicator()),
               ),
             ),
           ),
@@ -251,17 +276,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _onAddToNote(BuildContext context, String text) {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (_) => NoteSelectScreen(
           currentThemeId: widget.themeId,
           selectedText: text,
           onNoteSelected: (ctx, noteId) {
             if (noteId != null) {
-              ScaffoldMessenger.of(ctx).showSnackBar(
-                SnackBar(
-                  content: Text(AppLocalizations.of(ctx)!.addToNote),
-                  duration: const Duration(seconds: 1),
-                ),
+              ThkAlert.show(
+                context: ctx,
+                message: AppLocalizations.of(ctx)!.addToNote,
               );
             }
           },
@@ -279,28 +302,23 @@ class _ContextUsageBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final used = _estimateTotalTokens(messages);
     final total = contextWindow;
     final ratio = total > 0 ? (used / total).clamp(0.0, 1.0) : 0.0;
-    final percent = (ratio * 100).round();
     final color = ratio > 0.85
-        ? Colors.red
+        ? CupertinoColors.systemRed
         : ratio > 0.6
-            ? Colors.orange
-            : Colors.teal;
+            ? CupertinoColors.systemOrange
+            : CupertinoColors.systemTeal;
 
-    return Tooltip(
-      message: l10n.contextUsagePercent(percent),
-      child: Container(
-        height: 2.5,
-        color: Theme.of(context).dividerColor.withAlpha(60),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: ratio,
-            child: Container(color: color),
-          ),
+    return Container(
+      height: 2.5,
+      color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: 0.3),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: FractionallySizedBox(
+          widthFactor: ratio,
+          child: Container(color: color),
         ),
       ),
     );
@@ -318,27 +336,31 @@ class _ContextUsageBar extends StatelessWidget {
 Future<String?> _promptTitle(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
   final controller = TextEditingController();
-  return showDialog<String>(
+  return showCupertinoDialog<String>(
     context: context,
     builder: (context) {
-      return AlertDialog(
+      return CupertinoAlertDialog(
         title: Text(l10n.newBranch),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: l10n.titleHint),
-          onSubmitted: (value) {
-            final composing = controller.value.composing;
-            if (composing.isValid && !composing.isCollapsed) return;
-            Navigator.of(context).pop(value.trim().isEmpty ? null : value.trim());
-          },
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ThkTextField(
+            placeholder: l10n.titleHint,
+            controller: controller,
+            autofocus: true,
+            onSubmitted: (value) {
+              final composing = controller.value.composing;
+              if (composing.isValid && !composing.isCollapsed) return;
+              Navigator.of(context).pop(value.trim().isEmpty ? null : value.trim());
+            },
+          ),
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
+          CupertinoDialogAction(
+            isDefaultAction: true,
             onPressed: () {
               final value = controller.text.trim();
               Navigator.of(context).pop(value.isEmpty ? null : value);

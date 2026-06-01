@@ -1,11 +1,14 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_theme.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
 
 class NoteDetailScreen extends ConsumerStatefulWidget {
@@ -83,8 +86,10 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   Future<void> _createChatFromNote() async {
     final l10n = AppLocalizations.of(context)!;
     if (_body.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.noMessagesYet)),
+      ThkAlert.show(
+        context: context,
+        message: l10n.noMessagesYet,
+        defaultAction: 'OK',
       );
       return;
     }
@@ -110,14 +115,13 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       if (mounted) {
         context.push('/themes/${location.themeId}/nodes/${node.nodeId}',
             extra: title);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.chatCreated)),
-        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+        ThkAlert.show(
+          context: context,
+          message: e.toString(),
+          defaultAction: 'OK',
         );
       }
     }
@@ -126,28 +130,32 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   Future<String?> _promptChatTitle(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
-    return showDialog<String>(
+    return showCupertinoDialog<String>(
       context: context,
       builder: (context) {
-        return AlertDialog(
+        return CupertinoAlertDialog(
           title: Text(l10n.chatTitle),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(hintText: l10n.titleHint),
-            onSubmitted: (value) {
-              final composing = controller.value.composing;
-              if (composing.isValid && !composing.isCollapsed) return;
-              Navigator.of(context)
-                  .pop(value.trim().isEmpty ? null : value.trim());
-            },
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: ThkTextField(
+              controller: controller,
+              placeholder: l10n.titleHint,
+              autofocus: true,
+              onSubmitted: (value) {
+                final composing = controller.value.composing;
+                if (composing.isValid && !composing.isCollapsed) return;
+                Navigator.of(context)
+                    .pop(value.trim().isEmpty ? null : value.trim());
+              },
+            ),
           ),
           actions: [
-            TextButton(
+            CupertinoDialogAction(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(l10n.cancel),
             ),
-            FilledButton(
+            CupertinoDialogAction(
+              isDefaultAction: true,
               onPressed: () {
                 final value = controller.text.trim();
                 Navigator.of(context).pop(value.isEmpty ? null : value);
@@ -173,24 +181,26 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.notes),
-        actions: [
-          IconButton(
-            onPressed: _createChatFromNote,
-            icon: const Icon(Icons.forum),
-            tooltip: l10n.createChatFromNote,
-          ),
-          IconButton(
-            onPressed: _toggleEditing,
-            icon: Icon(_editing ? Icons.check : Icons.edit),
-            tooltip: _editing ? l10n.save : null,
-          ),
-        ],
+    return CupertinoPageScaffold(
+      navigationBar: ThkNavBar.inline(
+        title: l10n.notes,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _createChatFromNote,
+              child: Icon(AppIcons.forum),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _toggleEditing,
+              child: Icon(_editing ? AppIcons.check : AppIcons.edit),
+            ),
+          ],
+        ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadBody,
+      child: SafeArea(
         child: _buildBody(l10n),
       ),
     );
@@ -198,53 +208,46 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_editing) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
+      return Padding(
         padding: const EdgeInsets.all(16),
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.75,
-            child: TextField(
-              controller: _controller,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-    if (_loading) {
-      return const _ScrollableWrap(
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (_error != null) {
-      return _ScrollableWrap(
-        child: Center(
-          child: Text(
-            _error.toString(),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.75,
+          child: CupertinoTextField(
+            controller: _controller,
+            maxLines: null,
+            expands: true,
+            textAlignVertical: TextAlignVertical.top,
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGroupedBackground,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: CupertinoColors.separator),
             ),
           ),
         ),
       );
     }
-    if (_body.isEmpty) {
-      return _ScrollableWrap(
-        child: Center(child: Text(l10n.noMessagesYet)),
+    if (_loading) {
+      return const Center(child: CupertinoActivityIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Text(
+          _error.toString(),
+          style: const TextStyle(color: CupertinoColors.systemRed),
+        ),
       );
     }
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
+    if (_body.isEmpty) {
+      return Center(
+        child: Text(
+          l10n.noMessagesYet,
+          style: const TextStyle(color: CupertinoColors.secondaryLabel),
+        ),
+      );
+    }
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      children: [
-        SelectableText(_body),
-      ],
+      child: Text(_body, style: AppTheme.body),
     );
   }
 }
@@ -260,7 +263,8 @@ class ThemeNoteListScreen extends ConsumerStatefulWidget {
   final String notesDir;
 
   @override
-  ConsumerState<ThemeNoteListScreen> createState() => _ThemeNoteListScreenState();
+  ConsumerState<ThemeNoteListScreen> createState() =>
+      _ThemeNoteListScreenState();
 }
 
 class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
@@ -312,80 +316,75 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
     }
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.notes)),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _buildBody(l10n),
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoSliverNavigationBar(
+            middle: Text(l10n.notes),
+          ),
+          CupertinoSliverRefreshControl(
+            onRefresh: _load,
+          ),
+          ..._buildSlivers(l10n),
+        ],
       ),
     );
   }
 
-  Widget _buildBody(AppLocalizations l10n) {
+  List<Widget> _buildSlivers(AppLocalizations l10n) {
     if (_loading) {
-      return const _ScrollableWrap(
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return [
+        const SliverFillRemaining(
+          child: Center(child: CupertinoActivityIndicator()),
+        ),
+      ];
     }
     if (_error != null) {
-      return _ScrollableWrap(
-        child: Center(child: Text('${l10n.noNotesYet}: $_error')),
-      );
-    }
-    final metas = _metas ?? [];
-    if (metas.isEmpty) {
-      return _ScrollableWrap(
-        child: Center(
-          child: Text(
-            l10n.noNotesYet,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+      return [
+        SliverFillRemaining(
+          child: Center(
+            child: Text(
+              '${l10n.noNotesYet}: $_error',
+              style: const TextStyle(color: CupertinoColors.systemRed),
             ),
           ),
         ),
-      );
+      ];
     }
-    return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
-      itemCount: metas.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final meta = metas[index];
-        return ListTile(
-          title: Text(meta.title),
-          subtitle: Text('${meta.noteId} · ${meta.updatedAt}'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => NoteDetailScreen(
-                  notesDir: widget.notesDir,
-                  noteId: meta.noteId,
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _ScrollableWrap extends StatelessWidget {
-  const _ScrollableWrap({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: child,
+    final metas = _metas ?? [];
+    if (metas.isEmpty) {
+      return [
+        SliverFillRemaining(
+          child: Center(
+            child: Text(
+              l10n.noNotesYet,
+              style: const TextStyle(color: CupertinoColors.secondaryLabel),
+            ),
+          ),
         ),
-      ],
-    );
+      ];
+    }
+    return [
+      SliverToBoxAdapter(
+        child: ThkListSection(
+          children: metas
+              .map((meta) => ThkListTile(
+                    title: meta.title,
+                    subtitle: '${meta.noteId} · ${meta.updatedAt}',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => NoteDetailScreen(
+                            notesDir: widget.notesDir,
+                            noteId: meta.noteId,
+                          ),
+                        ),
+                      );
+                    },
+                  ))
+              .toList(),
+        ),
+      ),
+    ];
   }
 }

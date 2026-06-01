@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,16 +9,15 @@ import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 void main() {
   group('MessageBubble', () {
     Widget buildBubble(SessionMessage message) {
-      return MaterialApp(
+      return CupertinoApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: MessageBubble(message: message),
+        home: CupertinoPageScaffold(
+          child: MessageBubble(message: message),
         ),
       );
     }
@@ -106,7 +105,7 @@ void main() {
       await tester.pumpWidget(buildBubble(message));
 
       final titleFinder = find.descendant(
-        of: find.byType(Card),
+        of: find.byType(MessageBubble),
         matching: find.byType(Text),
       );
       final titles = tester.widgetList<Text>(titleFinder).map((t) => t.data).toList();
@@ -127,12 +126,12 @@ void main() {
       );
       await tester.pumpWidget(buildBubble(tableMsg));
 
-      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.arrow_up_left_arrow_down_right), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.open_in_full));
+      await tester.tap(find.byIcon(CupertinoIcons.arrow_up_left_arrow_down_right));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AppBar), findsOneWidget);
+      expect(find.byType(CupertinoNavigationBar), findsOneWidget);
     });
 
     testWidgets('renders markdown bold text correctly', (tester) async {

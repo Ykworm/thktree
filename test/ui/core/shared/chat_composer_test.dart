@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/shared/chat_composer.dart';
 
 void main() {
@@ -13,16 +14,15 @@ void main() {
       Future<void> Function(String)? onSend,
       Future<void> Function()? onStopStreaming,
     }) {
-      return MaterialApp(
+      return CupertinoApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ChatComposer(
+        home: CupertinoPageScaffold(
+          child: ChatComposer(
             hintText: hintText,
             isStreaming: isStreaming,
             enabled: enabled,
@@ -33,32 +33,32 @@ void main() {
       );
     }
 
-    testWidgets('renders TextField with hint text', (tester) async {
+    testWidgets('renders CupertinoTextField with hint text', (tester) async {
       await tester.pumpWidget(buildComposer(hintText: 'Enter text'));
 
-      expect(find.byType(TextField), findsOneWidget);
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.decoration?.hintText, 'Enter text');
+      expect(find.byType(CupertinoTextField), findsOneWidget);
+      final textField = tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      expect(textField.placeholder, 'Enter text');
     });
 
     testWidgets('renders Send button when not streaming', (tester) async {
       await tester.pumpWidget(buildComposer(isStreaming: false));
 
-      expect(find.text('Send'), findsOneWidget);
-      expect(find.text('Stop'), findsNothing);
+      expect(find.byIcon(AppIcons.send), findsOneWidget);
+      expect(find.byIcon(AppIcons.stop), findsNothing);
     });
 
     testWidgets('renders Stop button when streaming', (tester) async {
       await tester.pumpWidget(buildComposer(isStreaming: true));
 
-      expect(find.text('Stop'), findsOneWidget);
-      expect(find.text('Send'), findsNothing);
+      expect(find.byIcon(AppIcons.stop), findsOneWidget);
+      expect(find.byIcon(AppIcons.send), findsNothing);
     });
 
     testWidgets('button is disabled when enabled is false', (tester) async {
       await tester.pumpWidget(buildComposer(enabled: false));
 
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<CupertinoButton>(find.byType(CupertinoButton));
       expect(button.onPressed, isNull);
     });
 
@@ -70,8 +70,8 @@ void main() {
         },
       ));
 
-      await tester.enterText(find.byType(TextField), 'Hello world');
-      await tester.tap(find.text('Send'));
+      await tester.enterText(find.byType(CupertinoTextField), 'Hello world');
+      await tester.tap(find.byIcon(AppIcons.send));
       await tester.pump();
 
       expect(sentText, 'Hello world');
@@ -85,7 +85,7 @@ void main() {
         },
       ));
 
-      await tester.tap(find.text('Send'));
+      await tester.tap(find.byIcon(AppIcons.send));
       await tester.pump();
 
       expect(called, isFalse);
@@ -99,8 +99,8 @@ void main() {
         },
       ));
 
-      await tester.enterText(find.byType(TextField), '   ');
-      await tester.tap(find.text('Send'));
+      await tester.enterText(find.byType(CupertinoTextField), '   ');
+      await tester.tap(find.byIcon(AppIcons.send));
       await tester.pump();
 
       expect(called, isFalse);
@@ -115,7 +115,7 @@ void main() {
         },
       ));
 
-      await tester.tap(find.text('Stop'));
+      await tester.tap(find.byIcon(AppIcons.stop));
       await tester.pump();
 
       expect(stopped, isTrue);
@@ -124,11 +124,11 @@ void main() {
     testWidgets('clears text field after successful send', (tester) async {
       await tester.pumpWidget(buildComposer());
 
-      await tester.enterText(find.byType(TextField), 'Hello');
-      await tester.tap(find.text('Send'));
+      await tester.enterText(find.byType(CupertinoTextField), 'Hello');
+      await tester.tap(find.byIcon(AppIcons.send));
       await tester.pump();
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
+      final textField = tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
       expect(textField.controller?.text, isEmpty);
     });
   });

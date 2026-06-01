@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
     show localizedThemeTitle;
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
@@ -14,77 +16,68 @@ class ThemeListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final themesAsync = ref.watch(themeListControllerProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appName),
-        actions: [
-          IconButton(
-            onPressed: () => ref.read(themeListControllerProvider.notifier).reindex(),
-            icon: const Icon(Icons.sync),
+    return ThkLargeTitlePage(
+      title: l10n.appName,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () =>
+                ref.read(themeListControllerProvider.notifier).reindex(),
+            child: Icon(AppIcons.refresh),
           ),
-          IconButton(
+          CupertinoButton(
+            padding: EdgeInsets.zero,
             onPressed: () => context.push('/settings'),
-            icon: const Icon(Icons.settings),
+            child: Icon(AppIcons.settings),
+          ),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () async {
+              final title = await _promptTitle(context);
+              if (title == null) return;
+              if (!context.mounted) return;
+              await ref
+                  .read(themeListControllerProvider.notifier)
+                  .createTheme(title: title);
+            },
+            child: Icon(AppIcons.add),
           ),
         ],
       ),
-      body: themesAsync.when(
-        data: (themes) {
-          if (themes.isEmpty) {
-            return Center(child: Text(l10n.noThemesYet));
-          }
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 600) {
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: themes.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final theme = themes[index];
-                        return ListTile(
-                          title: Text(localizedThemeTitle(l10n, theme.title)),
-                          subtitle: kDebugMode ? Text(theme.themeId) : null,
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => context.push('/themes/${theme.themeId}/tree'),
-                        );
-                      },
-                    ),
-                  ),
-                );
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: themes.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final theme = themes[index];
-                  return ListTile(
-                    title: Text(localizedThemeTitle(l10n, theme.title)),
-                    subtitle: kDebugMode ? Text(theme.themeId) : null,
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/themes/${theme.themeId}/tree'),
-                  );
-                },
+      children: [
+        themesAsync.when(
+          data: (themes) {
+            if (themes.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 80),
+                child: Center(child: Text(l10n.noThemesYet)),
               );
-            },
-          );
-        },
-        error: (e, st) => Center(child: Text(e.toString())),
-        loading: () => const Center(child: CircularProgressIndicator()),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final title = await _promptTitle(context);
-          if (title == null) return;
-          if (!context.mounted) return;
-          await ref.read(themeListControllerProvider.notifier).createTheme(title: title);
-        },
-        child: const Icon(Icons.add),
-      ),
+            }
+            return ThkListSection(
+              children: [
+                for (final theme in themes)
+                  ThkListTile(
+                    title: localizedThemeTitle(l10n, theme.title),
+                    subtitle: kDebugMode ? theme.themeId : null,
+                    trailing: ThkListTile.chevron,
+                    onTap: () =>
+                        context.push('/themes/${theme.themeId}/tree'),
+                  ),
+              ],
+            );
+          },
+          error: (e, st) => Padding(
+            padding: const EdgeInsets.only(top: 80),
+            child: Center(child: Text(e.toString())),
+          ),
+          loading: () => const Padding(
+            padding: EdgeInsets.only(top: 80),
+            child: Center(child: CupertinoActivityIndicator()),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -92,27 +85,32 @@ class ThemeListScreen extends ConsumerWidget {
 Future<String?> _promptTitle(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
   final controller = TextEditingController();
-  return showDialog<String>(
+  return showCupertinoDialog<String>(
     context: context,
     builder: (context) {
-      return AlertDialog(
+      return CupertinoAlertDialog(
         title: Text(l10n.newTheme),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: l10n.titleHint),
-          onSubmitted: (value) {
-            final composing = controller.value.composing;
-            if (composing.isValid && !composing.isCollapsed) return;
-            Navigator.of(context).pop(value.trim().isEmpty ? null : value.trim());
-          },
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ThkTextField(
+            controller: controller,
+            placeholder: l10n.titleHint,
+            autofocus: true,
+            onSubmitted: (value) {
+              final composing = controller.value.composing;
+              if (composing.isValid && !composing.isCollapsed) return;
+              Navigator.of(context)
+                  .pop(value.trim().isEmpty ? null : value.trim());
+            },
+          ),
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
+          CupertinoDialogAction(
+            isDefaultAction: true,
             onPressed: () {
               final value = controller.text.trim();
               Navigator.of(context).pop(value.isEmpty ? null : value);

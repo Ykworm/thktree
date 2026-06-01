@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_theme.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/summary/summary_chat_controller.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
@@ -61,13 +64,15 @@ class _SummaryChatScreenState extends ConsumerState<SummaryChatScreen> {
 
     return PopScope(
       canPop: !_isCreatingBranch,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.polishSummary),
+      child: CupertinoPageScaffold(
+        navigationBar: ThkNavBar.inline(
+          title: l10n.polishSummary,
+          automaticallyImplyLeading: false,
           leading: _isCreatingBranch
               ? const SizedBox.shrink()
-              : IconButton(
-                  icon: const Icon(Icons.close),
+              : CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
                   onPressed: () {
                     if (Navigator.canPop(context)) {
                       context.pop();
@@ -75,18 +80,19 @@ class _SummaryChatScreenState extends ConsumerState<SummaryChatScreen> {
                       context.go('/themes/${widget.themeId}/tree');
                     }
                   },
+                  child: const Icon(AppIcons.close),
                 ),
         ),
-        body: Column(
+        child: Column(
           children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              color: Theme.of(context).colorScheme.secondaryContainer,
+              color: CupertinoColors.systemGrey5.resolveFrom(context),
               child: Text(
                 l10n.summaryBanner(widget.branchTitle),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                style: AppTheme.subhead.copyWith(
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
                 ),
               ),
             ),
@@ -97,7 +103,7 @@ class _SummaryChatScreenState extends ConsumerState<SummaryChatScreen> {
                   messageBuilder: (context, message) => MessageBubble(message: message),
                 ),
                 error: (e, st) => Center(child: Text(e.toString())),
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CupertinoActivityIndicator()),
               ),
             ),
             messagesAsync.maybeWhen(
@@ -133,42 +139,40 @@ class _SummaryChatScreenState extends ConsumerState<SummaryChatScreen> {
                       children: [
                         const SizedBox(width: 12),
                         Expanded(
-                          child: OutlinedButton(
+                          child: ThkButton.plain(
+                            label: l10n.cancel,
                             onPressed: _isCreatingBranch
                                 ? null
                                 : () => context.pop(),
-                            child: Text(l10n.cancel),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: OutlinedButton(
+                          child: ThkButton.tinted(
+                            label: l10n.blankBranch,
                             onPressed: _isCreatingBranch
                                 ? null
                                 : () => _createBranch(null),
-                            child: Text(l10n.blankBranch),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: OutlinedButton(
+                          child: ThkButton.tinted(
+                            label: l10n.skipSummary,
                             onPressed: _isCreatingBranch
                                 ? null
                                 : () => _createBranch(widget.parentSessionText),
-                            child: Text(l10n.skipSummary),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: FilledButton.tonal(
+                          child: ThkButton.filled(
+                            label: l10n.confirmSummary,
                             onPressed: canConfirm ? _confirmAndCreateBranch : null,
-                            child: _isCreatingBranch
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : Text(l10n.confirmSummary),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -189,8 +193,9 @@ class _SummaryChatScreenState extends ConsumerState<SummaryChatScreen> {
     final summaryText = summaryController.getSummaryText();
     if (summaryText == null || summaryText.trim().isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseGenerateSummary)),
+      ThkAlert.show(
+        context: context,
+        message: AppLocalizations.of(context)!.pleaseGenerateSummary,
       );
       return;
     }
@@ -224,8 +229,9 @@ class _SummaryChatScreenState extends ConsumerState<SummaryChatScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isCreatingBranch = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.branchCreationFailed(e.toString()))),
+      ThkAlert.show(
+        context: context,
+        message: AppLocalizations.of(context)!.branchCreationFailed(e.toString()),
       );
     }
   }
@@ -243,24 +249,19 @@ class _SummaryContextBar extends StatelessWidget {
     final total = provider.contextWindowTokens;
     final ratio = total > 0 ? (used / total).clamp(0.0, 1.0) : 0.0;
     final color = ratio > 0.85
-        ? Colors.red
+        ? CupertinoColors.systemRed
         : ratio > 0.6
-            ? Colors.orange
-            : Colors.teal;
-    final usedStr = provider.formatTokens(used);
-    final totalStr = provider.formatTokens(total);
+            ? CupertinoColors.systemOrange
+            : CupertinoColors.systemTeal;
 
-    return Tooltip(
-      message: 'Context: $usedStr / $totalStr tokens',
-      child: Container(
-        height: 2.5,
-        color: Theme.of(context).dividerColor.withAlpha(60),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: ratio,
-            child: Container(color: color),
-          ),
+    return Container(
+      height: 2.5,
+      color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: 0.3),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: FractionallySizedBox(
+          widthFactor: ratio,
+          child: Container(color: color),
         ),
       ),
     );

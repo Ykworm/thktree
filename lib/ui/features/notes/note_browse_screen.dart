@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/note_detail_screen.dart';
 
 /// Stable on-disk title used as identifier for the catch-all theme
@@ -73,93 +75,81 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
       });
     }
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.notes)),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _buildBody(l10n),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _createNoteInUncategorized(context, ref),
-        tooltip: l10n.newNote,
-        child: const Icon(Icons.add),
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          ThkNavBar.large(
+            title: l10n.notes,
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _createNoteInUncategorized(context, ref),
+              child: Icon(AppIcons.add),
+            ),
+          ),
+          CupertinoSliverRefreshControl(
+            onRefresh: _load,
+          ),
+          ..._buildSlivers(l10n),
+        ],
       ),
     );
   }
 
-  Widget _buildBody(AppLocalizations l10n) {
+  List<Widget> _buildSlivers(AppLocalizations l10n) {
     if (_loading) {
-      return const _ScrollableWrap(
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return [
+        const SliverFillRemaining(
+          child: Center(child: CupertinoActivityIndicator()),
+        ),
+      ];
     }
     if (_error != null) {
-      return _ScrollableWrap(
-        child: Center(
-          child: Text(
-            _error.toString(),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
+      return [
+        SliverFillRemaining(
+          child: Center(
+            child: Text(
+              _error.toString(),
+              style: const TextStyle(color: CupertinoColors.systemRed),
             ),
           ),
         ),
-      );
+      ];
     }
     final themes = _themes ?? [];
     if (themes.isEmpty) {
-      return _ScrollableWrap(
-        child: Center(
-          child: Text(
-            l10n.noNotesYet,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+      return [
+        SliverFillRemaining(
+          child: Center(
+            child: Text(
+              l10n.noNotesYet,
+              style: const TextStyle(color: CupertinoColors.secondaryLabel),
             ),
           ),
         ),
-      );
+      ];
     }
-    return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
-      itemCount: themes.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final tn = themes[index];
-        return ListTile(
-          title: Text(localizedThemeTitle(l10n, tn.title)),
-          subtitle: Text(l10n.noteCount(tn.noteCount)),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ThemeNoteListScreen(
-                  themeId: tn.themeId,
-                  notesDir: '${tn.themePath}/notes',
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _ScrollableWrap extends StatelessWidget {
-  const _ScrollableWrap({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: child,
+    return [
+      SliverToBoxAdapter(
+        child: ThkListSection(
+          children: themes
+              .map((tn) => ThkListTile(
+                    title: localizedThemeTitle(l10n, tn.title),
+                    subtitle: l10n.noteCount(tn.noteCount),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => ThemeNoteListScreen(
+                            themeId: tn.themeId,
+                            notesDir: '${tn.themePath}/notes',
+                          ),
+                        ),
+                      );
+                    },
+                  ))
+              .toList(),
         ),
-      ],
-    );
+      ),
+    ];
   }
 }
 
@@ -228,7 +218,8 @@ Future<String> _ensureUncategorizedTheme(WidgetRef ref) async {
   return theme.themeId;
 }
 
-Future<void> _createNoteInUncategorized(BuildContext context, WidgetRef ref) async {
+Future<void> _createNoteInUncategorized(
+    BuildContext context, WidgetRef ref) async {
   final l10n = AppLocalizations.of(context)!;
   final title = await _promptNoteTitle(context, l10n);
   if (title == null) return;
@@ -243,24 +234,29 @@ Future<void> _createNoteInUncategorized(BuildContext context, WidgetRef ref) asy
   ref.read(noteListVersionProvider.notifier).bump();
 }
 
-Future<String?> _promptNoteTitle(BuildContext context, AppLocalizations l10n) async {
+Future<String?> _promptNoteTitle(
+    BuildContext context, AppLocalizations l10n) async {
   final controller = TextEditingController();
-  return showDialog<String>(
+  return showCupertinoDialog<String>(
     context: context,
     builder: (context) {
-      return AlertDialog(
+      return CupertinoAlertDialog(
         title: Text(l10n.newNote),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: l10n.titleHint),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ThkTextField(
+            controller: controller,
+            placeholder: l10n.titleHint,
+            autofocus: true,
+          ),
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
+          CupertinoDialogAction(
+            isDefaultAction: true,
             onPressed: () {
               final value = controller.text.trim();
               Navigator.of(context).pop(value.isEmpty ? null : value);

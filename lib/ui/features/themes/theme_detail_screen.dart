@@ -1,11 +1,14 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_theme.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
     show localizedThemeTitle;
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
@@ -31,62 +34,68 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
       data: (data) {
         final roots = data.nodes.where((n) => n.parentId == null).toList(growable: false);
         roots.sort((a, b) => a.createdAtUtcIso8601.compareTo(b.createdAtUtcIso8601));
-        return Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                if (Navigator.canPop(context)) {
-                  context.pop();
-                } else {
-                  context.go('/');
-                }
-              },
-              tooltip: l10n.back,
+        return CupertinoPageScaffold(
+          navigationBar: ThkNavBar.inline(
+            title: l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => ref
+                      .read(themeDetailControllerProvider(widget.themeId)
+                          .notifier)
+                      .refresh(),
+                  child: Icon(AppIcons.refresh),
+                ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () async {
+                    final title = await _promptTitle(context);
+                    if (title == null) return;
+                    await ref
+                        .read(themeDetailControllerProvider(widget.themeId)
+                            .notifier)
+                        .createRootChatNode(title: title);
+                  },
+                  child: Icon(AppIcons.add),
+                ),
+              ],
             ),
-            title: Text(l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle))),
-            actions: [
-              IconButton(
-                onPressed: () => ref.read(themeDetailControllerProvider(widget.themeId).notifier).refresh(),
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
           ),
-          body: roots.isEmpty
+          child: roots.isEmpty
               ? Center(child: Text(l10n.emptyTree))
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
-                      children: [
-                        for (int i = 0; i < roots.length; i++)
-                          _TreeRowView(
-                            themeId: widget.themeId,
-                            node: roots[i],
-                            allNodes: data.nodes,
-                            depth: 0,
-                            isLast: i == roots.length - 1,
-                            ancestorsLast: const [],
-                          ),
-                      ],
+              : SafeArea(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+                        children: [
+                          for (int i = 0; i < roots.length; i++)
+                            _TreeRowView(
+                              themeId: widget.themeId,
+                              node: roots[i],
+                              allNodes: data.nodes,
+                              depth: 0,
+                              isLast: i == roots.length - 1,
+                              ancestorsLast: const [],
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () async {
-              final title = await _promptTitle(context);
-              if (title == null) return;
-              await ref
-                  .read(themeDetailControllerProvider(widget.themeId).notifier)
-                  .createRootChatNode(title: title);
-            },
-            child: const Icon(Icons.add),
-          ),
         );
       },
-      error: (e, st) => Scaffold(body: Center(child: Text(e.toString()))),
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, st) => CupertinoPageScaffold(
+        navigationBar: ThkNavBar.inline(title: ''),
+        child: Center(child: Text(e.toString())),
+      ),
+      loading: () => CupertinoPageScaffold(
+        navigationBar: ThkNavBar.inline(title: ''),
+        child: const Center(child: CupertinoActivityIndicator()),
+      ),
     );
   }
 }
@@ -120,8 +129,7 @@ class _TreeRowView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final children = _children();
-    final colorScheme = Theme.of(context).colorScheme;
-    final lineColor = colorScheme.outlineVariant;
+    final lineColor = CupertinoColors.separator.resolveFrom(context);
 
     final indentWidgets = <Widget>[];
     for (int i = 0; i < depth; i++) {
@@ -150,25 +158,23 @@ class _TreeRowView extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(node.title, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(node.title, style: AppTheme.body.copyWith(fontWeight: FontWeight.w600)),
                 if (kDebugMode) ...[
                   const SizedBox(height: 2),
                   Text(
                     '${node.kind.value} · ${node.nodeId}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    style: AppTheme.footnote.copyWith(color: CupertinoColors.secondaryLabel.resolveFrom(context)),
                   ),
                 ],
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.call_split, size: 18),
-            tooltip: l10n.branch,
-            onPressed: () async {
+          GestureDetector(
+            onTap: () async {
               try {
                 final t = await _promptTitle(context);
                 if (t == null) return;
-                
+
                 final nodeStore = await ref.read(nodeStoreProvider.future);
                 final row = await nodeStore.getNodeRow(nodeId: node.nodeId);
                 final sessionPath = row['sessionPath'] as String;
@@ -181,32 +187,32 @@ class _TreeRowView extends ConsumerWidget {
                 } else {
                   parentSessionText = '';
                 }
-                
+
                 if (!context.mounted) return;
-                
+
                 final params = SummaryRouteParams(
                   themeId: themeId,
                   parentNodeId: node.nodeId,
                   branchTitle: t,
                   parentSessionText: parentSessionText,
                 );
-                
+
                 context.push(
                   '/themes/$themeId/nodes/${node.nodeId}/summary',
                   extra: params,
                 );
               } catch (e) {
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(l10n.branchFailed(e.toString()))));
+                _showSnackBar(context, l10n.branchFailed(e.toString()));
               }
             },
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(AppIcons.callSplit, size: 18, color: CupertinoColors.systemBlue),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18),
-            tooltip: l10n.delete,
-            visualDensity: VisualDensity.compact,
-            onPressed: () async {
+          GestureDetector(
+            onTap: () async {
               final subtreeNodes = _collectSubtreeNodes(node, allNodes);
               final subtreeIds = subtreeNodes.map((item) => item.nodeId).toSet();
               final sameTitleNodesOutside = allNodes
@@ -224,22 +230,23 @@ class _TreeRowView extends ConsumerWidget {
                     .read(themeDetailControllerProvider(themeId).notifier)
                     .deleteNodeSubtree(nodeId: node.nodeId);
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.deletedCount(deletedCount))),
-                );
+                _showSnackBar(context, l10n.deletedCount(deletedCount));
               } catch (e) {
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(l10n.deleteFailed(e.toString()))));
+                _showSnackBar(context, l10n.deleteFailed(e.toString()));
               }
             },
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(AppIcons.delete, size: 18, color: CupertinoColors.systemRed),
+            ),
           ),
           const SizedBox(width: 4),
         ],
       ),
     );
 
-    final tile = InkWell(
+    final tile = GestureDetector(
       onTap: () => context.push('/themes/$themeId/nodes/${node.nodeId}', extra: node.title),
       child: tileContent,
     );
@@ -263,6 +270,22 @@ class _TreeRowView extends ConsumerWidget {
       children: childWidgets,
     );
   }
+}
+
+void _showSnackBar(BuildContext context, String message) {
+  showCupertinoDialog<void>(
+    context: context,
+    builder: (ctx) => CupertinoAlertDialog(
+      content: Text(message),
+      actions: [
+        CupertinoDialogAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _VerticalLinePainter extends CustomPainter {
@@ -325,27 +348,32 @@ List<NodeEntity> _collectSubtreeNodes(NodeEntity root, List<NodeEntity> allNodes
 Future<String?> _promptTitle(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
   final controller = TextEditingController();
-  return showDialog<String>(
+  return showCupertinoDialog<String>(
     context: context,
     builder: (context) {
-      return AlertDialog(
+      return CupertinoAlertDialog(
         title: Text(l10n.newSession),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: l10n.titleHint),
-          onSubmitted: (value) {
-            final composing = controller.value.composing;
-            if (composing.isValid && !composing.isCollapsed) return;
-            Navigator.of(context).pop(value.trim().isEmpty ? null : value.trim());
-          },
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ThkTextField(
+            controller: controller,
+            placeholder: l10n.titleHint,
+            autofocus: true,
+            onSubmitted: (value) {
+              final composing = controller.value.composing;
+              if (composing.isValid && !composing.isCollapsed) return;
+              Navigator.of(context)
+                  .pop(value.trim().isEmpty ? null : value.trim());
+            },
+          ),
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
+          CupertinoDialogAction(
+            isDefaultAction: true,
             onPressed: () {
               final value = controller.text.trim();
               Navigator.of(context).pop(value.isEmpty ? null : value);
@@ -364,65 +392,61 @@ Future<bool?> _confirmDeleteNode(
   required List<NodeEntity> subtreeNodes,
   required List<NodeEntity> sameTitleNodesOutside,
 }) {
-  return showDialog<bool>(
+  return showCupertinoDialog<bool>(
     context: context,
     builder: (context) {
       final l10n = AppLocalizations.of(context)!;
-      var acknowledged = sameTitleNodesOutside.isEmpty;
-      return StatefulBuilder(
-        builder: (context, setState) {
-          final descendantCount = subtreeNodes.length - 1;
-          final keptNodeIds = sameTitleNodesOutside.map((item) => item.nodeId).join('\n');
-          return AlertDialog(
-            title: Text(l10n.deleteItem),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.deleteConfirm(node.title)),
-                  if (kDebugMode) ...[
-                    const SizedBox(height: 8),
-                    Text(l10n.targetNodeId(node.nodeId)),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    descendantCount > 0
-                        ? l10n.deleteDescWithChildren(descendantCount)
-                        : l10n.deleteDescOnly,
-                  ),
-                  if (sameTitleNodesOutside.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.keptSameTitleNodes(sameTitleNodesOutside.length),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(keptNodeIds),
-                    const SizedBox(height: 12),
-                    CheckboxListTile(
-                      value: acknowledged,
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      onChanged: (value) => setState(() => acknowledged = value ?? false),
-                      title: Text(l10n.deleteUnderstand),
-                    ),
-                  ],
-                ],
+      final descendantCount = subtreeNodes.length - 1;
+      final keptNodeIds = sameTitleNodesOutside.map((item) => item.nodeId).join('\n');
+      return CupertinoAlertDialog(
+        title: Text(l10n.deleteItem),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.deleteConfirm(node.title)),
+              if (kDebugMode) ...[
+                const SizedBox(height: 8),
+                Text(l10n.targetNodeId(node.nodeId)),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                descendantCount > 0
+                    ? l10n.deleteDescWithChildren(descendantCount)
+                    : l10n.deleteDescOnly,
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton.tonal(
-                onPressed: acknowledged ? () => Navigator.of(context).pop(true) : null,
-                child: Text(l10n.delete),
-              ),
+              if (sameTitleNodesOutside.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n.keptSameTitleNodes(sameTitleNodesOutside.length),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Text(keptNodeIds),
+                const SizedBox(height: 12),
+                Text(
+                  '⚠ ${l10n.deleteUnderstand}',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
             ],
-          );
-        },
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: sameTitleNodesOutside.isEmpty
+                ? () => Navigator.of(context).pop(true)
+                : null,
+            child: Text(l10n.delete),
+          ),
+        ],
       );
     },
   );

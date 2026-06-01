@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
     show localizedThemeTitle;
 
@@ -109,19 +111,16 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.notes),
-        actions: [
-          IconButton(
-            onPressed: () => _createAndAppend(l10n),
-            icon: const Icon(Icons.add),
-            tooltip: l10n.newNote,
-          ),
-        ],
+    return CupertinoPageScaffold(
+      navigationBar: ThkNavBar.inline(
+        title: l10n.notes,
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => _createAndAppend(l10n),
+          child: Icon(AppIcons.add),
+        ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadAll,
+      child: SafeArea(
         child: _buildBody(l10n),
       ),
     );
@@ -129,46 +128,35 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_loading) {
-      return const _ScrollableWrap(
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CupertinoActivityIndicator());
     }
     if (_error != null) {
-      return _ScrollableWrap(
-        child: Center(
-          child: Text(
-            _error.toString(),
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
+      return Center(
+        child: Text(
+          _error.toString(),
+          style: const TextStyle(color: CupertinoColors.systemRed),
         ),
       );
     }
     if (_entries.isEmpty) {
-      return _ScrollableWrap(
-        child: Center(
-          child: Text(
-            l10n.noNotesYet,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
+      return Center(
+        child: Text(
+          l10n.noNotesYet,
+          style: const TextStyle(color: CupertinoColors.secondaryLabel),
         ),
       );
     }
-    return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
-      itemCount: _entries.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final entry = _entries[index];
-        return ListTile(
-          title: Text(entry.meta.title.isEmpty ? entry.meta.noteId : entry.meta.title),
-          subtitle: Text('${localizedThemeTitle(l10n, entry.themeTitle)} · ${entry.meta.updatedAt}'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _appendToEntry(entry),
-        );
-      },
+    return ThkListSection(
+      children: _entries
+          .map((entry) => ThkListTile(
+                title: entry.meta.title.isEmpty
+                    ? entry.meta.noteId
+                    : entry.meta.title,
+                subtitle:
+                    '${localizedThemeTitle(l10n, entry.themeTitle)} · ${entry.meta.updatedAt}',
+                onTap: () => _appendToEntry(entry),
+              ))
+          .toList(),
     );
   }
 
@@ -183,8 +171,10 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+      ThkAlert.show(
+        context: context,
+        message: e.toString(),
+        defaultAction: 'OK',
       );
     }
   }
@@ -211,30 +201,36 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+      ThkAlert.show(
+        context: context,
+        message: e.toString(),
+        defaultAction: 'OK',
       );
     }
   }
 
   Future<String?> _promptTitle(AppLocalizations l10n) async {
     final controller = TextEditingController();
-    return showDialog<String>(
+    return showCupertinoDialog<String>(
       context: context,
       builder: (context) {
-        return AlertDialog(
+        return CupertinoAlertDialog(
           title: Text(l10n.newNote),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(hintText: l10n.titleHint),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: ThkTextField(
+              controller: controller,
+              placeholder: l10n.titleHint,
+              autofocus: true,
+            ),
           ),
           actions: [
-            TextButton(
+            CupertinoDialogAction(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(l10n.cancel),
             ),
-            FilledButton(
+            CupertinoDialogAction(
+              isDefaultAction: true,
               onPressed: () {
                 final value = controller.text.trim();
                 Navigator.of(context).pop(value.isEmpty ? null : value);
@@ -244,24 +240,6 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
           ],
         );
       },
-    );
-  }
-}
-
-class _ScrollableWrap extends StatelessWidget {
-  const _ScrollableWrap({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: child,
-        ),
-      ],
     );
   }
 }

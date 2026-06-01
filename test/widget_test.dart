@@ -5,11 +5,11 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:thk_tree/domain/theme.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 import 'package:thk_tree/main.dart';
 
@@ -27,7 +27,7 @@ void main() {
 
     expect(find.text('ThkTree'), findsNWidgets(2));
     expect(find.text('No themes yet'), findsOneWidget);
-    expect(find.byIcon(Icons.settings), findsOneWidget);
+    expect(find.byIcon(AppIcons.settings), findsOneWidget);
   });
 }
 

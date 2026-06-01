@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 
-/// 模型选择面板，采用腾讯风格上推布局（面板出现时对话内容上推）。
+/// 模型选择面板，采用上推布局（面板出现时对话内容上推）。
 class ModelSelectorPanel extends ConsumerWidget {
   const ModelSelectorPanel({
     super.key,
@@ -24,7 +24,6 @@ class ModelSelectorPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final providersAsync = ref.watch(llmProvidersProvider);
-    final theme = Theme.of(context);
 
     return providersAsync.when(
       data: (providers) {
@@ -43,8 +42,8 @@ class ModelSelectorPanel extends ConsumerWidget {
               child: Text(
                 l10n.pleaseFetchModels,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
                 ),
               ),
             ),
@@ -57,11 +56,12 @@ class ModelSelectorPanel extends ConsumerWidget {
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
+              color: CupertinoTheme.of(context).scaffoldBackgroundColor,
               border: Border(
-                top: BorderSide(color: theme.dividerColor),
+                top: BorderSide(
+                  color: CupertinoColors.separator.resolveFrom(context),
+                ),
               ),
-              // 不再使用 boxShadow（非浮动方案，不需要阴影）
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -73,19 +73,25 @@ class ModelSelectorPanel extends ConsumerWidget {
                     children: [
                       Text(
                         l10n.selectModel,
-                        style: theme.textTheme.titleMedium,
+                        style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
                       ),
                       const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close, size: 20),
-                        onPressed: onClose,
+                      CupertinoButton(
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        minimumSize: Size.zero,
+                        onPressed: onClose,
+                        child: const Icon(
+                          CupertinoIcons.xmark,
+                          size: 20,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
+                Container(
+                  height: 1,
+                  color: CupertinoColors.separator.resolveFrom(context),
+                ),
                 // 模型列表
                 Flexible(
                   child: ListView.builder(
@@ -108,7 +114,7 @@ class ModelSelectorPanel extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: CupertinoActivityIndicator()),
       error: (e, _) => Center(child: Text(e.toString())),
     );
   }
@@ -129,7 +135,6 @@ class _ProviderGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final hasModels = provider.models.isNotEmpty;
 
     return Column(
@@ -140,9 +145,10 @@ class _ProviderGroup extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Text(
             provider.name,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
               fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
           ),
         ),
@@ -192,15 +198,13 @@ class _ModelItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
-
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         color: isSelected
-            ? theme.colorScheme.primaryContainer
-            : Colors.transparent,
+            ? CupertinoColors.systemBlue.withValues(alpha: 0.1)
+            : CupertinoColors.transparent,
         padding: const EdgeInsets.fromLTRB(32, 10, 16, 10),
         child: Row(
           children: [
@@ -208,20 +212,20 @@ class _ModelItem extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Icon(
-                  Icons.check_circle,
-                  size: 20,
-                  color: primaryColor,
+                  CupertinoIcons.checkmark,
+                  size: 18,
+                  color: CupertinoColors.systemBlue.resolveFrom(context),
                 ),
               ),
             Expanded(
               child: Text(
                 model.name,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                   color: isSelected
-                      ? primaryColor
-                      : theme.colorScheme.onSurface,
+                      ? CupertinoColors.systemBlue.resolveFrom(context)
+                      : CupertinoColors.label.resolveFrom(context),
                   fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
+                      isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ),

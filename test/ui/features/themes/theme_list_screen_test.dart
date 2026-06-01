@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thk_tree/domain/theme.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 import 'package:thk_tree/main.dart';
 
@@ -19,9 +19,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No themes yet'), findsOneWidget);
-      expect(find.byIcon(Icons.settings), findsOneWidget);
-      expect(find.byIcon(Icons.sync), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(find.byIcon(AppIcons.settings), findsOneWidget);
+      expect(find.byIcon(AppIcons.refresh), findsOneWidget);
+      expect(find.byIcon(AppIcons.add), findsOneWidget);
     });
 
     testWidgets('shows theme list when themes exist', (tester) async {
@@ -45,7 +45,7 @@ void main() {
 
       expect(find.text('My Theme'), findsOneWidget);
       expect(find.text('theme_1'), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(AppIcons.chevronRight), findsOneWidget);
     });
 
     testWidgets('shows multiple themes in list', (tester) async {
