@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:thk_tree/domain/theme.dart';
-import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 import 'package:thk_tree/main.dart';
 
@@ -25,9 +24,10 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('ThkTree'), findsNWidgets(2));
+    // 'ThkTree' 现在只在 ThkLargeTitlePage 顶栏显示一次（原来 nav bar + 设置入口会显示 2 次）。
+    expect(find.text('ThkTree'), findsOneWidget);
     expect(find.text('No themes yet'), findsOneWidget);
-    expect(find.byIcon(AppIcons.settings), findsOneWidget);
+    // settings 按钮已从 theme list 顶栏移除，改用底部 tab bar 入口（见 router.dart）。
   });
 }
 

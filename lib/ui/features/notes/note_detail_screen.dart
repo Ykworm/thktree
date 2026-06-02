@@ -2,14 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 class NoteDetailScreen extends ConsumerStatefulWidget {
   const NoteDetailScreen({
@@ -83,9 +85,15 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     });
   }
 
+  /// 从笔记创建一个新对话。
+  ///
+  /// 流程：选位置 → 弹 sheet 选 mode（raw=原文 / summarize=LLM 总结）→ 调
+  /// [showBranchFlow] 完成标题选择 + 创建 chat node + 写入首条 user 消息 + 跳转。
+  /// [showBranchFlow] 接受 [parentTranscript] 作为 source content；这里传 _body（笔记正文），
+  /// 并用 [sourceLabelOverride] 让 title suggestion 页 banner 显为 "笔记" 而非 "对话"。
   Future<void> _createChatFromNote() async {
-    final l10n = AppLocalizations.of(context)!;
     if (_body.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       ThkAlert.show(
         context: context,
         message: l10n.noMessagesYet,
@@ -94,78 +102,55 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       return;
     }
 
+    // 1. 选位置
     final location = await showNodeLocationPicker(context, ref);
     if (location == null) return;
     if (!mounted) return;
 
-    final title = await _promptChatTitle(context);
-    if (title == null) return;
+    // 2. 解析 provider/model（笔记默认继承全局设置）
+    String? providerId;
+    String? modelId;
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings != null) {
+      providerId = _mapLegacyProviderToPresetId(settings.llmProvider);
+      modelId = settings.model;
+    }
+
+    // 3. 弹 sheet 选 mode
+    final mode = await showBranchModeSheet(context);
+    if (mode == null) return;
     if (!mounted) return;
 
-    try {
-      final nodeStore = await ref.read(nodeStoreProvider.future);
-      final node = await nodeStore.createChatNode(
-        themeId: location.themeId,
-        themePath: location.themePath,
-        parentId: location.parentId,
-        title: title,
-        systemPrompt: _body,
-      );
-
-      if (mounted) {
-        context.push('/themes/${location.themeId}/nodes/${node.nodeId}',
-            extra: title);
-      }
-    } catch (e) {
-      if (mounted) {
-        ThkAlert.show(
-          context: context,
-          message: e.toString(),
-          defaultAction: 'OK',
-        );
-      }
-    }
+    // 4. 调 showBranchFlow：source = 笔记正文（_body），label = "笔记"
+    await showBranchFlow(
+      context: context,
+      mode: mode,
+      selectedText: null,
+      parentTranscript: _body,
+      providerId: providerId,
+      modelId: modelId,
+      themeId: location.themeId,
+      parentNodeId: location.parentId,
+      sourceLabelOverride: AppLocalizations.of(context)!.notes,
+    );
   }
 
-  Future<String?> _promptChatTitle(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    return showCupertinoDialog<String>(
-      context: context,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: Text(l10n.chatTitle),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: ThkTextField(
-              controller: controller,
-              placeholder: l10n.titleHint,
-              autofocus: true,
-              onSubmitted: (value) {
-                final composing = controller.value.composing;
-                if (composing.isValid && !composing.isCollapsed) return;
-                Navigator.of(context)
-                    .pop(value.trim().isEmpty ? null : value.trim());
-              },
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancel),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () {
-                final value = controller.text.trim();
-                Navigator.of(context).pop(value.isEmpty ? null : value);
-              },
-              child: Text(l10n.create),
-            ),
-          ],
-        );
-      },
-    );
+  /// 将旧版 LlmProvider 枚举映射到新系统的 preset provider id。
+  String _mapLegacyProviderToPresetId(LlmProvider provider) {
+    switch (provider) {
+      case LlmProvider.claude:
+        return 'preset_anthropic';
+      case LlmProvider.deepseek:
+        return 'preset_deepseek';
+      case LlmProvider.openai:
+        return 'preset_openai';
+      case LlmProvider.gemini:
+        return 'preset_gemini';
+      case LlmProvider.minimax:
+        return 'preset_minimax';
+      case LlmProvider.kimi:
+        return 'preset_kimi';
+    }
   }
 
   @override
@@ -190,7 +175,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: _createChatFromNote,
-              child: Icon(AppIcons.forum),
+              child: Icon(AppIcons.branch),
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
@@ -247,7 +232,14 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Text(_body, style: AppTheme.body),
+      child: CupertinoTextField(
+        controller: TextEditingController(text: _body),
+        readOnly: true,
+        maxLines: null,
+        style: AppTheme.body,
+        decoration: const BoxDecoration(), // no border
+        padding: EdgeInsets.zero,
+      ),
     );
   }
 }
@@ -317,60 +309,44 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return CupertinoPageScaffold(
-      child: CustomScrollView(
-        slivers: [
-          CupertinoSliverNavigationBar(
-            middle: Text(l10n.notes),
-          ),
-          CupertinoSliverRefreshControl(
-            onRefresh: _load,
-          ),
-          ..._buildSlivers(l10n),
-        ],
+      navigationBar: ThkNavBar.inline(
+        title: l10n.notes,
+      ),
+      child: SafeArea(
+        top: false,
+        child: _buildBody(l10n),
       ),
     );
   }
 
-  List<Widget> _buildSlivers(AppLocalizations l10n) {
+  Widget _buildBody(AppLocalizations l10n) {
     if (_loading) {
-      return [
-        const SliverFillRemaining(
-          child: Center(child: CupertinoActivityIndicator()),
-        ),
-      ];
+      return const Center(child: CupertinoActivityIndicator());
     }
     if (_error != null) {
-      return [
-        SliverFillRemaining(
-          child: Center(
-            child: Text(
-              '${l10n.noNotesYet}: $_error',
-              style: const TextStyle(color: CupertinoColors.systemRed),
-            ),
-          ),
+      return Center(
+        child: Text(
+          '${l10n.noNotesYet}: $_error',
+          style: const TextStyle(color: CupertinoColors.systemRed),
         ),
-      ];
+      );
     }
     final metas = _metas ?? [];
     if (metas.isEmpty) {
-      return [
-        SliverFillRemaining(
-          child: Center(
-            child: Text(
-              l10n.noNotesYet,
-              style: const TextStyle(color: CupertinoColors.secondaryLabel),
-            ),
-          ),
+      return Center(
+        child: Text(
+          l10n.noNotesYet,
+          style: const TextStyle(color: CupertinoColors.secondaryLabel),
         ),
-      ];
+      );
     }
-    return [
-      SliverToBoxAdapter(
-        child: ThkListSection(
+    return ListView(
+      children: [
+        ThkListSection(
           children: metas
               .map((meta) => ThkListTile(
                     title: meta.title,
-                    subtitle: '${meta.noteId} · ${meta.updatedAt}',
+                    subtitle: '${meta.noteId} \u00b7 ${meta.updatedAt}',
                     onTap: () {
                       Navigator.of(context).push(
                         CupertinoPageRoute(
@@ -384,7 +360,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
                   ))
               .toList(),
         ),
-      ),
-    ];
+      ],
+    );
   }
 }

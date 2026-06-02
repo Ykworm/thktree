@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show SelectionArea;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
-import 'package:thk_tree/ui/features/summary/summary_route_params.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
 import 'package:thk_tree/ui/features/notes/note_select_screen.dart';
@@ -16,14 +16,25 @@ import 'package:thk_tree/data/services/llm_provider.dart' show estimateTokens, L
 import 'package:thk_tree/ui/core/shared/chat_composer.dart';
 import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
+import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.themeId, required this.nodeId, required this.title});
+  const ChatScreen({
+    super.key,
+    required this.themeId,
+    required this.nodeId,
+    required this.title,
+    this.autoTriggerReply = false,
+  });
 
   final String themeId;
   final String nodeId;
   final String title;
+
+  /// 若为 true，chat 加载完后若最后一条是 user 消息（status == done），
+  /// 会自动调一次 LLM 回复（用于"笔记→对话自动续聊"和"summary 创建分支"场景）。
+  final bool autoTriggerReply;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -32,11 +43,16 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final ChatControllerParams _args;
   bool _showModelPanel = false;
+  String? _currentSelectedText;
 
   @override
   void initState() {
     super.initState();
-    _args = ChatControllerParams(widget.nodeId, widget.title);
+    _args = ChatControllerParams(
+      nodeId: widget.nodeId,
+      title: widget.title,
+      autoTriggerReply: widget.autoTriggerReply,
+    );
   }
 
   /// 将旧版 LlmProvider 枚举映射到新系统的 preset provider id。
@@ -110,8 +126,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final modelSubtitle = _resolveModelSubtitle(currentProviderId, currentModelId);
 
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.white,
       navigationBar: ThkNavBar.inline(
-        title: widget.title,
+        title: '',
+        middle: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (modelSubtitle != null)
+              Text(
+                modelSubtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,
@@ -124,105 +161,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           },
           child: const Icon(AppIcons.back),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              onPressed: () {
-                if (isStreaming) return;
-                FocusScope.of(context).unfocus();
-                setState(() => _showModelPanel = !_showModelPanel);
-              },
-              child: Icon(
-                CupertinoIcons.bolt,
-                size: 22,
-                color: isStreaming
-                    ? CupertinoColors.systemGrey.resolveFrom(context)
-                    : CupertinoColors.systemBlue.resolveFrom(context),
-              ),
-            ),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              onPressed: () => context.go('/themes/${widget.themeId}/tree'),
-              child: const Icon(AppIcons.accountTree, size: 22),
-            ),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              onPressed: () async {
-                try {
-                  final title = await _promptTitle(context);
-                  if (title == null) return;
-                  
-                  final nodeStore = await ref.read(nodeStoreProvider.future);
-                  final row = await nodeStore.getNodeRow(nodeId: widget.nodeId);
-                  final sessionPath = row['sessionPath'] as String;
-                  final sessionFile = File(sessionPath);
-                  String? parentSessionText;
-                  if (await sessionFile.exists()) {
-                    final rawText = await sessionFile.readAsString();
-                    final doc = parseSessionMarkdown(rawText);
-                    parentSessionText = buildConversationTranscript(doc);
-                  } else {
-                    parentSessionText = '';
-                  }
-                  
-                  if (!context.mounted) return;
-                  
-                  final params = SummaryRouteParams(
-                    themeId: widget.themeId,
-                    parentNodeId: widget.nodeId,
-                    branchTitle: title,
-                    parentSessionText: parentSessionText,
-                  );
-                  
-                  context.push(
-                    '/themes/${widget.themeId}/nodes/${widget.nodeId}/summary',
-                    extra: params,
-                  );
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ThkAlert.show(
-                    context: context,
-                    message: l10n.branchFailed(e.toString()),
-                  );
-                }
-              },
-              child: const Icon(AppIcons.callSplit, size: 22),
-            ),
-          ],
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          onPressed: isStreaming ? null : () => _onCreateBranchFromMenu(context),
+          child: Icon(
+            AppIcons.branch,
+            size: 24,
+            color: isStreaming
+                ? CupertinoColors.systemGrey.resolveFrom(context)
+                : CupertinoColors.systemBlue.resolveFrom(context),
+          ),
         ),
       ),
       child: Column(
         children: [
-          if (modelSubtitle != null)
-            Container(
-              width: double.infinity,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                modelSubtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
           // 消息列表 - 面板出现时它会被压缩变小
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
               child: messagesAsync.when(
-                data: (messages) => ChatListView(
-                  messages: messages,
-                  messageBuilder: (context, message) => MessageBubble(
-                    message: message,
-                    onAddToNote: (selectedText) => _onAddToNote(context, selectedText),
+                data: (messages) => SelectionArea(
+                  onSelectionChanged: (value) {
+                    final text = value?.plainText;
+                    if (text != null && text.trim().isNotEmpty) {
+                      _currentSelectedText = text;
+                    }
+                  },
+                  child: ChatListView(
+                    messages: messages,
+                    messageBuilder: (context, message) => MessageBubble(
+                      message: message,
+                    ),
                   ),
                 ),
                 error: (e, st) => Center(child: Text(e.toString())),
@@ -245,8 +216,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onSend: (text) {
               return ref.read(chatControllerProvider(_args).notifier).sendUserMessage(text);
             },
-            onStopStreaming: () {
-              return ref.read(chatControllerProvider(_args).notifier).stopStreaming();
+            onStopStreaming: () async {
+              ref.read(chatControllerProvider(_args).notifier).stopStreaming();
             },
             onModelSelectorTap: () {
               if (isStreaming) return;
@@ -292,6 +263,90 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+
+  /// 从顶部 branch 按钮进入：先弹 sheet 让用户选 mode，再 [_showBranchFlow]。
+  Future<void> _onCreateBranchFromMenu(BuildContext context) async {
+    // 在弹 sheet 之前读取选中文本，避免选区被清除
+    final selected = _currentSelectedText;
+    debugPrint('[ChatScreen] _onCreateBranchFromMenu: selectedText=${selected?.length ?? 'null'} chars');
+
+    final mode = await showBranchModeSheet(context);
+    if (mode == null) return;
+    if (!context.mounted) return;
+
+    await _showBranchFlow(
+      context,
+      mode: mode,
+      selectedText: selected?.trim().isNotEmpty == true ? selected : null,
+    );
+  }
+
+  /// 触发"创建分支"全流程。
+  ///
+  /// [mode] 决定是否需要先 LLM 总结：
+  /// - [BranchMode.summarize] 且 [selectedText] 为空：先 LLM 总结当前对话。
+  /// - [BranchMode.raw]：[selectedText] 非空时用选中文本；为空时用 parentTranscript 原文。
+  ///
+  /// [selectedText] 非空时会被直接使用，忽略 mode 中的总结步骤（用户从选区菜单进入）。
+  ///
+  /// 实际逻辑委托给 [showBranchFlow] 顶层函数，这里只负责：
+  /// 1. 构造 [parentTranscript]（从 session.md 读）
+  /// 2. 解析 providerId/modelId（chat 级 → 全局设置）
+  Future<void> _showBranchFlow(
+    BuildContext context, {
+    required BranchMode mode,
+    String? selectedText,
+  }) async {
+    debugPrint('[ChatScreen._showBranchFlow] mode=$mode, '
+        'selectedText=${selectedText?.length ?? 'null'} chars, '
+        'preview=${selectedText?.substring(0, (selectedText.length).clamp(0, 80)) ?? 'null'}');
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      // 1. 构造 parentTranscript
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      final row = await nodeStore.getNodeRow(nodeId: widget.nodeId);
+      final sessionPath = row['sessionPath'] as String;
+      final sessionFile = File(sessionPath);
+      String parentTranscript = '';
+      if (await sessionFile.exists()) {
+        final rawText = await sessionFile.readAsString();
+        final doc = parseSessionMarkdown(rawText);
+        parentTranscript = buildConversationTranscript(doc);
+      }
+
+      if (!context.mounted) return;
+
+      // 2. 解析 providerId / modelId
+      final chatCtrl = ref.read(chatControllerProvider(_args).notifier);
+      String? providerId = chatCtrl.providerId;
+      String? modelId = chatCtrl.modelId;
+      final settings = ref.read(settingsControllerProvider).value;
+      if (settings != null) {
+        providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
+        modelId ??= settings.model;
+      }
+
+      if (!context.mounted) return;
+
+      // 3. 调顶层 showBranchFlow
+      await showBranchFlow(
+        context: context,
+        mode: mode,
+        selectedText: selectedText,
+        parentTranscript: parentTranscript,
+        providerId: providerId,
+        modelId: modelId,
+        themeId: widget.themeId,
+        parentNodeId: widget.nodeId,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: l10n.branchFailed(e.toString()),
+      );
+    }
+  }
 }
 
 class _ContextUsageBar extends StatelessWidget {
@@ -312,8 +367,8 @@ class _ContextUsageBar extends StatelessWidget {
             : CupertinoColors.systemTeal;
 
     return Container(
-      height: 2.5,
-      color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: 0.3),
+      height: 1,
+      color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: 0.15),
       child: Align(
         alignment: Alignment.centerLeft,
         child: FractionallySizedBox(
@@ -331,44 +386,4 @@ class _ContextUsageBar extends StatelessWidget {
     }
     return total;
   }
-}
-
-Future<String?> _promptTitle(BuildContext context) async {
-  final l10n = AppLocalizations.of(context)!;
-  final controller = TextEditingController();
-  return showCupertinoDialog<String>(
-    context: context,
-    builder: (context) {
-      return CupertinoAlertDialog(
-        title: Text(l10n.newBranch),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: ThkTextField(
-            placeholder: l10n.titleHint,
-            controller: controller,
-            autofocus: true,
-            onSubmitted: (value) {
-              final composing = controller.value.composing;
-              if (composing.isValid && !composing.isCollapsed) return;
-              Navigator.of(context).pop(value.trim().isEmpty ? null : value.trim());
-            },
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.cancel),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () {
-              final value = controller.text.trim();
-              Navigator.of(context).pop(value.isEmpty ? null : value);
-            },
-            child: Text(l10n.create),
-          ),
-        ],
-      );
-    },
-  );
 }

@@ -306,8 +306,8 @@
   "uncategorized": "Uncategorized",
   "@uncategorized": { "description": "Display name of the catch-all theme used for notes created from the notes tab" },
 
-  "llmProvidersTitle": "LLM Providers",
-  "@llmProvidersTitle": { "description": "Title for LLM providers management screen" },
+  "llmProvidersTitle": "Model Providers",
+  "@llmProvidersTitle": { "description": "Title for model providers management screen" },
 
   "llmProviderCustom": "Custom",
   "@llmProviderCustom": { "description": "Label for custom LLM provider" },
@@ -440,5 +440,88 @@
   "@chatTitle": { "description": "Label for chat title input" },
 
   "chatCreated": "Chat created successfully",
-  "@chatCreated": { "description": "SnackBar message after chat is created" }
+  "@chatCreated": { "description": "SnackBar message after chat is created" },
+
+  "themesTabLabel": "Themes",
+  "@themesTabLabel": { "description": "Tab bar label for the themes/tree tab" },
+
+  "settingsTabLabel": "Settings",
+  "@settingsTabLabel": { "description": "Tab bar label for the settings tab" },
+
+  "createBranchRawFromSelection": "Create Branch from Selection",
+  "@createBranchRawFromSelection": { "description": "Menu item shown when text is selected to create a new branch directly from the selection (raw mode)" },
+
+  "createBranchSummarizeFromSelection": "Summarize Selection, then Create Branch",
+  "@createBranchSummarizeFromSelection": { "description": "Menu item shown when text is selected to create a new branch by first LLM-summarizing the selection" },
+
+  "chooseTitle": "Choose Title",
+  "@chooseTitle": { "description": "Title of the title-suggestion screen for creating a new branch" },
+
+  "titleSourceBanner": "Branch from {source}",
+  "@titleSourceBanner": {
+    "description": "Banner showing the source of the new branch on the title-suggestion screen",
+    "placeholders": {
+      "source": { "type": "String" }
+    }
+  },
+
+  "titleSourceSelection": "Selected Text",
+  "@titleSourceSelection": { "description": "Source label when the branch is created from a text selection" },
+
+  "titleSourceConversation": "Conversation",
+  "@titleSourceConversation": { "description": "Source label when the branch is created from the raw conversation" },
+
+  "titleSourceConversationSummary": "Conversation Summary",
+  "@titleSourceConversationSummary": { "description": "Source label when the branch is created from an LLM-summarized conversation" },
+
+  "titleSourceNote": "Note",
+  "@titleSourceNote": { "description": "Source label when the branch is created from a note" },
+
+  "titleDirectionHint": "Direction (optional)",
+  "@titleDirectionHint": { "description": "Hint text for the optional direction input used when regenerating candidate titles" },
+
+  "titleRegenerate": "Regenerate",
+  "@titleRegenerate": { "description": "Button to regenerate LLM candidate titles" },
+
+  "titleGenerating": "Generating titles...",
+  "@titleGenerating": { "description": "Loading state while LLM is generating candidate titles" },
+
+  "titleAutoGenFailed": "Generation failed",
+  "@titleAutoGenFailed": { "description": "Label shown when LLM candidate title generation fails" },
+
+  "titleModelSwitch": "Switch Model",
+  "@titleModelSwitch": { "description": "Action to switch to a different LLM model when generation fails" },
+
+  "titleCandidatesEmpty": "No candidates yet. Try a different direction.",
+  "@titleCandidatesEmpty": { "description": "Empty state hint on the title-suggestion screen" },
+
+  "titleConfirm": "Confirm",
+  "@titleConfirm": { "description": "Confirm button on the title-suggestion screen" },
+
+  "summarizing": "Summarizing conversation...",
+  "@summarizing": { "description": "Loading state while LLM is summarizing the source conversation" },
+
+  "summarizeFailedFallback": "Summarization failed, using raw conversation as branch source",
+  "@summarizeFailedFallback": { "description": "Fallback message when conversation summarization fails" },
+
+  "branchModeSheetTitle": "Choose how to create the branch",
+  "@branchModeSheetTitle": { "description": "Title of the action sheet that lets the user pick raw vs summarized branch creation" },
+
+  "branchModeSummarize": "Summarize, then create",
+  "@branchModeSummarize": { "description": "Action sheet option: create a branch from an LLM summary of the source context" },
+
+  "branchModeRaw": "Use the original context",
+  "@branchModeRaw": { "description": "Action sheet option: create a branch from the raw (un-summarized) source context" },
+
+  "branchModeContinue": "Continue",
+  "@branchModeContinue": { "description": "Action sheet submit button: must be enabled only after the user picks one of the two modes" },
+
+  "networkInterrupted": "Network interrupted. Please retry.",
+  "@networkInterrupted": { "description": "Friendly message when a streaming LLM request is interrupted by app backgrounding" },
+
+  "branchRetry": "Retry",
+  "@branchRetry": { "description": "Action button to retry the failed LLM summary call" },
+
+  "branchCancelRetry": "Cancel",
+  "@branchCancelRetry": { "description": "Action button to dismiss the retry prompt and abort the branch flow" }
 }

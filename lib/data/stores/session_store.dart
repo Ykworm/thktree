@@ -86,18 +86,15 @@ class SessionStore {
 
   Future<bool> finishStreamingMessage({required String nodeId}) async {
     return _queue.run(nodeId, () async {
-      dev.log('[SessionStore.finishStreamingMessage] called, nodeId=$nodeId');
       final path = await getSessionPathForNode(nodeId);
       final file = File(path);
       final content = await file.readAsString();
       final (withoutMarker, found) = _stripStreamingMarker(content);
-      dev.log('[SessionStore.finishStreamingMessage] nodeId=$nodeId, found=$found');
       if (!found) {
         return false;
       }
       final updated = '${withoutMarker.trimRight()}\n';
       await _atomicWriteString(path, updated);
-      dev.log('[SessionStore.finishStreamingMessage] done, nodeId=$nodeId');
       return true;
     });
   }

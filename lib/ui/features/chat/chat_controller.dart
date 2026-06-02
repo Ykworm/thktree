@@ -6,14 +6,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
+import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/stores/session_store.dart';
 
 class ChatControllerParams {
+  const ChatControllerParams({
+    required this.nodeId,
+    required this.title,
+    this.autoTriggerReply = false,
+  });
+
   final String nodeId;
   final String title;
 
-  ChatControllerParams(this.nodeId, this.title);
+  /// 为 true 且最后一条消息是 user 消息（status == done）时，
+  /// build() 完成后会自动调一次 LLM 回复（不追加 user 消息）。
+  ///
+  /// 用于"笔记→对话自动续聊"和"summary 创建分支"等场景。
+  final bool autoTriggerReply;
 }
 
 class ChatController extends AsyncNotifier<List<SessionMessage>> {
@@ -67,6 +78,29 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     // 读取并缓存对话级模型信息
     await _loadSessionModel();
 
+    // 自动续聊：若需要且最后一条是 user 消息 + status done，
+    // 调度一个微任务在 build() 返回后调一次 LLM。
+    if (params.autoTriggerReply) {
+      final lastMsg = result.isEmpty ? null : result.last;
+      if (lastMsg != null &&
+          lastMsg.role == SessionRole.user &&
+          lastMsg.status == SessionMessageStatus.done) {
+        Future.microtask(() async {
+          try {
+            await _triggerAssistantReply();
+          } catch (e, st) {
+            _trace('chat_controller.auto_trigger_reply_error');
+            try {
+              final logger = await ref.read(appLoggerProvider.future);
+              await logger.error(e, st,
+                  hint: 'autoTriggerReply',
+                  attrs: {'nodeId': nodeId, 'title': title});
+            } catch (_) {}
+          }
+        });
+      }
+    }
+
     return result;
   }
 
@@ -101,9 +135,10 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     state = AsyncData(await _read());
   }
 
-  Future<void> stopStreaming() async {
-    _trace('chat_controller.stop_streaming', attrs: {'hasHandle': _handle != null});
-    final handle = _handle;
+  /// 取消当前流：只做取消 + 乐观更新，不做磁盘 I/O。
+  /// 磁盘清理（删除 <!-- streaming -->）交给 onDone 回调自然完成。
+  void _cancelCurrentStream() {
+    _trace('chat_controller.cancel_current_stream', attrs: {'hasHandle': _handle != null});
     _stopRequested = true;
     _streamGeneration++;
     _handle = null;
@@ -111,7 +146,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     _cancelToken?.cancel('user_stop');
     _cancelToken = null;
 
-    // 乐观更新：立即将 streaming 消息标记为 done，让 UI 立刻切换按钮
+    // 乐观更新：让 UI 快速响应
     final currentMessages = state.value ?? [];
     state = AsyncData(currentMessages.map((m) {
       if (m.status == SessionMessageStatus.streaming) {
@@ -126,47 +161,44 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       return m;
     }).toList());
 
+    // 取消订阅（不阻塞）
     final sub = _streamSub;
     _streamSub = null;
-    // 取消订阅可能抛出 pending 的 DioException，静默处理
     try {
-      await sub?.cancel();
+      sub?.cancel();
     } catch (_) {}
 
-    try {
-      final sessionStore = await ref.read(sessionStoreProvider.future);
-      _trace('chat_controller.stop_streaming_got_sessionStore');
-      if (handle != null) {
-        _trace('chat_controller.finish_assistant');
-        await sessionStore.finishAssistant(handle: handle);
-      } else {
-        _trace('chat_controller.finish_streaming_message');
-        await sessionStore.finishStreamingMessage(nodeId: nodeId);
-      }
-      _trace('chat_controller.stop_streaming_done');
-      state = AsyncData(await _read());
-    } catch (e, st) {
-      _trace('chat_controller.stop_streaming_error');
-      try {
-        final logger = await ref.read(appLoggerProvider.future);
-        await logger.error(e, st, hint: 'stopStreaming', attrs: {'nodeId': nodeId, 'title': title});
-      } catch (_) {}
-    } finally {
-      _stopRequested = false;
-    }
+    _stopRequested = false;
   }
+
+  /// 停止流式生成（供 UI 调用，如 Stop 按钮）
+  void stopStreaming() => _cancelCurrentStream();
 
   Future<List<SessionMessage>> _read() async {
     try {
-      _trace('chat_controller.read_start');
       final store = await ref.read(sessionStoreProvider.future);
-      _trace('chat_controller.read_got_sessionStore');
       final doc = await store.readSession(nodeId);
-      final streamingCount = doc.messages.where((m) => m.status == SessionMessageStatus.streaming).length;
-      _trace('chat_controller.read_done', attrs: {'messages': doc.messages.length, 'streaming': streamingCount});
+
+      // 自愈：如果没有活跃流，残留的 streaming 标记一定是过时的
+      // 只修正返回值，不写磁盘，避免与其他读操作竞争
+      final hasStreaming = doc.messages.any((m) => m.status == SessionMessageStatus.streaming);
+      if (hasStreaming && _handle == null) {
+        return doc.messages.map((m) {
+          if (m.status == SessionMessageStatus.streaming) {
+            return SessionMessage(
+              role: m.role,
+              timestampUtcIso8601: m.timestampUtcIso8601,
+              msgId: m.msgId,
+              body: m.body,
+              status: SessionMessageStatus.done,
+            );
+          }
+          return m;
+        }).toList();
+      }
+
       return doc.messages;
     } catch (e, st) {
-      _trace('chat_controller.read_error');
       try {
         final logger = await ref.read(appLoggerProvider.future);
         await logger.error(e, st, hint: '_read', attrs: {'nodeId': nodeId, 'title': title});
@@ -175,24 +207,83 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     }
   }
 
+  /// 在 build() 完成后由 [ChatControllerParams.autoTriggerReply] 调度执行。
+  ///
+  /// 复用 [sendUserMessage] 里的 provider/model 解析链（对话级 → 第一个有 key 的
+  /// provider → 全局设置），但**不** append user 消息，直接开始流式回复。
+  Future<void> _triggerAssistantReply() async {
+    _trace('chat_controller.trigger_assistant_reply');
+    final sessionProviderId = _providerId;
+    final sessionModelId = _modelId;
+
+    if (sessionProviderId != null && sessionModelId != null) {
+      final configStore = ref.read(llmConfigStoreProvider);
+      final provider = await configStore.getProvider(sessionProviderId);
+      if (provider == null) {
+        _trace('chat_controller.provider_not_found',
+            attrs: {'providerId': sessionProviderId});
+        return;
+      }
+      final apiKey = await configStore.readApiKey(sessionProviderId);
+      if (apiKey.isEmpty) return;
+      await _startStreamingWithConfig(
+        client: LlmClient.forConfig(provider),
+        apiKey: apiKey,
+        model: sessionModelId,
+      );
+      return;
+    }
+
+    // Fallback: 第一个有 key 且有 model 的 provider
+    final configStore = ref.read(llmConfigStoreProvider);
+    final providers = await configStore.loadAll();
+    for (final p in providers) {
+      final key = await configStore.readApiKey(p.id);
+      if (key.isNotEmpty && p.models.isNotEmpty) {
+        await _startStreamingWithConfig(
+          client: LlmClient.forConfig(p),
+          apiKey: key,
+          model: p.models.first.id,
+        );
+        return;
+      }
+    }
+
+    // 最终 fallback: 旧全局 settings
+    final settings = await _loadSettings();
+    if (settings.apiKey.isEmpty) return;
+    await _startStreamingWithSettings(settings);
+  }
+
   Future<void> sendUserMessage(String text) async {
     try {
       final trimmed = text.trim();
       if (trimmed.isEmpty) return;
 
-      await stopStreaming();
+      // 1. 取消当前流（同步，不阻塞）
+      _cancelCurrentStream();
 
+      // 2. 乐观追加用户消息到 state（不读磁盘）
+      final timestamp = DateTime.now().toUtc().toIso8601String();
+      final userMsg = SessionMessage(
+        role: SessionRole.user,
+        timestampUtcIso8601: timestamp,
+        msgId: 'pending',
+        body: trimmed,
+        status: SessionMessageStatus.done,
+      );
+      final current = state.value ?? [];
+      state = AsyncData([...current, userMsg]);
+
+      // 3. 磁盘写入（异步，不阻塞 UI）
       final sessionStore = await ref.read(sessionStoreProvider.future);
       await sessionStore.appendUserMessage(nodeId: nodeId, content: trimmed);
-
-      state = AsyncData(await _read());
 
       // 判断使用对话级模型还是全局设置
       final sessionProviderId = _providerId;
       final sessionModelId = _modelId;
 
       if (sessionProviderId != null && sessionModelId != null) {
-        // 使用对话级模型
         final configStore = ref.read(llmConfigStoreProvider);
         final provider = await configStore.getProvider(sessionProviderId);
         if (provider == null) {
@@ -219,17 +310,38 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           model: sessionModelId,
         );
       } else {
-        // 回退到全局设置
-        final settings = await _loadSettings();
-        if (settings.apiKey.isEmpty) {
-          await sessionStore.appendAssistantMessage(
-            nodeId: nodeId,
-            content: '[未配置 API Key] 请到 Settings 设置 ${settings.llmProvider.displayName} API Key。',
-          );
-          state = AsyncData(await _read());
-          return;
+        final configStore = ref.read(llmConfigStoreProvider);
+        final providers = await configStore.loadAll();
+        String? fallbackApiKey;
+        String? fallbackModel;
+        LlmProviderConfig? fallbackProvider;
+        for (final p in providers) {
+          final key = await configStore.readApiKey(p.id);
+          if (key.isNotEmpty && p.models.isNotEmpty) {
+            fallbackApiKey = key;
+            fallbackModel = p.models.first.id;
+            fallbackProvider = p;
+            break;
+          }
         }
-        await _startStreamingWithSettings(settings);
+        if (fallbackApiKey != null && fallbackApiKey.isNotEmpty) {
+          await _startStreamingWithConfig(
+            client: LlmClient.forConfig(fallbackProvider!),
+            apiKey: fallbackApiKey,
+            model: fallbackModel!,
+          );
+        } else {
+          final settings = await _loadSettings();
+          if (settings.apiKey.isEmpty) {
+            await sessionStore.appendAssistantMessage(
+              nodeId: nodeId,
+              content: '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。',
+            );
+            state = AsyncData(await _read());
+            return;
+          }
+          await _startStreamingWithSettings(settings);
+        }
       }
     } catch (e, st) {
       final logger = await ref.read(appLoggerProvider.future);
@@ -289,7 +401,9 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           if (_stopRequested || generation != _streamGeneration) return;
           await sessionStore.appendAssistantDelta(handle: handle, delta: delta);
           if (_stopRequested || generation != _streamGeneration) return;
-          state = AsyncData(await _read());
+          final readResult = await _read();
+          if (_stopRequested || generation != _streamGeneration) return; // 读取完成后再检查一次
+          state = AsyncData(readResult);
         } catch (e, st) {
           final logger = await ref.read(appLoggerProvider.future);
           await logger.error(e, st, hint: 'appendAssistantDelta', attrs: {'nodeId': nodeId, 'title': title});
@@ -304,19 +418,27 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
         }
         final logger = await ref.read(appLoggerProvider.future);
         await logger.error(e, st, hint: 'LLM stream error', attrs: {'nodeId': nodeId, 'title': title});
+        if (_stopRequested) return;
         await sessionStore.failAssistant(handle: handle, code: 'network');
+        if (_stopRequested) return;
         _handle = null;
         _cancelToken = null;
-        state = AsyncData(await _read());
+        final readResult = await _read();
+        if (_stopRequested) return; // 读取完成后再检查一次
+        state = AsyncData(readResult);
       },
       onDone: () async {
         final handle = _handle;
         if (handle == null) return;
         try {
+          if (_stopRequested) return;
           await sessionStore.finishAssistant(handle: handle);
+          if (_stopRequested) return;
           _handle = null;
           _cancelToken = null;
-          state = AsyncData(await _read());
+          final readResult = await _read();
+          if (_stopRequested) return; // 读取完成后再检查一次
+          state = AsyncData(readResult);
         } catch (e, st) {
           final logger = await ref.read(appLoggerProvider.future);
           await logger.error(e, st, hint: 'finishAssistant', attrs: {'nodeId': nodeId, 'title': title});

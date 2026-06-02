@@ -80,6 +80,7 @@ class ThkTreeApp extends ConsumerWidget {
       theme: AppTheme.light,
       localizationsDelegates: const [
         AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],

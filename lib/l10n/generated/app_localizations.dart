@@ -590,10 +590,10 @@ abstract class AppLocalizations {
   /// **'Uncategorized'**
   String get uncategorized;
 
-  /// Title for LLM providers management screen
+  /// Title for model providers management screen
   ///
   /// In en, this message translates to:
-  /// **'LLM Providers'**
+  /// **'Model Providers'**
   String get llmProvidersTitle;
 
   /// Label for custom LLM provider
@@ -811,6 +811,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chat created successfully'**
   String get chatCreated;
+
+  /// Tab bar label for the themes/tree tab
+  ///
+  /// In en, this message translates to:
+  /// **'Themes'**
+  String get themesTabLabel;
+
+  /// Tab bar label for the settings tab
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTabLabel;
+
+  /// Menu item shown when text is selected to create a new branch directly from the selection (raw mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Create Branch from Selection'**
+  String get createBranchRawFromSelection;
+
+  /// Menu item shown when text is selected to create a new branch by first LLM-summarizing the selection
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize Selection, then Create Branch'**
+  String get createBranchSummarizeFromSelection;
+
+  /// Title of the title-suggestion screen for creating a new branch
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Title'**
+  String get chooseTitle;
+
+  /// Banner showing the source of the new branch on the title-suggestion screen
+  ///
+  /// In en, this message translates to:
+  /// **'Branch from {source}'**
+  String titleSourceBanner(String source);
+
+  /// Source label when the branch is created from a text selection
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Text'**
+  String get titleSourceSelection;
+
+  /// Source label when the branch is created from the raw conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get titleSourceConversation;
+
+  /// Source label when the branch is created from an LLM-summarized conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation Summary'**
+  String get titleSourceConversationSummary;
+
+  /// Source label when the branch is created from a note
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get titleSourceNote;
+
+  /// Hint text for the optional direction input used when regenerating candidate titles
+  ///
+  /// In en, this message translates to:
+  /// **'Direction (optional)'**
+  String get titleDirectionHint;
+
+  /// Button to regenerate LLM candidate titles
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get titleRegenerate;
+
+  /// Loading state while LLM is generating candidate titles
+  ///
+  /// In en, this message translates to:
+  /// **'Generating titles...'**
+  String get titleGenerating;
+
+  /// Label shown when LLM candidate title generation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Generation failed'**
+  String get titleAutoGenFailed;
+
+  /// Action to switch to a different LLM model when generation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Model'**
+  String get titleModelSwitch;
+
+  /// Empty state hint on the title-suggestion screen
+  ///
+  /// In en, this message translates to:
+  /// **'No candidates yet. Try a different direction.'**
+  String get titleCandidatesEmpty;
+
+  /// Confirm button on the title-suggestion screen
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get titleConfirm;
+
+  /// Loading state while LLM is summarizing the source conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Summarizing conversation...'**
+  String get summarizing;
+
+  /// Fallback message when conversation summarization fails
+  ///
+  /// In en, this message translates to:
+  /// **'Summarization failed, using raw conversation as branch source'**
+  String get summarizeFailedFallback;
+
+  /// Title of the action sheet that lets the user pick raw vs summarized branch creation
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to create the branch'**
+  String get branchModeSheetTitle;
+
+  /// Action sheet option: create a branch from an LLM summary of the source context
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize, then create'**
+  String get branchModeSummarize;
+
+  /// Action sheet option: create a branch from the raw (un-summarized) source context
+  ///
+  /// In en, this message translates to:
+  /// **'Use the original context'**
+  String get branchModeRaw;
+
+  /// Action sheet submit button: must be enabled only after the user picks one of the two modes
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get branchModeContinue;
+
+  /// Friendly message when a streaming LLM request is interrupted by app backgrounding
+  ///
+  /// In en, this message translates to:
+  /// **'Network interrupted. Please retry.'**
+  String get networkInterrupted;
+
+  /// Action button to retry the failed LLM summary call
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get branchRetry;
+
+  /// Action button to dismiss the retry prompt and abort the branch flow
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get branchCancelRetry;
 }
 
 class _AppLocalizationsDelegate

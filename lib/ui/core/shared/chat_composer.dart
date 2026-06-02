@@ -50,84 +50,93 @@ class _ChatComposerState extends State<ChatComposer> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Focus(
-                onKeyEvent: (node, event) {
-                  if (!widget.enabled) return KeyEventResult.ignored;
-                  if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                  if (event.logicalKey != LogicalKeyboardKey.enter &&
-                      event.logicalKey != LogicalKeyboardKey.numpadEnter) {
-                    return KeyEventResult.ignored;
-                  }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Focus(
+              onKeyEvent: (node, event) {
+                if (!widget.enabled) return KeyEventResult.ignored;
+                if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                if (event.logicalKey != LogicalKeyboardKey.enter &&
+                    event.logicalKey != LogicalKeyboardKey.numpadEnter) {
+                  return KeyEventResult.ignored;
+                }
+                final composing = _controller.value.composing;
+                if (composing.isValid && !composing.isCollapsed) {
+                  return KeyEventResult.ignored;
+                }
+                if (HardwareKeyboard.instance.isShiftPressed ||
+                    HardwareKeyboard.instance.isControlPressed) {
+                  _insertNewline();
+                  return KeyEventResult.handled;
+                }
+                _send();
+                return KeyEventResult.handled;
+              },
+              child: CupertinoTextField(
+                controller: _controller,
+                focusNode: _inputFocusNode,
+                enabled: widget.enabled,
+                autofocus: true,
+                minLines: 1,
+                maxLines: 6,
+                keyboardType: TextInputType.multiline,
+                autocorrect: false,
+                enableSuggestions: false,
+                textCapitalization: TextCapitalization.none,
+                smartDashesType: SmartDashesType.disabled,
+                smartQuotesType: SmartQuotesType.disabled,
+                placeholder: widget.hintText,
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                onSubmitted: (_) {
                   final composing = _controller.value.composing;
-                  if (composing.isValid && !composing.isCollapsed) {
-                    return KeyEventResult.ignored;
-                  }
+                  if (composing.isValid && !composing.isCollapsed) return;
                   if (HardwareKeyboard.instance.isShiftPressed ||
                       HardwareKeyboard.instance.isControlPressed) {
-                    _insertNewline();
-                    return KeyEventResult.handled;
+                    return;
                   }
                   _send();
-                  return KeyEventResult.handled;
                 },
-                child: CupertinoTextField(
-                  controller: _controller,
-                  focusNode: _inputFocusNode,
-                  enabled: widget.enabled,
-                  autofocus: true,
-                  minLines: 1,
-                  maxLines: 6,
-                  keyboardType: TextInputType.multiline,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  textCapitalization: TextCapitalization.none,
-                  smartDashesType: SmartDashesType.disabled,
-                  smartQuotesType: SmartQuotesType.disabled,
-                  placeholder: widget.hintText,
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.systemGrey6.resolveFrom(context),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: CupertinoColors.separator.resolveFrom(context),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  onSubmitted: (_) {
-                    final composing = _controller.value.composing;
-                    if (composing.isValid && !composing.isCollapsed) return;
-                    if (HardwareKeyboard.instance.isShiftPressed ||
-                        HardwareKeyboard.instance.isControlPressed) {
-                      return;
-                    }
-                    _send();
-                  },
-                ),
               ),
             ),
-            if (widget.onModelSelectorTap != null) ...[
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: widget.isStreaming ? null : widget.onModelSelectorTap,
+          ),
+          if (widget.onModelSelectorTap != null) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemBackground.resolveFrom(context),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: CupertinoButton(
+                padding: const EdgeInsets.all(8),
+                onPressed:
+                    widget.isStreaming ? null : widget.onModelSelectorTap,
                 child: Icon(
-                  CupertinoIcons.bolt,
+                  AppIcons.sparkles,
+                  size: 20,
                   color: widget.isStreaming
                       ? CupertinoColors.systemGrey.resolveFrom(context)
                       : CupertinoColors.systemBlue.resolveFrom(context),
                 ),
               ),
-              const SizedBox(width: 4),
-            ],
+            ),
             const SizedBox(width: 4),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
+          ],
+          const SizedBox(width: 4),
+          Container(
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemBackground.resolveFrom(context),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: CupertinoButton(
+              padding: const EdgeInsets.all(8),
               onPressed: widget.enabled
                   ? widget.isStreaming
                       ? _stopStreaming
@@ -135,14 +144,14 @@ class _ChatComposerState extends State<ChatComposer> {
                   : null,
               child: Icon(
                 widget.isStreaming ? AppIcons.stop : AppIcons.send,
-                size: 32,
+                size: 20,
                 color: widget.enabled
                     ? CupertinoColors.systemBlue.resolveFrom(context)
                     : CupertinoColors.systemGrey.resolveFrom(context),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -225,6 +225,8 @@ class _LlmProviderDetailScreenState
   // ─── 获取模型列表 ──────────────────────────────────────────────────
 
   Future<void> _fetchModels() async {
+    // 收起软键盘
+    FocusScope.of(context).unfocus();
     final l10n = AppLocalizations.of(context)!;
     final baseUrl = _baseUrlController.text.trim();
     final apiKey = _apiKeyController.text.trim();

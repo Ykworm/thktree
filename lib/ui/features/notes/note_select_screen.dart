@@ -222,6 +222,7 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
               controller: controller,
               placeholder: l10n.titleHint,
               autofocus: true,
+              maxLength: 30,
             ),
           ),
           actions: [

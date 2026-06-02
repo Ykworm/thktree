@@ -35,12 +35,8 @@ class LlmProvidersScreen extends ConsumerWidget {
       children: [
         providersAsync.when(
           data: (providers) => _ProviderList(providers: providers),
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CupertinoActivityIndicator()),
-          ),
-          error: (e, st) => SliverToBoxAdapter(
-            child: Center(child: Text(e.toString())),
-          ),
+          loading: () => const Center(child: CupertinoActivityIndicator()),
+          error: (e, st) => Center(child: Text(e.toString())),
         ),
       ],
     );
@@ -57,39 +53,28 @@ class _ProviderList extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     if (providers.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Center(child: Text(l10n.noModels)),
-      );
+      return Center(child: Text(l10n.noModels));
     }
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final provider = providers[index];
-          final isCustom = provider.type == LlmProviderType.custom;
-
-          return ThkListSection(
-            children: [
-              _ProviderTile(
-                provider: provider,
-                isCustom: isCustom,
-                onTap: () async {
-                  final result = await Navigator.of(context).push<bool>(
-                    CupertinoPageRoute(
-                      builder: (_) =>
-                          LlmProviderDetailScreen(provider: provider),
-                    ),
-                  );
-                  if (result == true) {
-                    ref.invalidate(llmProvidersProvider);
-                  }
-                },
+    return ThkListSection(
+      children: providers.map((provider) {
+        final isCustom = provider.type == LlmProviderType.custom;
+        return _ProviderTile(
+          provider: provider,
+          isCustom: isCustom,
+          onTap: () async {
+            final result = await Navigator.of(context).push<bool>(
+              CupertinoPageRoute(
+                builder: (_) =>
+                    LlmProviderDetailScreen(provider: provider),
               ),
-            ],
-          );
-        },
-        childCount: providers.length,
-      ),
+            );
+            if (result == true) {
+              ref.invalidate(llmProvidersProvider);
+            }
+          },
+        );
+      }).toList(),
     );
   }
 }

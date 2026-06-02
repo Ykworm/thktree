@@ -71,14 +71,17 @@ class _ChatListViewState extends State<ChatListView> {
         }
         return false;
       },
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(12),
-        itemCount: widget.messages.length,
-        itemBuilder: (context, index) {
-          final msg = widget.messages[index];
-          return widget.messageBuilder(context, msg);
-        },
+      child: Container(
+        color: CupertinoColors.white,
+        child: ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(12),
+          itemCount: widget.messages.length,
+          itemBuilder: (context, index) {
+            final msg = widget.messages[index];
+            return widget.messageBuilder(context, msg);
+          },
+        ),
       ),
     );
   }

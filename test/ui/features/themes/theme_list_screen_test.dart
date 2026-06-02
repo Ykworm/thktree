@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thk_tree/domain/theme.dart';
@@ -19,7 +20,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No themes yet'), findsOneWidget);
-      expect(find.byIcon(AppIcons.settings), findsOneWidget);
+      // 注意：settings 按钮已从 theme list 顶栏移除，改用底部 tab bar 入口（见 router.dart）。
       expect(find.byIcon(AppIcons.refresh), findsOneWidget);
       expect(find.byIcon(AppIcons.add), findsOneWidget);
     });
@@ -45,7 +46,8 @@ void main() {
 
       expect(find.text('My Theme'), findsOneWidget);
       expect(find.text('theme_1'), findsOneWidget);
-      expect(find.byIcon(AppIcons.chevronRight), findsOneWidget);
+      // ThkListTile.chevron 内部用 CupertinoListTileChevron 渲染（不用 AppIcons.chevronRight）。
+      expect(find.byType(CupertinoListTileChevron), findsOneWidget);
     });
 
     testWidgets('shows multiple themes in list', (tester) async {

@@ -29,11 +29,6 @@ class ThemeListScreen extends ConsumerWidget {
           ),
           CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () => context.push('/settings'),
-            child: Icon(AppIcons.settings),
-          ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
             onPressed: () async {
               final title = await _promptTitle(context);
               if (title == null) return;
@@ -96,6 +91,7 @@ Future<String?> _promptTitle(BuildContext context) async {
             controller: controller,
             placeholder: l10n.titleHint,
             autofocus: true,
+            maxLength: 30,
             onSubmitted: (value) {
               final composing = controller.value.composing;
               if (composing.isValid && !composing.isCollapsed) return;

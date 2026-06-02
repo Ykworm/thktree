@@ -76,61 +76,48 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
     }
     final l10n = AppLocalizations.of(context)!;
     return CupertinoPageScaffold(
-      child: CustomScrollView(
-        slivers: [
-          ThkNavBar.large(
-            title: l10n.notes,
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => _createNoteInUncategorized(context, ref),
-              child: Icon(AppIcons.add),
-            ),
-          ),
-          CupertinoSliverRefreshControl(
-            onRefresh: _load,
-          ),
-          ..._buildSlivers(l10n),
-        ],
+      navigationBar: ThkNavBar.inline(
+        title: l10n.notes,
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => _createNoteInUncategorized(context, ref),
+          child: Icon(AppIcons.add),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: _buildBody(l10n),
       ),
     );
   }
 
-  List<Widget> _buildSlivers(AppLocalizations l10n) {
+  Widget _buildBody(AppLocalizations l10n) {
     if (_loading) {
-      return [
-        const SliverFillRemaining(
-          child: Center(child: CupertinoActivityIndicator()),
-        ),
-      ];
+      return const Center(child: CupertinoActivityIndicator());
     }
     if (_error != null) {
-      return [
-        SliverFillRemaining(
-          child: Center(
-            child: Text(
-              _error.toString(),
-              style: const TextStyle(color: CupertinoColors.systemRed),
-            ),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            _error.toString(),
+            style: const TextStyle(color: CupertinoColors.systemRed),
           ),
         ),
-      ];
+      );
     }
     final themes = _themes ?? [];
     if (themes.isEmpty) {
-      return [
-        SliverFillRemaining(
-          child: Center(
-            child: Text(
-              l10n.noNotesYet,
-              style: const TextStyle(color: CupertinoColors.secondaryLabel),
-            ),
-          ),
+      return Center(
+        child: Text(
+          l10n.noNotesYet,
+          style: const TextStyle(color: CupertinoColors.secondaryLabel),
         ),
-      ];
+      );
     }
-    return [
-      SliverToBoxAdapter(
-        child: ThkListSection(
+    return ListView(
+      children: [
+        ThkListSection(
           children: themes
               .map((tn) => ThkListTile(
                     title: localizedThemeTitle(l10n, tn.title),
@@ -148,8 +135,8 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
                   ))
               .toList(),
         ),
-      ),
-    ];
+      ],
+    );
   }
 }
 

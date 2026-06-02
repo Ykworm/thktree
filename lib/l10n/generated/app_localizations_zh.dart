@@ -287,7 +287,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uncategorized => '未分类';
 
   @override
-  String get llmProvidersTitle => 'LLM 提供商';
+  String get llmProvidersTitle => '模型提供商';
 
   @override
   String get llmProviderCustom => '自定义';
@@ -406,4 +406,84 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatCreated => '对话创建成功';
+
+  @override
+  String get themesTabLabel => '主题';
+
+  @override
+  String get settingsTabLabel => '设置';
+
+  @override
+  String get createBranchRawFromSelection => '用所选文字直接创建';
+
+  @override
+  String get createBranchSummarizeFromSelection => '总结所选文字后创建';
+
+  @override
+  String get chooseTitle => '选择标题';
+
+  @override
+  String titleSourceBanner(String source) {
+    return '从 $source 创建分支';
+  }
+
+  @override
+  String get titleSourceSelection => '选中文本';
+
+  @override
+  String get titleSourceConversation => '对话';
+
+  @override
+  String get titleSourceConversationSummary => '对话总结';
+
+  @override
+  String get titleSourceNote => '笔记';
+
+  @override
+  String get titleDirectionHint => '方向引导（可选）';
+
+  @override
+  String get titleRegenerate => '重新生成';
+
+  @override
+  String get titleGenerating => '正在生成候选标题...';
+
+  @override
+  String get titleAutoGenFailed => '生成失败';
+
+  @override
+  String get titleModelSwitch => '切换模型';
+
+  @override
+  String get titleCandidatesEmpty => '暂无候选，请调整方向或重试';
+
+  @override
+  String get titleConfirm => '确定';
+
+  @override
+  String get summarizing => '正在总结对话...';
+
+  @override
+  String get summarizeFailedFallback => '总结失败，将使用原始对话作为分支起点';
+
+  @override
+  String get branchModeSheetTitle => '选择创建方式';
+
+  @override
+  String get branchModeSummarize => '总结后创建';
+
+  @override
+  String get branchModeRaw => '使用原始上下文创建';
+
+  @override
+  String get branchModeContinue => '继续';
+
+  @override
+  String get networkInterrupted => '网络中断，请重试';
+
+  @override
+  String get branchRetry => '重试';
+
+  @override
+  String get branchCancelRetry => '取消';
 }

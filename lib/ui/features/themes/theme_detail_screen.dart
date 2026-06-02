@@ -12,8 +12,10 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
     show localizedThemeTitle;
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
-import 'package:thk_tree/ui/features/summary/summary_route_params.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/domain/node.dart';
+import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/session_markdown.dart';
 
 class ThemeDetailScreen extends ConsumerStatefulWidget {
@@ -37,6 +39,18 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         return CupertinoPageScaffold(
           navigationBar: ThkNavBar.inline(
             title: l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),
+            leading: CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  context.pop();
+                } else {
+                  context.go('/');
+                }
+              },
+              child: const Icon(AppIcons.back),
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -51,7 +65,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   onPressed: () async {
-                    final title = await _promptTitle(context);
+                    final title = await _promptRootTitle(context);
                     if (title == null) return;
                     await ref
                         .read(themeDetailControllerProvider(widget.themeId)
@@ -170,42 +184,7 @@ class _TreeRowView extends ConsumerWidget {
             ),
           ),
           GestureDetector(
-            onTap: () async {
-              try {
-                final t = await _promptTitle(context);
-                if (t == null) return;
-
-                final nodeStore = await ref.read(nodeStoreProvider.future);
-                final row = await nodeStore.getNodeRow(nodeId: node.nodeId);
-                final sessionPath = row['sessionPath'] as String;
-                final sessionFile = File(sessionPath);
-                String? parentSessionText;
-                if (await sessionFile.exists()) {
-                  final rawText = await sessionFile.readAsString();
-                  final doc = parseSessionMarkdown(rawText);
-                  parentSessionText = buildConversationTranscript(doc);
-                } else {
-                  parentSessionText = '';
-                }
-
-                if (!context.mounted) return;
-
-                final params = SummaryRouteParams(
-                  themeId: themeId,
-                  parentNodeId: node.nodeId,
-                  branchTitle: t,
-                  parentSessionText: parentSessionText,
-                );
-
-                context.push(
-                  '/themes/$themeId/nodes/${node.nodeId}/summary',
-                  extra: params,
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                _showSnackBar(context, l10n.branchFailed(e.toString()));
-              }
-            },
+            onTap: () => _onCreateBranchFromMenu(context, ref, node: node),
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: Icon(AppIcons.callSplit, size: 18, color: CupertinoColors.systemBlue),
@@ -288,6 +267,96 @@ void _showSnackBar(BuildContext context, String message) {
   );
 }
 
+/// 主题树节点上的"创建分支"入口（节点 trailing 按钮）。
+///
+/// 1. 弹 [showBranchModeSheet] 让用户选 [BranchMode]（raw=原文 / summarize=LLM 总结）。
+/// 2. 调内部 [_showBranchFlow] 完成 session 读取 + provider/model 解析 + 调顶层
+///    [showBranchFlow] 完成标题选择 + 创建 chat node + 跳转。
+Future<void> _onCreateBranchFromMenu(
+  BuildContext context,
+  WidgetRef ref, {
+  required NodeEntity node,
+}) async {
+  final mode = await showBranchModeSheet(context);
+  if (mode == null) return;
+  if (!context.mounted) return;
+  await _showBranchFlow(context, ref, node: node, mode: mode);
+}
+
+/// 主题树节点上的"创建分支"流程。
+///
+/// 1. 从 session.md 读 transcript（作为分支源 / 总结输入）
+/// 2. 解析 session frontmatter 的 providerId/modelId（fallback 全局设置）
+/// 3. 调 [showBranchFlow] 顶层函数。
+Future<void> _showBranchFlow(
+  BuildContext context,
+  WidgetRef ref, {
+  required NodeEntity node,
+  required BranchMode mode,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    // 1. 读 session
+    final nodeStore = await ref.read(nodeStoreProvider.future);
+    final row = await nodeStore.getNodeRow(nodeId: node.nodeId);
+    final sessionPath = row['sessionPath'] as String;
+    final sessionFile = File(sessionPath);
+    String parentTranscript = '';
+    String? providerId;
+    String? modelId;
+    if (await sessionFile.exists()) {
+      final rawText = await sessionFile.readAsString();
+      final doc = parseSessionMarkdown(rawText);
+      parentTranscript = buildConversationTranscript(doc);
+      providerId = doc.providerId;
+      modelId = doc.modelId;
+    }
+
+    if (!context.mounted) return;
+
+    // 2. fallback 全局设置
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings != null) {
+      providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
+      modelId ??= settings.model;
+    }
+
+    if (!context.mounted) return;
+
+    // 3. 调顶层 showBranchFlow
+    await showBranchFlow(
+      context: context,
+      mode: mode,
+      selectedText: null,
+      parentTranscript: parentTranscript,
+      providerId: providerId,
+      modelId: modelId,
+      themeId: node.themeId,
+      parentNodeId: node.nodeId,
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    _showSnackBar(context, l10n.branchFailed(e.toString()));
+  }
+}
+
+String _mapLegacyProviderToPresetId(LlmProvider provider) {
+  switch (provider) {
+    case LlmProvider.claude:
+      return 'preset_anthropic';
+    case LlmProvider.deepseek:
+      return 'preset_deepseek';
+    case LlmProvider.openai:
+      return 'preset_openai';
+    case LlmProvider.gemini:
+      return 'preset_gemini';
+    case LlmProvider.minimax:
+      return 'preset_minimax';
+    case LlmProvider.kimi:
+      return 'preset_kimi';
+  }
+}
+
 class _VerticalLinePainter extends CustomPainter {
   _VerticalLinePainter(this.color);
   final Color color;
@@ -345,7 +414,7 @@ List<NodeEntity> _collectSubtreeNodes(NodeEntity root, List<NodeEntity> allNodes
   return result;
 }
 
-Future<String?> _promptTitle(BuildContext context) async {
+Future<String?> _promptRootTitle(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
   final controller = TextEditingController();
   return showCupertinoDialog<String>(
@@ -359,6 +428,7 @@ Future<String?> _promptTitle(BuildContext context) async {
             controller: controller,
             placeholder: l10n.titleHint,
             autofocus: true,
+            maxLength: 30,
             onSubmitted: (value) {
               final composing = controller.value.composing;
               if (composing.isValid && !composing.isCollapsed) return;
@@ -398,55 +468,89 @@ Future<bool?> _confirmDeleteNode(
       final l10n = AppLocalizations.of(context)!;
       final descendantCount = subtreeNodes.length - 1;
       final keptNodeIds = sameTitleNodesOutside.map((item) => item.nodeId).join('\n');
-      return CupertinoAlertDialog(
-        title: Text(l10n.deleteItem),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.deleteConfirm(node.title)),
-              if (kDebugMode) ...[
-                const SizedBox(height: 8),
-                Text(l10n.targetNodeId(node.nodeId)),
-              ],
-              const SizedBox(height: 8),
-              Text(
-                descendantCount > 0
-                    ? l10n.deleteDescWithChildren(descendantCount)
-                    : l10n.deleteDescOnly,
+      final needsAck = sameTitleNodesOutside.isNotEmpty;
+      bool acknowledged = false;
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return CupertinoAlertDialog(
+            title: Text(l10n.deleteItem),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.deleteConfirm(node.title)),
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 8),
+                    Text(l10n.targetNodeId(node.nodeId)),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    descendantCount > 0
+                        ? l10n.deleteDescWithChildren(descendantCount)
+                        : l10n.deleteDescOnly,
+                  ),
+                  if (needsAck) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.keptSameTitleNodes(sameTitleNodesOutside.length),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(keptNodeIds),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () => setState(() => acknowledged = !acknowledged),
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6, top: 2),
+                            child: Icon(
+                              acknowledged
+                                  ? CupertinoIcons.checkmark_square_fill
+                                  : CupertinoIcons.square,
+                              size: 20,
+                              color: acknowledged
+                                  ? CupertinoColors.systemRed
+                                  : CupertinoColors.secondaryLabel,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              l10n.deleteUnderstand,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: acknowledged
+                                    ? CupertinoColors.label
+                                    : CupertinoColors.secondaryLabel,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              if (sameTitleNodesOutside.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  l10n.keptSameTitleNodes(sameTitleNodesOutside.length),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                Text(keptNodeIds),
-                const SizedBox(height: 12),
-                Text(
-                  '⚠ ${l10n.deleteUnderstand}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ],
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.cancel),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                onPressed: needsAck && !acknowledged
+                    ? null
+                    : () => Navigator.of(context).pop(true),
+                child: Text(l10n.delete),
+              ),
             ],
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: sameTitleNodesOutside.isEmpty
-                ? () => Navigator.of(context).pop(true)
-                : null,
-            child: Text(l10n.delete),
-          ),
-        ],
+          );
+        },
       );
     },
   );

@@ -303,7 +303,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uncategorized => 'Uncategorized';
 
   @override
-  String get llmProvidersTitle => 'LLM Providers';
+  String get llmProvidersTitle => 'Model Providers';
 
   @override
   String get llmProviderCustom => 'Custom';
@@ -425,4 +425,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatCreated => 'Chat created successfully';
+
+  @override
+  String get themesTabLabel => 'Themes';
+
+  @override
+  String get settingsTabLabel => 'Settings';
+
+  @override
+  String get createBranchRawFromSelection => 'Create Branch from Selection';
+
+  @override
+  String get createBranchSummarizeFromSelection =>
+      'Summarize Selection, then Create Branch';
+
+  @override
+  String get chooseTitle => 'Choose Title';
+
+  @override
+  String titleSourceBanner(String source) {
+    return 'Branch from $source';
+  }
+
+  @override
+  String get titleSourceSelection => 'Selected Text';
+
+  @override
+  String get titleSourceConversation => 'Conversation';
+
+  @override
+  String get titleSourceConversationSummary => 'Conversation Summary';
+
+  @override
+  String get titleSourceNote => 'Note';
+
+  @override
+  String get titleDirectionHint => 'Direction (optional)';
+
+  @override
+  String get titleRegenerate => 'Regenerate';
+
+  @override
+  String get titleGenerating => 'Generating titles...';
+
+  @override
+  String get titleAutoGenFailed => 'Generation failed';
+
+  @override
+  String get titleModelSwitch => 'Switch Model';
+
+  @override
+  String get titleCandidatesEmpty =>
+      'No candidates yet. Try a different direction.';
+
+  @override
+  String get titleConfirm => 'Confirm';
+
+  @override
+  String get summarizing => 'Summarizing conversation...';
+
+  @override
+  String get summarizeFailedFallback =>
+      'Summarization failed, using raw conversation as branch source';
+
+  @override
+  String get branchModeSheetTitle => 'Choose how to create the branch';
+
+  @override
+  String get branchModeSummarize => 'Summarize, then create';
+
+  @override
+  String get branchModeRaw => 'Use the original context';
+
+  @override
+  String get branchModeContinue => 'Continue';
+
+  @override
+  String get networkInterrupted => 'Network interrupted. Please retry.';
+
+  @override
+  String get branchRetry => 'Retry';
+
+  @override
+  String get branchCancelRetry => 'Cancel';
 }

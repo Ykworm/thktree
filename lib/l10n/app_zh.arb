@@ -183,7 +183,7 @@
 
   "uncategorized": "未分类",
 
-  "llmProvidersTitle": "LLM 提供商",
+  "llmProvidersTitle": "模型提供商",
 
   "llmProviderCustom": "自定义",
 
@@ -280,5 +280,62 @@
 
   "chatTitle": "对话标题",
 
-  "chatCreated": "对话创建成功"
+  "chatCreated": "对话创建成功",
+
+  "themesTabLabel": "主题",
+
+  "settingsTabLabel": "设置",
+
+  "createBranchRawFromSelection": "用所选文字直接创建",
+
+  "createBranchSummarizeFromSelection": "总结所选文字后创建",
+
+  "chooseTitle": "选择标题",
+
+  "branchModeSheetTitle": "选择创建方式",
+
+  "branchModeSummarize": "总结后创建",
+
+  "branchModeRaw": "使用原始上下文创建",
+
+  "branchModeContinue": "继续",
+
+  "networkInterrupted": "网络中断，请重试",
+
+  "branchRetry": "重试",
+
+  "branchCancelRetry": "取消",
+
+  "titleSourceBanner": "从 {source} 创建分支",
+  "@titleSourceBanner": {
+    "placeholders": {
+      "source": { "type": "String" }
+    }
+  },
+
+  "titleSourceSelection": "选中文本",
+
+  "titleSourceConversation": "对话",
+
+  "titleSourceConversationSummary": "对话总结",
+
+  "titleSourceNote": "笔记",
+
+  "titleDirectionHint": "方向引导（可选）",
+
+  "titleRegenerate": "重新生成",
+
+  "titleGenerating": "正在生成候选标题...",
+
+  "titleAutoGenFailed": "生成失败",
+
+  "titleModelSwitch": "切换模型",
+
+  "titleCandidatesEmpty": "暂无候选，请调整方向或重试",
+
+  "titleConfirm": "确定",
+
+  "summarizing": "正在总结对话...",
+
+  "summarizeFailedFallback": "总结失败，将使用原始对话作为分支起点"
 }

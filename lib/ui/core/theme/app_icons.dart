@@ -65,6 +65,9 @@ class AppIcons {
   /// Icons.forum
   static const IconData forum = SFIcons.sf_bubble_left_and_bubble_right;
 
+  /// 模型选择入口（带加号的圆形图标）
+  static const IconData modelSelector = SFIcons.sf_plus_circle_fill;
+
   // ── 内容 / 文件 ──
 
   /// Icons.note / Icons.description
@@ -101,4 +104,10 @@ class AppIcons {
   /// Icons.subdirectory_arrow_right
   static const IconData subdirectoryArrowRight =
       SFIcons.sf_arrow_turn_down_right;
+
+  /// 分支操作（iOS 风格的分支箭头）
+  static const IconData branch = SFIcons.sf_arrow_trianglehead_branch;
+
+  /// AI / 模型选择（iOS 18+ AI 风格闪光图标）
+  static const IconData sparkles = SFIcons.sf_sparkles;
 }

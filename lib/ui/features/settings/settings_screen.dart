@@ -24,59 +24,43 @@ class SettingsScreen extends ConsumerWidget {
     return ThkLargeTitlePage(
       title: l10n.settingsTitle,
       children: [
-        SliverToBoxAdapter(
-          child: ThkListSection(
-            header: l10n.language,
-            children: [
-              _LanguageTile(),
-            ],
-          ),
+        ThkListSection(
+          header: l10n.language,
+          children: [
+            _LanguageTile(),
+          ],
         ),
-        SliverToBoxAdapter(
-          child: ThkListSection(
-            children: [
-              _LlmProvidersEntry(),
-            ],
-          ),
+        ThkListSection(
+          children: [
+            _LlmProvidersEntry(),
+          ],
         ),
         loggerAsync.when(
-          data: (logger) => SliverToBoxAdapter(
-            child: ThkListSection(
-              children: _buildLogTiles(context, logger, l10n),
-            ),
+          data: (logger) => ThkListSection(
+            children: _buildLogTiles(context, logger, l10n),
           ),
-          error: (e, st) => SliverToBoxAdapter(
-            child: ThkListSection(
-              children: [ThkListTile(title: e.toString(), trailing: null)],
-            ),
+          error: (e, st) => ThkListSection(
+            children: [ThkListTile(title: e.toString(), trailing: null)],
           ),
-          loading: () => SliverToBoxAdapter(
-            child: ThkListSection(
-              children: [ThkListTile(title: l10n.loadingLogger, trailing: null)],
-            ),
+          loading: () => ThkListSection(
+            children: [ThkListTile(title: l10n.loadingLogger, trailing: null)],
           ),
         ),
         pathsAsync.when(
-          data: (paths) => SliverToBoxAdapter(
-            child: ThkListSection(
-              children: [
-                ThkListTile(
-                  title: l10n.dataRoot,
-                  subtitle: paths.rootDir.path,
-                  trailing: null,
-                ),
-              ],
-            ),
+          data: (paths) => ThkListSection(
+            children: [
+              ThkListTile(
+                title: l10n.dataRoot,
+                subtitle: paths.rootDir.path,
+                trailing: null,
+              ),
+            ],
           ),
-          error: (e, st) => SliverToBoxAdapter(
-            child: ThkListSection(
-              children: [ThkListTile(title: e.toString(), trailing: null)],
-            ),
+          error: (e, st) => ThkListSection(
+            children: [ThkListTile(title: e.toString(), trailing: null)],
           ),
-          loading: () => SliverToBoxAdapter(
-            child: ThkListSection(
-              children: [ThkListTile(title: l10n.loadingPaths, trailing: null)],
-            ),
+          loading: () => ThkListSection(
+            children: [ThkListTile(title: l10n.loadingPaths, trailing: null)],
           ),
         ),
       ],
