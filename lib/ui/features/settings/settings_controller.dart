@@ -36,6 +36,18 @@ class SettingsController extends AsyncNotifier<AppSettings> {
         languageCode == null ? null : Locale(languageCode));
     state = AsyncData(await store.load());
   }
+
+  Future<void> saveTitleModel({String? providerId, String? modelId}) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveTitleModel(providerId: providerId, modelId: modelId);
+    state = AsyncData(await store.load());
+  }
+
+  Future<void> saveSummaryModel({String? providerId, String? modelId}) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveSummaryModel(providerId: providerId, modelId: modelId);
+    state = AsyncData(await store.load());
+  }
 }
 
 final settingsControllerProvider =

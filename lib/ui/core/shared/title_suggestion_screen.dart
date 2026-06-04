@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
+import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/title_suggestion_service.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -76,9 +77,6 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     super.initState();
     _titleCtrl = TextEditingController();
     _titleCtrl.addListener(_onTitleChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _resolveAndGenerate();
-    });
   }
 
   @override
@@ -97,6 +95,91 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     if (mounted) {
       // 触发 rebuild 以更新「确定」按钮的 enabled 状态
       setState(() {});
+    }
+  }
+
+  Future<void> _handleGenerateButton() async {
+    // Check if there's a pre-configured title model in settings
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings?.titleModelProviderId != null && settings?.titleModelModelId != null) {
+      // Use the pre-configured model
+      await _generateWithModel(
+        providerId: settings!.titleModelProviderId!,
+        modelId: settings.titleModelModelId!,
+      );
+    } else {
+      // Show model selector
+      await _showModelSelectorAndGenerate();
+    }
+  }
+
+  Future<void> _showModelSelectorAndGenerate() async {
+    final providers = await ref.read(llmProvidersProvider.future);
+    if (!mounted) return;
+
+    // Show model selector as action sheet
+    final selected = await showCupertinoModalPopup<(String, String)?>(
+      context: context,
+      builder: (ctx) => _ModelSelectorSheet(providers: providers),
+    );
+
+    if (selected == null || !mounted) return;
+
+    // Save the selected model to settings for future use
+    await ref.read(settingsControllerProvider.notifier).saveTitleModel(
+      providerId: selected.$1,
+      modelId: selected.$2,
+    );
+
+    await _generateWithModel(
+      providerId: selected.$1,
+      modelId: selected.$2,
+    );
+  }
+
+  Future<void> _generateWithModel({
+    required String providerId,
+    required String modelId,
+  }) async {
+    if (mounted) {
+      setState(() {
+        _generating = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final providers = await ref.read(llmProvidersProvider.future);
+      final provider = providers.firstWhere((p) => p.id == providerId);
+      final configStore = ref.read(llmConfigStoreProvider);
+      final apiKey = await configStore.readApiKey(provider.id);
+
+      if (apiKey.isEmpty) {
+        throw Exception('API Key not configured for ${provider.name}');
+      }
+
+      _currentModel = (providerId: provider.id, modelId: modelId);
+
+      // Get context window for the selected model
+      final model = provider.models.firstWhere(
+        (m) => m.id == modelId,
+        orElse: () => provider.models.isNotEmpty ? provider.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
+      );
+      final contextWindow = model.contextWindow;
+
+      await _runGenerate(
+        provider: provider,
+        modelId: modelId,
+        apiKey: apiKey,
+        direction: null,
+        contextWindow: contextWindow,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _generating = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -122,11 +205,20 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
       }
       final (provider, modelId, apiKey) = resolved;
       _currentModel = (providerId: provider.id, modelId: modelId);
+      
+      // Get context window for the selected model
+      final model = provider.models.firstWhere(
+        (m) => m.id == modelId,
+        orElse: () => provider.models.isNotEmpty ? provider.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
+      );
+      final contextWindow = model.contextWindow;
+      
       await _runGenerate(
         provider: provider,
         modelId: modelId,
         apiKey: apiKey,
         direction: null,
+        contextWindow: contextWindow,
       );
     } catch (e) {
       if (!mounted) return;
@@ -209,6 +301,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     required String modelId,
     required String apiKey,
     String? direction,
+    required int contextWindow,
   }) async {
     _cancelToken?.cancel('superseded');
     final cancelToken = CancelToken();
@@ -226,6 +319,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
         provider: provider,
         modelId: modelId,
         apiKey: apiKey,
+        contextWindow: contextWindow,
         cancelToken: cancelToken,
       );
       if (cancelToken.isCancelled || !mounted) return;
@@ -287,11 +381,20 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     final configStore = ref.read(llmConfigStoreProvider);
     final apiKey = await configStore.readApiKey(provider.id);
     if (apiKey.isEmpty) return;
+    
+    // Get context window for the selected model
+    final model = provider.models.firstWhere(
+      (m) => m.id == cm.modelId,
+      orElse: () => provider!.models.isNotEmpty ? provider!.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
+    );
+    final contextWindow = model.contextWindow;
+    
     await _runGenerate(
       provider: provider,
       modelId: cm.modelId,
       apiKey: apiKey,
       direction: null,
+      contextWindow: contextWindow,
     );
   }
 
@@ -326,11 +429,20 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
               final apiKey = await configStore.readApiKey(provider.id);
               if (apiKey.isEmpty) return;
               _currentModel = (providerId: providerId, modelId: modelId);
+              
+              // Get context window for the selected model
+              final model = provider.models.firstWhere(
+                (m) => m.id == modelId,
+                orElse: () => provider!.models.isNotEmpty ? provider!.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
+              );
+              final contextWindow = model.contextWindow;
+              
               await _runGenerate(
                 provider: provider,
                 modelId: modelId,
                 apiKey: apiKey,
                 direction: null,
+                contextWindow: contextWindow,
               );
             },
             onClose: () => Navigator.of(ctx).pop(),
@@ -359,12 +471,14 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
         title: '',
         middle: Text(l10n.chooseTitle),
         leading: CupertinoButton(
+          key: const ValueKey('cancel_button'),
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.cancel),
         ),
         trailing: CupertinoButton(
+          key: const ValueKey('confirm_button'),
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,
           onPressed: titleValid ? _onConfirm : null,
@@ -398,6 +512,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: ThkTextField(
+                key: const ValueKey('title_input'),
                 controller: _titleCtrl,
                 focusNode: _focusNode,
                 placeholder: l10n.titleHint,
@@ -454,13 +569,28 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  l10n.titleCandidatesEmpty,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: CupertinoColors.secondaryLabel
-                        .resolveFrom(context),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      CupertinoIcons.text_badge_star,
+                      size: 48,
+                      color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.generateTitlesHint,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    CupertinoButton.filled(
+                      onPressed: _handleGenerateButton,
+                      child: Text(l10n.generateTitles),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -759,6 +889,13 @@ Future<String?> showBranchFlow({
     }
     final (prov, mId, apiKey) = resolved;
 
+    // Get context window for the selected model
+    final model = prov.models.firstWhere(
+      (m) => m.id == mId,
+      orElse: () => prov.models.isNotEmpty ? prov.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
+    );
+    final contextWindow = model.contextWindow;
+
     // 调 LLM 总结（带 lifecycle 监听 + 错误重试 + 弹 retry/cancel sheet）
     final summary = await _summarizeWithLifecycleAndRetry(
       context: context,
@@ -766,6 +903,7 @@ Future<String?> showBranchFlow({
       modelId: mId,
       apiKey: apiKey,
       transcript: parentTranscript,
+      contextWindow: contextWindow,
     );
 
     if (!context.mounted) return null;
@@ -808,6 +946,22 @@ Future<String?> showBranchFlow({
     await sessionStore.appendUserMessage(
       nodeId: childNode.nodeId,
       content: sourceContent,
+    );
+    // Store source excerpt + type in DB for tree display
+    final nodeSourceExcerpt = sourceContent.length <= 80
+        ? sourceContent
+        : '${sourceContent.substring(0, 80)}...';
+    final nodeSourceType = sourceLabelOverride != null
+        ? 'note'
+        : (selectedText != null && selectedText.isNotEmpty)
+            ? 'selectedText'
+            : (mode == BranchMode.summarize)
+                ? 'summary'
+                : 'conversation';
+    await nodeStore.updateNodeSourceInfo(
+      nodeId: childNode.nodeId,
+      sourceExcerpt: nodeSourceExcerpt,
+      sourceType: nodeSourceType,
     );
     if (providerId != null && modelId != null) {
       await sessionStore.updateSessionModel(
@@ -911,6 +1065,7 @@ Future<String?> _summarizeWithLifecycleAndRetry({
   required String modelId,
   required String apiKey,
   required String transcript,
+  required int contextWindow,
 }) async {
   final l10n = AppLocalizations.of(context)!;
 
@@ -942,6 +1097,7 @@ Future<String?> _summarizeWithLifecycleAndRetry({
           provider: provider,
           modelId: modelId,
           apiKey: apiKey,
+          contextWindow: contextWindow,
           cancelToken: cancelToken,
         ),
       );
@@ -1049,11 +1205,18 @@ Future<(LlmProviderConfig, String, String)?> _resolveModelForSummary(
   String? currentProviderId,
   String? currentModelId,
 }) async {
-  String? providerId = currentProviderId;
-  String? modelId = currentModelId;
+  // First check if there's a dedicated summary model configured in settings
+  final settings = container.read(settingsControllerProvider).value;
+  String? providerId = settings?.summaryModelProviderId;
+  String? modelId = settings?.summaryModelModelId;
+
+  // If not configured, fall back to the current chat model
+  if (providerId == null || modelId == null) {
+    providerId = currentProviderId;
+    modelId = currentModelId;
+  }
 
   if (providerId == null || modelId == null) {
-    final settings = container.read(settingsControllerProvider).value;
     if (settings != null) {
       providerId ??= _mapLegacyProviderToPresetIdStatic(settings.llmProvider);
       modelId ??= settings.model;
@@ -1109,4 +1272,97 @@ String _mapLegacyProviderToPresetIdStatic(LlmProvider provider) {
     LlmProvider.minimax => 'preset_minimax',
     LlmProvider.kimi => 'preset_kimi',
   };
+}
+
+
+/// Model selector sheet for choosing which model to use for title generation
+class _ModelSelectorSheet extends StatelessWidget {
+  const _ModelSelectorSheet({required this.providers});
+
+  final List<LlmProviderConfig> providers;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Filter providers that have models configured
+    final configuredProviders = providers
+        .where((p) => p.models.isNotEmpty || (p.selectedModelId != null && p.selectedModelId!.isNotEmpty))
+        .toList();
+
+    if (configuredProviders.isEmpty) {
+      return CupertinoActionSheet(
+        title: Text(l10n.selectModel),
+        message: Text(l10n.pleaseFetchModels),
+        cancelButton: CupertinoActionSheetAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+      );
+    }
+
+    return CupertinoActionSheet(
+      title: Text(l10n.selectModel),
+      actions: [
+        for (final provider in configuredProviders)
+          ..._buildProviderActions(context, provider),
+      ],
+      cancelButton: CupertinoActionSheetAction(
+        isDestructiveAction: true,
+        onPressed: () => Navigator.of(context).pop(),
+        child: Text(l10n.cancel),
+      ),
+    );
+  }
+
+  List<Widget> _buildProviderActions(BuildContext context, LlmProviderConfig provider) {
+    final actions = <Widget>[];
+    
+    // If provider has models, show each model as an action
+    if (provider.models.isNotEmpty) {
+      for (final model in provider.models) {
+        actions.add(
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop<(String, String)>((provider.id, model.id)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  provider.name,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: CupertinoColors.secondaryLabel,
+                  ),
+                ),
+                Text(model.name),
+              ],
+            ),
+          ),
+        );
+      }
+    } else if (provider.selectedModelId != null && provider.selectedModelId!.isNotEmpty) {
+      // Provider has no models list but has a selected model
+      actions.add(
+        CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop<(String, String)>((provider.id, provider.selectedModelId!)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                provider.name,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: CupertinoColors.secondaryLabel,
+                ),
+              ),
+              Text(provider.selectedModelId!),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return actions;
+  }
 }

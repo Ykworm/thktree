@@ -1,527 +1,715 @@
 {
   "appName": "ThkTree",
-  "@appName": { "description": "Application name" },
-
+  "@appName": {
+    "description": "Application name"
+  },
   "settingsTitle": "ThkTree · Settings",
-  "@settingsTitle": { "description": "Settings screen title" },
-
+  "@settingsTitle": {
+    "description": "Settings screen title"
+  },
   "language": "Language",
-  "@language": { "description": "Language settings tile title" },
-
+  "@language": {
+    "description": "Language settings tile title"
+  },
   "languageSubtitle": "{name}",
   "@languageSubtitle": {
     "description": "Current language display name",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "systemDefault": "System Default",
-  "@systemDefault": { "description": "System default language option" },
-
+  "@systemDefault": {
+    "description": "System default language option"
+  },
   "english": "English",
-  "@english": { "description": "English language name" },
-
+  "@english": {
+    "description": "English language name"
+  },
   "chinese": "中文",
-  "@chinese": { "description": "Chinese language name" },
-
+  "@chinese": {
+    "description": "Chinese language name"
+  },
   "noThemesYet": "No themes yet",
-  "@noThemesYet": { "description": "Empty state for theme list" },
-
+  "@noThemesYet": {
+    "description": "Empty state for theme list"
+  },
   "newTheme": "New Theme",
-  "@newTheme": { "description": "Dialog title for creating a new theme" },
-
+  "@newTheme": {
+    "description": "Dialog title for creating a new theme"
+  },
   "titleHint": "Title",
-  "@titleHint": { "description": "Hint text for title input field" },
-
+  "@titleHint": {
+    "description": "Hint text for title input field"
+  },
   "cancel": "Cancel",
-  "@cancel": { "description": "Cancel button label" },
-
+  "@cancel": {
+    "description": "Cancel button label"
+  },
   "create": "Create",
-  "@create": { "description": "Create button label" },
-
+  "@create": {
+    "description": "Create button label"
+  },
   "back": "Back",
-  "@back": { "description": "Back button tooltip/label" },
-
+  "@back": {
+    "description": "Back button tooltip/label"
+  },
   "tree": "Tree",
-  "@tree": { "description": "Tree button tooltip/label" },
-
+  "@tree": {
+    "description": "Tree button tooltip/label"
+  },
   "branch": "Branch",
-  "@branch": { "description": "Branch button tooltip/label" },
-
+  "@branch": {
+    "description": "Branch button tooltip/label"
+  },
   "save": "Save",
-  "@save": { "description": "Save button label" },
-
+  "@save": {
+    "description": "Save button label"
+  },
   "delete": "Delete",
-  "@delete": { "description": "Delete button label" },
-
+  "@delete": {
+    "description": "Delete button label"
+  },
   "close": "Close",
-  "@close": { "description": "Close button label" },
-
+  "@close": {
+    "description": "Close button label"
+  },
   "copied": "Copied",
-  "@copied": { "description": "SnackBar message after copying to clipboard" },
-
+  "@copied": {
+    "description": "SnackBar message after copying to clipboard"
+  },
   "loadingSettings": "Loading settings...",
-  "@loadingSettings": { "description": "Loading state for settings" },
-
+  "@loadingSettings": {
+    "description": "Loading state for settings"
+  },
   "loadingLogger": "Loading logger...",
-  "@loadingLogger": { "description": "Loading state for logger" },
-
+  "@loadingLogger": {
+    "description": "Loading state for logger"
+  },
   "loadingPaths": "Loading paths...",
-  "@loadingPaths": { "description": "Loading state for paths" },
-
+  "@loadingPaths": {
+    "description": "Loading state for paths"
+  },
   "logFile": "Log File",
-  "@logFile": { "description": "Settings tile for log file" },
-
+  "@logFile": {
+    "description": "Settings tile for log file"
+  },
   "remoteLogging": "Remote Logging",
-  "@remoteLogging": { "description": "Settings tile for remote logging" },
-
+  "@remoteLogging": {
+    "description": "Settings tile for remote logging"
+  },
   "enabled": "enabled",
-  "@enabled": { "description": "Enabled state label" },
-
+  "@enabled": {
+    "description": "Enabled state label"
+  },
   "disabled": "disabled",
-  "@disabled": { "description": "Disabled state label" },
-
+  "@disabled": {
+    "description": "Disabled state label"
+  },
   "viewLogs": "View Logs",
-  "@viewLogs": { "description": "Settings tile to view logs" },
-
+  "@viewLogs": {
+    "description": "Settings tile to view logs"
+  },
   "logsTail": "Logs (tail)",
-  "@logsTail": { "description": "Dialog title for viewing log tail" },
-
+  "@logsTail": {
+    "description": "Dialog title for viewing log tail"
+  },
   "emptyLogs": "(empty)",
-  "@emptyLogs": { "description": "Empty log content placeholder" },
-
+  "@emptyLogs": {
+    "description": "Empty log content placeholder"
+  },
   "llmProviderTitle": "LLM Provider",
-  "@llmProviderTitle": { "description": "Settings tile for LLM provider selection" },
-
+  "@llmProviderTitle": {
+    "description": "Settings tile for LLM provider selection"
+  },
   "llmApiKey": "API Key",
-  "@llmApiKey": { "description": "Settings tile for API key" },
-
+  "@llmApiKey": {
+    "description": "Settings tile for API key"
+  },
   "llmApiKeyTitle": "{providerName} API Key",
   "@llmApiKeyTitle": {
     "description": "API key dialog title",
     "placeholders": {
-      "providerName": { "type": "String" }
+      "providerName": {
+        "type": "String"
+      }
     }
   },
-
   "apiKeySet": "Set",
-  "@apiKeySet": { "description": "API key is configured" },
-
+  "@apiKeySet": {
+    "description": "API key is configured"
+  },
   "apiKeyNotSet": "Not set",
-  "@apiKeyNotSet": { "description": "API key is not configured" },
-
+  "@apiKeyNotSet": {
+    "description": "API key is not configured"
+  },
   "llmModel": "Model",
-  "@llmModel": { "description": "Settings tile for model name" },
-
+  "@llmModel": {
+    "description": "Settings tile for model name"
+  },
   "llmModelTitle": "{providerName} Model",
   "@llmModelTitle": {
     "description": "Model dialog title",
     "placeholders": {
-      "providerName": { "type": "String" }
+      "providerName": {
+        "type": "String"
+      }
     }
   },
-
   "dataRoot": "Data Root",
-  "@dataRoot": { "description": "Settings tile for data root directory" },
-
+  "@dataRoot": {
+    "description": "Settings tile for data root directory"
+  },
   "treeTitle": "{title} · Tree",
   "@treeTitle": {
     "description": "Tree screen title with theme name"
   },
-
   "emptyTree": "Session Tree is empty.\nTap + to create a root session.",
-  "@emptyTree": { "description": "Empty state for tree screen" },
-
+  "@emptyTree": {
+    "description": "Empty state for tree screen"
+  },
   "newSession": "New Session",
-  "@newSession": { "description": "Dialog title for creating a new session" },
-
+  "@newSession": {
+    "description": "Dialog title for creating a new session"
+  },
   "newBranch": "New Branch",
-  "@newBranch": { "description": "Dialog title for creating a new branch" },
-
+  "@newBranch": {
+    "description": "Dialog title for creating a new branch"
+  },
   "deleteItem": "Delete Item",
-  "@deleteItem": { "description": "Dialog title for deleting an item" },
-
+  "@deleteItem": {
+    "description": "Dialog title for deleting an item"
+  },
   "deleteConfirm": "Delete \"{title}\"?",
   "@deleteConfirm": {
     "description": "Confirmation message for deletion"
   },
-
   "targetNodeId": "Target nodeId: {nodeId}",
   "@targetNodeId": {
     "description": "Shows the target node ID in delete dialog"
   },
-
   "deleteUnderstand": "I understand only the selected nodeId subtree will be deleted.",
-  "@deleteUnderstand": { "description": "Checkbox label for delete confirmation" },
-
+  "@deleteUnderstand": {
+    "description": "Checkbox label for delete confirmation"
+  },
   "deleteDescWithChildren": "This will delete 1 selected node and {count} child item(s).",
   "@deleteDescWithChildren": {
     "description": "Delete dialog description when there are descendants",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "deleteDescOnly": "This will delete only the selected node.",
-  "@deleteDescOnly": { "description": "Delete dialog description when there are no descendants" },
-
+  "@deleteDescOnly": {
+    "description": "Delete dialog description when there are no descendants"
+  },
   "keptSameTitleNodes": "Same-title nodes that will be kept ({count}):",
   "@keptSameTitleNodes": {
     "description": "Section title listing nodes with same title that will not be deleted",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "deletedCount": "Deleted {count} {count, plural, =1{item} other{items}}",
   "@deletedCount": {
     "description": "SnackBar message after deletion",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "branchFailed": "Branch failed: {error}",
   "@branchFailed": {
     "description": "Error message when branching fails",
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "deleteFailed": "Delete failed: {error}",
   "@deleteFailed": {
     "description": "Error message when deletion fails",
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "saveFailed": "Save failed: {error}",
   "@saveFailed": {
     "description": "Error message when saving fails",
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "noMessagesYet": "No messages yet",
-  "@noMessagesYet": { "description": "Empty state for chat list" },
-
+  "@noMessagesYet": {
+    "description": "Empty state for chat list"
+  },
   "messageHint": "Message",
-  "@messageHint": { "description": "Hint text for chat input" },
-
+  "@messageHint": {
+    "description": "Hint text for chat input"
+  },
   "send": "Send",
-  "@send": { "description": "Send button label" },
-
+  "@send": {
+    "description": "Send button label"
+  },
   "stop": "Stop",
-  "@stop": { "description": "Stop streaming button label" },
-
+  "@stop": {
+    "description": "Stop streaming button label"
+  },
   "polishSummary": "Polish Summary",
-  "@polishSummary": { "description": "Summary chat screen title" },
-
+  "@polishSummary": {
+    "description": "Summary chat screen title"
+  },
   "summaryHint": "Modify summary...",
-  "@summaryHint": { "description": "Hint text for summary input" },
-
+  "@summaryHint": {
+    "description": "Hint text for summary input"
+  },
   "summaryBanner": "Polish the summary content. After confirmation, it will be used as the starting point for the new branch \"{title}\"",
   "@summaryBanner": {
     "description": "Banner text on summary screen"
   },
-
   "confirmSummary": "Confirm this summary",
-  "@confirmSummary": { "description": "Button to confirm summary" },
-
+  "@confirmSummary": {
+    "description": "Button to confirm summary"
+  },
   "generatingSummary": "Generating summary...",
-  "@generatingSummary": { "description": "Button text while generating summary" },
-
+  "@generatingSummary": {
+    "description": "Button text while generating summary"
+  },
   "createBranch": "Create Branch",
-  "@createBranch": { "description": "Button to create branch from summary" },
-
+  "@createBranch": {
+    "description": "Button to create branch from summary"
+  },
   "creatingBranch": "Creating branch...",
-  "@creatingBranch": { "description": "Button text while creating branch" },
-
+  "@creatingBranch": {
+    "description": "Button text while creating branch"
+  },
   "skipSummary": "Use Original Context",
-  "@skipSummary": { "description": "Button to create branch with raw parent context" },
-
+  "@skipSummary": {
+    "description": "Button to create branch with raw parent context"
+  },
   "blankBranch": "Start Fresh",
-  "@blankBranch": { "description": "Button to create branch with no context at all" },
-
+  "@blankBranch": {
+    "description": "Button to create branch with no context at all"
+  },
   "pleaseGenerateSummary": "Please generate the summary content first",
-  "@pleaseGenerateSummary": { "description": "SnackBar when confirming without summary" },
-
+  "@pleaseGenerateSummary": {
+    "description": "SnackBar when confirming without summary"
+  },
   "branchCreationFailed": "Branch creation failed: {error}",
   "@branchCreationFailed": {
     "description": "Error when branch creation fails"
   },
-
   "userRole": "user",
-  "@userRole": { "description": "User role label in message bubble" },
-
+  "@userRole": {
+    "description": "User role label in message bubble"
+  },
   "assistantRole": "assistant",
-  "@assistantRole": { "description": "Assistant role label in message bubble" },
-
+  "@assistantRole": {
+    "description": "Assistant role label in message bubble"
+  },
   "systemRole": "system",
-  "@systemRole": { "description": "System role label in message bubble" },
-
+  "@systemRole": {
+    "description": "System role label in message bubble"
+  },
   "streamingStatus": "streaming",
-  "@streamingStatus": { "description": "Streaming status label in message bubble" },
-
+  "@streamingStatus": {
+    "description": "Streaming status label in message bubble"
+  },
   "errorStatus": "error:{code}",
   "@errorStatus": {
     "description": "Error status label in message bubble"
   },
-
   "errorUnknown": "unknown",
-  "@errorUnknown": { "description": "Unknown error code" },
-
+  "@errorUnknown": {
+    "description": "Unknown error code"
+  },
   "expandTable": "Expand Table",
-  "@expandTable": { "description": "Button to open table in full-screen view" },
-
+  "@expandTable": {
+    "description": "Button to open table in full-screen view"
+  },
   "copy": "Copy",
-  "@copy": { "description": "Copy selected text action" },
-
+  "@copy": {
+    "description": "Copy selected text action"
+  },
   "addToNote": "Add to Note",
-  "@addToNote": { "description": "Add selected text to a note action" },
-
+  "@addToNote": {
+    "description": "Add selected text to a note action"
+  },
   "notes": "Notes",
-  "@notes": { "description": "Notes screen title" },
-
+  "@notes": {
+    "description": "Notes screen title"
+  },
   "selectNote": "Select a note to append to...",
-  "@selectNote": { "description": "Select note subtitle on note picker page" },
-
+  "@selectNote": {
+    "description": "Select note subtitle on note picker page"
+  },
   "noNotesYet": "No notes yet. Tap + to create one.",
-  "@noNotesYet": { "description": "Empty state for notes list" },
-
+  "@noNotesYet": {
+    "description": "Empty state for notes list"
+  },
   "newNote": "New Note",
-  "@newNote": { "description": "Dialog title for creating a new note" },
-
+  "@newNote": {
+    "description": "Dialog title for creating a new note"
+  },
   "noteCount": "{count, plural, =0{0 notes} =1{1 note} other{{count} notes}}",
   "@noteCount": {
     "description": "Shows note count per theme",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "uncategorized": "Uncategorized",
-  "@uncategorized": { "description": "Display name of the catch-all theme used for notes created from the notes tab" },
-
+  "@uncategorized": {
+    "description": "Display name of the catch-all theme used for notes created from the notes tab"
+  },
   "llmProvidersTitle": "Model Providers",
-  "@llmProvidersTitle": { "description": "Title for model providers management screen" },
-
+  "@llmProvidersTitle": {
+    "description": "Title for model providers management screen"
+  },
   "llmProviderCustom": "Custom",
-  "@llmProviderCustom": { "description": "Label for custom LLM provider" },
-
+  "@llmProviderCustom": {
+    "description": "Label for custom LLM provider"
+  },
   "addCustomProvider": "Add Custom Provider",
-  "@addCustomProvider": { "description": "Button to add a custom LLM provider" },
-
+  "@addCustomProvider": {
+    "description": "Button to add a custom LLM provider"
+  },
   "providerName": "Provider Name",
-  "@providerName": { "description": "Label for provider name field" },
-
+  "@providerName": {
+    "description": "Label for provider name field"
+  },
   "providerBaseUrl": "Base URL",
-  "@providerBaseUrl": { "description": "Label for provider base URL field" },
-
+  "@providerBaseUrl": {
+    "description": "Label for provider base URL field"
+  },
   "providerDefaultUrl": "Default URL",
-  "@providerDefaultUrl": { "description": "Label showing the default URL for a provider" },
-
+  "@providerDefaultUrl": {
+    "description": "Label showing the default URL for a provider"
+  },
   "providerApiKey": "API Key",
-  "@providerApiKey": { "description": "Label for provider API key field" },
-
+  "@providerApiKey": {
+    "description": "Label for provider API key field"
+  },
   "apiKeyConfigured": "Configured",
-  "@apiKeyConfigured": { "description": "API key is configured" },
-
+  "@apiKeyConfigured": {
+    "description": "API key is configured"
+  },
   "apiKeyNotConfigured": "Not configured",
-  "@apiKeyNotConfigured": { "description": "API key is not configured" },
-
+  "@apiKeyNotConfigured": {
+    "description": "API key is not configured"
+  },
   "modelCount": "{count} models",
   "@modelCount": {
     "description": "Shows the number of models available for a provider",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "noModels": "No models",
-  "@noModels": { "description": "No models available for a provider" },
-
+  "@noModels": {
+    "description": "No models available for a provider"
+  },
   "deleteProvider": "Delete Provider",
-  "@deleteProvider": { "description": "Button to delete a provider" },
-
+  "@deleteProvider": {
+    "description": "Button to delete a provider"
+  },
   "deleteProviderConfirm": "Are you sure you want to delete this provider?",
-  "@deleteProviderConfirm": { "description": "Confirmation message for deleting a provider" },
-
+  "@deleteProviderConfirm": {
+    "description": "Confirmation message for deleting a provider"
+  },
   "fetchModels": "Fetch Models",
-  "@fetchModels": { "description": "Button to fetch models from a provider" },
-
+  "@fetchModels": {
+    "description": "Button to fetch models from a provider"
+  },
   "fetchingModels": "Fetching models...",
-  "@fetchingModels": { "description": "Loading state while fetching models" },
-
+  "@fetchingModels": {
+    "description": "Loading state while fetching models"
+  },
   "fetchModelsSuccess": "Successfully fetched {count} models",
   "@fetchModelsSuccess": {
     "description": "Success message after fetching models",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "fetchModelsFailed": "Failed to fetch models: {error}",
   "@fetchModelsFailed": {
     "description": "Error message when fetching models fails",
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "apiKeyInvalid": "API Key is invalid or expired",
-  "@apiKeyInvalid": { "description": "Message when API key is invalid or expired" },
-
+  "@apiKeyInvalid": {
+    "description": "Message when API key is invalid or expired"
+  },
   "selectModel": "Select Model",
-  "@selectModel": { "description": "Title for model selection panel" },
-
+  "@selectModel": {
+    "description": "Title for model selection panel"
+  },
   "currentModel": "Current Model",
-  "@currentModel": { "description": "Label showing the currently selected model" },
-
+  "@currentModel": {
+    "description": "Label showing the currently selected model"
+  },
   "noModelSelected": "No model selected",
-  "@noModelSelected": { "description": "Placeholder when no model is selected" },
-
+  "@noModelSelected": {
+    "description": "Placeholder when no model is selected"
+  },
   "contextUsagePercent": "Context: {percent}%",
   "@contextUsagePercent": {
     "description": "Shows context window usage percentage",
     "placeholders": {
-      "percent": { "type": "int" }
+      "percent": {
+        "type": "int"
+      }
     }
   },
-
   "customProviderHint": "e.g. ProviderName + ModelName for easy identification",
-  "@customProviderHint": { "description": "Hint text for custom provider name input" },
-
+  "@customProviderHint": {
+    "description": "Hint text for custom provider name input"
+  },
   "baseUrlHint": "Enter the API base URL",
-  "@baseUrlHint": { "description": "Hint text for base URL input" },
-
+  "@baseUrlHint": {
+    "description": "Hint text for base URL input"
+  },
   "apiKeyHint": "Enter the API Key",
-  "@apiKeyHint": { "description": "Hint text for API key input" },
-
+  "@apiKeyHint": {
+    "description": "Hint text for API key input"
+  },
   "saveProvider": "Save",
-  "@saveProvider": { "description": "Button to save provider configuration" },
-
+  "@saveProvider": {
+    "description": "Button to save provider configuration"
+  },
   "editProvider": "Edit Provider",
-  "@editProvider": { "description": "Button to edit a provider" },
-
+  "@editProvider": {
+    "description": "Button to edit a provider"
+  },
   "copyDefaultUrl": "Copy default URL",
-  "@copyDefaultUrl": { "description": "Button to copy the default URL to clipboard" },
-
+  "@copyDefaultUrl": {
+    "description": "Button to copy the default URL to clipboard"
+  },
   "copiedToClipboard": "Copied to clipboard",
-  "@copiedToClipboard": { "description": "SnackBar message after copying to clipboard" },
-
+  "@copiedToClipboard": {
+    "description": "SnackBar message after copying to clipboard"
+  },
   "pleaseFetchModels": "Please configure a provider and fetch models in settings first",
-  "@pleaseFetchModels": { "description": "Hint shown when no configured provider is available in model selector" },
-
+  "@pleaseFetchModels": {
+    "description": "Hint shown when no configured provider is available in model selector"
+  },
   "createChatFromNote": "Start Chat from Note",
-  "@createChatFromNote": { "description": "Button or menu item to start a chat from a note" },
-
+  "@createChatFromNote": {
+    "description": "Button or menu item to start a chat from a note"
+  },
   "selectTheme": "Select Theme",
-  "@selectTheme": { "description": "Title for theme selection" },
-
+  "@selectTheme": {
+    "description": "Title for theme selection"
+  },
   "selectLocation": "Select Location",
-  "@selectLocation": { "description": "Title for chat location selection" },
-
+  "@selectLocation": {
+    "description": "Title for chat location selection"
+  },
   "asRootChat": "As root conversation",
-  "@asRootChat": { "description": "Option to create chat as a root node" },
-
+  "@asRootChat": {
+    "description": "Option to create chat as a root node"
+  },
   "underNode": "Under \"{title}\"",
   "@underNode": {
     "description": "Option to create chat under a specific node",
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
-
   "chatTitle": "Chat Title",
-  "@chatTitle": { "description": "Label for chat title input" },
-
+  "@chatTitle": {
+    "description": "Label for chat title input"
+  },
   "chatCreated": "Chat created successfully",
-  "@chatCreated": { "description": "SnackBar message after chat is created" },
-
+  "@chatCreated": {
+    "description": "SnackBar message after chat is created"
+  },
   "themesTabLabel": "Themes",
-  "@themesTabLabel": { "description": "Tab bar label for the themes/tree tab" },
-
+  "@themesTabLabel": {
+    "description": "Tab bar label for the themes/tree tab"
+  },
   "settingsTabLabel": "Settings",
-  "@settingsTabLabel": { "description": "Tab bar label for the settings tab" },
-
+  "@settingsTabLabel": {
+    "description": "Tab bar label for the settings tab"
+  },
   "createBranchRawFromSelection": "Create Branch from Selection",
-  "@createBranchRawFromSelection": { "description": "Menu item shown when text is selected to create a new branch directly from the selection (raw mode)" },
-
+  "@createBranchRawFromSelection": {
+    "description": "Menu item shown when text is selected to create a new branch directly from the selection (raw mode)"
+  },
   "createBranchSummarizeFromSelection": "Summarize Selection, then Create Branch",
-  "@createBranchSummarizeFromSelection": { "description": "Menu item shown when text is selected to create a new branch by first LLM-summarizing the selection" },
-
+  "@createBranchSummarizeFromSelection": {
+    "description": "Menu item shown when text is selected to create a new branch by first LLM-summarizing the selection"
+  },
   "chooseTitle": "Choose Title",
-  "@chooseTitle": { "description": "Title of the title-suggestion screen for creating a new branch" },
-
+  "@chooseTitle": {
+    "description": "Title of the title-suggestion screen for creating a new branch"
+  },
   "titleSourceBanner": "Branch from {source}",
   "@titleSourceBanner": {
     "description": "Banner showing the source of the new branch on the title-suggestion screen",
     "placeholders": {
-      "source": { "type": "String" }
+      "source": {
+        "type": "String"
+      }
     }
   },
-
   "titleSourceSelection": "Selected Text",
-  "@titleSourceSelection": { "description": "Source label when the branch is created from a text selection" },
-
+  "@titleSourceSelection": {
+    "description": "Source label when the branch is created from a text selection"
+  },
   "titleSourceConversation": "Conversation",
-  "@titleSourceConversation": { "description": "Source label when the branch is created from the raw conversation" },
-
+  "@titleSourceConversation": {
+    "description": "Source label when the branch is created from the raw conversation"
+  },
   "titleSourceConversationSummary": "Conversation Summary",
-  "@titleSourceConversationSummary": { "description": "Source label when the branch is created from an LLM-summarized conversation" },
-
+  "@titleSourceConversationSummary": {
+    "description": "Source label when the branch is created from an LLM-summarized conversation"
+  },
   "titleSourceNote": "Note",
-  "@titleSourceNote": { "description": "Source label when the branch is created from a note" },
-
+  "@titleSourceNote": {
+    "description": "Source label when the branch is created from a note"
+  },
   "titleDirectionHint": "Direction (optional)",
-  "@titleDirectionHint": { "description": "Hint text for the optional direction input used when regenerating candidate titles" },
-
+  "@titleDirectionHint": {
+    "description": "Hint text for the optional direction input used when regenerating candidate titles"
+  },
   "titleRegenerate": "Regenerate",
-  "@titleRegenerate": { "description": "Button to regenerate LLM candidate titles" },
-
+  "@titleRegenerate": {
+    "description": "Button to regenerate LLM candidate titles"
+  },
   "titleGenerating": "Generating titles...",
-  "@titleGenerating": { "description": "Loading state while LLM is generating candidate titles" },
-
+  "@titleGenerating": {
+    "description": "Loading state while LLM is generating candidate titles"
+  },
   "titleAutoGenFailed": "Generation failed",
-  "@titleAutoGenFailed": { "description": "Label shown when LLM candidate title generation fails" },
-
+  "@titleAutoGenFailed": {
+    "description": "Label shown when LLM candidate title generation fails"
+  },
   "titleModelSwitch": "Switch Model",
-  "@titleModelSwitch": { "description": "Action to switch to a different LLM model when generation fails" },
-
+  "@titleModelSwitch": {
+    "description": "Action to switch to a different LLM model when generation fails"
+  },
   "titleCandidatesEmpty": "No candidates yet. Try a different direction.",
-  "@titleCandidatesEmpty": { "description": "Empty state hint on the title-suggestion screen" },
-
+  "@titleCandidatesEmpty": {
+    "description": "Empty state hint on the title-suggestion screen"
+  },
   "titleConfirm": "Confirm",
-  "@titleConfirm": { "description": "Confirm button on the title-suggestion screen" },
-
+  "@titleConfirm": {
+    "description": "Confirm button on the title-suggestion screen"
+  },
   "summarizing": "Summarizing conversation...",
-  "@summarizing": { "description": "Loading state while LLM is summarizing the source conversation" },
-
+  "@summarizing": {
+    "description": "Loading state while LLM is summarizing the source conversation"
+  },
   "summarizeFailedFallback": "Summarization failed, using raw conversation as branch source",
-  "@summarizeFailedFallback": { "description": "Fallback message when conversation summarization fails" },
-
+  "@summarizeFailedFallback": {
+    "description": "Fallback message when conversation summarization fails"
+  },
   "branchModeSheetTitle": "Choose how to create the branch",
-  "@branchModeSheetTitle": { "description": "Title of the action sheet that lets the user pick raw vs summarized branch creation" },
-
+  "@branchModeSheetTitle": {
+    "description": "Title of the action sheet that lets the user pick raw vs summarized branch creation"
+  },
   "branchModeSummarize": "Summarize, then create",
-  "@branchModeSummarize": { "description": "Action sheet option: create a branch from an LLM summary of the source context" },
-
+  "@branchModeSummarize": {
+    "description": "Action sheet option: create a branch from an LLM summary of the source context"
+  },
   "branchModeRaw": "Use the original context",
-  "@branchModeRaw": { "description": "Action sheet option: create a branch from the raw (un-summarized) source context" },
-
+  "@branchModeRaw": {
+    "description": "Action sheet option: create a branch from the raw (un-summarized) source context"
+  },
   "branchModeContinue": "Continue",
-  "@branchModeContinue": { "description": "Action sheet submit button: must be enabled only after the user picks one of the two modes" },
-
+  "@branchModeContinue": {
+    "description": "Action sheet submit button: must be enabled only after the user picks one of the two modes"
+  },
   "networkInterrupted": "Network interrupted. Please retry.",
-  "@networkInterrupted": { "description": "Friendly message when a streaming LLM request is interrupted by app backgrounding" },
-
+  "@networkInterrupted": {
+    "description": "Friendly message when a streaming LLM request is interrupted by app backgrounding"
+  },
   "branchRetry": "Retry",
-  "@branchRetry": { "description": "Action button to retry the failed LLM summary call" },
-
+  "@branchRetry": {
+    "description": "Action button to retry the failed LLM summary call"
+  },
   "branchCancelRetry": "Cancel",
-  "@branchCancelRetry": { "description": "Action button to dismiss the retry prompt and abort the branch flow" }
+  "@branchCancelRetry": {
+    "description": "Action button to dismiss the retry prompt and abort the branch flow"
+  },
+  "titleModelTitle": "Title Generation Model",
+  "@titleModelTitle": {
+    "description": "Title for the title generation model settings tile"
+  },
+  "summaryModelTitle": "Summary Model",
+  "@summaryModelTitle": {
+    "description": "Title for the summary model settings tile"
+  },
+  "notConfigured": "Not configured",
+  "@notConfigured": {
+    "description": "Label when a model is not configured"
+  },
+  "generateTitles": "Generate Titles",
+  "@generateTitles": {
+    "description": "Button label to generate title suggestions"
+  },
+  "generateTitlesHint": "Tap to generate title suggestions",
+  "@generateTitlesHint": {
+    "description": "Hint text when no titles have been generated yet"
+  },
+  "contextWindowTitle": "Set context window for {modelName}",
+  "@contextWindowTitle": {
+    "description": "Title for context window picker dialog",
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceTypeSelectedText": "Selected Text",
+  "@sourceTypeSelectedText": {
+    "description": "Source type label: branch created from selected text"
+  },
+  "sourceTypeConversation": "Conversation",
+  "@sourceTypeConversation": {
+    "description": "Source type label: branch created from raw conversation"
+  },
+  "sourceTypeSummary": "Summary",
+  "@sourceTypeSummary": {
+    "description": "Source type label: branch created from conversation summary"
+  },
+  "sourceTypeNote": "Note",
+  "@sourceTypeNote": {
+    "description": "Source type label: branch created from a note"
+  },
+  "swipeDelete": "Delete",
+  "@swipeDelete": {
+    "description": "Swipe action label for delete"
+  },
+  "swipeBranch": "Branch",
+  "@swipeBranch": {
+    "description": "Swipe action label for creating a branch"
+  }
 }

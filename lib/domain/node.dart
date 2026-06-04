@@ -16,6 +16,9 @@ class NodeEntity {
     required this.title,
     required this.createdAtUtcIso8601,
     required this.updatedAtUtcIso8601,
+    this.sourceExcerpt,
+    this.sourceType,
+    this.sortOrder,
   });
 
   final String themeId;
@@ -25,5 +28,15 @@ class NodeEntity {
   final String title;
   final String createdAtUtcIso8601;
   final String updatedAtUtcIso8601;
+
+  /// DB-only: branch source excerpt (first ~80 chars of the source content)
+  final String? sourceExcerpt;
+
+  /// DB-only: branch source type label key
+  /// ("selectedText" | "conversation" | "summary" | "note")
+  final String? sourceType;
+
+  /// DB-only: manual sort order within same parent (lower = earlier)
+  final int? sortOrder;
 }
 

@@ -508,4 +508,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get branchCancelRetry => 'Cancel';
+
+  @override
+  String get titleModelTitle => 'Title Generation Model';
+
+  @override
+  String get summaryModelTitle => 'Summary Model';
+
+  @override
+  String get notConfigured => 'Not configured';
+
+  @override
+  String get generateTitles => 'Generate Titles';
+
+  @override
+  String get generateTitlesHint => 'Tap to generate title suggestions';
+
+  @override
+  String contextWindowTitle(String modelName) {
+    return 'Set context window for $modelName';
+  }
+
+  @override
+  String get sourceTypeSelectedText => 'Selected Text';
+
+  @override
+  String get sourceTypeConversation => 'Conversation';
+
+  @override
+  String get sourceTypeSummary => 'Summary';
+
+  @override
+  String get sourceTypeNote => 'Note';
+
+  @override
+  String get swipeDelete => 'Delete';
+
+  @override
+  String get swipeBranch => 'Branch';
 }

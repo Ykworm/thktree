@@ -17,6 +17,10 @@ class AppSettings {
     required this.minimaxModel,
     required this.kimiModel,
     required this.localeLanguageCode,
+    this.titleModelProviderId,
+    this.titleModelModelId,
+    this.summaryModelProviderId,
+    this.summaryModelModelId,
   });
 
   final LlmProvider llmProvider;
@@ -33,6 +37,10 @@ class AppSettings {
   final String minimaxModel;
   final String kimiModel;
   final String? localeLanguageCode;
+  final String? titleModelProviderId;
+  final String? titleModelModelId;
+  final String? summaryModelProviderId;
+  final String? summaryModelModelId;
 
   String get apiKey {
     switch (llmProvider) {
@@ -83,6 +91,10 @@ class AppSettings {
     String? minimaxModel,
     String? kimiModel,
     String? localeLanguageCode,
+    String? titleModelProviderId,
+    String? titleModelModelId,
+    String? summaryModelProviderId,
+    String? summaryModelModelId,
   }) {
     return AppSettings(
       llmProvider: llmProvider ?? this.llmProvider,
@@ -99,6 +111,10 @@ class AppSettings {
       minimaxModel: minimaxModel ?? this.minimaxModel,
       kimiModel: kimiModel ?? this.kimiModel,
       localeLanguageCode: localeLanguageCode ?? this.localeLanguageCode,
+      titleModelProviderId: titleModelProviderId ?? this.titleModelProviderId,
+      titleModelModelId: titleModelModelId ?? this.titleModelModelId,
+      summaryModelProviderId: summaryModelProviderId ?? this.summaryModelProviderId,
+      summaryModelModelId: summaryModelModelId ?? this.summaryModelModelId,
     );
   }
 }
@@ -110,6 +126,10 @@ class SettingsStore {
 
   static const _keyLocale = 'locale_language_code';
   static const _keyProvider = 'llm_provider';
+  static const _keyTitleModelProviderId = 'title_model_provider_id';
+  static const _keyTitleModelModelId = 'title_model_model_id';
+  static const _keySummaryModelProviderId = 'summary_model_provider_id';
+  static const _keySummaryModelModelId = 'summary_model_model_id';
 
   static String _apiKeyKey(LlmProvider p) => 'llm_api_key_${p.name}';
   static String _modelKey(LlmProvider p) => 'llm_model_${p.name}';
@@ -137,6 +157,11 @@ class SettingsStore {
 
     final locale = await _secureStorage.read(key: _keyLocale);
 
+    final titleModelProviderId = await _secureStorage.read(key: _keyTitleModelProviderId);
+    final titleModelModelId = await _secureStorage.read(key: _keyTitleModelModelId);
+    final summaryModelProviderId = await _secureStorage.read(key: _keySummaryModelProviderId);
+    final summaryModelModelId = await _secureStorage.read(key: _keySummaryModelModelId);
+
     return AppSettings(
       llmProvider: provider,
       deepSeekApiKey: deepSeekApiKey,
@@ -152,6 +177,10 @@ class SettingsStore {
       minimaxModel: minimaxModel,
       kimiModel: kimiModel,
       localeLanguageCode: locale,
+      titleModelProviderId: titleModelProviderId,
+      titleModelModelId: titleModelModelId,
+      summaryModelProviderId: summaryModelProviderId,
+      summaryModelModelId: summaryModelModelId,
     );
   }
 
@@ -179,6 +208,26 @@ class SettingsStore {
       await _secureStorage.delete(key: _keyLocale);
     } else {
       await _secureStorage.write(key: _keyLocale, value: languageCode);
+    }
+  }
+
+  Future<void> saveTitleModel({String? providerId, String? modelId}) async {
+    if (providerId == null || modelId == null) {
+      await _secureStorage.delete(key: _keyTitleModelProviderId);
+      await _secureStorage.delete(key: _keyTitleModelModelId);
+    } else {
+      await _secureStorage.write(key: _keyTitleModelProviderId, value: providerId);
+      await _secureStorage.write(key: _keyTitleModelModelId, value: modelId);
+    }
+  }
+
+  Future<void> saveSummaryModel({String? providerId, String? modelId}) async {
+    if (providerId == null || modelId == null) {
+      await _secureStorage.delete(key: _keySummaryModelProviderId);
+      await _secureStorage.delete(key: _keySummaryModelModelId);
+    } else {
+      await _secureStorage.write(key: _keySummaryModelProviderId, value: providerId);
+      await _secureStorage.write(key: _keySummaryModelModelId, value: modelId);
     }
   }
 }

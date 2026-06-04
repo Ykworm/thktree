@@ -57,7 +57,7 @@ class ThkNavBar {
     Color? backgroundColor,
   }) {
     return CupertinoNavigationBar(
-      middle: middle ?? Text(title),
+      middle: middle ?? Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       leading: leading,
       trailing: trailing,
       previousPageTitle: previousPageTitle,

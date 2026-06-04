@@ -486,4 +486,42 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get branchCancelRetry => '取消';
+
+  @override
+  String get titleModelTitle => '标题生成模型';
+
+  @override
+  String get summaryModelTitle => '对话总结模型';
+
+  @override
+  String get notConfigured => '未配置';
+
+  @override
+  String get generateTitles => '生成标题';
+
+  @override
+  String get generateTitlesHint => '点击生成标题建议';
+
+  @override
+  String contextWindowTitle(String modelName) {
+    return '为 $modelName 设置上下文窗口大小';
+  }
+
+  @override
+  String get sourceTypeSelectedText => '选中文本';
+
+  @override
+  String get sourceTypeConversation => '对话';
+
+  @override
+  String get sourceTypeSummary => '对话总结';
+
+  @override
+  String get sourceTypeNote => '笔记';
+
+  @override
+  String get swipeDelete => '删除';
+
+  @override
+  String get swipeBranch => '分支';
 }

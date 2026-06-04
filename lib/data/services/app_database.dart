@@ -8,9 +8,14 @@ class AppDatabase {
   static Future<AppDatabase> open({required String path}) async {
     final db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) => _createSchema(db),
-      onUpgrade: (db, oldVersion, newVersion) => _createSchema(db),
+      onUpgrade: (db, oldVersion, newVersion) async {
+        await _createSchema(db);
+        if (oldVersion < 3) {
+          await _migrateV3(db);
+        }
+      },
       onOpen: (db) => _createSchema(db),
     );
     return AppDatabase._(db);
@@ -39,8 +44,37 @@ CREATE TABLE IF NOT EXISTS nodes (
   updatedAt TEXT NOT NULL,
   nodePath TEXT NOT NULL,
   sessionPath TEXT NOT NULL,
-  contextSummaryPath TEXT NULL
+  contextSummaryPath TEXT NULL,
+  sortOrder INTEGER NULL,
+  sourceExcerpt TEXT NULL,
+  sourceType TEXT NULL
 )
 ''');
   await db.execute('CREATE INDEX IF NOT EXISTS idx_nodes_theme_parent ON nodes(themeId, parentId)');
+}
+
+/// v3: add sortOrder, sourceExcerpt, sourceType columns to nodes table
+Future<void> _migrateV3(Database db) async {
+  await _addColumnIfNotExists(db, 'nodes', 'sortOrder', 'INTEGER DEFAULT NULL');
+  await _addColumnIfNotExists(db, 'nodes', 'sourceExcerpt', 'TEXT DEFAULT NULL');
+  await _addColumnIfNotExists(db, 'nodes', 'sourceType', 'TEXT DEFAULT NULL');
+  // backfill sortOrder from createdAt
+  await db.execute('''
+    UPDATE nodes SET sortOrder = CAST(
+      (julianday(createdAt) - julianday('1970-01-01')) * 86400000 AS INTEGER
+    ) WHERE sortOrder IS NULL
+  ''');
+}
+
+Future<void> _addColumnIfNotExists(
+  Database db,
+  String table,
+  String column,
+  String type,
+) async {
+  try {
+    await db.execute('ALTER TABLE $table ADD COLUMN $column $type');
+  } catch (_) {
+    // column already exists
+  }
 }

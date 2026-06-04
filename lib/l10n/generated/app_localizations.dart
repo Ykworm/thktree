@@ -967,6 +967,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get branchCancelRetry;
+
+  /// Title for the title generation model settings tile
+  ///
+  /// In en, this message translates to:
+  /// **'Title Generation Model'**
+  String get titleModelTitle;
+
+  /// Title for the summary model settings tile
+  ///
+  /// In en, this message translates to:
+  /// **'Summary Model'**
+  String get summaryModelTitle;
+
+  /// Label when a model is not configured
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get notConfigured;
+
+  /// Button label to generate title suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Titles'**
+  String get generateTitles;
+
+  /// Hint text when no titles have been generated yet
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to generate title suggestions'**
+  String get generateTitlesHint;
+
+  /// Title for context window picker dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Set context window for {modelName}'**
+  String contextWindowTitle(String modelName);
+
+  /// Source type label: branch created from selected text
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Text'**
+  String get sourceTypeSelectedText;
+
+  /// Source type label: branch created from raw conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get sourceTypeConversation;
+
+  /// Source type label: branch created from conversation summary
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get sourceTypeSummary;
+
+  /// Source type label: branch created from a note
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get sourceTypeNote;
+
+  /// Swipe action label for delete
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get swipeDelete;
+
+  /// Swipe action label for creating a branch
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get swipeBranch;
 }
 
 class _AppLocalizationsDelegate

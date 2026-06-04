@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as dev;
 import 'package:yaml/yaml.dart';
 
 enum SessionRole {
@@ -59,16 +58,10 @@ final _messageHeader = RegExp(
 );
 
 SessionDocument parseSessionMarkdown(String content) {
-  dev.log('[parseSessionMarkdown] === START ===');
   final normalized = content.replaceAll('\r\n', '\n');
-  dev.log('[parseSessionMarkdown] normalized content length: ${normalized.length}');
-  dev.log('[parseSessionMarkdown] calling _parseFrontmatter');
   final (frontmatter, bodyStartIndex) = _parseFrontmatter(normalized);
   final body = normalized.substring(bodyStartIndex);
-  dev.log('[parseSessionMarkdown] body length: ${body.length}');
-  dev.log('[parseSessionMarkdown] calling _parseMessages');
   final messages = _parseMessages(body);
-  dev.log('[parseSessionMarkdown] === END, messages=${messages.length} ===');
   return SessionDocument(frontmatter: frontmatter, messages: messages);
 }
 

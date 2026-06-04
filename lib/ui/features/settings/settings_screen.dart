@@ -11,6 +11,7 @@ import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
+import 'package:thk_tree/data/models/llm_provider_config.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -33,6 +34,8 @@ class SettingsScreen extends ConsumerWidget {
         ThkListSection(
           children: [
             _LlmProvidersEntry(),
+            _TitleModelEntry(),
+            _SummaryModelEntry(),
           ],
         ),
         loggerAsync.when(
@@ -317,4 +320,232 @@ class _LanguageTile extends ConsumerWidget {
       },
     );
   }
+}
+
+
+class _TitleModelEntry extends ConsumerWidget {
+  const _TitleModelEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final settingsAsync = ref.watch(settingsControllerProvider);
+
+    return settingsAsync.when(
+      data: (settings) {
+        final subtitle = settings.titleModelProviderId != null && settings.titleModelModelId != null
+            ? _getModelDisplayName(ref, settings.titleModelProviderId!, settings.titleModelModelId!)
+            : l10n.notConfigured;
+
+        return ThkListTile(
+          leading: const Icon(CupertinoIcons.textformat),
+          title: l10n.titleModelTitle,
+          subtitle: subtitle,
+          onTap: () => _showModelSelector(context, ref, isTitleModel: true),
+        );
+      },
+      loading: () => ThkListTile(
+        leading: const Icon(CupertinoIcons.textformat),
+        title: l10n.titleModelTitle,
+        subtitle: l10n.loadingSettings,
+      ),
+      error: (e, _) => ThkListTile(
+        leading: const Icon(CupertinoIcons.textformat),
+        title: l10n.titleModelTitle,
+        subtitle: e.toString(),
+      ),
+    );
+  }
+
+  String _getModelDisplayName(WidgetRef ref, String providerId, String modelId) {
+    final providersAsync = ref.read(llmProvidersProvider);
+    return providersAsync.when(
+      data: (providers) {
+        final provider = providers.where((p) => p.id == providerId).firstOrNull;
+        if (provider == null) return modelId;
+        final model = provider.models.where((m) => m.id == modelId).firstOrNull;
+        return model?.name ?? modelId;
+      },
+      loading: () => modelId,
+      error: (_, __) => modelId,
+    );
+  }
+
+  void _showModelSelector(BuildContext context, WidgetRef ref, {required bool isTitleModel}) {
+    final providersAsync = ref.read(llmProvidersProvider);
+    providersAsync.whenData((providers) {
+      showModelPicker(context, ref, providers, isTitleModel: isTitleModel);
+    });
+  }
+}
+
+class _SummaryModelEntry extends ConsumerWidget {
+  const _SummaryModelEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final settingsAsync = ref.watch(settingsControllerProvider);
+
+    return settingsAsync.when(
+      data: (settings) {
+        final subtitle = settings.summaryModelProviderId != null && settings.summaryModelModelId != null
+            ? _getModelDisplayName(ref, settings.summaryModelProviderId!, settings.summaryModelModelId!)
+            : l10n.notConfigured;
+
+        return ThkListTile(
+          leading: const Icon(CupertinoIcons.doc_text),
+          title: l10n.summaryModelTitle,
+          subtitle: subtitle,
+          onTap: () => _showModelSelector(context, ref, isTitleModel: false),
+        );
+      },
+      loading: () => ThkListTile(
+        leading: const Icon(CupertinoIcons.doc_text),
+        title: l10n.summaryModelTitle,
+        subtitle: l10n.loadingSettings,
+      ),
+      error: (e, _) => ThkListTile(
+        leading: const Icon(CupertinoIcons.doc_text),
+        title: l10n.summaryModelTitle,
+        subtitle: e.toString(),
+      ),
+    );
+  }
+
+  String _getModelDisplayName(WidgetRef ref, String providerId, String modelId) {
+    final providersAsync = ref.read(llmProvidersProvider);
+    return providersAsync.when(
+      data: (providers) {
+        final provider = providers.where((p) => p.id == providerId).firstOrNull;
+        if (provider == null) return modelId;
+        final model = provider.models.where((m) => m.id == modelId).firstOrNull;
+        return model?.name ?? modelId;
+      },
+      loading: () => modelId,
+      error: (_, __) => modelId,
+    );
+  }
+
+  void _showModelSelector(BuildContext context, WidgetRef ref, {required bool isTitleModel}) {
+    final providersAsync = ref.read(llmProvidersProvider);
+    providersAsync.whenData((providers) {
+      showModelPicker(context, ref, providers, isTitleModel: isTitleModel);
+    });
+  }
+}
+
+void showModelPicker(BuildContext context, WidgetRef ref, List<LlmProviderConfig> providers, {required bool isTitleModel}) {
+  final l10n = AppLocalizations.of(context)!;
+  
+  // Filter providers that have models
+  final configuredProviders = providers
+      .where((p) => p.models.isNotEmpty || (p.selectedModelId != null && p.selectedModelId!.isNotEmpty))
+      .toList();
+
+  if (configuredProviders.isEmpty) {
+    showCupertinoDialog(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        content: Text(l10n.pleaseFetchModels),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.close),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  showCupertinoModalPopup(
+    context: context,
+    builder: (ctx) => CupertinoActionSheet(
+      title: Text(isTitleModel ? l10n.titleModelTitle : l10n.summaryModelTitle),
+      actions: [
+        for (final provider in configuredProviders)
+          ..._buildProviderActions(provider, ref, context, isTitleModel),
+      ],
+      cancelButton: CupertinoActionSheetAction(
+        isDestructiveAction: true,
+        onPressed: () => Navigator.of(ctx).pop(),
+        child: Text(l10n.cancel),
+      ),
+    ),
+  );
+}
+
+List<Widget> _buildProviderActions(LlmProviderConfig provider, WidgetRef ref, BuildContext context, bool isTitleModel) {
+  final actions = <Widget>[];
+  
+  if (provider.models.isNotEmpty) {
+    for (final model in provider.models) {
+      actions.add(
+        CupertinoActionSheetAction(
+          onPressed: () {
+            if (isTitleModel) {
+              ref.read(settingsControllerProvider.notifier).saveTitleModel(
+                providerId: provider.id,
+                modelId: model.id,
+              );
+            } else {
+              ref.read(settingsControllerProvider.notifier).saveSummaryModel(
+                providerId: provider.id,
+                modelId: model.id,
+              );
+            }
+            Navigator.of(context).pop();
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                provider.name,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: CupertinoColors.secondaryLabel,
+                ),
+              ),
+              Text(model.name),
+            ],
+          ),
+        ),
+      );
+    }
+  } else if (provider.selectedModelId != null && provider.selectedModelId!.isNotEmpty) {
+    actions.add(
+      CupertinoActionSheetAction(
+        onPressed: () {
+          if (isTitleModel) {
+            ref.read(settingsControllerProvider.notifier).saveTitleModel(
+              providerId: provider.id,
+              modelId: provider.selectedModelId!,
+            );
+          } else {
+            ref.read(settingsControllerProvider.notifier).saveSummaryModel(
+              providerId: provider.id,
+              modelId: provider.selectedModelId!,
+            );
+          }
+          Navigator.of(context).pop();
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              provider.name,
+              style: const TextStyle(
+                fontSize: 12,
+                color: CupertinoColors.secondaryLabel,
+              ),
+            ),
+            Text(provider.selectedModelId!),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  return actions;
 }

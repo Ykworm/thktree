@@ -3,8 +3,8 @@ import 'package:dio/dio.dart';
 import '../models/llm_model_config.dart';
 import '../models/llm_provider_config.dart';
 
-/// 默认上下文窗口大小（100M tokens），当 API 未返回时使用
-const int _defaultContextWindow = 100000000;
+/// 默认上下文窗口大小（0 表示未知，需要用户手动设置）
+const int _defaultContextWindow = 0;
 
 /// 应过滤掉的非聊天模型关键词
 const List<String> _nonChatKeywords = [
@@ -131,9 +131,8 @@ class ModelFetcher {
         // Anthropic 可能返回 display_name，优先使用；否则用 id
         final name = map['display_name'] as String? ?? id;
 
-        // 尝试解析 context window
-        final contextWindow =
-            map['max_tokens'] as int? ?? _defaultContextWindow;
+        // Anthropic API 不返回 context window，设为 0（未知）
+        final contextWindow = _defaultContextWindow;
 
         models.add(LlmModelConfig(
           id: id,

@@ -8,6 +8,7 @@ import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/domain/ids.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/data/models/node_meta.dart';
+import 'package:thk_tree/data/services/session_markdown.dart';
 
 class NodeStore {
   NodeStore({required this.db, required this.paths});
@@ -21,6 +22,30 @@ class NodeStore {
     final records = <_NodeDiskRecord>[];
     if (await nodesDir.exists()) {
       await _collectNodeRecords(nodesDir, expectedThemeId: themeId, records: records);
+    }
+
+    // Pre-read session.md files outside the DB transaction to avoid
+    // holding a write lock during file I/O.
+    final sourceInfo = <String, (String?, String?)>{}; // nodeId -> (excerpt, type)
+    for (final record in records) {
+      final sessionPath = p.join(record.nodeDir.path, 'session.md');
+      final sessionFile = File(sessionPath);
+      if (await sessionFile.exists()) {
+        try {
+          final rawText = await sessionFile.readAsString();
+          final doc = parseSessionMarkdown(rawText);
+          for (final msg in doc.messages) {
+            if (msg.role == SessionRole.user && msg.body.trim().isNotEmpty) {
+              final body = msg.body.trim();
+              final excerpt = body.length <= 80 ? body : '${body.substring(0, 80)}...';
+              sourceInfo[record.meta.nodeId] = (excerpt, 'conversation');
+              break;
+            }
+          }
+        } catch (_) {
+          // malformed session.md — skip excerpt
+        }
+      }
     }
 
     await db.transaction((txn) async {
@@ -38,6 +63,10 @@ class NodeStore {
       );
 
       for (final record in records) {
+        final createdAtMillis = DateTime.tryParse(record.meta.createdAtUtcIso8601)?.millisecondsSinceEpoch;
+        final sessionPath = p.join(record.nodeDir.path, 'session.md');
+        final info = sourceInfo[record.meta.nodeId];
+
         await txn.insert(
           'nodes',
           {
@@ -49,8 +78,11 @@ class NodeStore {
             'createdAt': record.meta.createdAtUtcIso8601,
             'updatedAt': record.meta.updatedAtUtcIso8601,
             'nodePath': paths.toRootRelativePath(record.nodeDir.path),
-            'sessionPath': paths.toRootRelativePath(p.join(record.nodeDir.path, 'session.md')),
+            'sessionPath': paths.toRootRelativePath(sessionPath),
             'contextSummaryPath': null,
+            'sortOrder': createdAtMillis,
+            'sourceExcerpt': info?.$1,
+            'sourceType': info?.$2,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
@@ -84,29 +116,37 @@ class NodeStore {
   }
 
   Future<List<NodeEntity>> listNodes({required String themeId}) async {
-    final rows = await db.query(
-      'nodes',
-      where: 'themeId = ?',
-      whereArgs: [themeId],
-      orderBy: 'createdAt ASC',
-    );
-    return rows
-        .map(
-          (row) => NodeEntity(
-            themeId: row['themeId']! as String,
-            nodeId: row['nodeId']! as String,
-            parentId: row['parentId'] as String?,
-            kind: switch (row['kind']! as String) {
-              'chat' => NodeKind.chat,
-              'summary' => NodeKind.summary,
-              _ => NodeKind.chat,
-            },
-            title: row['title']! as String,
-            createdAtUtcIso8601: row['createdAt']! as String,
-            updatedAtUtcIso8601: row['updatedAt']! as String,
-          ),
-        )
-        .toList(growable: false);
+    try {
+      final rows = await db.query(
+        'nodes',
+        where: 'themeId = ?',
+        whereArgs: [themeId],
+        orderBy: 'sortOrder IS NULL, sortOrder ASC, createdAt ASC',
+      );
+      return rows
+          .map(
+            (row) => NodeEntity(
+              themeId: row['themeId']! as String,
+              nodeId: row['nodeId']! as String,
+              parentId: row['parentId'] as String?,
+              kind: switch (row['kind']! as String) {
+                'chat' => NodeKind.chat,
+                'summary' => NodeKind.summary,
+                _ => NodeKind.chat,
+              },
+              title: row['title']! as String,
+              createdAtUtcIso8601: row['createdAt']! as String,
+              updatedAtUtcIso8601: row['updatedAt']! as String,
+              sourceExcerpt: row['sourceExcerpt'] as String?,
+              sourceType: row['sourceType'] as String?,
+              sortOrder: row['sortOrder'] as int?,
+            ),
+          )
+          .toList(growable: false);
+    } catch (e, st) {
+      dev.log('[listNodes] ERROR: $e\n$st');
+      rethrow;
+    }
   }
 
   Future<NodeEntity> createChatNode({
@@ -183,6 +223,8 @@ class NodeStore {
     await _atomicWriteString(sessionPath, _initialSessionMarkdown(meta, systemPrompt: systemPrompt));
     dev.log('[NodeStore.createChatNode] session.md written, path=$sessionPath');
 
+    final nowMs = DateTime.parse(now).millisecondsSinceEpoch;
+
     await db.insert(
       'nodes',
       {
@@ -196,6 +238,7 @@ class NodeStore {
         'nodePath': paths.toRootRelativePath(nodeDir.path),
         'sessionPath': paths.toRootRelativePath(sessionPath),
         'contextSummaryPath': null,
+        'sortOrder': nowMs,
       },
       conflictAlgorithm: ConflictAlgorithm.abort,
     );
@@ -282,6 +325,36 @@ class NodeStore {
       {
         'sessionPath': paths.toRootRelativePath(sessionPath),
         'nodePath': paths.toRootRelativePath(p.dirname(sessionPath)),
+      },
+      where: 'nodeId = ?',
+      whereArgs: [nodeId],
+    );
+  }
+
+  /// Update sortOrder for a node (used by drag-to-reorder).
+  Future<void> reorderNode({
+    required String nodeId,
+    required int newSortOrder,
+  }) async {
+    await db.update(
+      'nodes',
+      {'sortOrder': newSortOrder},
+      where: 'nodeId = ?',
+      whereArgs: [nodeId],
+    );
+  }
+
+  /// Update sourceExcerpt and sourceType for a node (called after branch creation).
+  Future<void> updateNodeSourceInfo({
+    required String nodeId,
+    required String sourceExcerpt,
+    required String sourceType,
+  }) async {
+    await db.update(
+      'nodes',
+      {
+        'sourceExcerpt': sourceExcerpt,
+        'sourceType': sourceType,
       },
       where: 'nodeId = ?',
       whereArgs: [nodeId],

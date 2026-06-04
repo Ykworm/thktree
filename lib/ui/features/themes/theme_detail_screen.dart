@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -18,6 +19,10 @@ import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/session_markdown.dart';
 
+// ---------------------------------------------------------------------------
+// ThemeDetailScreen
+// ---------------------------------------------------------------------------
+
 class ThemeDetailScreen extends ConsumerStatefulWidget {
   const ThemeDetailScreen({super.key, required this.themeId});
 
@@ -28,17 +33,24 @@ class ThemeDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
+  final Set<String> _collapsedIds = {};
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final detailAsync = ref.watch(themeDetailControllerProvider(widget.themeId));
+    final detailAsync =
+        ref.watch(themeDetailControllerProvider(widget.themeId));
     return detailAsync.when(
       data: (data) {
-        final roots = data.nodes.where((n) => n.parentId == null).toList(growable: false);
-        roots.sort((a, b) => a.createdAtUtcIso8601.compareTo(b.createdAtUtcIso8601));
+        final roots = data.nodes
+            .where((n) => n.parentId == null)
+            .toList(growable: false);
+        roots.sort(_compareNodes);
         return CupertinoPageScaffold(
+          backgroundColor: CupertinoColors.white,
           navigationBar: ThkNavBar.inline(
-            title: l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),
+            title:
+                l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -55,6 +67,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 CupertinoButton(
+                  key: const ValueKey('refresh_button'),
                   padding: EdgeInsets.zero,
                   onPressed: () => ref
                       .read(themeDetailControllerProvider(widget.themeId)
@@ -83,19 +96,28 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 800),
-                      child: ListView(
+                      child: ListView.separated(
+                        key: const ValueKey('node_list'),
                         padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
-                        children: [
-                          for (int i = 0; i < roots.length; i++)
-                            _TreeRowView(
-                              themeId: widget.themeId,
-                              node: roots[i],
-                              allNodes: data.nodes,
-                              depth: 0,
-                              isLast: i == roots.length - 1,
-                              ancestorsLast: const [],
-                            ),
-                        ],
+                        itemCount: roots.length,
+                        separatorBuilder: (_, _) => Container(
+                          height: 0.5,
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          color: CupertinoColors.separator.resolveFrom(context),
+                        ),
+                        itemBuilder: (context, i) => _TreeRowView(
+                          themeId: widget.themeId,
+                          node: roots[i],
+                          allNodes: data.nodes,
+                          depth: 0,
+                          collapsedIds: _collapsedIds,
+                          onToggleCollapse: (id) =>
+                              setState(() {
+                                if (!_collapsedIds.remove(id)) {
+                                  _collapsedIds.add(id);
+                                }
+                              }),
+                        ),
                       ),
                     ),
                   ),
@@ -114,28 +136,44 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   }
 }
 
+/// Compare nodes by sortOrder (fallback: createdAt).
+int _compareNodes(NodeEntity a, NodeEntity b) {
+  final sa = a.sortOrder;
+  final sb = b.sortOrder;
+  if (sa != null && sb != null) return sa.compareTo(sb);
+  if (sa != null) return -1;
+  if (sb != null) return 1;
+  return a.createdAtUtcIso8601.compareTo(b.createdAtUtcIso8601);
+}
+
+// ---------------------------------------------------------------------------
+// _TreeRowView
+// ---------------------------------------------------------------------------
+
 class _TreeRowView extends ConsumerWidget {
   const _TreeRowView({
     required this.themeId,
     required this.node,
     required this.allNodes,
     required this.depth,
-    required this.isLast,
-    required this.ancestorsLast,
+    required this.collapsedIds,
+    required this.onToggleCollapse,
   });
 
   final String themeId;
   final NodeEntity node;
   final List<NodeEntity> allNodes;
   final int depth;
-  final bool isLast;
-  final List<bool> ancestorsLast;
+  final Set<String> collapsedIds;
+  final ValueChanged<String> onToggleCollapse;
 
-  static const _kIndent = 28.0;
+  static const _kIndent = 20.0;
 
   List<NodeEntity> _children() {
-    final list = allNodes.where((n) => n.parentId == node.nodeId).toList(growable: false);
-    list.sort((a, b) => a.createdAtUtcIso8601.compareTo(b.createdAtUtcIso8601));
+    final list = allNodes
+        .where((n) => n.parentId == node.nodeId)
+        .toList(growable: false);
+    list.sort(_compareNodes);
     return list;
   }
 
@@ -143,92 +181,132 @@ class _TreeRowView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final children = _children();
-    final lineColor = CupertinoColors.separator.resolveFrom(context);
+    final isCollapsed = collapsedIds.contains(node.nodeId);
+    final hasChildren = children.isNotEmpty;
+    // ── Source type label ──
+    final sourceLabel = _sourceTypeLabel(l10n, node.sourceType);
 
-    final indentWidgets = <Widget>[];
-    for (int i = 0; i < depth; i++) {
-      final showLine = i < ancestorsLast.length && !ancestorsLast[i];
-      indentWidgets.add(
-        SizedBox(
-          width: _kIndent,
-          child: showLine
-              ? CustomPaint(painter: _VerticalLinePainter(lineColor))
-              : const SizedBox.shrink(),
-        ),
-      );
-    }
-
-    final connectorLine = CustomPaint(painter: _BranchPainter(lineColor, isLast: isLast, hasChildren: children.isNotEmpty));
-
+    // ── Node tile ──
     final tileContent = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ...indentWidgets,
-          SizedBox(width: _kIndent, child: connectorLine),
+          if (depth > 0) SizedBox(width: _kIndent * depth),
           const SizedBox(width: 4),
+          // Title + source excerpt
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(node.title, style: AppTheme.body.copyWith(fontWeight: FontWeight.w600)),
-                if (kDebugMode) ...[
+                Text(
+                  node.title,
+                  style: AppTheme.body,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (sourceLabel != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    '${node.kind.value} · ${node.nodeId}',
-                    style: AppTheme.footnote.copyWith(color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+                    sourceLabel,
+                    style: AppTheme.caption1.copyWith(
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () => _onCreateBranchFromMenu(context, ref, node: node),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(AppIcons.callSplit, size: 18, color: CupertinoColors.systemBlue),
+          // Collapse / expand chevron
+          if (hasChildren)
+            GestureDetector(
+              onTap: () => onToggleCollapse(node.nodeId),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4, right: 2),
+                child: Icon(
+                  isCollapsed
+                      ? CupertinoIcons.chevron_right
+                      : CupertinoIcons.chevron_down,
+                  size: 14,
+                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                ),
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: () async {
-              final subtreeNodes = _collectSubtreeNodes(node, allNodes);
-              final subtreeIds = subtreeNodes.map((item) => item.nodeId).toSet();
-              final sameTitleNodesOutside = allNodes
-                  .where((item) => item.title == node.title && !subtreeIds.contains(item.nodeId))
-                  .toList(growable: false);
-              final confirmed = await _confirmDeleteNode(
-                context,
-                node: node,
-                subtreeNodes: subtreeNodes,
-                sameTitleNodesOutside: sameTitleNodesOutside,
-              );
-              if (confirmed != true) return;
-              try {
-                final deletedCount = await ref
-                    .read(themeDetailControllerProvider(themeId).notifier)
-                    .deleteNodeSubtree(nodeId: node.nodeId);
-                if (!context.mounted) return;
-                _showSnackBar(context, l10n.deletedCount(deletedCount));
-              } catch (e) {
-                if (!context.mounted) return;
-                _showSnackBar(context, l10n.deleteFailed(e.toString()));
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(AppIcons.delete, size: 18, color: CupertinoColors.systemRed),
-            ),
-          ),
           const SizedBox(width: 4),
         ],
       ),
     );
 
-    final tile = GestureDetector(
-      onTap: () => context.push('/themes/$themeId/nodes/${node.nodeId}', extra: node.title),
-      child: tileContent,
+    final tile = DragTarget<NodeEntity>(
+      onWillAcceptWithDetails: (details) =>
+          details.data.parentId == node.parentId &&
+          details.data.nodeId != node.nodeId,
+      onAcceptWithDetails: (details) async {
+        await _handleReorder(
+          ref,
+          draggedNode: details.data,
+          targetNode: node,
+          allNodes: allNodes,
+        );
+        ref
+            .read(themeDetailControllerProvider(themeId).notifier)
+            .refresh()
+            .catchError((_) {});
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovering = candidateData.isNotEmpty;
+        return Container(
+          decoration: isHovering
+              ? BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: CupertinoColors.systemBlue.resolveFrom(context),
+                      width: 2,
+                    ),
+                  ),
+                )
+              : null,
+          child: Row(
+            children: [
+              Expanded(
+                child: _SwipeableRow(
+                  onSwipeLeft: () => _handleDelete(context, ref, l10n, node: node, themeId: themeId, allNodes: allNodes),
+                  onSwipeRight: () => _onCreateBranchFromMenu(context, ref, node: node),
+                  leftActionLabel: l10n.swipeDelete,
+                  leftActionIcon: AppIcons.delete,
+                  leftActionColor: CupertinoColors.destructiveRed,
+                  rightActionLabel: l10n.swipeBranch,
+                  rightActionIcon: AppIcons.callSplit,
+                  rightActionColor: CupertinoColors.systemBlue,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => context.push(
+                      '/themes/$themeId/nodes/${node.nodeId}',
+                      extra: node.title,
+                    ),
+                    child: tileContent,
+                  ),
+                ),
+              ),
+              // Drag handle — outside swipe zone
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: _DragHandle(node: node),
+              ),
+            ],
+          ),
+        );
+      },
     );
+
+    // ── Children (only when expanded) ──
+    if (!hasChildren || isCollapsed) {
+      return tile;
+    }
 
     final childWidgets = <Widget>[tile];
     for (int i = 0; i < children.length; i++) {
@@ -238,20 +316,399 @@ class _TreeRowView extends ConsumerWidget {
           node: children[i],
           allNodes: allNodes,
           depth: depth + 1,
-          isLast: i == children.length - 1,
-          ancestorsLast: [...ancestorsLast, isLast],
+          collapsedIds: collapsedIds,
+          onToggleCollapse: onToggleCollapse,
         ),
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: childWidgets,
     );
   }
 }
 
-void _showSnackBar(BuildContext context, String message) {
+// ---------------------------------------------------------------------------
+// Drag handle with long-press to start drag
+// ---------------------------------------------------------------------------
+
+class _DragHandle extends StatefulWidget {
+  const _DragHandle({required this.node});
+
+  final NodeEntity node;
+
+  @override
+  State<_DragHandle> createState() => _DragHandleState();
+}
+
+class _DragHandleState extends State<_DragHandle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _scaleCtrl;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _scaleCtrl.forward(),
+      onTapUp: (_) => _scaleCtrl.reverse(),
+      onTapCancel: () => _scaleCtrl.reverse(),
+      child: LongPressDraggable<NodeEntity>(
+        key: ValueKey('drag_handle_${widget.node.nodeId}'),
+        data: widget.node,
+        delay: const Duration(milliseconds: 400),
+        onDragStarted: () => HapticFeedback.mediumImpact(),
+        onDragEnd: (_) => _scaleCtrl.reverse(),
+        onDraggableCanceled: (_, _) => _scaleCtrl.reverse(),
+        feedback: DefaultTextStyle(
+          style: CupertinoTheme.of(context).textTheme.textStyle,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemBackground
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.black
+                        .withValues(alpha: 0.2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Text(
+                widget.node.title,
+                style: AppTheme.body,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+        childWhenDragging: Opacity(
+          opacity: 0.15,
+          child: Icon(
+            CupertinoIcons.line_horizontal_3,
+            size: 16,
+            color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+          ),
+        ),
+        child: AnimatedBuilder(
+          animation: _scaleAnim,
+          builder: (context, child) => Transform.scale(
+            scale: _scaleAnim.value,
+            child: child,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Icon(
+              CupertinoIcons.line_horizontal_3,
+              size: 16,
+              color: CupertinoColors.tertiaryLabel
+                  .resolveFrom(context)
+                  .withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Swipe-to-reveal actions
+// ---------------------------------------------------------------------------
+
+class _SwipeableRow extends StatefulWidget {
+  const _SwipeableRow({
+    required this.child,
+    required this.onSwipeLeft,
+    required this.onSwipeRight,
+    required this.leftActionLabel,
+    required this.leftActionIcon,
+    required this.leftActionColor,
+    required this.rightActionLabel,
+    required this.rightActionIcon,
+    required this.rightActionColor,
+  });
+
+  final Widget child;
+  final VoidCallback onSwipeLeft;
+  final VoidCallback onSwipeRight;
+  final String leftActionLabel;
+  final IconData leftActionIcon;
+  final Color leftActionColor;
+  final String rightActionLabel;
+  final IconData rightActionIcon;
+  final Color rightActionColor;
+
+  @override
+  State<_SwipeableRow> createState() => _SwipeableRowState();
+}
+
+class _SwipeableRowState extends State<_SwipeableRow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  double _dragExtent = 0;
+  static const _kThreshold = 60.0;
+  static const _kMaxExtent = 80.0;
+  static const _kButtonWidth = 80.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _snapBack() {
+    final start = _dragExtent;
+    final anim = Tween<double>(begin: start, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.reset();
+    anim.addListener(() {
+      if (mounted) setState(() => _dragExtent = anim.value);
+    });
+    _controller.forward();
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    setState(() {
+      _dragExtent = (_dragExtent + details.delta.dx)
+          .clamp(-_kMaxExtent, _kMaxExtent);
+    });
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (_dragExtent < -_kThreshold) {
+      _animateTo(-_kMaxExtent);
+    } else if (_dragExtent > _kThreshold) {
+      _animateTo(_kMaxExtent);
+    } else {
+      _snapBack();
+    }
+  }
+
+  void _animateTo(double target) {
+    final start = _dragExtent;
+    final anim = Tween<double>(begin: start, end: target).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.reset();
+    anim.addListener(() {
+      if (mounted) setState(() => _dragExtent = anim.value);
+    });
+    _controller.forward();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final absExtent = _dragExtent.abs();
+    final isLeft = _dragExtent < 0;
+    final visibleWidth = absExtent.clamp(0.0, _kButtonWidth);
+
+    return ClipRect(
+      child: Stack(
+        children: [
+          // Action buttons behind content
+          if (absExtent > 0)
+            Positioned.fill(
+              child: Row(
+                children: [
+                  if (!isLeft)
+                    _buildAction(
+                      icon: widget.rightActionIcon,
+                      label: widget.rightActionLabel,
+                      color: widget.rightActionColor,
+                      alignment: Alignment.center,
+                      width: visibleWidth,
+                      onTap: widget.onSwipeRight,
+                    ),
+                  const Spacer(),
+                  if (isLeft)
+                    _buildAction(
+                      icon: widget.leftActionIcon,
+                      label: widget.leftActionLabel,
+                      color: widget.leftActionColor,
+                      alignment: Alignment.center,
+                      width: visibleWidth,
+                      onTap: widget.onSwipeLeft,
+                    ),
+                ],
+              ),
+            ),
+          // Sliding content
+          Transform.translate(
+            offset: Offset(_dragExtent, 0),
+            child: GestureDetector(
+              onHorizontalDragUpdate: _onPanUpdate,
+              onHorizontalDragEnd: _onPanEnd,
+              child: Container(
+                color: CupertinoColors.systemBackground.resolveFrom(context),
+                child: widget.child,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Alignment alignment,
+    required double width,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        _snapBack();
+        onTap();
+      },
+      child: Container(
+        width: width,
+        color: color,
+        alignment: alignment,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: CupertinoColors.white, size: 20),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                color: CupertinoColors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Delete handler (used by swipe action)
+// ---------------------------------------------------------------------------
+
+Future<void> _handleDelete(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n, {
+  required NodeEntity node,
+  required String themeId,
+  required List<NodeEntity> allNodes,
+}) async {
+  final subtreeNodes = _collectSubtreeNodes(node, allNodes);
+  final subtreeIds = subtreeNodes.map((item) => item.nodeId).toSet();
+  final sameTitleNodesOutside = allNodes
+      .where((item) =>
+          item.title == node.title && !subtreeIds.contains(item.nodeId))
+      .toList(growable: false);
+  final confirmed = await _confirmDeleteNode(
+    context,
+    node: node,
+    subtreeNodes: subtreeNodes,
+    sameTitleNodesOutside: sameTitleNodesOutside,
+  );
+  if (confirmed != true) return;
+  try {
+    final deletedCount = await ref
+        .read(themeDetailControllerProvider(themeId).notifier)
+        .deleteNodeSubtree(nodeId: node.nodeId);
+    if (!context.mounted) return;
+    _showAlert(context, l10n.deletedCount(deletedCount));
+  } catch (e) {
+    if (!context.mounted) return;
+    _showAlert(context, l10n.deleteFailed(e.toString()));
+  }
+}
+
+/// Handle drag-to-reorder: recalculate sortOrder for all siblings.
+Future<void> _handleReorder(
+  WidgetRef ref, {
+  required NodeEntity draggedNode,
+  required NodeEntity targetNode,
+  required List<NodeEntity> allNodes,
+}) async {
+  final nodeStore = await ref.read(nodeStoreProvider.future);
+  final parentId = targetNode.parentId;
+
+  // Get all siblings (same parentId), sorted by current sortOrder
+  final siblings = allNodes
+      .where((n) => n.parentId == parentId)
+      .toList(growable: false)
+    ..sort(_compareNodes);
+
+  // Remove dragged node and insert at target position
+  siblings.removeWhere((n) => n.nodeId == draggedNode.nodeId);
+  final targetIdx =
+      siblings.indexWhere((n) => n.nodeId == targetNode.nodeId);
+  siblings.insert(targetIdx, draggedNode);
+
+  // Update sortOrder for all siblings
+  final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+  for (int i = 0; i < siblings.length; i++) {
+    await nodeStore.reorderNode(
+      nodeId: siblings[i].nodeId,
+      newSortOrder: now + i,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+String? _sourceTypeLabel(AppLocalizations l10n, String? sourceType) {
+  return switch (sourceType) {
+    'selectedText' => l10n.sourceTypeSelectedText,
+    'conversation' => l10n.sourceTypeConversation,
+    'summary' => l10n.sourceTypeSummary,
+    'note' => l10n.sourceTypeNote,
+    _ => null,
+  };
+}
+
+void _showAlert(BuildContext context, String message) {
   showCupertinoDialog<void>(
     context: context,
     builder: (ctx) => CupertinoAlertDialog(
@@ -267,11 +724,27 @@ void _showSnackBar(BuildContext context, String message) {
   );
 }
 
-/// 主题树节点上的"创建分支"入口（节点 trailing 按钮）。
-///
-/// 1. 弹 [showBranchModeSheet] 让用户选 [BranchMode]（raw=原文 / summarize=LLM 总结）。
-/// 2. 调内部 [_showBranchFlow] 完成 session 读取 + provider/model 解析 + 调顶层
-///    [showBranchFlow] 完成标题选择 + 创建 chat node + 跳转。
+List<NodeEntity> _collectSubtreeNodes(
+    NodeEntity root, List<NodeEntity> allNodes) {
+  final childrenByParent = <String?, List<NodeEntity>>{};
+  for (final item in allNodes) {
+    childrenByParent.putIfAbsent(item.parentId, () => []).add(item);
+  }
+
+  final result = <NodeEntity>[];
+  final queue = <NodeEntity>[root];
+  while (queue.isNotEmpty) {
+    final current = queue.removeAt(0);
+    result.add(current);
+    queue.addAll(childrenByParent[current.nodeId] ?? const []);
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Branch creation
+// ---------------------------------------------------------------------------
+
 Future<void> _onCreateBranchFromMenu(
   BuildContext context,
   WidgetRef ref, {
@@ -283,11 +756,6 @@ Future<void> _onCreateBranchFromMenu(
   await _showBranchFlow(context, ref, node: node, mode: mode);
 }
 
-/// 主题树节点上的"创建分支"流程。
-///
-/// 1. 从 session.md 读 transcript（作为分支源 / 总结输入）
-/// 2. 解析 session frontmatter 的 providerId/modelId（fallback 全局设置）
-/// 3. 调 [showBranchFlow] 顶层函数。
 Future<void> _showBranchFlow(
   BuildContext context,
   WidgetRef ref, {
@@ -296,7 +764,6 @@ Future<void> _showBranchFlow(
 }) async {
   final l10n = AppLocalizations.of(context)!;
   try {
-    // 1. 读 session
     final nodeStore = await ref.read(nodeStoreProvider.future);
     final row = await nodeStore.getNodeRow(nodeId: node.nodeId);
     final sessionPath = row['sessionPath'] as String;
@@ -314,7 +781,6 @@ Future<void> _showBranchFlow(
 
     if (!context.mounted) return;
 
-    // 2. fallback 全局设置
     final settings = ref.read(settingsControllerProvider).value;
     if (settings != null) {
       providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
@@ -323,7 +789,6 @@ Future<void> _showBranchFlow(
 
     if (!context.mounted) return;
 
-    // 3. 调顶层 showBranchFlow
     await showBranchFlow(
       context: context,
       mode: mode,
@@ -336,7 +801,7 @@ Future<void> _showBranchFlow(
     );
   } catch (e) {
     if (!context.mounted) return;
-    _showSnackBar(context, l10n.branchFailed(e.toString()));
+    _showAlert(context, l10n.branchFailed(e.toString()));
   }
 }
 
@@ -357,104 +822,9 @@ String _mapLegacyProviderToPresetId(LlmProvider provider) {
   }
 }
 
-class _VerticalLinePainter extends CustomPainter {
-  _VerticalLinePainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5;
-    canvas.drawLine(
-      Offset(size.width / 2, 0),
-      Offset(size.width / 2, size.height),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _VerticalLinePainter oldDelegate) => color != oldDelegate.color;
-}
-
-class _BranchPainter extends CustomPainter {
-  _BranchPainter(this.color, {required this.isLast, required this.hasChildren});
-  final Color color;
-  final bool isLast;
-  final bool hasChildren;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5;
-    final midX = size.width / 2;
-    canvas.drawLine(Offset(midX, 0), Offset(midX, size.height / 2), paint);
-    canvas.drawLine(Offset(midX, size.height / 2), Offset(size.width, size.height / 2), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _BranchPainter oldDelegate) =>
-      color != oldDelegate.color || isLast != oldDelegate.isLast;
-}
-
-List<NodeEntity> _collectSubtreeNodes(NodeEntity root, List<NodeEntity> allNodes) {
-  final childrenByParent = <String?, List<NodeEntity>>{};
-  for (final item in allNodes) {
-    childrenByParent.putIfAbsent(item.parentId, () => []).add(item);
-  }
-
-  final result = <NodeEntity>[];
-  final queue = <NodeEntity>[root];
-  while (queue.isNotEmpty) {
-    final current = queue.removeAt(0);
-    result.add(current);
-    queue.addAll(childrenByParent[current.nodeId] ?? const []);
-  }
-  return result;
-}
-
-Future<String?> _promptRootTitle(BuildContext context) async {
-  final l10n = AppLocalizations.of(context)!;
-  final controller = TextEditingController();
-  return showCupertinoDialog<String>(
-    context: context,
-    builder: (context) {
-      return CupertinoAlertDialog(
-        title: Text(l10n.newSession),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: ThkTextField(
-            controller: controller,
-            placeholder: l10n.titleHint,
-            autofocus: true,
-            maxLength: 30,
-            onSubmitted: (value) {
-              final composing = controller.value.composing;
-              if (composing.isValid && !composing.isCollapsed) return;
-              Navigator.of(context)
-                  .pop(value.trim().isEmpty ? null : value.trim());
-            },
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.cancel),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () {
-              final value = controller.text.trim();
-              Navigator.of(context).pop(value.isEmpty ? null : value);
-            },
-            child: Text(l10n.create),
-          ),
-        ],
-      );
-    },
-  );
-}
+// ---------------------------------------------------------------------------
+// Delete dialog
+// ---------------------------------------------------------------------------
 
 Future<bool?> _confirmDeleteNode(
   BuildContext context, {
@@ -467,7 +837,8 @@ Future<bool?> _confirmDeleteNode(
     builder: (context) {
       final l10n = AppLocalizations.of(context)!;
       final descendantCount = subtreeNodes.length - 1;
-      final keptNodeIds = sameTitleNodesOutside.map((item) => item.nodeId).join('\n');
+      final keptNodeIds =
+          sameTitleNodesOutside.map((item) => item.nodeId).join('\n');
       final needsAck = sameTitleNodesOutside.isNotEmpty;
       bool acknowledged = false;
       return StatefulBuilder(
@@ -501,7 +872,8 @@ Future<bool?> _confirmDeleteNode(
                     Text(keptNodeIds),
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () => setState(() => acknowledged = !acknowledged),
+                      onTap: () =>
+                          setState(() => acknowledged = !acknowledged),
                       behavior: HitTestBehavior.opaque,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,6 +923,52 @@ Future<bool?> _confirmDeleteNode(
             ],
           );
         },
+      );
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Prompt root title (already Cupertino — kept as-is)
+// ---------------------------------------------------------------------------
+
+Future<String?> _promptRootTitle(BuildContext context) async {
+  final l10n = AppLocalizations.of(context)!;
+  final controller = TextEditingController();
+  return showCupertinoDialog<String>(
+    context: context,
+    builder: (context) {
+      return CupertinoAlertDialog(
+        title: Text(l10n.newSession),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ThkTextField(
+            controller: controller,
+            placeholder: l10n.titleHint,
+            autofocus: true,
+            maxLength: 30,
+            onSubmitted: (value) {
+              final composing = controller.value.composing;
+              if (composing.isValid && !composing.isCollapsed) return;
+              Navigator.of(context)
+                  .pop(value.trim().isEmpty ? null : value.trim());
+            },
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.cancel),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              final value = controller.text.trim();
+              Navigator.of(context).pop(value.isEmpty ? null : value);
+            },
+            child: Text(l10n.create),
+          ),
+        ],
       );
     },
   );

@@ -77,6 +77,7 @@ class _ChatComposerState extends State<ChatComposer> {
                 return KeyEventResult.handled;
               },
               child: CupertinoTextField(
+                key: const ValueKey('chat_input'),
                 controller: _controller,
                 focusNode: _inputFocusNode,
                 enabled: widget.enabled,
@@ -136,6 +137,7 @@ class _ChatComposerState extends State<ChatComposer> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
+              key: ValueKey(widget.isStreaming ? 'stop_button' : 'send_button'),
               padding: const EdgeInsets.all(8),
               onPressed: widget.enabled
                   ? widget.isStreaming

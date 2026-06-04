@@ -11,9 +11,14 @@ class TitleSuggestionService {
   TitleSuggestionService._();
 
   static const _titleSystemPrompt = '''
-你是一个标题命名助手。根据用户给定的内容（含可选方向引导），生成适合作为新对话标题的候选列表。
+你是一个标题命名助手。你的任务是分析用户提供的对话内容，提取其中的核心讨论主题和关键问题，然后生成适合作为新对话标题的候选列表。
 
-要求：
+分析要求：
+1. 重点关注用户在对话中提出的核心问题、讨论的主要话题、以及对话的目标或方向。
+2. 识别对话中的关键概念、技术术语、或决策点。
+3. 标题应该能让用户快速回忆起这段对话的核心内容。
+
+输出要求：
 1. 候选数量由你根据内容复杂度自行判断（1~20 个），内容越丰富/分支越多可以多给几个。
 2. 每个标题必须控制在 30 个字符以内（中文按字数、英文按字符数）。
 3. 标题要简洁、聚焦、信息密度高，能让用户一眼看出新对话的主题或切入角度。
@@ -28,6 +33,112 @@ class TitleSuggestionService {
 3. 不要添加原对话中没有的信息，不要替用户做判断。
 4. 使用与对话相同的语言输出。''';
 
+  /// 估算文本的 token 数量
+  ///
+  /// 根据文本中的 CJK 字符占比选择不同的估算比例：
+  /// - CJK 字符占比 > 30%：按 chars / 1.5 估算（中文 1-2 字 ≈ 1 token）
+  /// - CJK 字符占比 < 30%：按 chars / 4 估算（英文 ~4 chars ≈ 1 token）
+  /// - 混合文本：按比例加权
+  static int _estimateTokens(String text) {
+    if (text.isEmpty) return 0;
+
+    // 统计 CJK 字符数量（Unicode range \u4E00-\u9FFF 及扩展区）
+    int cjkCount = 0;
+    for (int i = 0; i < text.length; i++) {
+      final codeUnit = text.codeUnitAt(i);
+      // CJK Unified Ideographs: 4E00-9FFF
+      // CJK Unified Ideographs Extension A: 3400-4DBF
+      // CJK Compatibility Ideographs: F900-FAFF
+      if ((codeUnit >= 0x4E00 && codeUnit <= 0x9FFF) ||
+          (codeUnit >= 0x3400 && codeUnit <= 0x4DBF) ||
+          (codeUnit >= 0xF900 && codeUnit <= 0xFAFF)) {
+        cjkCount++;
+      }
+    }
+
+    final totalChars = text.length;
+    final cjkRatio = cjkCount / totalChars;
+
+    // 根据 CJK 占比选择估算比例
+    if (cjkRatio > 0.3) {
+      // 中文主导：chars / 1.5
+      return (totalChars / 1.5).round();
+    } else if (cjkRatio < 0.3) {
+      // 英文主导：chars / 4
+      return (totalChars / 4).round();
+    } else {
+      // 混合文本：按比例加权
+      final cjkTokens = (cjkCount / 1.5).round();
+      final nonCjkTokens = ((totalChars - cjkCount) / 4).round();
+      return cjkTokens + nonCjkTokens;
+    }
+  }
+
+  /// 按消息边界截断对话内容，使其不超过模型 context window 的 90%
+  ///
+  /// [transcript] 是完整的对话文本（Markdown 格式，包含 ## user / ## assistant 分隔符）
+  /// [contextWindow] 是模型的上下文窗口大小（tokens）
+  ///
+  /// 策略：
+  /// 1. 如果总 token 数 <= contextWindow * 0.9，不截断
+  /// 2. 否则从尾部按消息边界向前裁剪，直到总 token 落在 90% 内
+  /// 3. 如果裁完仍超（单条消息本身过长），直接砍掉最早 20% 的消息
+  /// 4. 裁剪后在开头插入标记
+  static String _truncateByMessages(String transcript, int contextWindow) {
+    if (transcript.isEmpty) return transcript;
+
+    // 如果 context window 未知（0），使用保守默认值 32K
+    final effectiveContextWindow = contextWindow > 0 ? contextWindow : 32000;
+    final maxTokens = (effectiveContextWindow * 0.9).round();
+
+    final totalTokens = _estimateTokens(transcript);
+    if (totalTokens <= maxTokens) {
+      return transcript;
+    }
+
+    // 按消息边界分割（## user 或 ## assistant）
+    final messagePattern = RegExp(r'^## (user|assistant) ·', multiLine: true);
+    final messageBoundaries = <int>[];
+    
+    for (final match in messagePattern.allMatches(transcript)) {
+      messageBoundaries.add(match.start);
+    }
+
+    // 如果找不到消息边界，直接截断尾部
+    if (messageBoundaries.isEmpty) {
+      final truncatedLength = (transcript.length * maxTokens / totalTokens).round();
+      return transcript.substring(0, truncatedLength) + '\n\n[...content truncated due to length...]';
+    }
+
+    // 从尾部向前裁剪消息
+    int currentEnd = transcript.length;
+    int currentTokens = totalTokens;
+    
+    for (int i = messageBoundaries.length - 1; i >= 0 && currentTokens > maxTokens; i--) {
+      final messageStart = messageBoundaries[i];
+      final messageEnd = (i < messageBoundaries.length - 1) 
+          ? messageBoundaries[i + 1] 
+          : transcript.length;
+      final messageContent = transcript.substring(messageStart, messageEnd);
+      final messageTokens = _estimateTokens(messageContent);
+      
+      currentTokens -= messageTokens;
+      currentEnd = messageStart;
+    }
+
+    String truncated = transcript.substring(0, currentEnd);
+
+    // 兜底：如果还是超了（单条消息过长），砍掉最早 20% 的消息
+    if (_estimateTokens(truncated) > maxTokens && messageBoundaries.length > 1) {
+      final cutCount = (messageBoundaries.length * 0.2).ceil();
+      if (cutCount < messageBoundaries.length) {
+        truncated = transcript.substring(messageBoundaries[cutCount]);
+      }
+    }
+
+    return '[Earlier messages omitted due to length]\n\n$truncated';
+  }
+
   /// 生成 1-20 个候选 title。
   ///
   /// [content] 是用于生成标题的原始内容（选中文本 / 笔记 / 对话总结等）。
@@ -39,14 +150,19 @@ class TitleSuggestionService {
     required LlmProviderConfig provider,
     required String modelId,
     required String apiKey,
+    required int contextWindow,
     CancelToken? cancelToken,
   }) async {
     final client = LlmClient.forConfig(provider);
+    
+    // 对内容应用截断（如果超长）
+    final truncatedContent = _truncateByMessages(content, contextWindow);
+    
     final messages = <Map<String, Object?>>[
       {'role': 'system', 'content': _titleSystemPrompt},
       {
         'role': 'user',
-        'content': _buildTitleUserPrompt(content: content, direction: direction),
+        'content': _buildTitleUserPrompt(content: truncatedContent, direction: direction),
       },
     ];
 
@@ -73,14 +189,19 @@ class TitleSuggestionService {
     required LlmProviderConfig provider,
     required String modelId,
     required String apiKey,
+    required int contextWindow,
     CancelToken? cancelToken,
   }) async {
     final client = LlmClient.forConfig(provider);
+    
+    // 对对话内容应用截断（如果超长）
+    final truncatedTranscript = _truncateByMessages(transcript, contextWindow);
+    
     final messages = <Map<String, Object?>>[
       {'role': 'system', 'content': _summarySystemPrompt},
       {
         'role': 'user',
-        'content': '请总结以下对话：\n\n---\n$transcript',
+        'content': '请总结以下对话：\n\n---\n$truncatedTranscript',
       },
     ];
 

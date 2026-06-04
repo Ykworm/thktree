@@ -189,16 +189,17 @@ class _LlmProviderDetailScreenState
                             subtitle: Text(model.id),
                             trailing: CupertinoCheckbox(
                               value: selected,
-                              onChanged: (checked) {
-                                setState(() {
-                                  if (checked == true) {
-                                    _selectedModelIds.add(model.id);
-                                  } else {
-                                    _selectedModelIds.remove(model.id);
-                                  }
-                                });
-                              },
+                              onChanged: null,
                             ),
+                            onTap: () {
+                              setState(() {
+                                if (selected) {
+                                  _selectedModelIds.remove(model.id);
+                                } else {
+                                  _selectedModelIds.add(model.id);
+                                }
+                              });
+                            },
                           );
                         }).toList(),
                       ),
@@ -253,14 +254,28 @@ class _LlmProviderDetailScreenState
       );
 
       if (!mounted) return;
-      setState(() {
-        _fetchedModels = models;
-        // 保留之前已选中的模型（如果仍存在）
-        _selectedModelIds = _selectedModelIds
-            .where((id) => models.any((m) => m.id == id))
-            .toSet();
-        _isFetchingModels = false;
-      });
+      
+      // Check if any models have unknown context window and prompt user
+      final modelsWithUnknownContext = models.where((m) => m.contextWindow == 0).toList();
+      if (modelsWithUnknownContext.isNotEmpty) {
+        final updatedModels = await _promptForContextWindows(models, modelsWithUnknownContext);
+        if (!mounted) return;
+        setState(() {
+          _fetchedModels = updatedModels;
+          _selectedModelIds = _selectedModelIds
+              .where((id) => updatedModels.any((m) => m.id == id))
+              .toSet();
+          _isFetchingModels = false;
+        });
+      } else {
+        setState(() {
+          _fetchedModels = models;
+          _selectedModelIds = _selectedModelIds
+              .where((id) => models.any((m) => m.id == id))
+              .toSet();
+          _isFetchingModels = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isFetchingModels = false);
@@ -269,6 +284,73 @@ class _LlmProviderDetailScreenState
         title: l10n.fetchModelsFailed(e.toString()),
       );
     }
+  }
+
+
+  /// Prompt user to set context window for models with unknown context window
+  Future<List<LlmModelConfig>> _promptForContextWindows(
+    List<LlmModelConfig> allModels,
+    List<LlmModelConfig> modelsWithUnknown,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Context window options from largest to smallest
+    const contextWindowOptions = [
+      (1000000, '1M'),
+      (512000, '512K'),
+      (256000, '256K'),
+      (128000, '128K'),
+      (64000, '64K'),
+      (32000, '32K'),
+      (16000, '16K'),
+      (8000, '8K'),
+      (4000, '4K'),
+    ];
+
+    // Show picker for each model with unknown context window
+    for (var i = 0; i < modelsWithUnknown.length; i++) {
+      final model = modelsWithUnknown[i];
+      
+      final selectedIndex = await showCupertinoModalPopup<int>(
+        context: context,
+        builder: (ctx) => CupertinoActionSheet(
+          title: Text(l10n.contextWindowTitle(model.name)),
+          message: Text(
+            '${i + 1} / ${modelsWithUnknown.length}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: CupertinoColors.secondaryLabel,
+            ),
+          ),
+          actions: [
+            for (var j = 0; j < contextWindowOptions.length; j++)
+              CupertinoActionSheetAction(
+                onPressed: () => Navigator.of(ctx).pop(j),
+                child: Text('${contextWindowOptions[j].$2} tokens'),
+              ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
+        ),
+      );
+
+      if (selectedIndex != null && mounted) {
+        final contextWindow = contextWindowOptions[selectedIndex].$1;
+        final updatedModel = model.copyWith(contextWindow: contextWindow);
+        
+        // Update the model in the list
+        final index = allModels.indexWhere((m) => m.id == model.id);
+        if (index != -1) {
+          allModels = List.from(allModels);
+          allModels[index] = updatedModel;
+        }
+      }
+    }
+
+    return allModels;
   }
 
   // ─── 保存提供商 ──────────────────────────────────────────────────
@@ -337,8 +419,8 @@ class _LlmProviderDetailScreenState
 
   // ─── 预置提供商自动保存 ──────────────────────────────────────────
 
-  Future<void> _autoSave() async {
-    if (_isNew || _isCustom) return;
+  Future<bool> _autoSave() async {
+    if (_isNew || _isCustom) return false;
 
     try {
       final store = ref.read(llmConfigStoreProvider);
@@ -357,19 +439,31 @@ class _LlmProviderDetailScreenState
         await store.saveApiKey(updated.id, apiKey);
       }
       ref.invalidate(llmProvidersProvider);
+      return true;
     } catch (e) {
       debugPrint('[_autoSave] 保存失败: $e');
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        if (l10n != null) {
+          ThkAlert.show(
+            context: context,
+            title: l10n.saveFailed(e.toString()),
+          );
+        }
+      }
+      return false;
     }
   }
 
   void _onPopInvoked(bool didPop, dynamic result) async {
     if (didPop) return;
     // 页面退出时自动保存预置提供商
+    bool saved = false;
     if (!_isNew && !_isCustom) {
-      await _autoSave();
+      saved = await _autoSave();
     }
     if (mounted) {
-      Navigator.of(context).pop(false);
+      Navigator.of(context).pop(saved);
     }
   }
 

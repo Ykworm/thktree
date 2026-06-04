@@ -102,25 +102,12 @@ class MessageBubble extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                if (hasTable)
-                  SizedBox(
-                    width: maxWidth - 24,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: GptMarkdown(
-                        body,
-                        style: baseStyle,
-                        tableBuilder: _buildTable,
-                        codeBuilder: _buildCodeBlock,
-                      ),
-                    ),
-                  )
-                else
-                  GptMarkdown(
-                    body,
-                    style: baseStyle,
-                    codeBuilder: _buildCodeBlock,
-                  ),
+                GptMarkdown(
+                  body,
+                  style: baseStyle,
+                  tableBuilder: _buildTable,
+                  codeBuilder: _buildCodeBlock,
+                ),
               ],
             ),
           ),
@@ -167,26 +154,30 @@ class MessageBubble extends StatelessWidget {
     TextStyle textStyle,
     GptMarkdownConfig config,
   ) {
-    return Table(
-      border: TableBorder.all(
-        color: CupertinoColors.separator.resolveFrom(context),
-        width: 1,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Table(
+        border: TableBorder.all(
+          color: CupertinoColors.separator.resolveFrom(context),
+          width: 1,
+        ),
+        defaultColumnWidth: const IntrinsicColumnWidth(),
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: tableRows.map((row) {
+          return TableRow(
+            children: row.fields.map((cell) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text(
+                  cell.data,
+                  style: textStyle,
+                  textAlign: cell.alignment,
+                ),
+              );
+            }).toList(),
+          );
+        }).toList(),
       ),
-      defaultColumnWidth: const FlexColumnWidth(),
-      children: tableRows.map((row) {
-        return TableRow(
-          children: row.fields.map((cell) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                cell.data,
-                style: textStyle,
-                textAlign: cell.alignment,
-              ),
-            );
-          }).toList(),
-        );
-      }).toList(),
     );
   }
 }

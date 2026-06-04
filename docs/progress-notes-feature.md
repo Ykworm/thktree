@@ -110,3 +110,110 @@
 | 2026-05-27 | 下拉刷新无动画/无效 | RefreshIndicator 子 widget 不是可滚动列表 | 改用 `_ScrollableWrap` 包裹所有状态 |
 | 2026-05-27 | ref.listen 报错 | Riverpod 3.x 不允许在 initState 调用 | 改为 build 内版本号比较 + 异步加载 |
 | 2026-05-27 | 笔记页面数据突然为空 | `appPathsProvider.future` 未 await | 改为 `await ref.read(appPathsProvider.future)` |
+
+---
+
+## 7. 标题生成与对话总结功能优化（2026-06-04）
+
+### 7.1 已完成的功能
+
+#### 7.1.1 手动触发标题生成
+- 移除自动触发机制（原来进入页面自动生成）
+- 用户需要主动点击"生成标题"按钮
+- 首次生成时会弹出模型选择器，选择后记住该偏好
+- 实现位置：[title_suggestion_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/core/shared/title_suggestion_screen.dart#L103-L145)
+
+#### 7.1.2 独立模型选择
+- 标题生成和对话总结支持配置独立的模型
+- 设置页面新增两个入口：
+  - **标题生成模型** (`titleModelProviderId` + `titleModelModelId`)
+  - **对话总结模型** (`summaryModelProviderId` + `summaryModelModelId`)
+- 未配置时每次弹选择器；已配置则直接使用
+- 用户选择后自动保存到 `SettingsStore`
+- 实现位置：[settings_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/settings/settings_screen.dart#L231-L280)
+
+#### 7.1.3 消息边界截断
+- 超长内容按消息边界截断，填满模型 context window 的 90%
+- 截断策略：从尾部向前裁剪消息，保留完整对话轮次
+- 兜底机制：如果仍超限，砍掉最早 20% 的消息
+- 实现位置：[title_suggestion_service.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/services/title_suggestion_service.dart#L80-L140)
+
+#### 7.1.4 Token 估算与 CJK 支持
+- 新增 `_estimateTokens()` 方法，支持语言检测
+- CJK 字符（中文/日文/韩文）按 `chars / 1.5` 估算
+- 英文字符按 `chars / 4` 估算
+- 混合文本按比例加权
+- 实现位置：[title_suggestion_service.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/services/title_suggestion_service.dart#L50-L78)
+
+#### 7.1.5 未知 Context Window 处理
+- 模型列表获取时，若 context window 未知（`contextWindow == 0`），弹出选择器
+- 选项：1M / 512K / 256K / 128K / 64K / 32K / 16K / 8K / 4K
+- 用户选择后保存到 `LlmModelConfig`
+- 实现位置：[llm_provider_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/llm/llm_provider_detail_screen.dart#L400-L450)
+
+#### 7.1.6 提示词优化
+- `_titleSystemPrompt` 调整为引导模型提取讨论主题、关注用户提问
+- `_summarySystemPrompt` 保持不变
+
+### 7.2 数据模型变更
+
+#### SettingsStore 新增字段
+```dart
+final String? titleModelProviderId;
+final String? titleModelModelId;
+final String? summaryModelProviderId;
+final String? summaryModelModelId;
+```
+
+#### LlmModelConfig 变更
+```dart
+final int contextWindow; // 0 表示未知
+```
+
+### 7.3 UI 设计要点
+
+- 所有新增 UI 遵循 iOS HIG（Human Interface Guidelines）
+- 使用 `SafeArea` 包裹所有页面
+- 模型选择器使用 `CupertinoActionSheet`
+- 空态引导使用图标 + 文字 + 按钮组合
+
+### 7.4 关键问题与解决
+
+| 日期 | 问题 | 根因 | 解决 |
+|------|------|------|------|
+| 2026-06-04 | 选择模型后下次不生效 | 未保存到 settings | 在 `_showModelSelectorAndGenerate()` 中添加 `saveTitleModel()` |
+| 2026-06-04 | Anthropic 模型 context window 始终为 100M | 默认值设为 100M | 改为 0（未知），让用户手动选择 |
+| 2026-06-04 | 长对话超出模型限制 | 未做截断 | 实现消息边界截断 + 20% 兜底 |
+| 2026-06-04 | 中文内容 token 估算不准确 | 按英文比例 `chars / 4` | 增加 CJK 检测，中文按 `chars / 1.5` |
+
+### 7.5 测试覆盖
+
+- `_estimateTokens()` — 纯英文、纯中文、混合文本测试
+- `_truncateByMessages()` — 短对话不截断、超长对话截断、20% 兜底测试
+- `SettingsStore` — 读写 4 个新字段测试
+
+### 7.6 文件变更统计
+
+```
+ lib/data/models/llm_model_config.dart              |   4 +-
+ lib/data/services/model_fetcher.dart               |   9 +-
+ lib/data/services/settings_store.dart              |  49 ++
+ lib/data/services/title_suggestion_service.dart    | 129 +++-
+ lib/l10n/app_en.arb                                | 754 ++++++++++++-------
+ lib/l10n/app_zh.arb                                | 200 ++---
+ lib/ui/core/shared/title_suggestion_screen.dart    | 282 ++++++-
+ lib/ui/features/llm/llm_provider_detail_screen.dart| 136 +++-
+ lib/ui/features/settings/settings_controller.dart  |  12 +
+ lib/ui/features/settings/settings_screen.dart      | 231 ++++++
+ 31 files changed, 2388 insertions(+), 796 deletions(-)
+```
+
+### 7.7 后续优化方向
+
+| 优先级 | 事项 | 说明 |
+|--------|------|------|
+| 🟡 | "找回初心"功能 | 帮助用户回溯对话起源，高亮最早的关键提问 |
+| 🟢 | 更精确的 token 估算 | 集成 tiktoken 库，替代简单的 `chars / N` 估算 |
+| 🟢 | 模型选择器优化 | 显示模型的实际 context window 大小，帮助用户决策 |
+| 🟢 | 批量设置 context window | 多个模型未知时，支持一次性设置所有 |
+
