@@ -76,7 +76,28 @@ class NodeMetaV1 {
       title: title,
       createdAtUtcIso8601: createdAtUtcIso8601,
       updatedAtUtcIso8601: updatedAtUtcIso8601,
+      sortOrder: DateTime.tryParse(createdAtUtcIso8601)?.millisecondsSinceEpoch
+          ?? DateTime.now().toUtc().millisecondsSinceEpoch,
     );
   }
-}
+  NodeMetaV1 copyWith({
+    String? themeId,
+    String? nodeId,
+    String? parentId,
+    NodeKind? kind,
+    String? title,
+    String? createdAtUtcIso8601,
+    String? updatedAtUtcIso8601,
+  }) {
+    return NodeMetaV1(
+      themeId: themeId ?? this.themeId,
+      nodeId: nodeId ?? this.nodeId,
+      parentId: parentId ?? this.parentId,
+      kind: kind ?? this.kind,
+      title: title ?? this.title,
+      createdAtUtcIso8601: createdAtUtcIso8601 ?? this.createdAtUtcIso8601,
+      updatedAtUtcIso8601: updatedAtUtcIso8601 ?? this.updatedAtUtcIso8601,
+    );
+  }
 
+}

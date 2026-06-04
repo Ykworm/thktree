@@ -63,9 +63,23 @@ class NodeStore {
       );
 
       for (final record in records) {
-        final createdAtMillis = DateTime.tryParse(record.meta.createdAtUtcIso8601)?.millisecondsSinceEpoch;
+        final createdAtMillis = DateTime.tryParse(record.meta.createdAtUtcIso8601)?.millisecondsSinceEpoch
+            ?? DateTime.now().toUtc().millisecondsSinceEpoch;
         final sessionPath = p.join(record.nodeDir.path, 'session.md');
         final info = sourceInfo[record.meta.nodeId];
+
+        // Preserve existing sortOrder if it was manually set (e.g., by drag-to-reorder)
+        int? existingSortOrder;
+        final existingRows = await txn.query(
+          'nodes',
+          columns: ['sortOrder'],
+          where: 'nodeId = ?',
+          whereArgs: [record.meta.nodeId],
+          limit: 1,
+        );
+        if (existingRows.isNotEmpty) {
+          existingSortOrder = existingRows.first['sortOrder'] as int?;
+        }
 
         await txn.insert(
           'nodes',
@@ -80,7 +94,7 @@ class NodeStore {
             'nodePath': paths.toRootRelativePath(record.nodeDir.path),
             'sessionPath': paths.toRootRelativePath(sessionPath),
             'contextSummaryPath': null,
-            'sortOrder': createdAtMillis,
+            'sortOrder': existingSortOrder ?? createdAtMillis,
             'sourceExcerpt': info?.$1,
             'sourceType': info?.$2,
           },
@@ -121,9 +135,9 @@ class NodeStore {
         'nodes',
         where: 'themeId = ?',
         whereArgs: [themeId],
-        orderBy: 'sortOrder IS NULL, sortOrder ASC, createdAt ASC',
+        orderBy: 'sortOrder ASC, createdAt ASC',
       );
-      return rows
+      final nodes = rows
           .map(
             (row) => NodeEntity(
               themeId: row['themeId']! as String,
@@ -137,12 +151,17 @@ class NodeStore {
               title: row['title']! as String,
               createdAtUtcIso8601: row['createdAt']! as String,
               updatedAtUtcIso8601: row['updatedAt']! as String,
+              sortOrder: (row['sortOrder'] as int?) ?? 0,
               sourceExcerpt: row['sourceExcerpt'] as String?,
               sourceType: row['sourceType'] as String?,
-              sortOrder: row['sortOrder'] as int?,
             ),
           )
           .toList(growable: false);
+      dev.log('[NODE_STORE] listNodes result:');
+      for (final n in nodes) {
+        dev.log('  ${n.parentId ?? "(root)"} > ${n.title} sortOrder=${n.sortOrder}');
+      }
+      return nodes;
     } catch (e, st) {
       dev.log('[listNodes] ERROR: $e\n$st');
       rethrow;
@@ -336,6 +355,7 @@ class NodeStore {
     required String nodeId,
     required int newSortOrder,
   }) async {
+    dev.log('[NODE_STORE] reorderNode $nodeId -> $newSortOrder');
     await db.update(
       'nodes',
       {'sortOrder': newSortOrder},
@@ -359,6 +379,59 @@ class NodeStore {
       where: 'nodeId = ?',
       whereArgs: [nodeId],
     );
+  }
+
+  /// Update node title (used by rename feature).
+  Future<void> updateNodeTitle({
+    required String nodeId,
+    required String newTitle,
+  }) async {
+    // 1. Update SQLite
+    final now = DateTime.now().toUtc().toIso8601String();
+    await db.update(
+      'nodes',
+      {'title': newTitle, 'updatedAt': now},
+      where: 'nodeId = ?',
+      whereArgs: [nodeId],
+    );
+
+    // 2. Update meta.json
+    final rows = await db.query(
+      'nodes',
+      columns: ['nodePath'],
+      where: 'nodeId = ?',
+      whereArgs: [nodeId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return;
+    final nodePath = rows.single['nodePath'] as String?;
+    if (nodePath == null) return;
+
+    final metaPath = p.join(paths.toAbsolutePath(nodePath), 'node.meta.json');
+    final meta = await readNodeMeta(metaPath);
+    final updated = meta.copyWith(title: newTitle, updatedAtUtcIso8601: now);
+    await _atomicWriteString(metaPath, updated.toJsonString());
+
+    // 3. Update session.md frontmatter
+    final sessionRows = await db.query(
+      'nodes',
+      columns: ['sessionPath'],
+      where: 'nodeId = ?',
+      whereArgs: [nodeId],
+      limit: 1,
+    );
+    if (sessionRows.isNotEmpty) {
+      final sessionPath = sessionRows.single['sessionPath'] as String?;
+      if (sessionPath != null) {
+        final absPath = paths.toAbsolutePath(sessionPath);
+        final file = File(absPath);
+        if (await file.exists()) {
+          final sessionContent = await file.readAsString();
+          final updatedSession = updateSessionFrontmatter(sessionContent, {'title': newTitle});
+          await _atomicWriteString(absPath, updatedSession);
+        }
+      }
+    }
   }
 
   Future<String> _getThemeIdByPath(String themePath) async {

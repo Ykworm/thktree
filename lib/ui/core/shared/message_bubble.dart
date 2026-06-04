@@ -23,9 +23,11 @@ class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
     required this.message,
+    this.onRetry,
   });
 
   final SessionMessage message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +110,32 @@ class MessageBubble extends StatelessWidget {
                   tableBuilder: _buildTable,
                   codeBuilder: _buildCodeBlock,
                 ),
+                if (message.role == SessionRole.assistant &&
+                    message.status != SessionMessageStatus.streaming &&
+                    onRetry != null) ...[
+                  const SizedBox(height: 6),
+                  if (message.status == SessionMessageStatus.error)
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      color: CupertinoColors.systemRed,
+                      onPressed: onRetry,
+                      child: Text(
+                        l10n.retry,
+                        style: const TextStyle(fontSize: 14, color: CupertinoColors.white),
+                      ),
+                    )
+                  else
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      onPressed: onRetry,
+                      child: Icon(
+                        CupertinoIcons.arrow_counterclockwise,
+                        size: 18,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),

@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/data/services/app_database.dart';
+import 'package:thk_tree/data/services/biometric_service.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/stores/llm_config_store.dart';
@@ -64,6 +65,10 @@ final nodeStoreProvider = FutureProvider<NodeStore>((ref) async {
 
 final settingsStoreProvider = Provider<SettingsStore>((ref) {
   return SettingsStore(secureStorage: const FlutterSecureStorage());
+});
+
+final biometricServiceProvider = Provider<BiometricService>((ref) {
+  return BiometricService();
 });
 
 final llmClientProvider = FutureProvider<LlmClient>((ref) async {

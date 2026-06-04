@@ -194,6 +194,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get save;
 
+  /// No description provided for @renameNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Note'**
+  String get renameNote;
+
   /// Delete button label
   ///
   /// In en, this message translates to:
@@ -1039,6 +1045,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Branch'**
   String get swipeBranch;
+
+  /// Title for rename dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Node'**
+  String get renameNode;
+
+  /// Placeholder for new title input
+  ///
+  /// In en, this message translates to:
+  /// **'Enter new title'**
+  String get enterNewTitle;
+
+  /// Button label to retry failed message
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// Settings tile title for Face ID lock toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Face ID Lock'**
+  String get faceIdLock;
+
+  /// Settings tile subtitle for Face ID lock toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Require Face ID to open the app'**
+  String get faceIdLockSubtitle;
 }
 
 class _AppLocalizationsDelegate

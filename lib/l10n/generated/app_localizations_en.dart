@@ -59,6 +59,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get save => 'Save';
 
   @override
+  String get renameNote => 'Rename Note';
+
+  @override
   String get delete => 'Delete';
 
   @override
@@ -546,4 +549,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get swipeBranch => 'Branch';
+
+  @override
+  String get renameNode => 'Rename Node';
+
+  @override
+  String get enterNewTitle => 'Enter new title';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get faceIdLock => 'Face ID Lock';
+
+  @override
+  String get faceIdLockSubtitle => 'Require Face ID to open the app';
 }

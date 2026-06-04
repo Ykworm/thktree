@@ -9,6 +9,7 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/auth_gate.dart';
 import 'package:thk_tree/ui/core/router.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -70,7 +71,9 @@ Future<void> main() async {
         localeProvider.overrideWith(() => LocaleNotifier(initialLocale)),
       ],
       child: AlibabaCloudActionCapture(
-        child: const ThkTreeApp(),
+        child: const AuthGate(
+          child: ThkTreeApp(),
+        ),
       ),
     ),
   );

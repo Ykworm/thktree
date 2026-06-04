@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS nodes (
   nodePath TEXT NOT NULL,
   sessionPath TEXT NOT NULL,
   contextSummaryPath TEXT NULL,
-  sortOrder INTEGER NULL,
+  sortOrder INTEGER NOT NULL DEFAULT 0,
   sourceExcerpt TEXT NULL,
   sourceType TEXT NULL
 )
@@ -55,14 +55,14 @@ CREATE TABLE IF NOT EXISTS nodes (
 
 /// v3: add sortOrder, sourceExcerpt, sourceType columns to nodes table
 Future<void> _migrateV3(Database db) async {
-  await _addColumnIfNotExists(db, 'nodes', 'sortOrder', 'INTEGER DEFAULT NULL');
+  await _addColumnIfNotExists(db, 'nodes', 'sortOrder', 'INTEGER NOT NULL DEFAULT 0');
   await _addColumnIfNotExists(db, 'nodes', 'sourceExcerpt', 'TEXT DEFAULT NULL');
   await _addColumnIfNotExists(db, 'nodes', 'sourceType', 'TEXT DEFAULT NULL');
   // backfill sortOrder from createdAt
   await db.execute('''
     UPDATE nodes SET sortOrder = CAST(
       (julianday(createdAt) - julianday('1970-01-01')) * 86400000 AS INTEGER
-    ) WHERE sortOrder IS NULL
+    ) WHERE sortOrder IS NULL OR sortOrder = 0
   ''');
 }
 

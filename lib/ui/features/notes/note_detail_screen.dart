@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
@@ -8,7 +9,7 @@ import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
-import 'package:thk_tree/ui/core/theme/app_theme.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -32,9 +33,11 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   late final TextEditingController _controller;
   late final NoteStore _store;
   String _body = '';
+  String _title = '';
   bool _loading = true;
   Object? _error;
   int? _lastSeenVersion;
+  bool _copied = false;
 
   @override
   void initState() {
@@ -42,6 +45,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     _store = NoteStore(notesDir: Directory(widget.notesDir));
     _controller = TextEditingController();
     _lastSeenVersion = ref.read(noteListVersionProvider);
+    _loadTitle();
     _loadBody();
   }
 
@@ -67,6 +71,29 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
   }
 
+  Future<void> _loadTitle() async {
+    try {
+      final metas = await _store.listNoteMetas();
+      final meta = metas.firstWhere(
+        (m) => m.noteId == widget.noteId,
+        orElse: () => NoteMeta(
+          themeId: '',
+          noteId: widget.noteId,
+          title: '',
+          createdAt: '',
+          updatedAt: '',
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _title = meta.title;
+        });
+      }
+    } catch (_) {
+      // Ignore errors when loading title
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -83,6 +110,66 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     setState(() {
       _editing = !_editing;
     });
+  }
+
+  /// 复制全部笔记内容到剪贴板。
+  Future<void> _copyAll() async {
+    if (_body.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: _body));
+    if (!mounted) return;
+    setState(() => _copied = true);
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      setState(() => _copied = false);
+    }
+  }
+
+  Future<void> _renameNote() async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: _title);
+    
+    final newTitle = await showCupertinoDialog<String>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(l10n.renameNote),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: ThkTextField(
+              controller: controller,
+              placeholder: l10n.titleHint,
+              autofocus: true,
+              maxLength: 30,
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.cancel),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () {
+                final value = controller.text.trim();
+                Navigator.of(context).pop(value.isEmpty ? null : value);
+              },
+              child: Text(l10n.save),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newTitle == null || newTitle.isEmpty) return;
+    if (newTitle == _title) return;
+
+    await _store.renameNote(noteId: widget.noteId, newTitle: newTitle);
+    ref.read(noteListVersionProvider.notifier).bump();
+    if (mounted) {
+      setState(() {
+        _title = newTitle;
+      });
+    }
   }
 
   /// 从笔记创建一个新对话。
@@ -167,11 +254,23 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.white,
       navigationBar: ThkNavBar.inline(
-        title: l10n.notes,
+        title: _title,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (!_editing && _body.isNotEmpty)
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _copyAll,
+                child: Icon(
+                  _copied ? AppIcons.checkCircle : AppIcons.copy,
+                  color: _copied
+                      ? CupertinoColors.systemGreen
+                      : CupertinoColors.activeBlue,
+                ),
+              ),
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: _createChatFromNote,
@@ -184,8 +283,10 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
             ),
           ],
         ),
+        onTitleTap: _renameNote,
       ),
       child: SafeArea(
+        bottom: !_editing,
         child: _buildBody(l10n),
       ),
     );
@@ -193,22 +294,27 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_editing) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.75,
-          child: CupertinoTextField(
-            controller: _controller,
-            maxLines: null,
-            expands: true,
-            textAlignVertical: TextAlignVertical.top,
-            decoration: BoxDecoration(
-              color: CupertinoColors.systemGroupedBackground,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: CupertinoColors.separator),
+      return Column(
+        children: [
+          Expanded(
+            child: CupertinoTextField(
+              controller: _controller,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              padding: const EdgeInsets.all(16),
+              style: const TextStyle(
+                fontSize: 17,
+                height: 1.6,
+                color: CupertinoColors.black,
+              ),
+              decoration: const BoxDecoration(
+                color: CupertinoColors.white,
+              ),
             ),
           ),
-        ),
+          MarkdownToolbar(controller: _controller),
+        ],
       );
     }
     if (_loading) {
@@ -230,15 +336,14 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         ),
       );
     }
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: CupertinoTextField(
-        controller: TextEditingController(text: _body),
-        readOnly: true,
-        maxLines: null,
-        style: AppTheme.body,
-        decoration: const BoxDecoration(), // no border
+    return Container(
+      color: CupertinoColors.white,
+      child: SingleChildScrollView(
         padding: EdgeInsets.zero,
+        child: GptMarkdown(
+          _body,
+          style: const TextStyle(fontSize: 17, height: 1.6),
+        ),
       ),
     );
   }
@@ -311,12 +416,56 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
     return CupertinoPageScaffold(
       navigationBar: ThkNavBar.inline(
         title: l10n.notes,
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => _createNote(context, ref),
+          child: Icon(AppIcons.add),
+        ),
       ),
       child: SafeArea(
         top: false,
         child: _buildBody(l10n),
       ),
     );
+  }
+
+  Future<void> _createNote(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    final title = await showCupertinoDialog<String>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(l10n.newNote),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: ThkTextField(
+              controller: controller,
+              placeholder: l10n.titleHint,
+              autofocus: true,
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.cancel),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () {
+                final value = controller.text.trim();
+                Navigator.of(context).pop(value.isEmpty ? null : value);
+              },
+              child: Text(l10n.create),
+            ),
+          ],
+        );
+      },
+    );
+    if (title == null) return;
+
+    await _store.createNote(themeId: widget.themeId, title: title);
+    ref.read(noteListVersionProvider.notifier).bump();
   }
 
   Widget _buildBody(AppLocalizations l10n) {

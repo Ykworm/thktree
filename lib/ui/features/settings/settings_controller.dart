@@ -37,6 +37,12 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     state = AsyncData(await store.load());
   }
 
+  Future<void> saveFaceIdEnabled(bool enabled) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveFaceIdEnabled(enabled);
+    state = AsyncData(await store.load());
+  }
+
   Future<void> saveTitleModel({String? providerId, String? modelId}) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveTitleModel(providerId: providerId, modelId: modelId);

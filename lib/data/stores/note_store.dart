@@ -115,6 +115,30 @@ class NoteStore {
     await _file(noteId).writeAsString('$updated\n---\n\n$body\n');
   }
 
+  /// Rename a note by updating its title in the frontmatter.
+  Future<void> renameNote({
+    required String noteId,
+    required String newTitle,
+  }) async {
+    final raw = await _file(noteId).readAsString();
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    final frontEnd = raw.indexOf('\n---\n');
+    if (frontEnd < 0) {
+      throw StateError('Invalid note format: $noteId');
+    }
+
+    String frontmatter = raw.substring(0, frontEnd);
+    String body = raw.substring(frontEnd + 5);
+
+    // Update title in frontmatter
+    final updatedFrontmatter = _updateYamlTitle(frontmatter, newTitle);
+    // Update updatedAt
+    final finalFrontmatter = _updateYamlUpdatedAt(updatedFrontmatter, now);
+
+    await _file(noteId).writeAsString('$finalFrontmatter\n---\n$body');
+  }
+
   Future<void> appendBody(String noteId, String text) async {
     final raw = await _file(noteId).readAsString();
     final now = DateTime.now().toUtc().toIso8601String();
@@ -172,6 +196,19 @@ String _updateYamlUpdatedAt(String frontmatter, String newTime) {
   for (final line in lines) {
     if (line.trimLeft().startsWith('updatedAt:')) {
       buf.writeln('updatedAt: "$newTime"');
+    } else {
+      buf.writeln(line);
+    }
+  }
+  return buf.toString().trimRight();
+}
+
+String _updateYamlTitle(String frontmatter, String newTitle) {
+  final lines = frontmatter.split('\n');
+  final buf = StringBuffer();
+  for (final line in lines) {
+    if (line.trimLeft().startsWith('title:')) {
+      buf.writeln('title: "${_escapeYaml(newTitle)}"');
     } else {
       buf.writeln(line);
     }

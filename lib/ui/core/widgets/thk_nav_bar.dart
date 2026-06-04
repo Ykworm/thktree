@@ -55,9 +55,13 @@ class ThkNavBar {
     EdgeInsetsDirectional? padding,
     Border? border,
     Color? backgroundColor,
+    VoidCallback? onTitleTap,
   }) {
     return CupertinoNavigationBar(
-      middle: middle ?? Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      middle: middle ?? GestureDetector(
+        onTap: onTitleTap,
+        child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      ),
       leading: leading,
       trailing: trailing,
       previousPageTitle: previousPageTitle,

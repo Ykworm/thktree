@@ -187,13 +187,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     final text = value?.plainText;
                     if (text != null && text.trim().isNotEmpty) {
                       _currentSelectedText = text;
+                    } else {
+                      _currentSelectedText = null;
                     }
                   },
                   child: ChatListView(
                     messages: messages,
-                    messageBuilder: (context, message) => MessageBubble(
-                      message: message,
-                    ),
+                    messageBuilder: (context, message) {
+                      final isLastAssistant = message.role == SessionRole.assistant &&
+                          message.status != SessionMessageStatus.streaming &&
+                          message == messages.lastWhere(
+                            (m) => m.role == SessionRole.assistant,
+                            orElse: () => message,
+                          );
+                      return MessageBubble(
+                        message: message,
+                        onRetry: isLastAssistant
+                            ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
+                            : null,
+                      );
+                    },
                   ),
                 ),
                 error: (e, st) => Center(child: Text(e.toString())),

@@ -38,6 +38,11 @@ class SettingsScreen extends ConsumerWidget {
             _SummaryModelEntry(),
           ],
         ),
+        ThkListSection(
+          children: [
+            _FaceIdToggle(),
+          ],
+        ),
         loggerAsync.when(
           data: (logger) => ThkListSection(
             children: _buildLogTiles(context, logger, l10n),
@@ -548,4 +553,27 @@ List<Widget> _buildProviderActions(LlmProviderConfig provider, WidgetRef ref, Bu
   }
   
   return actions;
+}
+
+class _FaceIdToggle extends ConsumerWidget {
+  const _FaceIdToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final enabled = settingsAsync.whenOrNull(data: (s) => s.faceIdEnabled) ?? true;
+
+    return ThkListTile(
+      leading: const Icon(CupertinoIcons.lock_shield),
+      title: l10n.faceIdLock,
+      subtitle: l10n.faceIdLockSubtitle,
+      trailing: CupertinoSwitch(
+        value: enabled,
+        onChanged: (value) {
+          ref.read(settingsControllerProvider.notifier).saveFaceIdEnabled(value);
+        },
+      ),
+    );
+  }
 }

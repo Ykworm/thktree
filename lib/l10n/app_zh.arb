@@ -22,6 +22,7 @@
   "tree": "树",
   "branch": "分支",
   "save": "保存",
+  "renameNote": "重命名笔记",
   "delete": "删除",
   "close": "关闭",
   "copied": "已复制",
@@ -225,5 +226,10 @@
   "sourceTypeSummary": "对话总结",
   "sourceTypeNote": "笔记",
   "swipeDelete": "删除",
-  "swipeBranch": "分支"
+  "swipeBranch": "分支",
+  "renameNode": "重命名节点",
+  "enterNewTitle": "输入新标题",
+  "retry": "重试",
+  "faceIdLock": "Face ID 锁定",
+  "faceIdLockSubtitle": "打开 App 时需要 Face ID 验证"
 }

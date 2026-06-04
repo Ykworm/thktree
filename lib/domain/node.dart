@@ -16,9 +16,9 @@ class NodeEntity {
     required this.title,
     required this.createdAtUtcIso8601,
     required this.updatedAtUtcIso8601,
+    required this.sortOrder,
     this.sourceExcerpt,
     this.sourceType,
-    this.sortOrder,
   });
 
   final String themeId;
@@ -37,6 +37,6 @@ class NodeEntity {
   final String? sourceType;
 
   /// DB-only: manual sort order within same parent (lower = earlier)
-  final int? sortOrder;
+  final int sortOrder;
 }
 

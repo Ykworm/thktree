@@ -48,6 +48,22 @@ class ThemeDetailController extends AsyncNotifier<ThemeDetailState> {
     state = AsyncData(await _load());
   }
 
+  /// Lightweight refresh that skips disk reindex.
+  /// Use after in-memory-only changes like drag-to-reorder.
+  Future<void> refreshNodesOnly() async {
+    final nodeStore = await ref.read(nodeStoreProvider.future);
+    final themeRow = await nodeStore.getThemeRow(themeId: themeId);
+    final themeTitle = themeRow['title']! as String;
+    final themePath = themeRow['themePath']! as String;
+    final nodes = await nodeStore.listNodes(themeId: themeId);
+    state = AsyncData(ThemeDetailState(
+      themeId: themeId,
+      themeTitle: themeTitle,
+      themePath: themePath,
+      nodes: nodes,
+    ));
+  }
+
   Future<void> createRootChatNode({required String title}) async {
     final nodeStore = await ref.read(nodeStoreProvider.future);
     final current = state.value ?? await _load();

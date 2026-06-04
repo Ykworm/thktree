@@ -255,6 +255,48 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     await _startStreamingWithSettings(settings);
   }
 
+  /// Retry / Regenerate the last assistant message.
+  /// Removes the last assistant message (done or error) and re-sends the preceding user message.
+  Future<void> retryLastMessage() async {
+    final messages = state.value ?? [];
+    if (messages.isEmpty) return;
+    
+    // Find the last non-streaming assistant message
+    int lastAssistantIdx = -1;
+    for (int i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role == SessionRole.assistant &&
+          messages[i].status != SessionMessageStatus.streaming) {
+        lastAssistantIdx = i;
+        break;
+      }
+    }
+    
+    if (lastAssistantIdx == -1) return;
+    
+    // Find the last user message before the assistant
+    int lastUserIdx = -1;
+    for (int i = lastAssistantIdx - 1; i >= 0; i--) {
+      if (messages[i].role == SessionRole.user) {
+        lastUserIdx = i;
+        break;
+      }
+    }
+    
+    if (lastUserIdx == -1) return;
+    
+    final userMessage = messages[lastUserIdx].body;
+    
+    // Remove the assistant message from session.md
+    final sessionStore = await ref.read(sessionStoreProvider.future);
+    await sessionStore.removeLastAssistantMessage(nodeId: nodeId);
+    
+    // Re-read state
+    state = AsyncData(await _read());
+    
+    // Re-send the user message (this will append a new assistant message)
+    await sendUserMessage(userMessage);
+  }
+
   Future<void> sendUserMessage(String text) async {
     try {
       final trimmed = text.trim();

@@ -17,6 +17,7 @@ class AppSettings {
     required this.minimaxModel,
     required this.kimiModel,
     required this.localeLanguageCode,
+    required this.faceIdEnabled,
     this.titleModelProviderId,
     this.titleModelModelId,
     this.summaryModelProviderId,
@@ -37,6 +38,7 @@ class AppSettings {
   final String minimaxModel;
   final String kimiModel;
   final String? localeLanguageCode;
+  final bool faceIdEnabled;
   final String? titleModelProviderId;
   final String? titleModelModelId;
   final String? summaryModelProviderId;
@@ -91,6 +93,7 @@ class AppSettings {
     String? minimaxModel,
     String? kimiModel,
     String? localeLanguageCode,
+    bool? faceIdEnabled,
     String? titleModelProviderId,
     String? titleModelModelId,
     String? summaryModelProviderId,
@@ -111,6 +114,7 @@ class AppSettings {
       minimaxModel: minimaxModel ?? this.minimaxModel,
       kimiModel: kimiModel ?? this.kimiModel,
       localeLanguageCode: localeLanguageCode ?? this.localeLanguageCode,
+      faceIdEnabled: faceIdEnabled ?? this.faceIdEnabled,
       titleModelProviderId: titleModelProviderId ?? this.titleModelProviderId,
       titleModelModelId: titleModelModelId ?? this.titleModelModelId,
       summaryModelProviderId: summaryModelProviderId ?? this.summaryModelProviderId,
@@ -126,6 +130,7 @@ class SettingsStore {
 
   static const _keyLocale = 'locale_language_code';
   static const _keyProvider = 'llm_provider';
+  static const _keyFaceIdEnabled = 'face_id_enabled';
   static const _keyTitleModelProviderId = 'title_model_provider_id';
   static const _keyTitleModelModelId = 'title_model_model_id';
   static const _keySummaryModelProviderId = 'summary_model_provider_id';
@@ -156,6 +161,9 @@ class SettingsStore {
     final kimiModel = await _secureStorage.read(key: _modelKey(LlmProvider.kimi)) ?? LlmProvider.kimi.defaultModel;
 
     final locale = await _secureStorage.read(key: _keyLocale);
+    final faceIdStr = await _secureStorage.read(key: _keyFaceIdEnabled);
+    // Default: true (Face ID ON by default)
+    final faceIdEnabled = faceIdStr == null ? true : faceIdStr == 'true';
 
     final titleModelProviderId = await _secureStorage.read(key: _keyTitleModelProviderId);
     final titleModelModelId = await _secureStorage.read(key: _keyTitleModelModelId);
@@ -177,6 +185,7 @@ class SettingsStore {
       minimaxModel: minimaxModel,
       kimiModel: kimiModel,
       localeLanguageCode: locale,
+      faceIdEnabled: faceIdEnabled,
       titleModelProviderId: titleModelProviderId,
       titleModelModelId: titleModelModelId,
       summaryModelProviderId: summaryModelProviderId,
@@ -209,6 +218,10 @@ class SettingsStore {
     } else {
       await _secureStorage.write(key: _keyLocale, value: languageCode);
     }
+  }
+
+  Future<void> saveFaceIdEnabled(bool enabled) async {
+    await _secureStorage.write(key: _keyFaceIdEnabled, value: enabled.toString());
   }
 
   Future<void> saveTitleModel({String? providerId, String? modelId}) async {

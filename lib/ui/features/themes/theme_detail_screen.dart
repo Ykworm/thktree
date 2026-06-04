@@ -136,19 +136,55 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   }
 }
 
-/// Compare nodes by sortOrder (fallback: createdAt).
+/// Compare nodes by sortOrder.
 int _compareNodes(NodeEntity a, NodeEntity b) {
-  final sa = a.sortOrder;
-  final sb = b.sortOrder;
-  if (sa != null && sb != null) return sa.compareTo(sb);
-  if (sa != null) return -1;
-  if (sb != null) return 1;
-  return a.createdAtUtcIso8601.compareTo(b.createdAtUtcIso8601);
+  return a.sortOrder.compareTo(b.sortOrder);
 }
 
 // ---------------------------------------------------------------------------
 // _TreeRowView
 // ---------------------------------------------------------------------------
+
+
+void _showRenameDialog(BuildContext context, WidgetRef ref, NodeEntity node, String themeId, List<NodeEntity> allNodes) {
+  final l10n = AppLocalizations.of(context)!;
+  final controller = TextEditingController(text: node.title);
+  
+  showCupertinoDialog(
+    context: context,
+    builder: (ctx) => CupertinoAlertDialog(
+      title: Text(l10n.renameNode),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: CupertinoTextField(
+          controller: controller,
+          autofocus: true,
+          placeholder: l10n.enterNewTitle,
+        ),
+      ),
+      actions: [
+        CupertinoDialogAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text(l10n.cancel),
+        ),
+        CupertinoDialogAction(
+          isDefaultAction: true,
+          onPressed: () async {
+            final newTitle = controller.text.trim();
+            if (newTitle.isNotEmpty) {
+              final store = await ref.read(nodeStoreProvider.future);
+              await store.updateNodeTitle(nodeId: node.nodeId, newTitle: newTitle);
+              ref.read(themeDetailControllerProvider(themeId).notifier).refresh();
+            }
+            if (context.mounted) Navigator.of(ctx).pop();
+          },
+          child: Text(l10n.save),
+        ),
+      ],
+    ),
+  );
+}
 
 class _TreeRowView extends ConsumerWidget {
   const _TreeRowView({
@@ -167,7 +203,7 @@ class _TreeRowView extends ConsumerWidget {
   final Set<String> collapsedIds;
   final ValueChanged<String> onToggleCollapse;
 
-  static const _kIndent = 20.0;
+  static const _kIndent = 28.0;
 
   List<NodeEntity> _children() {
     final list = allNodes
@@ -193,7 +229,7 @@ class _TreeRowView extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (depth > 0) SizedBox(width: _kIndent * depth),
-          const SizedBox(width: 4),
+          const SizedBox(width: 12),
           // Title + source excerpt
           Expanded(
             child: Column(
@@ -226,7 +262,7 @@ class _TreeRowView extends ConsumerWidget {
               onTap: () => onToggleCollapse(node.nodeId),
               behavior: HitTestBehavior.opaque,
               child: Padding(
-                padding: const EdgeInsets.only(left: 4, right: 2),
+                padding: const EdgeInsets.only(left: 8, right: 4),
                 child: Icon(
                   isCollapsed
                       ? CupertinoIcons.chevron_right
@@ -236,7 +272,7 @@ class _TreeRowView extends ConsumerWidget {
                 ),
               ),
             ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
         ],
       ),
     );
@@ -246,28 +282,53 @@ class _TreeRowView extends ConsumerWidget {
           details.data.parentId == node.parentId &&
           details.data.nodeId != node.nodeId,
       onAcceptWithDetails: (details) async {
-        await _handleReorder(
-          ref,
-          draggedNode: details.data,
-          targetNode: node,
-          allNodes: allNodes,
-        );
-        ref
-            .read(themeDetailControllerProvider(themeId).notifier)
-            .refresh()
-            .catchError((_) {});
+        debugPrint('[REORDER] onAccept fired: ${details.data.title} -> target=${node.title}');
+        try {
+          await _handleReorder(
+            ref,
+            draggedNode: details.data,
+            targetNode: node,
+            allNodes: allNodes,
+          );
+          debugPrint('[REORDER] calling refreshNodesOnly...');
+          await ref
+              .read(themeDetailControllerProvider(themeId).notifier)
+              .refreshNodesOnly();
+          debugPrint('[REORDER] refreshNodesOnly done');
+        } catch (e, st) {
+          debugPrint('[REORDER] onAccept ERROR: $e');
+          debugPrint('[REORDER] onAccept STACK: $st');
+        }
       },
       builder: (context, candidateData, rejectedData) {
         final isHovering = candidateData.isNotEmpty;
+        // Is this node the last sibling? If so, show bottom blue line.
+        final siblings = allNodes
+            .where((n) => n.parentId == node.parentId)
+            .toList()
+          ..sort(_compareNodes);
+        final isLastChild = siblings.isNotEmpty &&
+            siblings.last.nodeId == node.nodeId;
+        final indicatorSide = isLastChild
+            ? const Border(
+                bottom: BorderSide(
+                  color: CupertinoColors.systemBlue,
+                  width: 2.5,
+                ),
+              )
+            : const Border(
+                top: BorderSide(
+                  color: CupertinoColors.systemBlue,
+                  width: 2.5,
+                ),
+              );
         return Container(
           decoration: isHovering
               ? BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: CupertinoColors.systemBlue.resolveFrom(context),
-                      width: 2,
-                    ),
-                  ),
+                  color: CupertinoColors.systemBlue
+                      .resolveFrom(context)
+                      .withValues(alpha: 0.08),
+                  border: indicatorSide,
                 )
               : null,
           child: Row(
@@ -288,13 +349,14 @@ class _TreeRowView extends ConsumerWidget {
                       '/themes/$themeId/nodes/${node.nodeId}',
                       extra: node.title,
                     ),
+                    onLongPress: () => _showRenameDialog(context, ref, node, themeId, allNodes),
                     child: tileContent,
                   ),
                 ),
               ),
               // Drag handle — outside swipe zone
               Padding(
-                padding: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.only(right: 8),
                 child: _DragHandle(node: node),
               ),
             ],
@@ -413,7 +475,7 @@ class _DragHandleState extends State<_DragHandle>
           opacity: 0.15,
           child: Icon(
             CupertinoIcons.line_horizontal_3,
-            size: 16,
+            size: 24,
             color: CupertinoColors.tertiaryLabel.resolveFrom(context),
           ),
         ),
@@ -423,14 +485,17 @@ class _DragHandleState extends State<_DragHandle>
             scale: _scaleAnim.value,
             child: child,
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Icon(
-              CupertinoIcons.line_horizontal_3,
-              size: 16,
-              color: CupertinoColors.tertiaryLabel
-                  .resolveFrom(context)
-                  .withValues(alpha: 0.4),
+          child: SizedBox(
+            width: 52,
+            height: 52,
+            child: Center(
+              child: Icon(
+                CupertinoIcons.line_horizontal_3,
+                size: 24,
+                color: CupertinoColors.tertiaryLabel
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.4),
+              ),
             ),
           ),
         ),
@@ -669,28 +734,44 @@ Future<void> _handleReorder(
   required NodeEntity targetNode,
   required List<NodeEntity> allNodes,
 }) async {
-  final nodeStore = await ref.read(nodeStoreProvider.future);
-  final parentId = targetNode.parentId;
+  try {
+    debugPrint('[REORDER] START dragged=${draggedNode.title} target=${targetNode.title}');
+    final nodeStore = await ref.read(nodeStoreProvider.future);
+    final parentId = targetNode.parentId;
 
-  // Get all siblings (same parentId), sorted by current sortOrder
-  final siblings = allNodes
-      .where((n) => n.parentId == parentId)
-      .toList(growable: false)
-    ..sort(_compareNodes);
+    final siblings = allNodes
+        .where((n) => n.parentId == parentId)
+        .toList()
+      ..sort(_compareNodes);
 
-  // Remove dragged node and insert at target position
-  siblings.removeWhere((n) => n.nodeId == draggedNode.nodeId);
-  final targetIdx =
-      siblings.indexWhere((n) => n.nodeId == targetNode.nodeId);
-  siblings.insert(targetIdx, draggedNode);
+    debugPrint('[REORDER] siblings before: ${siblings.map((s) => '${s.title}(${s.sortOrder})').toList()}');
 
-  // Update sortOrder for all siblings
-  final now = DateTime.now().toUtc().millisecondsSinceEpoch;
-  for (int i = 0; i < siblings.length; i++) {
-    await nodeStore.reorderNode(
-      nodeId: siblings[i].nodeId,
-      newSortOrder: now + i,
-    );
+    // Determine direction: dragging down means insert AFTER target
+    final draggedIdx = siblings.indexWhere((n) => n.nodeId == draggedNode.nodeId);
+    final targetOriginalIdx = siblings.indexWhere((n) => n.nodeId == targetNode.nodeId);
+    final draggingDown = draggedIdx < targetOriginalIdx;
+
+    siblings.removeWhere((n) => n.nodeId == draggedNode.nodeId);
+    debugPrint('[REORDER] after remove, count=${siblings.length}');
+
+    final targetIdx =
+        siblings.indexWhere((n) => n.nodeId == targetNode.nodeId);
+    debugPrint('[REORDER] targetIdx=$targetIdx draggingDown=$draggingDown');
+
+    siblings.insert(draggingDown ? targetIdx + 1 : targetIdx, draggedNode);
+    debugPrint('[REORDER] siblings after: ${siblings.map((s) => s.title).toList()}');
+
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+    for (int i = 0; i < siblings.length; i++) {
+      await nodeStore.reorderNode(
+        nodeId: siblings[i].nodeId,
+        newSortOrder: now + i,
+      );
+    }
+    debugPrint('[REORDER] DONE wrote ${siblings.length} nodes, sortOrder starts at $now');
+  } catch (e, st) {
+    debugPrint('[REORDER] ERROR: $e');
+    debugPrint('[REORDER] STACK: $st');
   }
 }
 

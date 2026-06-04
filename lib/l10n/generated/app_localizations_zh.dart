@@ -59,6 +59,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get save => '保存';
 
   @override
+  String get renameNote => '重命名笔记';
+
+  @override
   String get delete => '删除';
 
   @override
@@ -524,4 +527,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get swipeBranch => '分支';
+
+  @override
+  String get renameNode => '重命名节点';
+
+  @override
+  String get enterNewTitle => '输入新标题';
+
+  @override
+  String get retry => '重试';
+
+  @override
+  String get faceIdLock => 'Face ID 锁定';
+
+  @override
+  String get faceIdLockSubtitle => '打开 App 时需要 Face ID 验证';
 }

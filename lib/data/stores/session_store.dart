@@ -165,6 +165,34 @@ class SessionStore {
     });
   }
 
+  /// Remove the last assistant message from session.md (used for retry).
+  Future<void> removeLastAssistantMessage({required String nodeId}) async {
+    await _queue.run(nodeId, () async {
+      final path = await getSessionPathForNode(nodeId);
+      final file = File(path);
+      if (!await file.exists()) return;
+      
+      final content = await file.readAsString();
+      final doc = parseSessionMarkdown(content);
+      
+      // Find and remove the last assistant message
+      final updatedMessages = <SessionMessage>[];
+      for (int i = 0; i < doc.messages.length; i++) {
+        final msg = doc.messages[i];
+        // Keep all messages except the last assistant message
+        if (msg.role == SessionRole.assistant && i == doc.messages.length - 1) {
+          continue; // Skip the last assistant message
+        }
+        updatedMessages.add(msg);
+      }
+      
+      // Rebuild session.md without the last assistant message
+      final frontmatter = _extractFrontmatter(content);
+      final rebuilt = _rebuildSessionMarkdown(frontmatter, doc, updatedMessages);
+      await _atomicWriteString(path, rebuilt);
+    });
+  }
+
   Future<void> _appendMessage(
     String nodeId, {
     required SessionRole role,
@@ -219,4 +247,35 @@ Future<void> _atomicWriteString(String filePath, String content) async {
   final tmpFile = File(tmpPath);
   await tmpFile.writeAsString(content);
   await tmpFile.rename(filePath);
+}
+
+
+String _extractFrontmatter(String content) {
+  if (!content.startsWith('---')) return '';
+  final endIdx = content.indexOf('\n---', 3);
+  if (endIdx == -1) return '';
+  return content.substring(0, endIdx + 4);
+}
+
+String _rebuildSessionMarkdown(
+  String frontmatter,
+  SessionDocument doc,
+  List<SessionMessage> messages,
+) {
+  final buffer = StringBuffer(frontmatter);
+  if (buffer.isNotEmpty && !buffer.toString().endsWith('\n')) {
+    buffer.writeln();
+  }
+  
+  for (final msg in messages) {
+    final header = formatMessageHeader(
+      role: msg.role,
+      timestampUtcIso8601: msg.timestampUtcIso8601,
+      msgId: msg.msgId,
+    );
+    buffer.writeln(header);
+    buffer.writeln(msg.body.trimRight());
+  }
+  
+  return buffer.toString();
 }

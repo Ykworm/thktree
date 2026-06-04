@@ -51,6 +51,8 @@
 	<true/>
 	<key>AlibabaCloudRUMAppId</key>
 	<string>fydyjghwbx@5d461352920b557635c9f</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>ThkTree 需要使用 Face ID 来保护您的数据安全</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

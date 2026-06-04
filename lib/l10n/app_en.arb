@@ -65,6 +65,7 @@
     "description": "Branch button tooltip/label"
   },
   "save": "Save",
+  "renameNote": "Rename Note",
   "@save": {
     "description": "Save button label"
   },
@@ -711,5 +712,25 @@
   "swipeBranch": "Branch",
   "@swipeBranch": {
     "description": "Swipe action label for creating a branch"
+  },
+  "renameNode": "Rename Node",
+  "@renameNode": {
+    "description": "Title for rename dialog"
+  },
+  "enterNewTitle": "Enter new title",
+  "@enterNewTitle": {
+    "description": "Placeholder for new title input"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Button label to retry failed message"
+  },
+  "faceIdLock": "Face ID Lock",
+  "@faceIdLock": {
+    "description": "Settings tile title for Face ID lock toggle"
+  },
+  "faceIdLockSubtitle": "Require Face ID to open the app",
+  "@faceIdLockSubtitle": {
+    "description": "Settings tile subtitle for Face ID lock toggle"
   }
 }
