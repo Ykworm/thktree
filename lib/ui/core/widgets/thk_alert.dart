@@ -40,51 +40,39 @@ class ThkAlert {
     VoidCallback? onCancel,
     bool barrierDismissible = true,
   }) async {
-    final actions = <CupertinoDialogAction>[];
-
-    if (destructiveAction != null) {
-      actions.add(
-        CupertinoDialogAction(
-          isDestructiveAction: true,
-          onPressed: () {
-            Navigator.of(context).pop();
-            onDestructive?.call();
-          },
-          child: Text(destructiveAction),
-        ),
-      );
-    }
-
-    if (defaultAction != null) {
-      actions.add(
-        CupertinoDialogAction(
-          isDefaultAction: true,
-          onPressed: () {
-            Navigator.of(context).pop();
-            onDefault?.call();
-          },
-          child: Text(defaultAction),
-        ),
-      );
-    }
-
-    actions.add(
-      CupertinoDialogAction(
-        onPressed: () {
-          Navigator.of(context).pop();
-          onCancel?.call();
-        },
-        child: Text(cancelAction),
-      ),
-    );
-
     return showCupertinoDialog<void>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (dialogContext) => CupertinoAlertDialog(
         title: title != null ? Text(title) : null,
         content: message != null ? Text(message) : null,
-        actions: actions,
+        actions: [
+          if (destructiveAction != null)
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onDestructive?.call();
+              },
+              child: Text(destructiveAction),
+            ),
+          if (defaultAction != null)
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onDefault?.call();
+              },
+              child: Text(defaultAction),
+            ),
+          CupertinoDialogAction(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              onCancel?.call();
+            },
+            child: Text(cancelAction),
+          ),
+        ],
       ),
     );
   }
@@ -105,13 +93,13 @@ class ThkAlert {
     return showCupertinoDialog<void>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (dialogContext) => CupertinoAlertDialog(
         title: title != null ? Text(title) : null,
         content: message != null ? Text(message) : null,
         actions: [
           CupertinoDialogAction(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               onCancel?.call();
             },
             child: Text(cancelAction),
@@ -119,7 +107,7 @@ class ThkAlert {
           CupertinoDialogAction(
             isDefaultAction: true,
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               onConfirm?.call();
             },
             child: Text(confirmAction),

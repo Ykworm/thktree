@@ -1088,17 +1088,11 @@ abstract class AppLocalizations {
   /// **'Delete Note'**
   String get deleteNote;
 
-  /// Delete note confirmation dialog title
+  /// Delete note confirmation dialog content shown with the note title
   ///
   /// In en, this message translates to:
-  /// **'Delete note'**
-  String deleteNoteConfirmTitle(Object title);
-
-  /// Toast message after deleting a note
-  ///
-  /// In en, this message translates to:
-  /// **'Note deleted'**
-  String get noteDeleted;
+  /// **'Delete \"{title}\"?'**
+  String deleteNoteConfirmTitle(String title);
 }
 
 class _AppLocalizationsDelegate

@@ -550,10 +550,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteNote => '删除笔记';
 
   @override
-  String deleteNoteConfirmTitle(Object title) {
-    return '确定要删除笔记「$title」吗？';
+  String deleteNoteConfirmTitle(String title) {
+    return '确认删除「$title」？';
   }
-
-  @override
-  String get noteDeleted => '笔记已删除';
 }

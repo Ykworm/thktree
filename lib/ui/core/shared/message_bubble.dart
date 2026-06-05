@@ -1,9 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText;
+import 'package:flutter/services.dart';
 import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
+import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
 final _tablePattern = RegExp(r'^\|.+\|', multiLine: true);
@@ -19,40 +22,90 @@ bool _hasMarkdownTable(String text) {
   return false;
 }
 
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   const MessageBubble({
     super.key,
     required this.message,
     this.onRetry,
+    this.userQuestion,
   });
 
   final SessionMessage message;
   final VoidCallback? onRetry;
 
+  /// 配对的用户提问（可选，用于分享图片）
+  final String? userQuestion;
+
+  @override
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble> {
+  bool _copied = false;
+  bool _sharing = false;
+  final _shareButtonKey = GlobalKey();
+
+  Future<void> _copyToClipboard() async {
+    if (widget.message.body.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: widget.message.body));
+    if (!mounted) return;
+    setState(() => _copied = true);
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      setState(() => _copied = false);
+    }
+  }
+
+  Future<void> _shareAsImage() async {
+    if (_sharing || widget.message.body.isEmpty) return;
+    setState(() => _sharing = true);
+    try {
+      // 获取分享按钮在屏幕上的位置（iPad 需要）
+      Rect? origin;
+      final renderBox = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox != null && renderBox.hasSize) {
+        final offset = renderBox.localToGlobal(Offset.zero);
+        origin = offset & renderBox.size;
+      }
+
+      await ShareService.shareAsImage(
+        context: context,
+        userQuestion: widget.userQuestion,
+        assistantAnswer: widget.message.body,
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(context: context, message: 'Share failed: $e');
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isUser = message.role == SessionRole.user;
+    final isUser = widget.message.role == SessionRole.user;
 
-    final title = switch (message.role) {
+    final title = switch (widget.message.role) {
       SessionRole.user => l10n.userRole,
       SessionRole.assistant => l10n.assistantRole,
       SessionRole.system => l10n.systemRole,
     };
 
-    final statusText = switch (message.status) {
+    final statusText = switch (widget.message.status) {
       SessionMessageStatus.done => null,
       SessionMessageStatus.streaming => l10n.streamingStatus,
       SessionMessageStatus.error =>
-        l10n.errorStatus(message.errorCode ?? l10n.errorUnknown),
+        l10n.errorStatus(widget.message.errorCode ?? l10n.errorUnknown),
     };
 
     final backgroundColor = isUser
         ? CupertinoColors.systemGrey6.resolveFrom(context).withValues(alpha: 0.5)
         : CupertinoColors.white;
 
-    final body = message.body.isEmpty ? ' ' : message.body;
-    final hasTable = _hasMarkdownTable(message.body);
+    final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
+    final hasTable = _hasMarkdownTable(widget.message.body);
     final maxWidth = hasTable
         ? MediaQuery.of(context).size.width - 32
         : 520.0;
@@ -110,31 +163,64 @@ class MessageBubble extends StatelessWidget {
                   tableBuilder: _buildTable,
                   codeBuilder: _buildCodeBlock,
                 ),
-                if (message.role == SessionRole.assistant &&
-                    message.status != SessionMessageStatus.streaming &&
-                    onRetry != null) ...[
+                if (widget.message.role == SessionRole.assistant &&
+                    widget.message.status != SessionMessageStatus.streaming) ...[
                   const SizedBox(height: 6),
-                  if (message.status == SessionMessageStatus.error)
-                    CupertinoButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      color: CupertinoColors.systemRed,
-                      onPressed: onRetry,
-                      child: Text(
-                        l10n.retry,
-                        style: const TextStyle(fontSize: 14, color: CupertinoColors.white),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        onPressed: _copyToClipboard,
+                        child: Icon(
+                          _copied ? AppIcons.checkCircle : AppIcons.copy,
+                          size: 18,
+                          color: _copied
+                              ? CupertinoColors.systemGreen
+                              : CupertinoColors.secondaryLabel.resolveFrom(context),
+                        ),
                       ),
-                    )
-                  else
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      onPressed: onRetry,
-                      child: Icon(
-                        CupertinoIcons.arrow_counterclockwise,
-                        size: 18,
-                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      const SizedBox(width: 12),
+                      CupertinoButton(
+                        key: _shareButtonKey,
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        onPressed: _sharing ? null : _shareAsImage,
+                        child: _sharing
+                            ? const CupertinoActivityIndicator(radius: 8)
+                            : Icon(
+                                AppIcons.share,
+                                size: 18,
+                                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                              ),
                       ),
-                    ),
+                      if (widget.onRetry != null) ...[
+                        const SizedBox(width: 12),
+                        if (widget.message.status == SessionMessageStatus.error)
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            color: CupertinoColors.systemRed,
+                            onPressed: widget.onRetry,
+                            child: Text(
+                              l10n.retry,
+                              style: const TextStyle(fontSize: 14, color: CupertinoColors.white),
+                            ),
+                          )
+                        else
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            onPressed: widget.onRetry,
+                            child: Icon(
+                              CupertinoIcons.arrow_counterclockwise,
+                              size: 18,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
                 ],
               ],
             ),
@@ -151,63 +237,63 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
+}
 
-  static Widget _buildCodeBlock(
-    BuildContext context,
-    String name,
-    String code,
-    bool closed,
-  ) {
-    final codeBg = CupertinoColors.systemGrey5.resolveFrom(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: codeBg,
-        borderRadius: BorderRadius.circular(8),
+Widget _buildCodeBlock(
+  BuildContext context,
+  String name,
+  String code,
+  bool closed,
+) {
+  final codeBg = CupertinoColors.systemGrey5.resolveFrom(context);
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: codeBg,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: SelectableText(
+      code,
+      style: const TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 14,
       ),
-      child: SelectableText(
-        code,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}
 
-  static Widget _buildTable(
-    BuildContext context,
-    List<CustomTableRow> tableRows,
-    TextStyle textStyle,
-    GptMarkdownConfig config,
-  ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Table(
-        border: TableBorder.all(
-          color: CupertinoColors.separator.resolveFrom(context),
-          width: 1,
-        ),
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-        children: tableRows.map((row) {
-          return TableRow(
-            children: row.fields.map((cell) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  cell.data,
-                  style: textStyle,
-                  textAlign: cell.alignment,
-                ),
-              );
-            }).toList(),
-          );
-        }).toList(),
+Widget _buildTable(
+  BuildContext context,
+  List<CustomTableRow> tableRows,
+  TextStyle textStyle,
+  GptMarkdownConfig config,
+) {
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Table(
+      border: TableBorder.all(
+        color: CupertinoColors.separator.resolveFrom(context),
+        width: 1,
       ),
-    );
-  }
+      defaultColumnWidth: const IntrinsicColumnWidth(),
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: tableRows.map((row) {
+        return TableRow(
+          children: row.fields.map((cell) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(
+                cell.data,
+                style: textStyle,
+                textAlign: cell.alignment,
+              ),
+            );
+          }).toList(),
+        );
+      }).toList(),
+    ),
+  );
 }
 
 class _TableExpandedView extends StatelessWidget {
@@ -232,8 +318,8 @@ class _TableExpandedView extends StatelessWidget {
             child: GptMarkdown(
               content,
               style: const TextStyle(fontSize: 17, height: 1.6),
-              codeBuilder: MessageBubble._buildCodeBlock,
-              tableBuilder: MessageBubble._buildTable,
+              codeBuilder: _buildCodeBlock,
+              tableBuilder: _buildTable,
             ),
           ),
         ),

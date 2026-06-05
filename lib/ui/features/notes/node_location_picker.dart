@@ -22,6 +22,7 @@ class NodeLocationResult {
 Future<NodeLocationResult?> showNodeLocationPicker(
   BuildContext context,
   WidgetRef ref,
+  {VoidCallback? onThemeCreated}
 ) {
   return showCupertinoModalPopup<NodeLocationResult>(
     context: context,
@@ -31,13 +32,15 @@ Future<NodeLocationResult?> showNodeLocationPicker(
         color: CupertinoColors.systemBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      child: const _NodeLocationPickerContent(),
+      child: _NodeLocationPickerContent(onThemeCreated: onThemeCreated),
     ),
   );
 }
 
 class _NodeLocationPickerContent extends ConsumerStatefulWidget {
-  const _NodeLocationPickerContent();
+  const _NodeLocationPickerContent({this.onThemeCreated});
+
+  final VoidCallback? onThemeCreated;
 
   @override
   ConsumerState<_NodeLocationPickerContent> createState() =>
@@ -53,6 +56,9 @@ class _NodeLocationPickerContentState
   List<ThemeEntity>? _themes;
   bool _themesLoading = true;
   Object? _themesError;
+
+  // Pre-selected theme ID (for newly created themes)
+  String? _preSelectedThemeId;
 
   // Selected theme & its node data
   ThemeEntity? _selectedTheme;
@@ -134,6 +140,70 @@ class _NodeLocationPickerContentState
     });
   }
 
+  Future<void> _createNewTheme(AppLocalizations l10n) async {
+    // 弹出标题输入对话框
+    final title = await _promptThemeTitle(l10n);
+    if (title == null || !mounted) return;
+
+    try {
+      // 创建新主题
+      final themeStore = await ref.read(themeStoreProvider.future);
+      final newTheme = await themeStore.createTheme(title: title);
+      
+      // 重新加载主题列表
+      await _loadThemes();
+      
+      // 设置新创建的主题为预选中状态
+      if (mounted) {
+        setState(() {
+          _preSelectedThemeId = newTheme.themeId;
+        });
+        // 通知调用者有新主题被创建
+        widget.onThemeCreated?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _themesError = e;
+        });
+      }
+    }
+  }
+
+  Future<String?> _promptThemeTitle(AppLocalizations l10n) async {
+    final controller = TextEditingController();
+    return showCupertinoDialog<String>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(l10n.newTheme),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: CupertinoTextField(
+              controller: controller,
+              placeholder: l10n.titleHint,
+              autofocus: true,
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.cancel),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () {
+                final value = controller.text.trim();
+                Navigator.of(context).pop(value.isEmpty ? null : value);
+              },
+              child: Text(l10n.create),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -164,9 +234,16 @@ class _NodeLocationPickerContentState
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(l10n.selectTheme, style: AppTheme.headline),
+          child: Row(
+            children: [
+              Text(l10n.selectTheme, style: AppTheme.headline),
+              const Spacer(),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _createNewTheme(l10n),
+                child: Icon(AppIcons.add),
+              ),
+            ],
           ),
         ),
         Flexible(
@@ -179,9 +256,23 @@ class _NodeLocationPickerContentState
                   children: themes
                       .map((theme) => CupertinoListTile(
                             title: Text(theme.title),
-                            trailing:
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_preSelectedThemeId == theme.themeId)
+                                  Icon(
+                                    CupertinoIcons.checkmark,
+                                    color: CupertinoColors.systemBlue,
+                                  ),
                                 const CupertinoListTileChevron(),
-                            onTap: () => _selectTheme(theme),
+                              ],
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _preSelectedThemeId = null;
+                              });
+                              _selectTheme(theme);
+                            },
                           ))
                       .toList(),
                 ),
@@ -224,24 +315,19 @@ class _NodeLocationPickerContentState
             ],
           ),
         ),
-        // "As root chat" option
-        CupertinoListSection.insetGrouped(
-          children: [
-            CupertinoListTile(
-              leading: Icon(AppIcons.chat),
-              title: Text(l10n.asRootChat),
-              onTap: () => _selectLocation(parentId: null),
-            ),
-          ],
-        ),
-        // Node tree
-        if (nodes.isNotEmpty)
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: _buildNodeItems(rootNodes, nodes, 0),
-            ),
+        // "As root chat" option and node tree in one section
+        Flexible(
+          child: CupertinoListSection.insetGrouped(
+            children: [
+              CupertinoListTile(
+                leading: Icon(AppIcons.chat),
+                title: Text(l10n.asRootChat),
+                onTap: () => _selectLocation(parentId: null),
+              ),
+              ..._buildNodeItems(rootNodes, nodes, 0),
+            ],
           ),
+        ),
       ],
     );
   }

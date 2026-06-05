@@ -572,10 +572,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteNote => 'Delete Note';
 
   @override
-  String deleteNoteConfirmTitle(Object title) {
-    return 'Delete note "$title"';
+  String deleteNoteConfirmTitle(String title) {
+    return 'Delete \"$title\"?';
   }
-
-  @override
-  String get noteDeleted => 'Note deleted';
 }

@@ -741,12 +741,13 @@
   "@deleteNote": {
     "description": "Delete note dialog title"
   },
-  "deleteNoteConfirmTitle": "Delete note",
+  "deleteNoteConfirmTitle": "Delete \"{title}\"?",
   "@deleteNoteConfirmTitle": {
-    "description": "Delete note confirmation dialog title"
-  },
-  "noteDeleted": "Note deleted",
-  "@noteDeleted": {
-    "description": "Toast message after deleting a note"
+    "description": "Delete note confirmation dialog content shown with the note title",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   }
 }

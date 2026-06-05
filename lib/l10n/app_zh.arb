@@ -240,12 +240,13 @@
   "@deleteNote": {
     "description": "删除笔记对话框标题"
   },
-  "deleteNoteConfirmTitle": "确认删除",
+  "deleteNoteConfirmTitle": "确认删除「{title}」？",
   "@deleteNoteConfirmTitle": {
-    "description": "删除笔记确认对话框标题"
-  },
-  "noteDeleted": "笔记已删除",
-  "@noteDeleted": {
-    "description": "删除笔记后的提示消息"
+    "description": "删除笔记确认对话框内容，显示笔记标题",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -1,18 +1,22 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
-import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
+import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
+import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 
 class NoteDetailScreen extends ConsumerStatefulWidget {
   const NoteDetailScreen({
@@ -201,11 +205,6 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       ref.read(noteListVersionProvider.notifier).bump();
       if (!mounted) return;
       Navigator.of(context).pop();
-      ThkAlert.show(
-        context: context,
-        message: l10n.noteDeleted,
-        defaultAction: l10n.ok,
-      );
     } catch (e) {
       if (!mounted) return;
       ThkAlert.show(
@@ -216,12 +215,9 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
   }
 
-  /// 从笔记创建一个新对话。
+  /// 从笔记创建一个新对话（简化流程）。
   ///
-  /// 流程：选位置 → 弹 sheet 选 mode（raw=原文 / summarize=LLM 总结）→ 调
-  /// [showBranchFlow] 完成标题选择 + 创建 chat node + 写入首条 user 消息 + 跳转。
-  /// [showBranchFlow] 接受 [parentTranscript] 作为 source content；这里传 _body（笔记正文），
-  /// 并用 [sourceLabelOverride] 让 title suggestion 页 banner 显为 "笔记" 而非 "对话"。
+  /// 流程：选位置 → 直接创建对话（title = note title）→ 写入笔记内容 → 跳转。
   Future<void> _createChatFromNote() async {
     if (_body.isEmpty) {
       final l10n = AppLocalizations.of(context)!;
@@ -234,7 +230,14 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
 
     // 1. 选位置
-    final location = await showNodeLocationPicker(context, ref);
+    final location = await showNodeLocationPicker(
+      context, 
+      ref,
+      onThemeCreated: () {
+        // 刷新主题列表
+        ref.invalidate(themeListControllerProvider);
+      },
+    );
     if (location == null) return;
     if (!mounted) return;
 
@@ -247,23 +250,73 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       modelId = settings.model;
     }
 
-    // 3. 弹 sheet 选 mode
-    final mode = await showBranchModeSheet(context);
-    if (mode == null) return;
-    if (!mounted) return;
+    // 3. 直接创建对话，title = note title
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      final nodeStore = await container.read(nodeStoreProvider.future);
+      final sessionStore = await container.read(sessionStoreProvider.future);
+      final themeRow = await nodeStore.getThemeRow(themeId: location.themeId);
+      final themePath = themeRow['themePath']! as String;
 
-    // 4. 调 showBranchFlow：source = 笔记正文（_body），label = "笔记"
-    await showBranchFlow(
-      context: context,
-      mode: mode,
-      selectedText: null,
-      parentTranscript: _body,
-      providerId: providerId,
-      modelId: modelId,
-      themeId: location.themeId,
-      parentNodeId: location.parentId,
-      sourceLabelOverride: AppLocalizations.of(context)!.notes,
-    );
+      // 合并笔记 title 和内容作为 user input
+      final userInput = '$_title\n\n$_body';
+
+      final childNode = await nodeStore.createChatNode(
+        themeId: location.themeId,
+        themePath: themePath,
+        parentId: location.parentId,
+        title: _title,
+      );
+
+      await sessionStore.appendUserMessage(
+        nodeId: childNode.nodeId,
+        content: userInput,
+      );
+
+      // Store source info
+      final nodeSourceExcerpt = userInput.length <= 80
+          ? userInput
+          : '${userInput.substring(0, 80)}...';
+      await nodeStore.updateNodeSourceInfo(
+        nodeId: childNode.nodeId,
+        sourceExcerpt: nodeSourceExcerpt,
+        sourceType: 'note',
+      );
+
+      if (providerId != null && modelId != null) {
+        await sessionStore.updateSessionModel(
+          nodeId: childNode.nodeId,
+          providerId: providerId,
+          modelId: modelId,
+        );
+      }
+
+      if (!mounted) return;
+
+      // 刷新主题树
+      unawaited(
+        container
+            .read(themeDetailControllerProvider(location.themeId).notifier)
+            .refresh()
+            .catchError((_) {}),
+      );
+
+      // 跳转到对话页面
+      context.push(
+        '/themes/${location.themeId}/nodes/${childNode.nodeId}',
+        extra: ChatScreenLaunchParams(
+          title: _title,
+          autoTriggerReply: true,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ThkAlert.show(
+        context: context,
+        message: l10n.branchFailed(e.toString()),
+      );
+    }
   }
 
   /// 将旧版 LlmProvider 枚举映射到新系统的 preset provider id。
@@ -546,26 +599,17 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
         ThkListSection(
           children: metas
               .map(
-                (meta) => Dismissible(
+                (meta) => SwipeableRow(
                   key: ValueKey(meta.noteId),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: CupertinoColors.destructiveRed,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(
-                      CupertinoIcons.trash,
-                      color: CupertinoColors.white,
-                    ),
-                  ),
-                  confirmDismiss: (direction) async {
+                  onSwipeLeft: () async {
                     final l10n = AppLocalizations.of(context)!;
-                    return await showCupertinoDialog<bool>(
+                    final confirmed = await showCupertinoDialog<bool>(
                       context: context,
                       builder: (ctx) {
                         return CupertinoAlertDialog(
                           title: Text(l10n.deleteNote),
-                          content: Text(l10n.deleteNoteConfirmTitle(meta.title)),
+                          content: Text(
+                              l10n.deleteNoteConfirmTitle(meta.title)),
                           actions: [
                             CupertinoDialogAction(
                               onPressed: () =>
@@ -582,13 +626,24 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
                         );
                       },
                     );
+                    if (confirmed != true) return;
+                    try {
+                      await _store.deleteNote(noteId: meta.noteId);
+                      ref
+                          .read(noteListVersionProvider.notifier)
+                          .bump();
+                    } catch (e) {
+                      if (!mounted) return;
+                      ThkAlert.show(
+                        context: context,
+                        message: '${l10n.deleteFailed}: $e',
+                        defaultAction: l10n.ok,
+                      );
+                    }
                   },
-                  onDismissed: (direction) async {
-                    await _store.deleteNote(noteId: meta.noteId);
-                    ref
-                        .read(noteListVersionProvider.notifier)
-                        .bump();
-                  },
+                  leftActionLabel: l10n.swipeDelete,
+                  leftActionIcon: AppIcons.delete,
+                  leftActionColor: CupertinoColors.destructiveRed,
                   child: ThkListTile(
                     title: meta.title,
                     subtitle:

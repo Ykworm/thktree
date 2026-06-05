@@ -79,6 +79,9 @@ class AppIcons {
   /// Icons.download
   static const IconData download = SFIcons.sf_square_and_arrow_down;
 
+  /// Share (square.and.arrow.up)
+  static const IconData share = SFIcons.sf_square_and_arrow_up;
+
   /// Icons.star
   static const IconData star = SFIcons.sf_star;
 

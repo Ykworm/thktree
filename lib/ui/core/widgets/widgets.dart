@@ -6,3 +6,4 @@ export 'thk_alert.dart';
 export 'thk_action_sheet.dart';
 export 'thk_text_field.dart';
 export 'markdown_toolbar.dart';
+export 'swipeable_row.dart';

@@ -200,11 +200,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             (m) => m.role == SessionRole.assistant,
                             orElse: () => message,
                           );
+
+                      // 查找配对的用户提问
+                      String? userQuestion;
+                      if (message.role == SessionRole.assistant) {
+                        final idx = messages.indexOf(message);
+                        if (idx > 0) {
+                          for (var i = idx - 1; i >= 0; i--) {
+                            if (messages[i].role == SessionRole.user) {
+                              userQuestion = messages[i].body;
+                              break;
+                            }
+                          }
+                        }
+                      }
+
                       return MessageBubble(
                         message: message,
                         onRetry: isLastAssistant
                             ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
                             : null,
+                        userQuestion: userQuestion,
                       );
                     },
                   ),

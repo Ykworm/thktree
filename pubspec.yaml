@@ -51,6 +51,7 @@ dependencies:
   gpt_markdown: ^1.1.7
   alibabacloud_rum_flutter_plugin: ^2.3.1
   local_auth: ^2.3.0
+  share_plus: ^10.0.0
 
 dev_dependencies:
   flutter_test:
