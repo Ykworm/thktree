@@ -47,11 +47,21 @@
 
 ### 2.5 笔记列表浏览
 - 按主题分组的笔记总览 (`NoteBrowseScreen`），点击进入该主题下的笔记列表
-- 主题内的笔记列表 (`ThemeNoteListScreen`），点击进入笔记内容
+- 主题内的笔记列表 (`ThemeNoteListScreen`)，点击进入笔记内容
 - 支持下拉刷新
+- 列表项支持左滑删除（`Dismissible`），红色背景 + 垃圾桶图标 + 确认 dialog
 - 实现位置：
   - [note_browse_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_browse_screen.dart)
   - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L163-L250)
+
+### 2.6 笔记删除
+- `NoteStore.deleteNote(noteId)`：删除 `.md` 文件，返回 1/0
+- 笔记详情页 AppBar 右侧红色垃圾桶按钮 ➜ 弹确认 dialog ➜ 删除 + `bump()` + `pop()` + Toast
+- 删除后通过 `noteListVersionProvider` 全局通知，列表页自动刷新
+- 实现位置：
+  - [note_store.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/stores/note_store.dart#L118-L126)
+  - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart)
+  - 列表 swipe：[note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L548-L651)
 
 ---
 
@@ -100,7 +110,6 @@
 
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
-| 🔴 | 笔记删除功能 | `NoteStore` 层未实现 `deleteNote()`，UI 也未接入 |
 | 🔴 | 笔记全选复制 | 笔记内容支持全选 + 复制，尚未实现 |
 | 🟡 | 笔记搜索/过滤 | 笔记列表页无搜索入口 |
 | 🟢 | `appPathsProvider` 未就绪时的加载态 | `_loadThemeNotes` 已改为 `await ref.read(appPathsProvider.future)`，但在未完成前页面会短暂显示空列表 |
