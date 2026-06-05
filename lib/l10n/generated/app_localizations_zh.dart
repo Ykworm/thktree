@@ -62,20 +62,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get renameNote => '重命名笔记';
 
   @override
-  String get ok => '确定';
-
-  @override
-  String get deleteNote => '删除笔记';
-
-  @override
-  String deleteNoteConfirmTitle(Object title) {
-    return '确定要删除笔记「$title」吗？';
-  }
-
-  @override
-  String get noteDeleted => '笔记已删除';
-
-  @override
   String get delete => '删除';
 
   @override
@@ -556,4 +542,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get faceIdLockSubtitle => '打开 App 时需要 Face ID 验证';
+
+  @override
+  String get ok => '确定';
+
+  @override
+  String get deleteNote => '删除笔记';
+
+  @override
+  String deleteNoteConfirmTitle(Object title) {
+    return '确定要删除笔记「$title」吗？';
+  }
+
+  @override
+  String get noteDeleted => '笔记已删除';
 }
