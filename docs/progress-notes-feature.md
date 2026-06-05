@@ -33,13 +33,19 @@
 - 文件路径：`{root}/themes/{themeId}/notes/{noteId}.md`
 - 实现位置：[note_store.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/stores/note_store.dart)
 
-### 2.3 笔记内容可编辑
+### 2.3 笔记内容可编辑 & 重命名
 - `NoteDetailScreen` 支持编辑/只读切换
 - AppBar 右侧有编辑按钮（✏️），点击后正文切换为多行 `TextField`
 - 保存时调用 `writeBody` 覆盖文件，同时触发版本通知
+- 点击标题可弹出重命名 dialog，调用 `renameNote` 更新 frontmatter
 - 实现位置：[note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L9-L107)
 
-### 2.4 笔记列表浏览
+### 2.4 笔记从零新建
+- 笔记总览页右上角 ➕ 按钮可创建新笔记
+- 自动归类到"未分类"主题（无主题时自动创建）
+- 实现位置：[note_browse_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_browse_screen.dart#L208-L222)
+
+### 2.5 笔记列表浏览
 - 按主题分组的笔记总览 (`NoteBrowseScreen`），点击进入该主题下的笔记列表
 - 主题内的笔记列表 (`ThemeNoteListScreen`），点击进入笔记内容
 - 支持下拉刷新
@@ -94,10 +100,9 @@
 
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
-| 🔴 | 选中文本在复杂 Markdown 中不准确 | 当前依赖系统剪贴板复制，在 SelectionArea + Markdown 场景下可能有偏差，需改为直接从 `SelectableRegionState` 获取选区 |
-| 🟡 | 笔记删除功能 | 尚未实现 |
-| 🟡 | 笔记重命名功能 | 尚未实现 |
-| 🟢 | 笔记搜索/过滤 | 尚未实现 |
+| 🔴 | 笔记删除功能 | `NoteStore` 层未实现 `deleteNote()`，UI 也未接入 |
+| 🔴 | 笔记全选复制 | 笔记内容支持全选 + 复制，尚未实现 |
+| 🟡 | 笔记搜索/过滤 | 笔记列表页无搜索入口 |
 | 🟢 | `appPathsProvider` 未就绪时的加载态 | `_loadThemeNotes` 已改为 `await ref.read(appPathsProvider.future)`，但在未完成前页面会短暂显示空列表 |
 
 ---
