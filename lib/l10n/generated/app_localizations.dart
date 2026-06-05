@@ -200,6 +200,30 @@ abstract class AppLocalizations {
   /// **'Rename Note'**
   String get renameNote;
 
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @deleteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Note'**
+  String get deleteNote;
+
+  /// No description provided for @deleteNoteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note'**
+  String deleteNoteConfirmTitle(Object title);
+
+  /// No description provided for @noteDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Note deleted'**
+  String get noteDeleted;
+
   /// Delete button label
   ///
   /// In en, this message translates to:

@@ -732,5 +732,21 @@
   "faceIdLockSubtitle": "Require Face ID to open the app",
   "@faceIdLockSubtitle": {
     "description": "Settings tile subtitle for Face ID lock toggle"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button label"
+  },
+  "deleteNote": "Delete Note",
+  "@deleteNote": {
+    "description": "Delete note dialog title"
+  },
+  "deleteNoteConfirmTitle": "Delete note",
+  "@deleteNoteConfirmTitle": {
+    "description": "Delete note confirmation dialog title"
+  },
+  "noteDeleted": "Note deleted",
+  "@noteDeleted": {
+    "description": "Toast message after deleting a note"
   }
 }

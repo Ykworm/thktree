@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:thk_tree/data/stores/note_store.dart';
 
 void main() {
@@ -44,6 +45,35 @@ void main() {
 
       final body = await store.readBody(meta.noteId);
       expect(body, 'New text');
+    });
+
+    test('deleteNote removes the note file', () async {
+      final meta = await store.createNote(
+        themeId: 'theme_1',
+        title: 'To be deleted',
+      );
+
+      // Confirm note exists before deletion.
+      final before = await store.listNoteMetas();
+      expect(before, hasLength(1));
+
+      // Delete and verify file is gone.
+      final deleted = await store.deleteNote(noteId: meta.noteId);
+      expect(deleted, 1);
+
+      final after = await store.listNoteMetas();
+      expect(after, isEmpty);
+
+      // File no longer exists on disk.
+      final gone = await File(
+        p.join(store.notesDir.path, '${meta.noteId}.md'),
+      ).exists();
+      expect(gone, isFalse);
+    });
+
+    test('deleteNote returns 0 when note does not exist', () async {
+      final result = await store.deleteNote(noteId: 'nonexistent_note');
+      expect(result, 0);
     });
   });
 }

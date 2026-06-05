@@ -115,6 +115,15 @@ class NoteStore {
     await _file(noteId).writeAsString('$updated\n---\n\n$body\n');
   }
 
+  /// Delete a note file by noteId.
+  /// Returns 1 if the file was deleted, 0 if it did not exist.
+  Future<int> deleteNote({required String noteId}) async {
+    final file = _file(noteId);
+    if (!await file.exists()) return 0;
+    await file.delete();
+    return 1;
+  }
+
   /// Rename a note by updating its title in the frontmatter.
   Future<void> renameNote({
     required String noteId,

@@ -231,5 +231,21 @@
   "enterNewTitle": "输入新标题",
   "retry": "重试",
   "faceIdLock": "Face ID 锁定",
-  "faceIdLockSubtitle": "打开 App 时需要 Face ID 验证"
+  "faceIdLockSubtitle": "打开 App 时需要 Face ID 验证",
+  "ok": "确定",
+  "@ok": {
+    "description": "确定按钮"
+  },
+  "deleteNote": "删除笔记",
+  "@deleteNote": {
+    "description": "删除笔记对话框标题"
+  },
+  "deleteNoteConfirmTitle": "确认删除",
+  "@deleteNoteConfirmTitle": {
+    "description": "删除笔记确认对话框标题"
+  },
+  "noteDeleted": "笔记已删除",
+  "@noteDeleted": {
+    "description": "删除笔记后的提示消息"
+  }
 }

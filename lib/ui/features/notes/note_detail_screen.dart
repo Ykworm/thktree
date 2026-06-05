@@ -172,6 +172,50 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
   }
 
+  Future<void> _deleteNote() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(l10n.deleteNote),
+          content: Text(l10n.deleteNoteConfirmTitle(_title)),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.delete),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+
+    try {
+      await _store.deleteNote(noteId: widget.noteId);
+      ref.read(noteListVersionProvider.notifier).bump();
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ThkAlert.show(
+        context: context,
+        message: l10n.noteDeleted,
+        defaultAction: l10n.ok,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: '${l10n.deleteFailed}: $e',
+        defaultAction: l10n.ok,
+      );
+    }
+  }
+
   /// 从笔记创建一个新对话。
   ///
   /// 流程：选位置 → 弹 sheet 选 mode（raw=原文 / summarize=LLM 总结）→ 调
@@ -280,6 +324,14 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
               padding: EdgeInsets.zero,
               onPressed: _toggleEditing,
               child: Icon(_editing ? AppIcons.check : AppIcons.edit),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _deleteNote,
+              child: const Icon(
+                CupertinoIcons.trash,
+                color: CupertinoColors.systemRed,
+              ),
             ),
           ],
         ),
@@ -493,9 +545,54 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
       children: [
         ThkListSection(
           children: metas
-              .map((meta) => ThkListTile(
+              .map(
+                (meta) => Dismissible(
+                  key: ValueKey(meta.noteId),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: CupertinoColors.destructiveRed,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    child: const Icon(
+                      CupertinoIcons.trash,
+                      color: CupertinoColors.white,
+                    ),
+                  ),
+                  confirmDismiss: (direction) async {
+                    final l10n = AppLocalizations.of(context)!;
+                    return await showCupertinoDialog<bool>(
+                      context: context,
+                      builder: (ctx) {
+                        return CupertinoAlertDialog(
+                          title: Text(l10n.deleteNote),
+                          content: Text(l10n.deleteNoteConfirmTitle(meta.title)),
+                          actions: [
+                            CupertinoDialogAction(
+                              onPressed: () =>
+                                  Navigator.of(ctx).pop(false),
+                              child: Text(l10n.cancel),
+                            ),
+                            CupertinoDialogAction(
+                              isDestructiveAction: true,
+                              onPressed: () =>
+                                  Navigator.of(ctx).pop(true),
+                              child: Text(l10n.delete),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  onDismissed: (direction) async {
+                    await _store.deleteNote(noteId: meta.noteId);
+                    ref
+                        .read(noteListVersionProvider.notifier)
+                        .bump();
+                  },
+                  child: ThkListTile(
                     title: meta.title,
-                    subtitle: '${meta.noteId} \u00b7 ${meta.updatedAt}',
+                    subtitle:
+                        '${meta.noteId} \u00b7 ${meta.updatedAt}',
                     onTap: () {
                       Navigator.of(context).push(
                         CupertinoPageRoute(
@@ -506,7 +603,9 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
                         ),
                       );
                     },
-                  ))
+                  ),
+                ),
+              )
               .toList(),
         ),
       ],

@@ -62,6 +62,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get renameNote => 'Rename Note';
 
   @override
+  String get ok => 'OK';
+
+  @override
+  String get deleteNote => 'Delete Note';
+
+  @override
+  String deleteNoteConfirmTitle(Object title) {
+    return 'Delete note "$title"';
+  }
+
+  @override
+  String get noteDeleted => 'Note deleted';
+
+  @override
   String get delete => 'Delete';
 
   @override
