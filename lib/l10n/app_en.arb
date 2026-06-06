@@ -749,5 +749,57 @@
         "type": "String"
       }
     }
+  },
+  "searchTabLabel": "Search",
+  "@searchTabLabel": {
+    "description": "Bottom navigation bar search label"
+  },
+  "searchHint": "Search notes and conversations...",
+  "@searchHint": {
+    "description": "Search input field placeholder"
+  },
+  "searchEmpty": "Enter keywords to start searching",
+  "@searchEmpty": {
+    "description": "Search page empty state prompt"
+  },
+  "searchNoResults": "No results found",
+  "@searchNoResults": {
+    "description": "No search results prompt"
+  },
+  "searchError": "Search error, please try again",
+  "@searchError": {
+    "description": "Search error prompt"
+  },
+  "searchIndexError": "Search Index Error",
+  "@searchIndexError": {
+    "description": "Search index error dialog title"
+  },
+  "searchIndexErrorContent": "The search index may be corrupted. This does not affect your note content safety.\n\nWould you like to repair the index now?",
+  "@searchIndexErrorContent": {
+    "description": "Search index error dialog content"
+  },
+  "repairLater": "Later",
+  "@repairLater": {
+    "description": "Repair later button"
+  },
+  "repairNow": "Repair Now",
+  "@repairNow": {
+    "description": "Repair now button"
+  },
+  "repairComplete": "Repair Complete",
+  "@repairComplete": {
+    "description": "Repair complete dialog title"
+  },
+  "repairCompleteContent": "Search index has been rebuilt. You can now search normally.",
+  "@repairCompleteContent": {
+    "description": "Repair complete dialog content"
+  },
+  "noTitle": "No title",
+  "@noTitle": {
+    "description": "Note editor title placeholder"
+  },
+  "startWriting": "Start writing...",
+  "@startWriting": {
+    "description": "Note editor body placeholder"
   }
 }

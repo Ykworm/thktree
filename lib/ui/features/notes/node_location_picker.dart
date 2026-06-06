@@ -6,6 +6,7 @@ import 'package:thk_tree/domain/theme.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
+import 'package:thk_tree/ui/core/widgets/thk_alert.dart';
 
 class NodeLocationResult {
   final String themeId;
@@ -17,6 +18,40 @@ class NodeLocationResult {
     required this.themePath,
     this.parentId,
   });
+}
+
+/// 主题选择结果（仅主题，不含节点位置）。
+class ThemeSelectionResult {
+  final String themeId;
+  final String themePath;
+  final String themeTitle;
+
+  const ThemeSelectionResult({
+    required this.themeId,
+    required this.themePath,
+    required this.themeTitle,
+  });
+}
+
+/// 显示仅选择主题的 Bottom Sheet。
+///
+/// 用于笔记创建场景，笔记挂在主题上，无需选择对话节点。
+Future<ThemeSelectionResult?> showThemePicker(
+  BuildContext context,
+  WidgetRef ref,
+  {VoidCallback? onThemeCreated}
+) {
+  return showCupertinoModalPopup<ThemeSelectionResult>(
+    context: context,
+    builder: (_) => Container(
+      height: MediaQuery.of(context).size.height * 0.5,
+      decoration: const BoxDecoration(
+        color: CupertinoColors.systemBackground,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      child: _ThemePickerContent(onThemeCreated: onThemeCreated),
+    ),
+  );
 }
 
 Future<NodeLocationResult?> showNodeLocationPicker(
@@ -354,6 +389,185 @@ class _NodeLocationPickerContentState
       items.addAll(_buildNodeItems(children, allNodes, depth + 1));
     }
     return items;
+  }
+}
+
+/// 仅选择主题的 Picker 内容组件。
+class _ThemePickerContent extends ConsumerStatefulWidget {
+  const _ThemePickerContent({this.onThemeCreated});
+
+  final VoidCallback? onThemeCreated;
+
+  @override
+  ConsumerState<_ThemePickerContent> createState() =>
+      _ThemePickerContentState();
+}
+
+class _ThemePickerContentState extends ConsumerState<_ThemePickerContent> {
+  List<ThemeEntity>? _themes;
+  bool _loading = true;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemes();
+  }
+
+  Future<void> _loadThemes() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final themeStore = await ref.read(themeStoreProvider.future);
+      final themes = await themeStore.listThemes();
+      if (!mounted) return;
+      setState(() {
+        _themes = themes;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _selectTheme(ThemeEntity theme) async {
+    try {
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      final themeRow = await nodeStore.getThemeRow(themeId: theme.themeId);
+      final themePath = themeRow['themePath']! as String;
+      if (!mounted) return;
+      Navigator.of(context).pop(ThemeSelectionResult(
+        themeId: theme.themeId,
+        themePath: themePath,
+        themeTitle: theme.title,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: e.toString(),
+        defaultAction: 'OK',
+      );
+    }
+  }
+
+  Future<void> _createNewTheme(AppLocalizations l10n) async {
+    final controller = TextEditingController();
+    final title = await showCupertinoDialog<String>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(l10n.newTheme),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: CupertinoTextField(
+              controller: controller,
+              placeholder: l10n.titleHint,
+              autofocus: true,
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.cancel),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () {
+                final value = controller.text.trim();
+                Navigator.of(context).pop(value.isEmpty ? null : value);
+              },
+              child: Text(l10n.create),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (title == null || !mounted) return;
+
+    try {
+      final themeStore = await ref.read(themeStoreProvider.future);
+      final theme = await themeStore.createTheme(title: title);
+      if (!mounted) return;
+
+      widget.onThemeCreated?.call();
+
+      // 获取 themePath 并返回
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      final themeRow = await nodeStore.getThemeRow(themeId: theme.themeId);
+      final themePath = themeRow['themePath']! as String;
+      if (!mounted) return;
+      Navigator.of(context).pop(ThemeSelectionResult(
+        themeId: theme.themeId,
+        themePath: themePath,
+        themeTitle: theme.title,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: e.toString(),
+        defaultAction: 'OK',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Text(l10n.selectTheme, style: AppTheme.headline),
+              const Spacer(),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _createNewTheme(l10n),
+                child: Icon(AppIcons.add),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          height: 0.5,
+          color: CupertinoColors.separator,
+        ),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(child: CupertinoActivityIndicator()),
+          )
+        else if (_error != null)
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Center(child: Text(_error.toString())),
+          )
+        else
+          Flexible(
+            child: CupertinoListSection.insetGrouped(
+              children: [
+                for (final theme in _themes ?? [])
+                  CupertinoListTile(
+                    title: Text(theme.title),
+                    onTap: () => _selectTheme(theme),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
   }
 }
 

@@ -476,6 +476,10 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           if (_stopRequested) return;
           await sessionStore.finishAssistant(handle: handle);
           if (_stopRequested) return;
+
+          // Update search index (fire-and-forget, failures don't block)
+          _updateSearchIndex(nodeId, handle);
+
           _handle = null;
           _cancelToken = null;
           final readResult = await _read();
@@ -488,6 +492,42 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       },
       cancelOnError: true,
     );
+  }
+
+  /// Fire-and-forget: update search index after assistant reply completes.
+  /// Failures are logged but never block the main flow.
+  void _updateSearchIndex(String nodeId, AssistantStreamHandle handle) {
+    unawaited(() async {
+      try {
+        final searchIndex = await ref.read(searchServiceProvider.future);
+        final nodeStore = await ref.read(nodeStoreProvider.future);
+        final nodeRow = await nodeStore.getNodeRow(nodeId: nodeId);
+        final themeId = nodeRow['themeId'] as String;
+        final nodeTitle = nodeRow['title'] as String? ?? '';
+
+        // Get theme title
+        final themeRow = await nodeStore.getThemeRow(themeId: themeId);
+        final themeTitle = themeRow['title'] as String? ?? '';
+
+        // Read full session content for indexing
+        final sessionStore = await ref.read(sessionStoreProvider.future);
+        final doc = await sessionStore.readSession(nodeId);
+        final body = doc.messages
+            .where((m) => m.role == SessionRole.assistant)
+            .map((m) => m.body)
+            .join('\n');
+
+        await searchIndex.upsertMessage(
+          nodeId: nodeId,
+          themeId: themeId,
+          themeTitle: themeTitle,
+          nodeTitle: nodeTitle,
+          body: body,
+        );
+      } catch (e) {
+        dev.log('[ChatController._updateSearchIndex] FAILED nodeId=$nodeId: $e');
+      }
+    }());
   }
 }
 

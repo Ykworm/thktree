@@ -8,7 +8,10 @@ import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
+import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
 import 'package:thk_tree/ui/features/notes/note_detail_screen.dart';
+import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
+import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 
 /// Stable on-disk title used as identifier for the catch-all theme
 /// (notes created from the notes tab). Display name is localized via
@@ -180,79 +183,36 @@ Future<List<_ThemeNotes>> _loadThemeNotes(WidgetRef ref) async {
   return result;
 }
 
-Future<String> _ensureUncategorizedTheme(WidgetRef ref) async {
-  final paths = await ref.read(appPathsProvider.future);
-
-  final themesDir = paths.themesDir;
-  if (await themesDir.exists()) {
-    final dirs = await themesDir.list().toList();
-    for (final entity in dirs) {
-      if (entity is! Directory) continue;
-      final metaFile = File('${entity.path}/theme.meta.json');
-      if (!await metaFile.exists()) continue;
-      try {
-        final content = await metaFile.readAsString();
-        final map = jsonDecode(content) as Map<String, dynamic>;
-        if (map['title'] == kUncategorizedThemeTitle) {
-          return map['themeId'] as String;
-        }
-      } catch (_) {}
-    }
-  }
-
-  final store = await ref.read(themeStoreProvider.future);
-  final theme = await store.createTheme(title: kUncategorizedThemeTitle);
-  return theme.themeId;
-}
-
 Future<void> _createNoteInUncategorized(
     BuildContext context, WidgetRef ref) async {
-  final l10n = AppLocalizations.of(context)!;
-  final title = await _promptNoteTitle(context, l10n);
-  if (title == null) return;
-
-  final themeId = await _ensureUncategorizedTheme(ref);
-  final paths = await ref.read(appPathsProvider.future);
+  // 1. 选择主题
+  final themeResult = await showThemePicker(
+    context,
+    ref,
+    onThemeCreated: () {
+      ref.invalidate(themeListControllerProvider);
+    },
+  );
+  if (themeResult == null) return;
   if (!context.mounted) return;
 
-  final notesDir = Directory('${paths.themesDir.path}/$themeId/notes');
-  final store = NoteStore(notesDir: notesDir);
-  await store.createNote(themeId: themeId, title: title);
-  ref.read(noteListVersionProvider.notifier).bump();
-}
+  // 2. 获取 notesDir
+  final paths = await ref.read(appPathsProvider.future);
+  if (!context.mounted) return;
+  final notesDir = Directory('${paths.themesDir.path}/${themeResult.themeId}/notes');
 
-Future<String?> _promptNoteTitle(
-    BuildContext context, AppLocalizations l10n) async {
-  final controller = TextEditingController();
-  return showCupertinoDialog<String>(
-    context: context,
-    builder: (context) {
-      return CupertinoAlertDialog(
-        title: Text(l10n.newNote),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: ThkTextField(
-            controller: controller,
-            placeholder: l10n.titleHint,
-            autofocus: true,
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.cancel),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () {
-              final value = controller.text.trim();
-              Navigator.of(context).pop(value.isEmpty ? null : value);
-            },
-            child: Text(l10n.create),
-          ),
-        ],
-      );
-    },
+  // 3. 跳转到编辑器
+  if (!context.mounted) return;
+  Navigator.of(context).push(
+    CupertinoPageRoute(
+      builder: (_) => NoteEditorScreen(
+        themeId: themeResult.themeId,
+        themeTitle: themeResult.themeTitle,
+        themePath: themeResult.themePath,
+        notesDir: notesDir.path,
+        createMode: true,
+      ),
+    ),
   );
 }
 

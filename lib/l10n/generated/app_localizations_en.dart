@@ -575,4 +575,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteNoteConfirmTitle(String title) {
     return 'Delete \"$title\"?';
   }
+
+  @override
+  String get searchTabLabel => 'Search';
+
+  @override
+  String get searchHint => 'Search notes and conversations...';
+
+  @override
+  String get searchEmpty => 'Enter keywords to start searching';
+
+  @override
+  String get searchNoResults => 'No results found';
+
+  @override
+  String get searchError => 'Search error, please try again';
+
+  @override
+  String get searchIndexError => 'Search Index Error';
+
+  @override
+  String get searchIndexErrorContent =>
+      'The search index may be corrupted. This does not affect your note content safety.\n\nWould you like to repair the index now?';
+
+  @override
+  String get repairLater => 'Later';
+
+  @override
+  String get repairNow => 'Repair Now';
+
+  @override
+  String get repairComplete => 'Repair Complete';
+
+  @override
+  String get repairCompleteContent =>
+      'Search index has been rebuilt. You can now search normally.';
+
+  @override
+  String get noTitle => 'No title';
+
+  @override
+  String get startWriting => 'Start writing...';
 }

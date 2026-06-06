@@ -8,12 +8,15 @@ class AppDatabase {
   static Future<AppDatabase> open({required String path}) async {
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) => _createSchema(db),
       onUpgrade: (db, oldVersion, newVersion) async {
         await _createSchema(db);
         if (oldVersion < 3) {
           await _migrateV3(db);
+        }
+        if (oldVersion < 4) {
+          await _migrateV4(db);
         }
       },
       onOpen: (db) => _createSchema(db),
@@ -51,6 +54,19 @@ CREATE TABLE IF NOT EXISTS nodes (
 )
 ''');
   await db.execute('CREATE INDEX IF NOT EXISTS idx_nodes_theme_parent ON nodes(themeId, parentId)');
+
+  // FTS5 search index — uses content redundancy for snippet() support
+  await db.execute('''
+CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
+  entityType,
+  entityId,
+  themeId,
+  themeTitle UNINDEXED,
+  entityTitle,
+  content,
+  updatedAt UNINDEXED
+)
+''');
 }
 
 /// v3: add sortOrder, sourceExcerpt, sourceType columns to nodes table
@@ -64,6 +80,21 @@ Future<void> _migrateV3(Database db) async {
       (julianday(createdAt) - julianday('1970-01-01')) * 86400000 AS INTEGER
     ) WHERE sortOrder IS NULL OR sortOrder = 0
   ''');
+}
+
+/// v4: add FTS5 search_index virtual table
+Future<void> _migrateV4(Database db) async {
+  await db.execute('''
+CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
+  entityType,
+  entityId,
+  themeId,
+  themeTitle UNINDEXED,
+  entityTitle,
+  content,
+  updatedAt UNINDEXED
+)
+''');
 }
 
 Future<void> _addColumnIfNotExists(

@@ -14,6 +14,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
+import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
@@ -109,11 +110,43 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       await _store.writeBody(widget.noteId, _controller.text);
       _body = _controller.text;
       ref.read(noteListVersionProvider.notifier).bump();
+
+      // Update search index (fire-and-forget)
+      _updateSearchIndex();
+
       if (!mounted) return;
     }
     setState(() {
       _editing = !_editing;
     });
+  }
+
+  /// Fire-and-forget: update search index after note save.
+  void _updateSearchIndex() {
+    unawaited(() async {
+      try {
+        final searchIndex = await ref.read(searchServiceProvider.future);
+        final metas = await _store.listNoteMetas();
+        final meta = metas.where((m) => m.noteId == widget.noteId).firstOrNull;
+        if (meta == null) return;
+
+        // Get theme title from themeStore
+        final themeStore = await ref.read(themeStoreProvider.future);
+        final themes = await themeStore.listThemes();
+        final theme = themes.where((t) => t.themeId == meta.themeId).firstOrNull;
+        final themeTitle = theme?.title ?? '';
+
+        await searchIndex.upsertNote(
+          noteId: meta.noteId,
+          themeId: meta.themeId,
+          themeTitle: themeTitle,
+          noteTitle: meta.title,
+          body: _body,
+        );
+      } catch (e) {
+        // Silent fail - search index update should never block note save
+      }
+    }());
   }
 
   /// 复制全部笔记内容到剪贴板。
@@ -535,42 +568,30 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
   }
 
   Future<void> _createNote(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    final title = await showCupertinoDialog<String>(
-      context: context,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: Text(l10n.newNote),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: ThkTextField(
-              controller: controller,
-              placeholder: l10n.titleHint,
-              autofocus: true,
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancel),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () {
-                final value = controller.text.trim();
-                Navigator.of(context).pop(value.isEmpty ? null : value);
-              },
-              child: Text(l10n.create),
-            ),
-          ],
-        );
+    // 1. 选择主题
+    final themeResult = await showThemePicker(
+      context,
+      ref,
+      onThemeCreated: () {
+        ref.invalidate(themeListControllerProvider);
       },
     );
-    if (title == null) return;
+    if (themeResult == null) return;
+    if (!mounted) return;
 
-    await _store.createNote(themeId: widget.themeId, title: title);
-    ref.read(noteListVersionProvider.notifier).bump();
+    // 2. 跳转到编辑器
+    if (!mounted) return;
+    Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => NoteEditorScreen(
+          themeId: themeResult.themeId,
+          themeTitle: themeResult.themeTitle,
+          themePath: themeResult.themePath,
+          notesDir: widget.notesDir,
+          createMode: true,
+        ),
+      ),
+    );
   }
 
   Widget _buildBody(AppLocalizations l10n) {

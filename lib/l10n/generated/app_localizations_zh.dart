@@ -553,4 +553,44 @@ class AppLocalizationsZh extends AppLocalizations {
   String deleteNoteConfirmTitle(String title) {
     return '确认删除「$title」？';
   }
+
+  @override
+  String get searchTabLabel => '搜索';
+
+  @override
+  String get searchHint => '搜索笔记和对话...';
+
+  @override
+  String get searchEmpty => '输入关键词开始搜索';
+
+  @override
+  String get searchNoResults => '没有找到相关结果';
+
+  @override
+  String get searchError => '搜索出错，请重试';
+
+  @override
+  String get searchIndexError => '搜索索引异常';
+
+  @override
+  String get searchIndexErrorContent =>
+      '搜索索引数据可能已损坏，这不会影响您的笔记内容安全。\n\n是否立即修复索引？';
+
+  @override
+  String get repairLater => '稍后';
+
+  @override
+  String get repairNow => '立即修复';
+
+  @override
+  String get repairComplete => '修复完成';
+
+  @override
+  String get repairCompleteContent => '搜索索引已重建完成，现在可以正常搜索了。';
+
+  @override
+  String get noTitle => '无标题';
+
+  @override
+  String get startWriting => '开始写点什么...';
 }

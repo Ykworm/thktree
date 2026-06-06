@@ -1093,6 +1093,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete \"{title}\"?'**
   String deleteNoteConfirmTitle(String title);
+
+  /// Bottom navigation bar search label
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchTabLabel;
+
+  /// Search input field placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Search notes and conversations...'**
+  String get searchHint;
+
+  /// Search page empty state prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Enter keywords to start searching'**
+  String get searchEmpty;
+
+  /// No search results prompt
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get searchNoResults;
+
+  /// Search error prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Search error, please try again'**
+  String get searchError;
+
+  /// Search index error dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Search Index Error'**
+  String get searchIndexError;
+
+  /// Search index error dialog content
+  ///
+  /// In en, this message translates to:
+  /// **'The search index may be corrupted. This does not affect your note content safety.\n\nWould you like to repair the index now?'**
+  String get searchIndexErrorContent;
+
+  /// Repair later button
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get repairLater;
+
+  /// Repair now button
+  ///
+  /// In en, this message translates to:
+  /// **'Repair Now'**
+  String get repairNow;
+
+  /// Repair complete dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Repair Complete'**
+  String get repairComplete;
+
+  /// Repair complete dialog content
+  ///
+  /// In en, this message translates to:
+  /// **'Search index has been rebuilt. You can now search normally.'**
+  String get repairCompleteContent;
+
+  /// Note editor title placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'No title'**
+  String get noTitle;
+
+  /// Note editor body placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Start writing...'**
+  String get startWriting;
 }
 
 class _AppLocalizationsDelegate

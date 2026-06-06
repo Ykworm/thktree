@@ -248,5 +248,57 @@
         "type": "String"
       }
     }
+  },
+  "searchTabLabel": "搜索",
+  "@searchTabLabel": {
+    "description": "底部导航栏搜索标签"
+  },
+  "searchHint": "搜索笔记和对话...",
+  "@searchHint": {
+    "description": "搜索输入框占位符"
+  },
+  "searchEmpty": "输入关键词开始搜索",
+  "@searchEmpty": {
+    "description": "搜索页面空状态提示"
+  },
+  "searchNoResults": "没有找到相关结果",
+  "@searchNoResults": {
+    "description": "搜索无结果提示"
+  },
+  "searchError": "搜索出错，请重试",
+  "@searchError": {
+    "description": "搜索错误提示"
+  },
+  "searchIndexError": "搜索索引异常",
+  "@searchIndexError": {
+    "description": "搜索索引异常弹窗标题"
+  },
+  "searchIndexErrorContent": "搜索索引数据可能已损坏，这不会影响您的笔记内容安全。\n\n是否立即修复索引？",
+  "@searchIndexErrorContent": {
+    "description": "搜索索引异常弹窗内容"
+  },
+  "repairLater": "稍后",
+  "@repairLater": {
+    "description": "稍后修复按钮"
+  },
+  "repairNow": "立即修复",
+  "@repairNow": {
+    "description": "立即修复按钮"
+  },
+  "repairComplete": "修复完成",
+  "@repairComplete": {
+    "description": "修复完成弹窗标题"
+  },
+  "repairCompleteContent": "搜索索引已重建完成，现在可以正常搜索了。",
+  "@repairCompleteContent": {
+    "description": "修复完成弹窗内容"
+  },
+  "noTitle": "无标题",
+  "@noTitle": {
+    "description": "笔记编辑器标题占位符"
+  },
+  "startWriting": "开始写点什么...",
+  "@startWriting": {
+    "description": "笔记编辑器内容占位符"
   }
 }

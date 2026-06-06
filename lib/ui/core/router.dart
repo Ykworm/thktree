@@ -13,19 +13,32 @@ import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_screen.dart';
+import 'package:thk_tree/ui/features/search/search_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _themesNavigatorKey = GlobalKey<NavigatorState>();
 final _notesNavigatorKey = GlobalKey<NavigatorState>();
+final _searchNavigatorKey = GlobalKey<NavigatorState>();
 final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/',
+  initialLocation: '/search',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => _MainShell(navigationShell: navigationShell),
       branches: [
+        StatefulShellBranch(
+          navigatorKey: _searchNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/search',
+              pageBuilder: (context, state) => CupertinoPage(
+                child: const SearchScreen(),
+              ),
+            ),
+          ],
+        ),
         StatefulShellBranch(
           navigatorKey: _themesNavigatorKey,
           routes: [
@@ -151,6 +164,7 @@ class _MainShell extends ConsumerWidget {
 
   Widget _buildTabBar(BuildContext context, AppLocalizations l10n) {
     final items = <({IconData icon, String label})>[
+      (icon: CupertinoIcons.search, label: l10n.searchTabLabel),
       (icon: AppIcons.accountTree, label: l10n.themesTabLabel),
       (icon: AppIcons.note, label: l10n.notes),
       (icon: AppIcons.settings, label: l10n.settingsTabLabel),

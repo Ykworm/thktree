@@ -17,6 +17,8 @@ import 'package:thk_tree/data/stores/node_store.dart';
 import 'package:thk_tree/data/stores/session_store.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/stores/theme_store.dart';
+import 'package:thk_tree/data/stores/note_store.dart';
+import 'package:thk_tree/data/services/search_service.dart';
 
 class NoteListVersionNotifier extends Notifier<int> {
   @override
@@ -90,6 +92,44 @@ final llmProvidersProvider = FutureProvider<List<LlmProviderConfig>>((ref) async
   await store.initializeIfNeeded();
   await store.migrateFromLegacy();
   return store.loadAll();
+});
+
+final searchServiceProvider = FutureProvider<SearchService>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  final db = await ref.watch(appDatabaseProvider.future);
+  final searchService = SearchService(
+    db: db.db,
+    paths: paths,
+    noteStoreFactory: (themeId) => NoteStore(
+      notesDir: Directory('${paths.themesDir.path}/$themeId/notes'),
+    ),
+  );
+
+  // Check if index is empty and rebuild if needed
+  final isEmpty = await searchService.isEmpty();
+  if (isEmpty) {
+    dev.log('[searchServiceProvider] Index is empty, starting rebuild...');
+    final themeStore = await ref.read(themeStoreProvider.future);
+    final themes = await themeStore.listThemes();
+    final scanItems = themes.map((t) => ThemeScanItem(
+      themeId: t.themeId,
+      title: t.title,
+      notesDir: Directory('${paths.themesDir.path}/${t.themeId}/notes'),
+      nodesDir: Directory('${paths.themesDir.path}/${t.themeId}/nodes'),
+    )).toList();
+
+    // Run rebuild in background (fire-and-forget)
+    unawaited(() async {
+      try {
+        final (total, skipped) = await searchService.rebuildAll(scanItems);
+        dev.log('[searchServiceProvider] Rebuild complete: total=$total, skipped=$skipped');
+      } catch (e) {
+        dev.log('[searchServiceProvider] Rebuild failed: $e');
+      }
+    }());
+  }
+
+  return searchService;
 });
 
 final sessionStoreProvider = FutureProvider<SessionStore>((ref) async {
