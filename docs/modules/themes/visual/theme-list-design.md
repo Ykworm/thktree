@@ -320,7 +320,7 @@ final themeListControllerProvider =
    - error：`e.toString()` 文本（无错误图标）
 
 7. **设计令牌合规**
-   - `grep -r "CupertinoColors\." lib/ui/features/themes/theme_list_screen.dart` 0 命中
+   - `rg "CupertinoColors\." lib/ui/features/themes/theme_list_screen.dart` 0 命中
    - 颜色全部来自 `AppColors.*`
 
 ---

@@ -58,7 +58,7 @@ ThkTree 初版（2026-04）采用**暖色调**（coral / amber / rose）作为�
 3. ✅ 2026-06-05：注册 Cormorant Garamond 字体（`pubspec.yaml` + `assets/fonts/`）
 4. ✅ 2026-06-05：所有屏幕替换为 `AppTheme.largeTitle` / `AppTheme.displayTitle`
 5. ✅ 2026-06-06：节点色与主题色解耦（`_NodePalette` 独立常量）
-6. ✅ 2026-06-06：色组合规检查（`grep` 旧 token 0 命中）
+6. ✅ 2026-06-06：色组合规检查（`rg` 旧 token 0 命中）
 
 ## 验证
 

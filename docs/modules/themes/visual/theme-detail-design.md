@@ -838,7 +838,7 @@ final themeDetailControllerProvider =
 
 ### 设计令牌合规
 
-47. `grep -r "CupertinoColors.white\|CupertinoColors.systemBackground\|CupertinoColors.label\|CupertinoColors.tertiaryLabel" lib/ui/features/themes/theme_detail_screen.dart` 0 命中（除系统语义色 systemRed / destructiveRed / systemBlue）
+47. `rg "CupertinoColors.white|CupertinoColors.systemBackground|CupertinoColors.label|CupertinoColors.tertiaryLabel" lib/ui/features/themes/theme_detail_screen.dart` 0 命中（除系统语义色 systemRed / destructiveRed / systemBlue）
 48. 节点圆圈/标题/副标题颜色用 `_NodePalette` 常量
 49. 拖拽/swipe 颜色用 `colorForTheme` / `tintForTheme`（swipe 右滑保留 systemBlue 的特殊情况除外）
 

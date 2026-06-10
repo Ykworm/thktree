@@ -37,7 +37,7 @@
 - [`docs/FEATURES.md`](FEATURES.md) — 所有功能状态一览（一行一个功能，跳转到 README/Visual/代码）
 
 ### 第二步：架构 DNA（2 分钟）
-- 本文件 § 1 选型类别锚点 + [`docs/DECISIONS.md`](DECISIONS.md) 完整决策（每个 ADR 一节文段，grep `## ADR-` 定位）
+- 本文件 § 1 选型类别锚点 + [`docs/DECISIONS.md`](DECISIONS.md) 完整决策（每个 ADR 一节文段，rg `## ADR-` 定位）
 - 本文件 § 4 关键依赖（与 `pubspec.yaml` 同步）
 - 本文件 § 3 代码结构 - 关键类型子段（领域实体/数据模型/服务/控制器四类）
 

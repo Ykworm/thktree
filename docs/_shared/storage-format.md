@@ -53,7 +53,7 @@
 
 所有 ID 在同一 `{root}` 内全局唯一，且可离线生成。
 
-默认采用 ULID（26 位 Crockford Base32，大写），便于排序与 grep：
+默认采用 ULID（26 位 Crockford Base32，大写），便于排序与 rg：
 - themeId：`thm_<ULID>`
 - nodeId：`nd_<ULID>`
 - noteId：`nt_<ULID>`

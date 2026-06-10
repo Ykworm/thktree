@@ -244,7 +244,7 @@
    - 拖拽气泡动画 60fps
 
 7. **设计令牌合规**
-   - `grep -r "CupertinoColors.white\|CupertinoColors.systemBackground\|CupertinoColors.label\|CupertinoColors.tertiaryLabel" lib/ui/features/themes/` 返回 0（除 systemRed / destructiveRed / systemBlue 这种系统语义色）
+   - `rg "CupertinoColors.white|CupertinoColors.systemBackground|CupertinoColors.label|CupertinoColors.tertiaryLabel" lib/ui/features/themes/` 返回 0（除 systemRed / destructiveRed / systemBlue 这种系统语义色）
    - 节点圆圈/标题/副标题颜色用 `_NodePalette` 常量
    - 拖拽/swipe 颜色用 `colorForTheme` / `tintForTheme`
 

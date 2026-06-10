@@ -122,7 +122,7 @@ ThkTree 采用 **iOS-first Cupertino** 视觉风格，融合 **清新多彩主�
 - `CupertinoColors.systemRed` / `destructiveRed` —— 危险
 - `CupertinoColors.label` / `secondaryLabel` / `tertiaryLabel` —— 仅在需要 iOS 动态色（深色模式）时使用
 
-> ⚠️ 设计 token 合规检查：`grep -r "CupertinoColors.white\|CupertinoColors.systemBackground\|CupertinoColors.label\|CupertinoColors.tertiaryLabel" lib/ui/features/` 应只命中系统语义色（systemRed/systemBlue/destructiveRed），其余必须用 `AppColors.*`。
+> ⚠️ 设计 token 合规检查：`rg "CupertinoColors.white|CupertinoColors.systemBackground|CupertinoColors.label|CupertinoColors.tertiaryLabel" lib/ui/features/` 应只命中系统语义色（systemRed/systemBlue/destructiveRed），其余必须用 `AppColors.*`。
 
 ---
 
