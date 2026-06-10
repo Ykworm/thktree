@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
 
 /// Cupertino 风格的 Markdown 格式化工具栏。
@@ -17,9 +18,9 @@ class MarkdownToolbar extends StatelessWidget {
     return Container(
       height: 44,
       decoration: const BoxDecoration(
-        color: CupertinoColors.systemGrey6,
+        color: AppColors.surfaceMuted,
         border: Border(
-          top: BorderSide(color: CupertinoColors.separator, width: 0.5),
+          top: BorderSide(color: AppColors.border, width: 0.5),
         ),
       ),
       child: SingleChildScrollView(
@@ -171,7 +172,7 @@ class _ToolbarButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       minimumSize: const Size(36, 36),
       onPressed: onPressed,
-      child: Icon(icon, size: 18, color: CupertinoColors.label),
+      child: Icon(icon, size: 18, color: AppColors.textPrimary),
     );
   }
 }
@@ -185,7 +186,7 @@ class _Divider extends StatelessWidget {
       width: 0.5,
       height: 20,
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: CupertinoColors.separator,
+      color: AppColors.border,
     );
   }
 }

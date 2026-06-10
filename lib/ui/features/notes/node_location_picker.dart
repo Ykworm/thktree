@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/domain/node.dart';
@@ -46,7 +47,7 @@ Future<ThemeSelectionResult?> showThemePicker(
     builder: (_) => Container(
       height: MediaQuery.of(context).size.height * 0.5,
       decoration: const BoxDecoration(
-        color: CupertinoColors.systemBackground,
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: _ThemePickerContent(onThemeCreated: onThemeCreated),
@@ -64,7 +65,7 @@ Future<NodeLocationResult?> showNodeLocationPicker(
     builder: (_) => Container(
       height: MediaQuery.of(context).size.height * 0.6,
       decoration: const BoxDecoration(
-        color: CupertinoColors.systemBackground,
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: _NodeLocationPickerContent(onThemeCreated: onThemeCreated),
@@ -297,7 +298,7 @@ class _NodeLocationPickerContentState
                                 if (_preSelectedThemeId == theme.themeId)
                                   Icon(
                                     CupertinoIcons.checkmark,
-                                    color: CupertinoColors.systemBlue,
+                                    color: AppColors.accent,
                                   ),
                                 const CupertinoListTileChevron(),
                               ],
@@ -542,7 +543,7 @@ class _ThemePickerContentState extends ConsumerState<_ThemePickerContent> {
         ),
         Container(
           height: 0.5,
-          color: CupertinoColors.separator,
+          color: AppColors.border,
         ),
         if (_loading)
           const Padding(

@@ -143,7 +143,7 @@ abstract class AppLocalizations {
   /// Empty state for theme list
   ///
   /// In en, this message translates to:
-  /// **'No themes yet'**
+  /// **'Start your first knowledge theme'**
   String get noThemesYet;
 
   /// Dialog title for creating a new theme
@@ -335,7 +335,7 @@ abstract class AppLocalizations {
   /// Empty state for tree screen
   ///
   /// In en, this message translates to:
-  /// **'Session Tree is empty.\nTap + to create a root session.'**
+  /// **'Plant the first seed — tap + to start'**
   String get emptyTree;
 
   /// Dialog title for creating a new session
@@ -575,7 +575,7 @@ abstract class AppLocalizations {
   /// Empty state for notes list
   ///
   /// In en, this message translates to:
-  /// **'No notes yet. Tap + to create one.'**
+  /// **'A blank page awaits your thoughts'**
   String get noNotesYet;
 
   /// Dialog title for creating a new note
@@ -1109,13 +1109,13 @@ abstract class AppLocalizations {
   /// Search page empty state prompt
   ///
   /// In en, this message translates to:
-  /// **'Enter keywords to start searching'**
+  /// **'Find connections in your knowledge'**
   String get searchEmpty;
 
   /// No search results prompt
   ///
   /// In en, this message translates to:
-  /// **'No results found'**
+  /// **'Try a different angle'**
   String get searchNoResults;
 
   /// Search error prompt

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ulid/ulid.dart';
@@ -127,7 +128,7 @@ class _LlmProviderDetailScreenState
                               widget.provider!.defaultBaseUrl,
                               style: const TextStyle(
                                 fontSize: 13,
-                                color: CupertinoColors.secondaryLabel,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                             trailing: CupertinoButton(
@@ -319,7 +320,7 @@ class _LlmProviderDetailScreenState
             '${i + 1} / ${modelsWithUnknown.length}',
             style: const TextStyle(
               fontSize: 12,
-              color: CupertinoColors.secondaryLabel,
+              color: AppColors.textSecondary,
             ),
           ),
           actions: [

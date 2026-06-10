@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -166,7 +167,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.white,
+      backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: widget.themeTitle,
         trailing: CupertinoButton(
@@ -194,15 +195,15 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       placeholderStyle: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
-                        color: CupertinoColors.placeholderText,
+                        color: AppColors.textTertiary,
                       ),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
-                        color: CupertinoColors.label,
+                        color: AppColors.textPrimary,
                       ),
                       decoration: const BoxDecoration(
-                        color: CupertinoColors.white,
+                        color: AppColors.surface,
                         border: null,
                       ),
                       maxLines: null,
@@ -215,15 +216,15 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       placeholder: l10n.startWriting,
                       placeholderStyle: const TextStyle(
                         fontSize: 17,
-                        color: CupertinoColors.placeholderText,
+                        color: AppColors.textTertiary,
                       ),
                       style: const TextStyle(
                         fontSize: 17,
                         height: 1.6,
-                        color: CupertinoColors.label,
+                        color: AppColors.textPrimary,
                       ),
                       decoration: const BoxDecoration(
-                        color: CupertinoColors.white,
+                        color: AppColors.surface,
                         border: null,
                       ),
                       maxLines: null,

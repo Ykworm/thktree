@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
@@ -17,7 +18,7 @@ class ThemeListScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final themesAsync = ref.watch(themeListControllerProvider);
     return ThkLargeTitlePage(
-      title: l10n.appName,
+      title: l10n.themesTabLabel,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -47,19 +48,46 @@ class ThemeListScreen extends ConsumerWidget {
             if (themes.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.only(top: 80),
-                child: Center(child: Text(l10n.noThemesYet)),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        AppIcons.accountTree,
+                        size: 40,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.noThemesYet,
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
-            return ThkListSection(
+            return Column(
               children: [
-                for (final theme in themes)
+                for (int i = 0; i < themes.length; i++) ...[
                   ThkListTile(
-                    title: localizedThemeTitle(l10n, theme.title),
-                    subtitle: kDebugMode ? theme.themeId : null,
+                    title: localizedThemeTitle(l10n, themes[i].title),
+                    subtitle: kDebugMode ? themes[i].themeId : null,
                     trailing: ThkListTile.chevron,
+                    themeId: themes[i].themeId,
+                    leading: Icon(AppIcons.folder),
                     onTap: () =>
-                        context.push('/themes/${theme.themeId}/tree'),
+                        context.push('/themes/${themes[i].themeId}/tree'),
                   ),
+                  if (i < themes.length - 1)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 56),
+                      child: Container(
+                        height: 0.5,
+                        color: AppColors.border,
+                      ),
+                    ),
+                ],
               ],
             );
           },
@@ -67,8 +95,8 @@ class ThemeListScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 80),
             child: Center(child: Text(e.toString())),
           ),
-          loading: () => const Padding(
-            padding: EdgeInsets.only(top: 80),
+          loading: () => Padding(
+            padding: const EdgeInsets.only(top: 80),
             child: Center(child: CupertinoActivityIndicator()),
           ),
         ),

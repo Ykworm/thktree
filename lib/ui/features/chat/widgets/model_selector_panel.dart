@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -43,7 +44,7 @@ class ModelSelectorPanel extends ConsumerWidget {
                 l10n.pleaseFetchModels,
                 textAlign: TextAlign.center,
                 style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -59,7 +60,7 @@ class ModelSelectorPanel extends ConsumerWidget {
               color: CupertinoTheme.of(context).scaffoldBackgroundColor,
               border: Border(
                 top: BorderSide(
-                  color: CupertinoColors.separator.resolveFrom(context),
+                  color: AppColors.border,
                 ),
               ),
             ),
@@ -90,7 +91,7 @@ class ModelSelectorPanel extends ConsumerWidget {
                 ),
                 Container(
                   height: 1,
-                  color: CupertinoColors.separator.resolveFrom(context),
+                  color: AppColors.border,
                 ),
                 // 模型列表
                 Flexible(
@@ -146,7 +147,7 @@ class _ProviderGroup extends StatelessWidget {
           child: Text(
             provider.name,
             style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
@@ -203,7 +204,7 @@ class _ModelItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         color: isSelected
-            ? CupertinoColors.systemBlue.withValues(alpha: 0.1)
+            ? AppColors.accentLight
             : CupertinoColors.transparent,
         padding: const EdgeInsets.fromLTRB(32, 10, 16, 10),
         child: Row(
@@ -214,7 +215,7 @@ class _ModelItem extends StatelessWidget {
                 child: Icon(
                   CupertinoIcons.checkmark,
                   size: 18,
-                  color: CupertinoColors.systemBlue.resolveFrom(context),
+                  color: AppColors.accent,
                 ),
               ),
             Expanded(
@@ -222,8 +223,8 @@ class _ModelItem extends StatelessWidget {
                 model.name,
                 style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                   color: isSelected
-                      ? CupertinoColors.systemBlue.resolveFrom(context)
-                      : CupertinoColors.label.resolveFrom(context),
+                      ? AppColors.accent
+                      : AppColors.textPrimary,
                   fontWeight:
                       isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),

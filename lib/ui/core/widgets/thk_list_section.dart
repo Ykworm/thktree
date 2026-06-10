@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// iOS Settings 风格的 inset grouped 列表分组容器。
 ///
@@ -56,7 +57,7 @@ class ThkListSection extends StatelessWidget {
                   .copyWith(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    color: CupertinoColors.secondaryLabel,
+                    color: AppColors.textSecondary,
                   ),
             )
           : null,
@@ -69,7 +70,7 @@ class ThkListSection extends StatelessWidget {
                   .copyWith(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    color: CupertinoColors.secondaryLabel,
+                    color: AppColors.textSecondary,
                   ),
             )
           : null,

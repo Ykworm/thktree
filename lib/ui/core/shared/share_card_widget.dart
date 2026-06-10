@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 
 /// 分享卡片 Widget —— 用于截图生成图片
@@ -30,7 +31,7 @@ class ShareCardWidget extends StatelessWidget {
     return Container(
       width: _cardWidth,
       decoration: BoxDecoration(
-        color: CupertinoColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(_radius),
         boxShadow: [
           BoxShadow(
@@ -53,7 +54,7 @@ class ShareCardWidget extends StatelessWidget {
                   width: 6,
                   height: 6,
                   decoration: const BoxDecoration(
-                    color: CupertinoColors.activeBlue,
+                    color: AppColors.accent,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -63,7 +64,7 @@ class ShareCardWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: CupertinoColors.secondaryLabel,
+                    color: AppColors.textSecondary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -77,7 +78,7 @@ class ShareCardWidget extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6,
+                  color: AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -85,7 +86,7 @@ class ShareCardWidget extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     height: 1.5,
-                    color: CupertinoColors.secondaryLabel,
+                    color: AppColors.textSecondary,
                   ),
                   maxLines: 6,
                   overflow: TextOverflow.ellipsis,
@@ -100,7 +101,7 @@ class ShareCardWidget extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 15,
                 height: 1.6,
-                color: CupertinoColors.label,
+                color: AppColors.textPrimary,
               ),
             ),
 
@@ -108,14 +109,14 @@ class ShareCardWidget extends StatelessWidget {
             const SizedBox(height: 20),
             Container(
               height: 0.5,
-              color: CupertinoColors.separator,
+              color: AppColors.border,
             ),
             const SizedBox(height: 12),
             const Text(
               'Shared from ThkTree',
               style: TextStyle(
                 fontSize: 11,
-                color: CupertinoColors.tertiaryLabel,
+                color: AppColors.textTertiary,
               ),
             ),
           ],

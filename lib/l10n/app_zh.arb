@@ -13,7 +13,7 @@
   "systemDefault": "跟随系统",
   "english": "English",
   "chinese": "中文",
-  "noThemesYet": "暂无主题",
+  "noThemesYet": "开始你的第一个知识主题",
   "newTheme": "新建主题",
   "titleHint": "标题",
   "cancel": "取消",
@@ -59,7 +59,7 @@
   },
   "dataRoot": "数据根目录",
   "treeTitle": "{title} · 树",
-  "emptyTree": "会话树为空。\n点击 + 创建根会话。",
+  "emptyTree": "种下第一颗种子，点击 + 开始对话",
   "newSession": "新建会话",
   "newBranch": "新建分支",
   "deleteItem": "删除项目",
@@ -99,7 +99,7 @@
   "addToNote": "添加到笔记",
   "notes": "笔记",
   "selectNote": "选择一个笔记来追加内容...",
-  "noNotesYet": "暂无笔记，点击 + 创建一个。",
+  "noNotesYet": "空白页，等你落笔",
   "newNote": "新建笔记",
   "noteCount": "{count} 篇笔记",
   "@noteCount": {
@@ -257,11 +257,11 @@
   "@searchHint": {
     "description": "搜索输入框占位符"
   },
-  "searchEmpty": "输入关键词开始搜索",
+  "searchEmpty": "在知识中寻找连接",
   "@searchEmpty": {
     "description": "搜索页面空状态提示"
   },
-  "searchNoResults": "没有找到相关结果",
+  "searchNoResults": "换个角度试试",
   "@searchNoResults": {
     "description": "搜索无结果提示"
   },

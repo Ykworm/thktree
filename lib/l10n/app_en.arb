@@ -32,7 +32,7 @@
   "@chinese": {
     "description": "Chinese language name"
   },
-  "noThemesYet": "No themes yet",
+  "noThemesYet": "Start your first knowledge theme",
   "@noThemesYet": {
     "description": "Empty state for theme list"
   },
@@ -167,7 +167,7 @@
   "@treeTitle": {
     "description": "Tree screen title with theme name"
   },
-  "emptyTree": "Session Tree is empty.\nTap + to create a root session.",
+  "emptyTree": "Plant the first seed — tap + to start",
   "@emptyTree": {
     "description": "Empty state for tree screen"
   },
@@ -357,7 +357,7 @@
   "@selectNote": {
     "description": "Select note subtitle on note picker page"
   },
-  "noNotesYet": "No notes yet. Tap + to create one.",
+  "noNotesYet": "A blank page awaits your thoughts",
   "@noNotesYet": {
     "description": "Empty state for notes list"
   },
@@ -758,11 +758,11 @@
   "@searchHint": {
     "description": "Search input field placeholder"
   },
-  "searchEmpty": "Enter keywords to start searching",
+  "searchEmpty": "Find connections in your knowledge",
   "@searchEmpty": {
     "description": "Search page empty state prompt"
   },
-  "searchNoResults": "No results found",
+  "searchNoResults": "Try a different angle",
   "@searchNoResults": {
     "description": "No search results prompt"
   },

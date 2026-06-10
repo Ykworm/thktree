@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -72,19 +73,25 @@ class _AuthGateState extends ConsumerState<AuthGate> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    if (_authenticated) return widget.child;
-
+    // Always keep widget.child in a stable position in the tree to avoid
+    // tearing down the entire InheritedWidget subtree (MediaQuery,
+    // Localizations, etc.) when toggling the lock screen.
     return Stack(
       textDirection: TextDirection.ltr,
       children: [
-        // Dimmed background (the actual app content, not interactive).
-        IgnorePointer(child: Opacity(opacity: 0.05, child: widget.child)),
-        // Lock overlay.
-        GestureDetector(
-          onTap: _authenticateIfNeeded,
-          behavior: HitTestBehavior.opaque,
-          child: const _LockScreen(),
-        ),
+        widget.child,
+        if (!_authenticated) ...[
+          // Dim the app content and absorb all touches.
+          const Positioned.fill(
+            child: ColoredBox(color: Color(0xF0000000)),
+          ),
+          // Lock overlay.
+          GestureDetector(
+            onTap: _authenticateIfNeeded,
+            behavior: HitTestBehavior.opaque,
+            child: const _LockScreen(),
+          ),
+        ],
       ],
     );
   }
@@ -98,7 +105,7 @@ class _LockScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: CupertinoPageScaffold(
-        backgroundColor: CupertinoColors.systemBackground,
+        backgroundColor: const Color(0x00000000),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -106,7 +113,7 @@ class _LockScreen extends StatelessWidget {
               Icon(
                 CupertinoIcons.lock_fill,
                 size: 64,
-                color: CupertinoColors.secondaryLabel,
+                color: AppColors.textSecondary,
               ),
               SizedBox(height: 16),
               Text(
@@ -114,7 +121,7 @@ class _LockScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: CupertinoColors.label,
+                  color: AppColors.textPrimary,
                 ),
               ),
               SizedBox(height: 8),
@@ -122,7 +129,7 @@ class _LockScreen extends StatelessWidget {
                 '请使用 Face ID 解锁',
                 style: TextStyle(
                   fontSize: 15,
-                  color: CupertinoColors.secondaryLabel,
+                  color: AppColors.textSecondary,
                 ),
               ),
               SizedBox(height: 24),
@@ -130,7 +137,7 @@ class _LockScreen extends StatelessWidget {
                 '点击屏幕重试',
                 style: TextStyle(
                   fontSize: 13,
-                  color: CupertinoColors.tertiaryLabel,
+                  color: AppColors.textTertiary,
                 ),
               ),
             ],

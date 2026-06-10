@@ -24,10 +24,10 @@ void main() {
     );
     await tester.pump();
 
-    // 'ThkTree' 现在只在 ThkLargeTitlePage 顶栏显示一次（原来 nav bar + 设置入口会显示 2 次）。
-    expect(find.text('ThkTree'), findsOneWidget);
-    expect(find.text('No themes yet'), findsOneWidget);
-    // settings 按钮已从 theme list 顶栏移除，改用底部 tab bar 入口（见 router.dart）。
+    // App boots with the tab bar visible. The Themes tab label is present.
+    expect(find.text('Themes'), findsOneWidget);
+    // The Search tab is active by default.
+    expect(find.text('Search'), findsAtLeastNWidgets(1));
   });
 }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -466,7 +467,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     final titleValid = _titleCtrl.text.trim().isNotEmpty;
 
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGroupedBackground,
+      backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: '',
         middle: Text(l10n.chooseTitle),
@@ -487,8 +488,8 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: titleValid
-                  ? CupertinoColors.systemBlue.resolveFrom(context)
-                  : CupertinoColors.systemGrey,
+                  ? AppColors.accent
+                  : AppColors.textTertiary,
             ),
           ),
         ),
@@ -504,7 +505,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
                 l10n.titleSourceBanner(widget.request.sourceLabel),
                 style: TextStyle(
                   fontSize: 13,
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -555,8 +556,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
                   Text(
                     l10n.titleGenerating,
                     style: TextStyle(
-                      color: CupertinoColors.secondaryLabel
-                          .resolveFrom(context),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -575,14 +575,14 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
                     Icon(
                       CupertinoIcons.text_badge_star,
                       size: 48,
-                      color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                      color: AppColors.textTertiary,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       l10n.generateTitlesHint,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -645,7 +645,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
             child: Text(
               l10n.titleModelSwitch,
               style: TextStyle(
-                color: CupertinoColors.systemBlue.resolveFrom(context),
+                color: AppColors.accent,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -745,13 +745,13 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                       children: [
                         Expanded(
                           child: CupertinoButton(
-                            color: CupertinoColors.systemGrey5,
+                            color: AppColors.surface,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             onPressed: () => Navigator.of(ctx).pop(),
                             child: Text(
                               l10n.cancel,
                               style: TextStyle(
-                                color: CupertinoColors.label.resolveFrom(ctx),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -805,8 +805,8 @@ class _BranchModeOption extends StatelessWidget {
                   ? CupertinoIcons.checkmark_circle_fill
                   : CupertinoIcons.circle,
               color: selected
-                  ? CupertinoColors.systemBlue
-                  : CupertinoColors.systemGrey3,
+                  ? AppColors.accent
+                  : AppColors.textTertiary,
               size: 22,
             ),
             const SizedBox(width: 12),
@@ -815,7 +815,7 @@ class _BranchModeOption extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 16,
-                  color: CupertinoColors.label.resolveFrom(context),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -1332,7 +1332,7 @@ class _ModelSelectorSheet extends StatelessWidget {
                   provider.name,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: CupertinoColors.secondaryLabel,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 Text(model.name),
@@ -1353,7 +1353,7 @@ class _ModelSelectorSheet extends StatelessWidget {
                 provider.name,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: CupertinoColors.secondaryLabel,
+                  color: AppColors.textSecondary,
                 ),
               ),
               Text(provider.selectedModelId!),

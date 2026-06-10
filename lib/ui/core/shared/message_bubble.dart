@@ -6,6 +6,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
@@ -60,7 +61,6 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (_sharing || widget.message.body.isEmpty) return;
     setState(() => _sharing = true);
     try {
-      // 获取分享按钮在屏幕上的位置（iPad 需要）
       Rect? origin;
       final renderBox = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
       if (renderBox != null && renderBox.hasSize) {
@@ -101,8 +101,8 @@ class _MessageBubbleState extends State<MessageBubble> {
     };
 
     final backgroundColor = isUser
-        ? CupertinoColors.systemGrey6.resolveFrom(context).withValues(alpha: 0.5)
-        : CupertinoColors.white;
+        ? AppColors.accentLight
+        : AppColors.surface;
 
     final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
     final hasTable = _hasMarkdownTable(widget.message.body);
@@ -112,7 +112,7 @@ class _MessageBubbleState extends State<MessageBubble> {
 
     final baseStyle = TextStyle(
       fontSize: 17,
-      color: CupertinoColors.label.resolveFrom(context),
+      color: AppColors.textPrimary,
     );
 
     return Align(
@@ -137,8 +137,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: CupertinoColors.secondaryLabel
-                              .resolveFrom(context),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -150,8 +149,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                         child: Icon(
                           CupertinoIcons.arrow_up_left_arrow_down_right,
                           size: 15,
-                          color: CupertinoColors.secondaryLabel
-                              .resolveFrom(context),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                   ],
@@ -178,7 +176,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                           size: 18,
                           color: _copied
                               ? CupertinoColors.systemGreen
-                              : CupertinoColors.secondaryLabel.resolveFrom(context),
+                              : AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -192,7 +190,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                             : Icon(
                                 AppIcons.share,
                                 size: 18,
-                                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                color: AppColors.textSecondary,
                               ),
                       ),
                       if (widget.onRetry != null) ...[
@@ -215,7 +213,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                             child: Icon(
                               CupertinoIcons.arrow_counterclockwise,
                               size: 18,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                       ],
@@ -245,12 +243,11 @@ Widget _buildCodeBlock(
   String code,
   bool closed,
 ) {
-  final codeBg = CupertinoColors.systemGrey5.resolveFrom(context);
   return Container(
     width: double.infinity,
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: codeBg,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(8),
     ),
     child: SelectableText(
@@ -273,7 +270,7 @@ Widget _buildTable(
     scrollDirection: Axis.horizontal,
     child: Table(
       border: TableBorder.all(
-        color: CupertinoColors.separator.resolveFrom(context),
+        color: AppColors.border,
         width: 1,
       ),
       defaultColumnWidth: const IntrinsicColumnWidth(),

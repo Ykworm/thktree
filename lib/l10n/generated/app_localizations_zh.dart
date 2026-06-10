@@ -32,7 +32,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chinese => '中文';
 
   @override
-  String get noThemesYet => '暂无主题';
+  String get noThemesYet => '开始你的第一个知识主题';
 
   @override
   String get newTheme => '新建主题';
@@ -134,7 +134,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get emptyTree => '会话树为空。\n点击 + 创建根会话。';
+  String get emptyTree => '种下第一颗种子，点击 + 开始对话';
 
   @override
   String get newSession => '新建会话';
@@ -276,7 +276,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectNote => '选择一个笔记来追加内容...';
 
   @override
-  String get noNotesYet => '暂无笔记，点击 + 创建一个。';
+  String get noNotesYet => '空白页，等你落笔';
 
   @override
   String get newNote => '新建笔记';
@@ -561,10 +561,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchHint => '搜索笔记和对话...';
 
   @override
-  String get searchEmpty => '输入关键词开始搜索';
+  String get searchEmpty => '在知识中寻找连接';
 
   @override
-  String get searchNoResults => '没有找到相关结果';
+  String get searchNoResults => '换个角度试试';
 
   @override
   String get searchError => '搜索出错，请重试';

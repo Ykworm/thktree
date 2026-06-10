@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -384,7 +385,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.white,
+      backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: _title,
         trailing: Row(
@@ -398,7 +399,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
                   _copied ? AppIcons.checkCircle : AppIcons.copy,
                   color: _copied
                       ? CupertinoColors.systemGreen
-                      : CupertinoColors.activeBlue,
+                      : AppColors.accent,
                 ),
               ),
             CupertinoButton(
@@ -444,10 +445,10 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
               style: const TextStyle(
                 fontSize: 17,
                 height: 1.6,
-                color: CupertinoColors.black,
+                color: AppColors.textPrimary,
               ),
               decoration: const BoxDecoration(
-                color: CupertinoColors.white,
+                color: AppColors.surface,
               ),
             ),
           ),
@@ -470,12 +471,12 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       return Center(
         child: Text(
           l10n.noMessagesYet,
-          style: const TextStyle(color: CupertinoColors.secondaryLabel),
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
       );
     }
     return Container(
-      color: CupertinoColors.white,
+      color: AppColors.surface,
       child: SingleChildScrollView(
         padding: EdgeInsets.zero,
         child: GptMarkdown(
@@ -551,19 +552,14 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
     }
     final l10n = AppLocalizations.of(context)!;
 
-    return CupertinoPageScaffold(
-      navigationBar: ThkNavBar.inline(
-        title: l10n.notes,
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => _createNote(context, ref),
-          child: Icon(AppIcons.add),
-        ),
+    return ThkLargeTitlePage(
+      title: l10n.notes,
+      trailing: CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: () => _createNote(context, ref),
+        child: Icon(AppIcons.add),
       ),
-      child: SafeArea(
-        top: false,
-        child: _buildBody(l10n),
-      ),
+      children: _buildChildren(l10n),
     );
   }
 
@@ -594,30 +590,44 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
     );
   }
 
-  Widget _buildBody(AppLocalizations l10n) {
+  List<Widget> _buildChildren(AppLocalizations l10n) {
     if (_loading) {
-      return const Center(child: CupertinoActivityIndicator());
+      return [
+        const Padding(
+          padding: EdgeInsets.only(top: 80),
+          child: Center(child: CupertinoActivityIndicator()),
+        ),
+      ];
     }
     if (_error != null) {
-      return Center(
-        child: Text(
-          '${l10n.noNotesYet}: $_error',
-          style: const TextStyle(color: CupertinoColors.systemRed),
+      return [
+        Padding(
+          padding: const EdgeInsets.only(top: 80),
+          child: Center(
+            child: Text(
+              '${l10n.noNotesYet}: $_error',
+              style: const TextStyle(color: CupertinoColors.systemRed),
+            ),
+          ),
         ),
-      );
+      ];
     }
     final metas = _metas ?? [];
     if (metas.isEmpty) {
-      return Center(
-        child: Text(
-          l10n.noNotesYet,
-          style: const TextStyle(color: CupertinoColors.secondaryLabel),
+      return [
+        Padding(
+          padding: const EdgeInsets.only(top: 80),
+          child: Center(
+            child: Text(
+              l10n.noNotesYet,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
         ),
-      );
+      ];
     }
-    return ListView(
-      children: [
-        ThkListSection(
+    return [
+      ThkListSection(
           children: metas
               .map(
                 (meta) => SwipeableRow(
@@ -683,8 +693,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
                 ),
               )
               .toList(),
-        ),
-      ],
-    );
+      ),
+    ];
   }
 }

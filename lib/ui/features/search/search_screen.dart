@@ -8,6 +8,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:thk_tree/data/services/search_service.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/notes/note_detail_screen.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -112,13 +113,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             Expanded(
               child: _results.isEmpty && !_loading && _error == null
                   ? Center(
-                      child: Text(
-                        _searchController.text.isEmpty
-                            ? l10n.searchEmpty
-                            : l10n.searchNoResults,
-                        style: TextStyle(
-                          color: CupertinoColors.systemGrey.resolveFrom(context),
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _searchController.text.isEmpty
+                                ? CupertinoIcons.search
+                                : CupertinoIcons.search,
+                            size: 40,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _searchController.text.isEmpty
+                                ? l10n.searchEmpty
+                                : l10n.searchNoResults,
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ],
                       ),
                     )
                   : ListView.builder(
@@ -255,7 +267,7 @@ class _SearchResultItem extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: CupertinoColors.separator.resolveFrom(context),
+              color: AppColors.border,
               width: 0.5,
             ),
           ),
@@ -270,7 +282,7 @@ class _SearchResultItem extends StatelessWidget {
                       ? CupertinoIcons.doc_text
                       : CupertinoIcons.chat_bubble,
                   size: 16,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
+                  color: AppColors.textTertiary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -292,7 +304,7 @@ class _SearchResultItem extends StatelessWidget {
                 result.themeTitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
+                  color: AppColors.textTertiary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -304,7 +316,7 @@ class _SearchResultItem extends StatelessWidget {
                 result.snippet,
                 style: TextStyle(
                   fontSize: 14,
-                  color: CupertinoColors.systemGrey2.resolveFrom(context),
+                  color: AppColors.textTertiary,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

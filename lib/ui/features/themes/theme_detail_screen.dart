@@ -10,6 +10,7 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
     show localizedThemeTitle;
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
@@ -18,6 +19,29 @@ import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/session_markdown.dart';
+
+// ---------------------------------------------------------------------------
+// Node color palettes — 5 schemes (circle + title + subtitle)
+// ---------------------------------------------------------------------------
+
+class _NodePalette {
+  const _NodePalette(this.circle, this.title, this.subtitle);
+  final Color circle;
+  final Color title;
+  final Color subtitle;
+}
+
+const _nodePalettes = [
+  _NodePalette(Color(0xFF3B82F6), Color(0xFF1E1B4B), Color(0xFF6366F1)), // 0: electric blue + deep purple + indigo
+  _NodePalette(Color(0xFF10B981), Color(0xFF881337), Color(0xFFEA580C)), // 1: emerald + deep rose + coral
+  _NodePalette(Color(0xFF8B5CF6), Color(0xFF134E4A), Color(0xFF0369A1)), // 2: violet + deep teal + ocean
+  _NodePalette(Color(0xFFEC4899), Color(0xFF312E81), Color(0xFF0D9488)), // 3: hot pink + deep indigo + jade
+  _NodePalette(Color(0xFFFBBF24), Color(0xFF0F172A), Color(0xFF7C3AED)), // 4: amber + deep slate + purple
+];
+
+_NodePalette _paletteForNode(String nodeId) {
+  return _nodePalettes[nodeId.hashCode.abs() % _nodePalettes.length];
+}
 
 // ---------------------------------------------------------------------------
 // ThemeDetailScreen
@@ -219,61 +243,72 @@ class _TreeRowView extends ConsumerWidget {
     final children = _children();
     final isCollapsed = collapsedIds.contains(node.nodeId);
     final hasChildren = children.isNotEmpty;
+    final palette = _paletteForNode(node.nodeId);
     // ── Source type label ──
     final sourceLabel = _sourceTypeLabel(l10n, node.sourceType);
 
     // ── Node tile ──
-    final tileContent = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (depth > 0) SizedBox(width: _kIndent * depth),
-          const SizedBox(width: 12),
-          // Title + source excerpt
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  node.title,
-                  style: AppTheme.body,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (sourceLabel != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    sourceLabel,
-                    style: AppTheme.caption1.copyWith(
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+    final tileContent = SizedBox(
+      height: 56,
+      child: Padding(
+        padding: EdgeInsets.only(left: depth * _kIndent),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Circle indicator (tappable only when hasChildren)
+            GestureDetector(
+              onTap: hasChildren ? () => onToggleCollapse(node.nodeId) : null,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: hasChildren
+                          ? (isCollapsed
+                              ? palette.circle
+                              : palette.circle.withValues(alpha: 0.15))
+                          : palette.circle.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: palette.circle,
+                        width: 2,
+                      ),
                     ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 0),
+            // Title + source label
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    node.title,
+                    style: AppTheme.body.copyWith(color: AppColors.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    sourceLabel ?? '',
+                    style: AppTheme.caption1.copyWith(color: palette.subtitle),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              ],
-            ),
-          ),
-          // Collapse / expand chevron
-          if (hasChildren)
-            GestureDetector(
-              onTap: () => onToggleCollapse(node.nodeId),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8, right: 4),
-                child: Icon(
-                  isCollapsed
-                      ? CupertinoIcons.chevron_right
-                      : CupertinoIcons.chevron_down,
-                  size: 14,
-                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
-                ),
               ),
             ),
-          const SizedBox(width: 8),
-        ],
+            const SizedBox(width: 8),
+          ],
+        ),
       ),
     );
 

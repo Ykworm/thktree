@@ -1,13 +1,7 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// iOS 风格按钮，支持三种样式：filled、tinted、plain。
-///
-/// 示例：
-/// ```dart
-/// ThkButton.filled(label: '保存', onPressed: save)
-/// ThkButton.tinted(label: '编辑', onPressed: edit)
-/// ThkButton.plain(label: '取消', onPressed: cancel)
-/// ```
 class ThkButton extends StatelessWidget {
   const ThkButton._({
     required this.label,
@@ -19,9 +13,6 @@ class ThkButton extends StatelessWidget {
     this.borderRadius,
   });
 
-  /// 填充样式按钮（蓝色背景 + 白色文字）。
-  ///
-  /// 对应 [CupertinoButton.filled]。
   factory ThkButton.filled({
     required String label,
     VoidCallback? onPressed,
@@ -41,7 +32,6 @@ class ThkButton extends StatelessWidget {
     );
   }
 
-  /// 浅色样式按钮（蓝色半透明背景 + 蓝色文字）。
   factory ThkButton.tinted({
     required String label,
     VoidCallback? onPressed,
@@ -61,9 +51,6 @@ class ThkButton extends StatelessWidget {
     );
   }
 
-  /// 纯文字样式按钮。
-  ///
-  /// 对应 [CupertinoButton]。
   factory ThkButton.plain({
     required String label,
     VoidCallback? onPressed,
@@ -118,24 +105,29 @@ class ThkButton extends StatelessWidget {
 
     switch (_style) {
       case ThkButtonVariant.filled:
-        return CupertinoButton.filled(
+        return CupertinoButton(
           padding: effectivePadding,
           borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(8)),
+          color: AppColors.accent,
+          disabledColor: AppColors.accentDeep.withValues(alpha: 0.4),
           onPressed: _effectiveOnPressed,
-          child: _content,
+          child: DefaultTextStyle(
+            style: const TextStyle(color: CupertinoColors.white, fontWeight: FontWeight.w600),
+            child: _content,
+          ),
         );
       case ThkButtonVariant.tinted:
         return CupertinoButton(
           padding: effectivePadding,
           borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(8)),
-          color: CupertinoColors.systemBlue.withValues(alpha: 0.15),
-          disabledColor: CupertinoColors.systemBlue.withValues(alpha: 0.08),
+          color: AppColors.accentLight,
+          disabledColor: AppColors.accentLight.withValues(alpha: 0.5),
           onPressed: _effectiveOnPressed,
           child: DefaultTextStyle(
             style: TextStyle(
               color: disabled
-                  ? CupertinoColors.systemBlue.withValues(alpha: 0.4)
-                  : CupertinoColors.systemBlue,
+                  ? AppColors.accent.withValues(alpha: 0.4)
+                  : AppColors.accent,
               fontWeight: FontWeight.w600,
             ),
             child: _content,

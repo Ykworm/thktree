@@ -1,9 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
@@ -131,6 +133,7 @@ class _MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return CupertinoPageScaffold(
+      backgroundColor: AppColors.pageBg,
       resizeToAvoidBottomInset: false,
       child: Column(
         children: [
@@ -138,10 +141,7 @@ class _MainShell extends ConsumerWidget {
             child: Builder(
               builder: (context) {
                 final mq = MediaQuery.of(context);
-                // Adjust viewInsets.bottom for child pages: the tab bar sits
-                // behind the keyboard, so children only need to offset by
-                // (keyboard height − tab bar height).
-                const tabBarContentHeight = 6 + 49 + 2; // padding.top + SizedBox + padding.bottom
+                const tabBarContentHeight = 6 + 49 + 2;
                 final tabBarHeight = mq.padding.bottom + tabBarContentHeight;
                 final adjustedBottom = max<double>(
                   0,
@@ -170,17 +170,14 @@ class _MainShell extends ConsumerWidget {
       (icon: AppIcons.settings, label: l10n.settingsTabLabel),
     ];
     final selectedIndex = navigationShell.currentIndex;
-    final activeColor = CupertinoColors.systemBlue.resolveFrom(context);
-    final inactiveColor = CupertinoColors.systemGrey.resolveFrom(context);
+    const activeColor = AppColors.accent;
+    final inactiveColor = AppColors.textTertiary;
 
     return Container(
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground.resolveFrom(context),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
         border: Border(
-          top: BorderSide(
-            color: CupertinoColors.separator.resolveFrom(context),
-            width: 0.5,
-          ),
+          top: BorderSide(color: AppColors.border, width: 0.5),
         ),
       ),
       child: SafeArea(
@@ -200,10 +197,13 @@ class _MainShell extends ConsumerWidget {
                     selected: i == selectedIndex,
                     activeColor: activeColor,
                     inactiveColor: inactiveColor,
-                    onTap: () => navigationShell.goBranch(
-                      i,
-                      initialLocation: i == selectedIndex,
-                    ),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      navigationShell.goBranch(
+                        i,
+                        initialLocation: i == selectedIndex,
+                      );
+                    },
                   ),
               ],
             ),
@@ -244,7 +244,7 @@ class _TabItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SFIcon(icon, fontSize: 25, color: color),
-            const SizedBox(height: 2),
+            const SizedBox(height: 1),
             Text(
               label,
               maxLines: 1,
@@ -252,6 +252,17 @@ class _TabItem extends StatelessWidget {
               style: TextStyle(fontSize: 10, color: color),
               overflow: TextOverflow.ellipsis,
             ),
+            if (selected) ...[
+              const SizedBox(height: 0),
+              Container(
+                width: 20,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  borderRadius: BorderRadius.circular(1.5),
+                ),
+              ),
+            ],
           ],
         ),
       ),

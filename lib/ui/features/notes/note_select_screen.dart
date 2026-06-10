@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -142,7 +143,7 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
       return Center(
         child: Text(
           l10n.noNotesYet,
-          style: const TextStyle(color: CupertinoColors.secondaryLabel),
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
       );
     }

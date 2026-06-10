@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -276,7 +277,7 @@ class _LanguageTile extends ConsumerWidget {
                   if (currentLocale == null)
                     const Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Icon(AppIcons.check, size: 18, color: CupertinoColors.systemBlue),
+                      child: Icon(AppIcons.check, size: 18, color: AppColors.accent),
                     ),
                 ],
               ),
@@ -293,7 +294,7 @@ class _LanguageTile extends ConsumerWidget {
                   if (currentLocale?.languageCode == 'en')
                     const Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Icon(AppIcons.check, size: 18, color: CupertinoColors.systemBlue),
+                      child: Icon(AppIcons.check, size: 18, color: AppColors.accent),
                     ),
                 ],
               ),
@@ -310,7 +311,7 @@ class _LanguageTile extends ConsumerWidget {
                   if (currentLocale?.languageCode == 'zh')
                     const Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Icon(AppIcons.check, size: 18, color: CupertinoColors.systemBlue),
+                      child: Icon(AppIcons.check, size: 18, color: AppColors.accent),
                     ),
                 ],
               ),
@@ -509,7 +510,7 @@ List<Widget> _buildProviderActions(LlmProviderConfig provider, WidgetRef ref, Bu
                 provider.name,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: CupertinoColors.secondaryLabel,
+                  color: AppColors.textSecondary,
                 ),
               ),
               Text(model.name),
@@ -542,7 +543,7 @@ List<Widget> _buildProviderActions(LlmProviderConfig provider, WidgetRef ref, Bu
               provider.name,
               style: const TextStyle(
                 fontSize: 12,
-                color: CupertinoColors.secondaryLabel,
+                color: AppColors.textSecondary,
               ),
             ),
             Text(provider.selectedModelId!),

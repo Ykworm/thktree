@@ -1,6 +1,9 @@
-import 'package:flutter/cupertino.dart';
+// Design System — 修改字体/主题配置前请先阅读 docs/visual/design-system.md
 
-/// iOS 原生主题配置
+import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
+
+/// 清新多彩主题配置
 class AppTheme {
   AppTheme._();
 
@@ -9,23 +12,43 @@ class AppTheme {
 
   static CupertinoThemeData get light => const CupertinoThemeData(
         brightness: Brightness.light,
-        primaryColor: CupertinoColors.systemBlue,
-        scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
-        barBackgroundColor: CupertinoColors.systemBackground,
+        primaryColor: AppColors.accent,
+        scaffoldBackgroundColor: AppColors.pageBg,
+        barBackgroundColor: AppColors.surface,
         textTheme: CupertinoTextThemeData(
-          primaryColor: CupertinoColors.systemBlue,
+          primaryColor: AppColors.accent,
+          textStyle: TextStyle(
+            fontFamily: _fontFamily,
+            fontFamilyFallback: _fontFamilyFallback,
+            fontSize: 17,
+            fontWeight: FontWeight.w400,
+            letterSpacing: -0.41,
+            color: AppColors.textPrimary,
+          ),
         ),
       );
 
-  // 8 个文本 token（iOS HIG 标准）
+  // ── Serif display styles (Cormorant Garamond) ────────────────────
 
   static TextStyle get largeTitle => const TextStyle(
-        fontFamily: '.SF Pro Display',
+        fontFamily: 'Cormorant Garamond',
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 34,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.37,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0,
+        color: AppColors.textPrimary,
       );
+
+  static TextStyle get displayTitle => const TextStyle(
+        fontFamily: 'Cormorant Garamond',
+        fontFamilyFallback: _fontFamilyFallback,
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0,
+        color: AppColors.textPrimary,
+      );
+
+  // ── SF Pro text tokens ───────────────────────────────────────────
 
   static TextStyle get title1 => const TextStyle(
         fontFamily: '.SF Pro Display',
@@ -33,6 +56,7 @@ class AppTheme {
         fontSize: 28,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.36,
+        color: AppColors.textPrimary,
       );
 
   static TextStyle get headline => const TextStyle(
@@ -41,6 +65,7 @@ class AppTheme {
         fontSize: 17,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.41,
+        color: AppColors.textPrimary,
       );
 
   static TextStyle get body => const TextStyle(
@@ -49,6 +74,7 @@ class AppTheme {
         fontSize: 17,
         fontWeight: FontWeight.w400,
         letterSpacing: -0.41,
+        color: AppColors.textPrimary,
       );
 
   static TextStyle get callout => const TextStyle(
@@ -57,6 +83,7 @@ class AppTheme {
         fontSize: 16,
         fontWeight: FontWeight.w400,
         letterSpacing: -0.32,
+        color: AppColors.textPrimary,
       );
 
   static TextStyle get subhead => const TextStyle(
@@ -65,6 +92,7 @@ class AppTheme {
         fontSize: 15,
         fontWeight: FontWeight.w400,
         letterSpacing: -0.24,
+        color: AppColors.textPrimary,
       );
 
   static TextStyle get footnote => const TextStyle(
@@ -73,6 +101,7 @@ class AppTheme {
         fontSize: 13,
         fontWeight: FontWeight.w400,
         letterSpacing: -0.08,
+        color: AppColors.textPrimary,
       );
 
   static TextStyle get caption1 => const TextStyle(
@@ -81,5 +110,6 @@ class AppTheme {
         fontSize: 12,
         fontWeight: FontWeight.w400,
         letterSpacing: 0,
+        color: AppColors.textPrimary,
       );
 }

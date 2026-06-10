@@ -19,6 +19,7 @@ class NodeEntity {
     required this.sortOrder,
     this.sourceExcerpt,
     this.sourceType,
+    this.lastMessagePreview,
   });
 
   final String themeId;
@@ -38,5 +39,8 @@ class NodeEntity {
 
   /// DB-only: manual sort order within same parent (lower = earlier)
   final int sortOrder;
+
+  /// Populated by controller: last user message preview (first ~40 chars)
+  final String? lastMessagePreview;
 }
 

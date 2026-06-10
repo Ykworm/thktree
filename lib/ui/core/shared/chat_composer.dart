@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
@@ -92,7 +93,7 @@ class _ChatComposerState extends State<ChatComposer> {
                 smartQuotesType: SmartQuotesType.disabled,
                 placeholder: widget.hintText,
                 decoration: BoxDecoration(
-                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding:
@@ -112,7 +113,7 @@ class _ChatComposerState extends State<ChatComposer> {
           if (widget.onModelSelectorTap != null) ...[
             Container(
               decoration: BoxDecoration(
-                color: CupertinoColors.systemBackground.resolveFrom(context),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: CupertinoButton(
@@ -123,8 +124,8 @@ class _ChatComposerState extends State<ChatComposer> {
                   AppIcons.sparkles,
                   size: 20,
                   color: widget.isStreaming
-                      ? CupertinoColors.systemGrey.resolveFrom(context)
-                      : CupertinoColors.systemBlue.resolveFrom(context),
+                      ? AppColors.textTertiary
+                      : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -133,7 +134,7 @@ class _ChatComposerState extends State<ChatComposer> {
           const SizedBox(width: 4),
           Container(
             decoration: BoxDecoration(
-              color: CupertinoColors.systemBackground.resolveFrom(context),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
@@ -148,8 +149,8 @@ class _ChatComposerState extends State<ChatComposer> {
                 widget.isStreaming ? AppIcons.stop : AppIcons.send,
                 size: 20,
                 color: widget.enabled
-                    ? CupertinoColors.systemBlue.resolveFrom(context)
-                    : CupertinoColors.systemGrey.resolveFrom(context),
+                    ? AppColors.accent
+                    : AppColors.textTertiary,
               ),
             ),
           ),
@@ -180,7 +181,6 @@ class _ChatComposerState extends State<ChatComposer> {
     try {
       await widget.onStopStreaming();
     } catch (e) {
-      // 用户主动取消是正常操作，不显示错误
       if (e is DioException && e.type == DioExceptionType.cancel) return;
       if (!mounted) return;
       _showError(e.toString());

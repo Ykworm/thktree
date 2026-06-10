@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
@@ -126,7 +127,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final modelSubtitle = _resolveModelSubtitle(currentProviderId, currentModelId);
 
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.white,
+      backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: '',
         middle: Column(
@@ -142,7 +143,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 modelSubtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  color: AppColors.textSecondary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -169,8 +170,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             AppIcons.branch,
             size: 24,
             color: isStreaming
-                ? CupertinoColors.systemGrey.resolveFrom(context)
-                : CupertinoColors.systemBlue.resolveFrom(context),
+                ? AppColors.textTertiary
+                : AppColors.accent,
           ),
         ),
       ),
@@ -392,12 +393,12 @@ class _ContextUsageBar extends StatelessWidget {
     final color = ratio > 0.85
         ? CupertinoColors.systemRed
         : ratio > 0.6
-            ? CupertinoColors.systemOrange
-            : CupertinoColors.systemTeal;
+            ? AppColors.accent
+            : AppColors.accent;
 
     return Container(
       height: 1,
-      color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: 0.15),
+      color: AppColors.border.withValues(alpha: 0.15),
       child: Align(
         alignment: Alignment.centerLeft,
         child: FractionallySizedBox(

@@ -32,7 +32,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chinese => '中文';
 
   @override
-  String get noThemesYet => 'No themes yet';
+  String get noThemesYet => 'Start your first knowledge theme';
 
   @override
   String get newTheme => 'New Theme';
@@ -134,8 +134,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get emptyTree =>
-      'Session Tree is empty.\nTap + to create a root session.';
+  String get emptyTree => 'Plant the first seed — tap + to start';
 
   @override
   String get newSession => 'New Session';
@@ -285,7 +284,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectNote => 'Select a note to append to...';
 
   @override
-  String get noNotesYet => 'No notes yet. Tap + to create one.';
+  String get noNotesYet => 'A blank page awaits your thoughts';
 
   @override
   String get newNote => 'New Note';
@@ -583,10 +582,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchHint => 'Search notes and conversations...';
 
   @override
-  String get searchEmpty => 'Enter keywords to start searching';
+  String get searchEmpty => 'Find connections in your knowledge';
 
   @override
-  String get searchNoResults => 'No results found';
+  String get searchNoResults => 'Try a different angle';
 
   @override
   String get searchError => 'Search error, please try again';

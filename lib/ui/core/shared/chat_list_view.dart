@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 typedef MessageBuilder = Widget Function(BuildContext context, SessionMessage message);
 
@@ -72,7 +73,7 @@ class _ChatListViewState extends State<ChatListView> {
         return false;
       },
       child: Container(
-        color: CupertinoColors.white,
+        color: AppColors.pageBg,
         child: ListView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.all(12),

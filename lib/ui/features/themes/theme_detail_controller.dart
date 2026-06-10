@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/domain/node.dart';
 
 class ThemeDetailState {
@@ -34,13 +37,54 @@ class ThemeDetailController extends AsyncNotifier<ThemeDetailState> {
     final themeTitle = themeRow['title']! as String;
     final themePath = themeRow['themePath']! as String;
     await nodeStore.reindexNodesFromDisk(themePath: themePath);
-    final nodes = await nodeStore.listNodes(themeId: themeId);
+    final rawNodes = await nodeStore.listNodes(themeId: themeId);
+    final nodes = await _withLastMessagePreviews(rawNodes);
     return ThemeDetailState(
       themeId: themeId,
       themeTitle: themeTitle,
       themePath: themePath,
       nodes: nodes,
     );
+  }
+
+  /// Load last user message preview for each node from session.md files.
+  Future<List<NodeEntity>> _withLastMessagePreviews(List<NodeEntity> nodes) async {
+    final paths = await ref.read(appPathsProvider.future);
+    final result = <NodeEntity>[];
+    for (final node in nodes) {
+      String? preview;
+      try {
+        final row = await (await ref.read(nodeStoreProvider.future)).getNodeRow(nodeId: node.nodeId);
+        final sessionPath = row['sessionPath'] as String;
+        final absPath = paths.toAbsolutePath(sessionPath);
+        final file = File(absPath);
+        if (await file.exists()) {
+          final raw = await file.readAsString();
+          final doc = parseSessionMarkdown(raw);
+          for (final msg in doc.messages.reversed) {
+            if (msg.role == SessionRole.user && msg.body.trim().isNotEmpty) {
+              final body = msg.body.trim();
+              preview = body.length <= 40 ? body : '${body.substring(0, 40)}…';
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+      result.add(NodeEntity(
+        themeId: node.themeId,
+        nodeId: node.nodeId,
+        parentId: node.parentId,
+        kind: node.kind,
+        title: node.title,
+        createdAtUtcIso8601: node.createdAtUtcIso8601,
+        updatedAtUtcIso8601: node.updatedAtUtcIso8601,
+        sortOrder: node.sortOrder,
+        sourceExcerpt: node.sourceExcerpt,
+        sourceType: node.sourceType,
+        lastMessagePreview: preview,
+      ));
+    }
+    return result;
   }
 
   Future<void> refresh() async {
