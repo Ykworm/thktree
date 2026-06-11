@@ -293,12 +293,3 @@ rg "pattern" docs/ 2>/dev/null || grep -r "pattern" docs/
 - CodeGraph 不可用时，用 `rg` 搜索符号引用，但精度有限（可能误判），需告知用户
 - rg 不可用时自动 fallback 到 grep，无需告知
 
-## tool-priority
-
-- **查符号、调用关系、影响分析** → `codegraph`（详见 `.ai/tool-priority.md`）
-  - `codegraph query "符号名"` — 搜索符号
-  - `codegraph callers "符号名"` — 谁调用了它
-  - `codegraph impact "符号名"` — 改它会影响什么
-  - `codegraph sync` — 代码改动后增量更新索引
-- **文本搜索** → `rg`（ripgrep），不可用则 fallback `grep -r`
-- **文件查找** → `fd`，不可用则 fallback `find`
