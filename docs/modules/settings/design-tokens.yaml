@@ -1,0 +1,159 @@
+# 设置模块设计规范
+# 从代码和 Markdown 文档提取
+# 生成日期: 2026-06-11
+# 源文件:
+#   - docs/modules/settings/README.md
+#   - docs/modules/settings/specs/2026-06-05-语音播放功能-design.md
+#   - lib/ui/features/settings/settings_screen.dart
+#   - lib/ui/features/settings/settings_controller.dart
+
+meta:
+  module: "settings"
+  generated: "2026-06-11"
+  sources:
+    - "docs/modules/settings/README.md"
+    - "docs/modules/settings/specs/2026-06-05-语音播放功能-design.md"
+    - "lib/ui/features/settings/settings_screen.dart"
+    - "lib/ui/features/settings/settings_controller.dart"
+
+# ============================================================
+# 核心设计原则
+# ============================================================
+
+principles:
+  - "设置 = 单例持久化，写入后立即生效"
+  - "外观与节点色解耦"
+  - "TTS 跨平台抽象（iOS AVSpeechSynthesizer / Android flutter_tts）"
+  - "危险操作二次确认"
+
+# ============================================================
+# 页面定义
+# ============================================================
+
+screens:
+
+  # ── 设置主屏幕 ────────────────────────────────────────────
+  SettingsScreen:
+    file: "lib/ui/features/settings/settings_screen.dart"
+    controller: "lib/ui/features/settings/settings_controller.dart"
+
+    layout:
+      type: "分组列表"
+      navBar: "ThkNavBar.inline"
+      title: "l10n.settings"
+
+    sections:
+      - name: "外观"
+        items:
+          - "主题模式（浅色/深色/跟随系统）"
+          - "字体大小"
+          - "节点配色方案"
+      - name: "语言"
+        items:
+          - "i18n 切换（中/英）"
+      - name: "语音播放"
+        items:
+          - "语音引擎（MVP 固定 'Apple 系统语音'）"
+          - "朗读语音选择器"
+          - "语速滑块 (0.0 ~ 1.0, 默认 0.5)"
+      - name: "LLM"
+        items:
+          - "跳转到 LLM 模块配置 Provider"
+      - name: "数据"
+        items:
+          - "导出全部笔记/对话（JSON）"
+          - "清空本地缓存（destructive，二次确认）"
+          - "修复索引"
+      - name: "关于"
+        items:
+          - "版本号"
+          - "开源许可"
+          - "隐私政策"
+      - name: "调试（仅 kDebugMode）"
+        items:
+          - "SQLite 大小"
+          - "强制重索引"
+          - "日志级别"
+
+    sectionOrder: "外观→语言→语音→LLM→生物认证→分享→调试（不可重排）"
+
+  # ── TTS 设置区域 ──────────────────────────────────────────
+  TtsSettingsSection:
+    file: "lib/ui/features/settings/tts_settings_section.dart"
+
+    layout:
+      type: "设置 section"
+      items:
+        - label: "l10n.ttsEngine"
+          value: "l10n.ttsAppleSystem（MVP 固定）"
+          type: "标签"
+        - label: "l10n.ttsVoice"
+          value: "系统中文语音列表"
+          type: "选择器"
+          onTap: "列出可用中文语音，点击试听"
+        - label: "l10n.ttsRate"
+          value: "0.0 ~ 1.0"
+          type: "滑块"
+          default: 0.5
+
+# ============================================================
+# TTS 架构
+# ============================================================
+
+tts:
+  architecture:
+    ui: "MessageBubble 播放按钮 + 状态绑定"
+    controller: "ttsControllerProvider（Riverpod State）"
+    service: "TtsService（抽象接口）"
+    impl: "AppleTtsService（MethodChannel → AVSpeechSynthesizer）"
+
+  ttsServiceInterface:
+    methods:
+      - "speak(String text) → Future<bool>"
+      - "stop() → Future<void>"
+      - "isSpeaking → Stream<bool>"
+      - "availableVoices → Future<List<TtsVoice>>"
+      - "setVoice(String voiceId) → Future<void>"
+      - "setRate(double rate) → Future<void>"
+      - "dispose()"
+
+  playbackButton:
+    idle: "speaker 图标"
+    playing: "stop.fill 图标，颜色变系统蓝"
+    unavailable: "隐藏（streaming / error 状态）"
+    placement: "assistant 消息底部操作栏，复制按钮左侧"
+
+  playMutex: "同一时间只有一条消息在播放，点击新消息先 stop 再播放"
+
+  chineseVoices:
+    enhanced: "zh-CN-Tingting"
+    others: "zh-CN-Pingting 等"
+
+  errorHandling:
+    emptyText: "播放按钮不可见"
+    ttsInitFailed: "播放按钮不可见，控制台 warn"
+    incomingCall: "AVSpeechSynthesizer 自动处理"
+    pageSwitch: "自动停止当前播放"
+    noChineseVoice: "fallback 到默认系统语音"
+    streaming: "播放按钮隐藏"
+
+  i18n:
+    - key: "ttsPlay"
+      zh: "朗读"
+    - key: "ttsStop"
+      zh: "停止朗读"
+    - key: "ttsVoice"
+      zh: "朗读语音"
+    - key: "ttsRate"
+      zh: "语速"
+    - key: "ttsEngine"
+      zh: "语音引擎"
+    - key: "ttsAppleSystem"
+      zh: "Apple 系统语音"
+    - key: "ttsTestPlay"
+      zh: "试听"
+
+  files:
+    - "lib/data/services/tts_service.dart — 抽象接口"
+    - "lib/data/services/apple_tts_service.dart — iOS 实现"
+    - "ios/Runner/TtsPlugin.swift — 原生桥接"

@@ -1,0 +1,105 @@
+# LLM 模块设计规范
+# 从代码和 Markdown 文档提取
+# 生成日期: 2026-06-11
+# 源文件:
+#   - docs/modules/llm/README.md
+#   - lib/ui/features/llm/llm_providers_screen.dart
+#   - lib/ui/features/llm/llm_provider_detail_screen.dart
+
+meta:
+  module: "llm"
+  generated: "2026-06-11"
+  sources:
+    - "docs/modules/llm/README.md"
+    - "lib/ui/features/llm/llm_providers_screen.dart"
+    - "lib/ui/features/llm/llm_provider_detail_screen.dart"
+
+# ============================================================
+# 核心设计原则
+# ============================================================
+
+principles:
+  - "API Key 必走 flutter_secure_storage，不能进 shared_preferences / SQLite / 配置文件 / 日志"
+  - "Provider 软删除——isArchived=true 的 Provider 不出现在 Chat 模型选择里，但不删表记录"
+  - "模型列表拉取走 ModelFetcher + Provider 的 modelsEndpoint"
+  - "连接测试在 LLM 模块内，Chat 模块不能复用 ChatScreen 的流式逻辑"
+
+# ============================================================
+# 页面定义
+# ============================================================
+
+screens:
+
+  # ── Provider 列表页 ───────────────────────────────────────
+  LlmProvidersScreen:
+    file: "lib/ui/features/llm/llm_providers_screen.dart"
+
+    layout:
+      type: "列表页"
+      navBar: "ThkNavBar.inline"
+      title: "l10n.llmProviders"
+
+    listItem:
+      type: "ThkListTile"
+      title: "Provider 名称"
+      subtitle: "base URL"
+      trailing: "chevron"
+
+    interactions:
+      - trigger: "tap item"
+        action: "push LlmProviderDetailScreen"
+      - trigger: "NavBar +"
+        action: "新建 Provider"
+
+  # ── Provider 详情/编辑页 ──────────────────────────────────
+  LlmProviderDetailScreen:
+    file: "lib/ui/features/llm/llm_provider_detail_screen.dart"
+
+    layout:
+      type: "详情/编辑页"
+      navBar: "ThkNavBar.inline"
+
+    formFields:
+      - name: "base URL"
+        type: "ThkTextField"
+      - name: "API Key"
+        type: "ThkTextField"
+        storage: "flutter_secure_storage (iOS Keychain)"
+      - name: "支持的模型列表"
+        type: "动态列表"
+        source: "ModelFetcher + modelsEndpoint"
+      - name: "默认参数"
+        type: "temperature / max_tokens 等"
+
+    actions:
+      testConnection:
+        label: "测试连接"
+        method: "LlmProviderService.testConnection(provider)"
+        result: "成功/失败 + HTTP status + body 摘要"
+      setDefault:
+        label: "设为默认"
+        behavior: "标记为默认 Provider（chat 首选）"
+      delete:
+        label: "删除 Provider"
+        confirm: "二次确认"
+        behavior: "软删除（isArchived=true）"
+
+# ============================================================
+# 关键约束
+# ============================================================
+
+constraints:
+  - "新增 Provider 类型：扩 LlmClient 抽象 + 在 chat_controller 注册"
+  - "Provider 删除是软删除，避免历史对话失去模型引用"
+  - "Provider 配置变更后，正在进行的对话不会被中断（chat 已缓存当时的 client）"
+  - "连接测试失败时展示 HTTP status + body 摘要"
+
+# ============================================================
+# 相关历史
+# ============================================================
+
+history:
+  - "2026-04: LLM 配置模块首次上线（OpenAI 单 provider）"
+  - "2026-05: 扩展多 Provider 架构 + 流式统一"
+  - "2026-05: API key 改用 Keychain 加密"
+  - "2026-06: 模型预置 + 默认参数功能"

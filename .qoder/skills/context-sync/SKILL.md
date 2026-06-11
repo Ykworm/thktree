@@ -34,10 +34,13 @@ git diff --name-only HEAD
 ### Step 2：遍历 docs 全量
 
 ```bash
-find docs -type f -name "*.md"
+find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 ```
 
-拿到 docs/ 下所有 Markdown 文件清单（递归）。
+拿到 docs/ 下所有 Markdown + YAML 文件清单（递归）。
+
+- `*.md` — 文档主体
+- `*.yaml` — 模块级 design-tokens 规范（页面定义、交互、存储格式等结构化描述）
 
 ### Step 3：逐 doc 三重判断
 
@@ -144,7 +147,7 @@ find docs -type f -name "*.md"
 | 步骤 | 优先工具 | fallback |
 |------|---------|----------|
 | 收集改动范围 | `git diff --name-only HEAD` | 会话上下文推断 |
-| 遍历 docs | `find docs -type f -name "*.md"` | — |
+| 遍历 docs | `find docs -type f \( -name "*.md" -o -name "*.yaml" \)` | — |
 | 内容相关判断 | `rg -l "类名" docs/` | `grep -rl "类名" docs/` |
 | 符号引用判断 | CodeGraph MCP（如运行中） | rg / grep（精度有限，告知用户） |
 | 改 doc 文件 | 直接写文件 | — |

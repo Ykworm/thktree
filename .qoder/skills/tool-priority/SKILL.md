@@ -1,8 +1,3 @@
----
-trigger: always_on
-alwaysApply: true
----
-
 # 工具优先级规则
 
 ## 代码智能工具（CodeGraph）

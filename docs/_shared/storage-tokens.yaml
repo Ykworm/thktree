@@ -1,0 +1,159 @@
+# 存储格式规范
+# 从 storage-format.md 提取，供 AI 理解数据层结构
+# 生成日期: 2026-06-11
+# 源文件: docs/_shared/storage-format.md
+
+meta:
+  generated: "2026-06-11"
+  sources:
+    - "docs/_shared/storage-format.md"
+
+# ============================================================
+# 1. 总原则
+# ============================================================
+
+principles:
+  - "Markdown 文件是正文真相源（source of truth）"
+  - "SQLite 只做索引/检索/性能加速，可随时删除并从磁盘重建"
+  - "允许崩溃/断电后仍可解析：文件必须有明确中间态表示（streaming/error）"
+  - "单写者：同一时间只允许一个写入流程改动同一个 .md 文件（包括流式）"
+
+# ============================================================
+# 2. 目录结构
+# ============================================================
+
+directoryStructure:
+  root: "{root}（平台具体路径由实现决定）"
+  tree: |
+    {root}/
+      themes/
+        {themeId}/
+          theme.meta.json
+          nodes/
+            {nodeId}/
+              node.meta.json
+              session.md
+              context-summary.md          # 可选：存在表示该 node 有已确认总结
+          notes/
+            {noteId}.md
+      index.sqlite                         # 可选：SQLite 索引
+
+  constraints:
+    - "Theme 必须位于 themes/{themeId}/"
+    - "Node 必须位于 themes/{themeId}/nodes/{nodeId}/"
+    - "Note 必须位于 themes/{themeId}/notes/{noteId}.md"
+
+# ============================================================
+# 3. 通用约定
+# ============================================================
+
+encoding: "UTF-8，无 BOM"
+lineEnding: "\\n"
+timeFormat:
+  standard: "UTC ISO8601"
+  pattern: "YYYY-MM-DDTHH:mm:ss.SSSZ"
+  example: "2026-05-25T12:01:03.120Z"
+
+# ============================================================
+# 4. session.md 格式
+# ============================================================
+
+sessionFormat:
+  path: "themes/{themeId}/nodes/{nodeId}/session.md"
+  frontmatter:
+    schema: "session/v1"
+    fields:
+      - name: "schema"
+        value: "session/v1"
+      - name: "themeId"
+        type: "String"
+      - name: "nodeId"
+        type: "String"
+      - name: "kind"
+        value: "chat"
+      - name: "parentId"
+        type: "String"
+      - name: "title"
+        type: "String"
+      - name: "createdAt"
+        type: "String (ISO8601)"
+      - name: "updatedAt"
+        type: "String (ISO8601)"
+  messageFormat: |
+    ## {role} · {timestamp} · {msgId}
+    {content}
+  roles:
+    - "user"
+    - "assistant"
+  streamingMarker: "<!-- streaming -->"
+  notes:
+    - "流式写入时逐 token 追加到 session.md"
+    - "流结束后移除 streaming marker"
+    - "不持久化折叠状态"
+
+# ============================================================
+# 5. note.md 格式
+# ============================================================
+
+noteFormat:
+  path: "themes/{themeId}/notes/{noteId}.md"
+  frontmatter:
+    fields:
+      - name: "id"
+        type: "String"
+        example: "2026-06-07T10-23-45-ab12cd"
+      - name: "title"
+        type: "String"
+      - name: "themeId"
+        type: "String"
+      - name: "createdAt"
+        type: "String (ISO8601)"
+      - name: "updatedAt"
+        type: "String (ISO8601)"
+  body: "Markdown 正文"
+
+# ============================================================
+# 6. context-summary.md 格式
+# ============================================================
+
+contextSummaryFormat:
+  path: "themes/{themeId}/nodes/{nodeId}/context-summary.md"
+  optional: true
+  description: "存在表示该 node 有已确认的总结内容"
+  usage: "分支创建流程中，总结对话页确认后写入"
+
+# ============================================================
+# 7. SQLite 索引层
+# ============================================================
+
+sqlite:
+  role: "索引/检索/性能加速，非 source of truth"
+  tables:
+    - name: "search_index"
+      type: "FTS5 虚拟表"
+      fields:
+        - "entityType: 'note' | 'message'"
+        - "entityId: noteId | msgId"
+        - "themeId"
+        - "themeTitle"
+        - "entityTitle"
+        - "content: 完整正文（snippet() 需要）"
+        - "updatedAt: 排序辅助字段"
+  constraints:
+    - "可随时删除并从 .md 文件完全重建"
+    - "先文件后索引——.md 落盘优先，索引更新失败不阻断写入"
+    - "FTS5 的 snippet() 只能从 FTS5 内部存储读取原文，所以 content 必须双写"
+
+# ============================================================
+# 8. 约束总结
+# ============================================================
+
+constraints:
+  - name: "单写者"
+    description: "同一时间只允许一个写入流程改动同一个 .md 文件"
+  - name: "崩溃安全"
+    description: "允许崩溃/断电后仍可解析"
+  - name: "先文件后索引"
+    description: ".md 落盘优先，索引更新失败不阻断写入"
+  - name: "可重建"
+    description: "SQLite 索引可随时删除并从 .md 完全重建"

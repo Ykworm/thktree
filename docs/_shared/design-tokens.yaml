@@ -1,0 +1,555 @@
+# 全局设计 token
+# 从代码和 Markdown 文档提取，供 AI 生成页面时直接引用
+# 生成日期: 2026-06-11
+# 源文件:
+#   - lib/ui/core/theme/app_colors.dart
+#   - lib/ui/core/theme/app_theme.dart
+#   - lib/ui/core/theme/app_icons.dart
+#   - docs/_shared/design-system.md
+
+meta:
+  generated: "2026-06-11"
+  sources:
+    - "lib/ui/core/theme/app_colors.dart"
+    - "lib/ui/core/theme/app_theme.dart"
+    - "lib/ui/core/theme/app_icons.dart"
+    - "docs/_shared/design-system.md"
+
+# ============================================================
+# 1. 颜色 — 基础色
+# ============================================================
+
+colors:
+  # ── 通用强调色 ──
+  accent:
+    value: "#6366F1"
+    dartRef: "AppColors.accent"
+    usage: "通用交互色，按钮/链接/focus"
+  accentLight:
+    value: "#EEF2FF"
+    dartRef: "AppColors.accentLight"
+    usage: "accent 10% tint，hover 背景、chip 背景"
+  accentDeep:
+    value: "#4F46E5"
+    dartRef: "AppColors.accentDeep"
+    usage: "pressed 态"
+
+  # ── Surface 层 ──
+  pageBg:
+    value: "#F8FAFC"
+    dartRef: "AppColors.pageBg"
+    usage: "Slate 50，页面底色"
+  surface:
+    value: "#FFFFFF"
+    dartRef: "AppColors.surface"
+    usage: "纯白，卡片/弹层"
+  surfaceMuted:
+    value: "#F1F5F9"
+    dartRef: "AppColors.surfaceMuted"
+    usage: "Slate 100，二级区块"
+
+  # ── 文字色 ──
+  textPrimary:
+    value: "#1E293B"
+    dartRef: "AppColors.textPrimary"
+    usage: "Slate 900，标题/正文"
+  textSecondary:
+    value: "#64748B"
+    dartRef: "AppColors.textSecondary"
+    usage: "Slate 500，辅助信息"
+  textTertiary:
+    value: "#94A3B8"
+    dartRef: "AppColors.textTertiary"
+    usage: "Slate 400，placeholder/disabled"
+
+  # ── 结构色 ──
+  border:
+    value: "#E2E8F0"
+    dartRef: "AppColors.border"
+    usage: "Slate 200，分隔线/卡片描边"
+  destructive:
+    value: "#DC2626"
+    dartRef: "AppColors.destructive"
+    usage: "危险操作（删除按钮）"
+
+# ============================================================
+# 2. 主题色 — 5 套清新调色板
+# ============================================================
+
+themeColors:
+  description: "5 套主题色，按 themeId.hashCode.abs() % 5 稳定分配"
+  helperMethods:
+    colorForTheme:
+      dartRef: "AppColors.colorForTheme(themeId)"
+      usage: "根据 themeId 返回主题色"
+    tintForTheme:
+      dartRef: "AppColors.tintForTheme(themeId)"
+      usage: "主题色的 15% tint，用于 leading icon 背景"
+  palette:
+    - name: skyBlue
+      value: "#38BDF8"
+      dartRef: "AppColors.skyBlue"
+      hsl: "HSL(200, 80%, 60%)"
+      index: 0
+    - name: mint
+      value: "#34D399"
+      dartRef: "AppColors.mint"
+      hsl: "HSL(160, 60%, 55%)"
+      index: 1
+    - name: lavender
+      value: "#A78BFA"
+      dartRef: "AppColors.lavender"
+      hsl: "HSL(260, 70%, 70%)"
+      index: 2
+    - name: coral
+      value: "#FB7185"
+      dartRef: "AppColors.coral"
+      hsl: "HSL(350, 80%, 70%)"
+      index: 3
+    - name: amber
+      value: "#FBBF24"
+      dartRef: "AppColors.amber"
+      hsl: "HSL(35, 85%, 65%)"
+      index: 4
+
+# ============================================================
+# 3. 节点色 — 5 套 _NodePalette（themes 模块内部类）
+# ============================================================
+
+nodePalettes:
+  description: "节点卡片配色，基于 nodeId.hashCode.abs() % 5，与主题色完全解耦"
+  dartRef: "_NodePalette (theme_detail_screen.dart 内部类)"
+  helperMethod:
+    dartRef: "_paletteForNode(nodeId)"
+  palette:
+    - index: 0
+      circle: "#3B82F6"
+      title: "#1E1B4B"
+      subtitle: "#6366F1"
+      style: "electric"
+    - index: 1
+      circle: "#10B981"
+      title: "#881337"
+      subtitle: "#EA580C"
+      style: "暖色"
+    - index: 2
+      circle: "#8B5CF6"
+      title: "#134E4A"
+      subtitle: "#0369A1"
+      style: "冷色"
+    - index: 3
+      circle: "#EC4899"
+      title: "#312E81"
+      subtitle: "#0D9488"
+      style: "粉冷对比"
+    - index: 4
+      circle: "#FBBF24"
+      title: "#0F172A"
+      subtitle: "#7C3AED"
+      style: "复古"
+
+# ============================================================
+# 4. 字体
+# ============================================================
+
+typography:
+  # ── Serif Display（Cormorant Garamond）──
+  largeTitle:
+    family: "Cormorant Garamond"
+    fallback: ["PingFang SC"]
+    size: 34
+    weight: 600
+    letterSpacing: 0
+    dartRef: "AppTheme.largeTitle"
+    usage: "屏幕大标题（Large Title），ThkLargeTitlePage 专用"
+  displayTitle:
+    family: "Cormorant Garamond"
+    fallback: ["PingFang SC"]
+    size: 28
+    weight: 600
+    letterSpacing: 0
+    dartRef: "AppTheme.displayTitle"
+    usage: "二级显示标题"
+
+  # ── SF Pro text tokens ──
+  title1:
+    family: ".SF Pro Display"
+    fallback: ["PingFang SC"]
+    size: 28
+    weight: 700
+    letterSpacing: 0.36
+    dartRef: "AppTheme.title1"
+    usage: "Modal 标题"
+  headline:
+    family: ".SF Pro Text"
+    fallback: ["PingFang SC"]
+    size: 17
+    weight: 600
+    letterSpacing: -0.41
+    dartRef: "AppTheme.headline"
+    usage: "列表项主标题"
+  body:
+    family: ".SF Pro Text"
+    fallback: ["PingFang SC"]
+    size: 17
+    weight: 400
+    letterSpacing: -0.41
+    dartRef: "AppTheme.body"
+    usage: "正文"
+  callout:
+    family: ".SF Pro Text"
+    fallback: ["PingFang SC"]
+    size: 16
+    weight: 400
+    letterSpacing: -0.32
+    dartRef: "AppTheme.callout"
+    usage: "强调正文"
+  subhead:
+    family: ".SF Pro Text"
+    fallback: ["PingFang SC"]
+    size: 15
+    weight: 400
+    letterSpacing: -0.24
+    dartRef: "AppTheme.subhead"
+    usage: "次要正文"
+  footnote:
+    family: ".SF Pro Text"
+    fallback: ["PingFang SC"]
+    size: 13
+    weight: 400
+    letterSpacing: -0.08
+    dartRef: "AppTheme.footnote"
+    usage: "注释/时间戳"
+  caption1:
+    family: ".SF Pro Text"
+    fallback: ["PingFang SC"]
+    size: 12
+    weight: 400
+    letterSpacing: 0
+    dartRef: "AppTheme.caption1"
+    usage: "节点卡片副标题/来源标签"
+
+# ============================================================
+# 5. 间距与圆角 — 文档定义（代码中为魔法数字）
+# ============================================================
+
+spacing:
+  screenPadding:
+    value: 16
+    dartRef: null
+    usage: "屏幕内边距"
+  listItemVerticalPadding:
+    value: 12
+    dartRef: null
+    usage: "列表项垂直内边距"
+  cardRadius:
+    value: 12
+    dartRef: null
+    usage: "卡片圆角"
+  buttonRadius:
+    value: 10
+    dartRef: null
+    usage: "按钮圆角"
+  dragBubbleRadius:
+    value: 10
+    dartRef: null
+    usage: "拖拽气泡圆角"
+  treeIndent:
+    value: 28
+    dartRef: null
+    usage: "树节点缩进步进"
+  treeRowHeight:
+    value: 56
+    dartRef: null
+    usage: "树节点行高"
+  touchTarget:
+    value: 44
+    dartRef: null
+    usage: "圆圈热区（44×44）"
+  dragHandle:
+    value: 52
+    dartRef: null
+    usage: "拖拽手柄热区（52×52）"
+  titleToContentGap:
+    value: 16
+    dartRef: null
+    usage: "大标题到内容间距"
+  dividerThickness:
+    value: 0.5
+    dartRef: null
+    usage: "区块间分隔线粗细"
+
+# ============================================================
+# 6. 动画 — 文档定义
+# ============================================================
+
+animation:
+  circleToggle:
+    duration: 200
+    curve: "easeInOut"
+    dartRef: null
+    usage: "圆圈展开/折叠"
+  dragHandleScale:
+    duration: 120
+    curve: "easeOut"
+    dartRef: null
+    usage: "拖拽手柄 scale"
+  listRefresh:
+    duration: 200
+    curve: "easeInOut"
+    dartRef: null
+    usage: "列表刷新"
+  modal:
+    duration: 250
+    curve: "easeOut"
+    dartRef: null
+    usage: "弹层出现"
+
+# ============================================================
+# 7. 触控反馈
+# ============================================================
+
+haptics:
+  tap:
+    dartRef: "HapticFeedback.selectionClick()"
+    usage: "列表行点击（轻）"
+  dragStart:
+    dartRef: "HapticFeedback.mediumImpact()"
+    usage: "拖拽开始（中）"
+  destructive:
+    dartRef: "HapticFeedback.heavyImpact()"
+    usage: "危险操作前（重）— 当前未使用，预留"
+
+# ============================================================
+# 8. 图标
+# ============================================================
+
+icons:
+  # ── 通用操作 ──
+  add:
+    dartRef: "AppIcons.add"
+    sfSymbol: "sf_plus"
+    usage: "新建"
+  close:
+    dartRef: "AppIcons.close"
+    sfSymbol: "sf_xmark"
+    usage: "关闭"
+  check:
+    dartRef: "AppIcons.check"
+    sfSymbol: "sf_checkmark"
+    usage: "确认/完成"
+  checkCircle:
+    dartRef: "AppIcons.checkCircle"
+    sfSymbol: "sf_checkmark_circle_fill"
+    usage: "复制成功反馈"
+  delete:
+    dartRef: "AppIcons.delete"
+    sfSymbol: "sf_trash"
+    usage: "删除"
+  edit:
+    dartRef: "AppIcons.edit"
+    sfSymbol: "sf_pencil"
+    usage: "编辑"
+  copy:
+    dartRef: "AppIcons.copy"
+    sfSymbol: "sf_square_on_square"
+    usage: "复制"
+  refresh:
+    dartRef: "AppIcons.refresh"
+    sfSymbol: "sf_arrow_clockwise"
+    usage: "刷新/重新索引"
+  search:
+    dartRef: "AppIcons.search"
+    sfSymbol: "sf_magnifyingglass"
+    usage: "搜索"
+  more:
+    dartRef: "AppIcons.more"
+    sfSymbol: "sf_ellipsis"
+    usage: "更多操作"
+
+  # ── 导航 ──
+  back:
+    dartRef: "AppIcons.back"
+    sfSymbol: "sf_chevron_left"
+    usage: "返回"
+  chevronRight:
+    dartRef: "AppIcons.chevronRight"
+    sfSymbol: "sf_chevron_right"
+    usage: "列表项尾部箭头"
+  chevronLeft:
+    dartRef: "AppIcons.chevronLeft"
+    sfSymbol: "sf_chevron_left"
+    usage: "向左箭头"
+
+  # ── 通信/聊天 ──
+  send:
+    dartRef: "AppIcons.send"
+    sfSymbol: "sf_arrow_up_circle_fill"
+    usage: "发送消息"
+  stop:
+    dartRef: "AppIcons.stop"
+    sfSymbol: "sf_stop_circle_fill"
+    usage: "停止生成"
+  chat:
+    dartRef: "AppIcons.chat"
+    sfSymbol: "sf_bubble_left"
+    usage: "对话"
+  forum:
+    dartRef: "AppIcons.forum"
+    sfSymbol: "sf_bubble_left_and_bubble_right"
+    usage: "多轮对话"
+  modelSelector:
+    dartRef: "AppIcons.modelSelector"
+    sfSymbol: "sf_plus_circle_fill"
+    usage: "模型选择入口"
+
+  # ── 内容/文件 ──
+  note:
+    dartRef: "AppIcons.note"
+    sfSymbol: "sf_list_clipboard"
+    usage: "笔记"
+  folder:
+    dartRef: "AppIcons.folder"
+    sfSymbol: "sf_folder"
+    usage: "主题/文件夹"
+  download:
+    dartRef: "AppIcons.download"
+    sfSymbol: "sf_square_and_arrow_down"
+    usage: "下载"
+  share:
+    dartRef: "AppIcons.share"
+    sfSymbol: "sf_square_and_arrow_up"
+    usage: "分享"
+  star:
+    dartRef: "AppIcons.star"
+    sfSymbol: "sf_star"
+    usage: "收藏"
+
+  # ── 设置/提供商 ──
+  settings:
+    dartRef: "AppIcons.settings"
+    sfSymbol: "sf_gearshape"
+    usage: "设置"
+  extensionIcon:
+    dartRef: "AppIcons.extensionIcon"
+    sfSymbol: "sf_puzzlepiece_extension"
+    usage: "扩展"
+  cloud:
+    dartRef: "AppIcons.cloud"
+    sfSymbol: "sf_cloud"
+    usage: "云端"
+
+  # ── 树/分支 ──
+  accountTree:
+    dartRef: "AppIcons.accountTree"
+    sfSymbol: "sf_circle_hexagonpath"
+    usage: "树结构/空状态引导"
+  callSplit:
+    dartRef: "AppIcons.callSplit"
+    sfSymbol: "sf_arrow_turn_down_right"
+    usage: "分支操作"
+  branch:
+    dartRef: "AppIcons.branch"
+    sfSymbol: "sf_arrow_trianglehead_branch"
+    usage: "分支箭头"
+  sparkles:
+    dartRef: "AppIcons.sparkles"
+    sfSymbol: "sf_sparkles"
+    usage: "AI/模型选择"
+
+# ============================================================
+# 9. 组件库
+# ============================================================
+
+components:
+  ThkNavBar:
+    file: "lib/ui/core/widgets/thk_nav_bar.dart"
+    dartRef: "ThkNavBar"
+    variants:
+      inline: "嵌入式导航栏，无大标题，用于表单/详情/弹层"
+    usage: "所有页面的顶部导航，不直接用 CupertinoNavigationBar"
+
+  ThkLargeTitlePage:
+    file: "lib/ui/core/widgets/thk_nav_bar.dart"
+    dartRef: "ThkLargeTitlePage"
+    usage: "有滚动内容的页面，自带大标题 + slivers"
+
+  ThkListTile:
+    file: "lib/ui/core/widgets/thk_list_tile.dart"
+    dartRef: "ThkListTile"
+    usage: "列表项，不直接用 CupertinoListTile"
+    props:
+      title: "String"
+      subtitle: "String?"
+      leading: "Widget?"
+      trailing: "Widget?"
+      themeId: "String? — 传入后自动渲染 3px 书脊线"
+      onTap: "VoidCallback?"
+
+  ThkListSection:
+    file: "lib/ui/core/widgets/thk_list_section.dart"
+    dartRef: "ThkListSection"
+    usage: "列表容器，包裹多个 ThkListTile"
+
+  SwipeableRow:
+    file: "lib/ui/core/widgets/swipeable_row.dart"
+    dartRef: "SwipeableRow"
+    usage: "滑动手势容器"
+    props:
+      onSwipeLeft: "VoidCallback? — 左滑回调"
+      onSwipeRight: "VoidCallback? — 右滑回调"
+      leftActionLabel: "String"
+      leftActionIcon: "IconData"
+      leftActionColor: "Color — 通常 destructiveRed"
+      rightActionLabel: "String"
+      rightActionIcon: "IconData"
+      rightActionColor: "Color — 通常 systemBlue"
+
+  ThkButton:
+    file: "lib/ui/core/widgets/thk_button.dart"
+    dartRef: "ThkButton"
+    usage: "通用按钮"
+    variants:
+      primary: "accent (#6366F1) + 白字，主操作，每页最多 1 个"
+      secondary: "surfaceMuted + textPrimary，次要操作"
+      destructive: "destructive (#DC2626) + 白字，危险操作，须二次确认"
+
+  ThkTextField:
+    file: "lib/ui/core/widgets/thk_text_field.dart"
+    dartRef: "ThkTextField"
+    usage: "Cupertino 风格输入框"
+    props:
+      controller: "TextEditingController"
+      placeholder: "String"
+      autofocus: "bool"
+      maxLength: "int?"
+
+  ThkAlert:
+    file: "lib/ui/core/widgets/thk_alert.dart"
+    dartRef: "ThkAlert"
+    usage: "轻量提示弹窗"
+    method: "ThkAlert.show(context, message:, defaultAction:)"
+
+  ThkActionSheet:
+    file: "lib/ui/core/widgets/thk_action_sheet.dart"
+    dartRef: "ThkActionSheet"
+    usage: "操作选择弹窗"
+
+  MarkdownToolbar:
+    file: "lib/ui/core/widgets/markdown_toolbar.dart"
+    dartRef: "MarkdownToolbar"
+    usage: "Markdown 格式工具栏，配合编辑器使用"
+
+  # ── 共享组件 ──
+  ShareCardWidget:
+    file: "lib/ui/core/shared/share_card_widget.dart"
+    dartRef: "ShareCardWidget"
+    usage: "分享卡片，用 RepaintBoundary 包裹后截图生成图片，仅渲染不展示在页面上"
+    props:
+      userQuestion: "String? — 用户提问"
+      assistantAnswer: "String — AI 回答"
+    style:
+      cardWidth: 400
+      padding: 20
+      radius: 16
+    renderer: "GptMarkdown（渲染 assistantAnswer）"

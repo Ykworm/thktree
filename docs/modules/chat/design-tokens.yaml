@@ -1,0 +1,240 @@
+# 聊天模块设计规范
+# 从代码和 Markdown 文档提取
+# 生成日期: 2026-06-11
+# 源文件:
+#   - docs/modules/chat/README.md
+#   - lib/ui/features/chat/chat_screen.dart
+#   - lib/ui/features/chat/chat_controller.dart
+
+meta:
+  module: "chat"
+  generated: "2026-06-11"
+  sources:
+    - "docs/modules/chat/README.md"
+    - "lib/ui/features/chat/chat_screen.dart"
+    - "lib/ui/features/chat/chat_controller.dart"
+    - "lib/ui/features/chat/chat_screen_launch_params.dart"
+    - "lib/ui/features/chat/widgets/model_selector_panel.dart"
+
+# ============================================================
+# 核心设计原则
+# ============================================================
+
+principles:
+  - "SSE 流式是核心体验——事件顺序/心跳/[DONE] 终止/错误重连都在 ChatController + LlmApiClient"
+  - "节点作用域——对话只挂在某个 Node.id 下，换节点要重建 controller"
+  - "Provider 解耦——ChatScreen 只读 chatControllerProvider(family: nodeId)"
+  - "标题自动建议（TitleSuggestionService）触发时机未决策，别预设自动调用"
+
+# ============================================================
+# 页面定义
+# ============================================================
+
+screens:
+
+  # ── 对话页 ────────────────────────────────────────────────
+  ChatScreen:
+    file: "lib/ui/features/chat/chat_screen.dart"
+    controller: "lib/ui/features/chat/chat_controller.dart"
+    controllerType: "StateNotifier (family: nodeId)"
+    providerRef: "chatControllerProvider(nodeId)"
+
+    layout:
+      type: "CupertinoPageScaffold"
+      navBar: "ThkNavBar.inline"
+      title: "节点标题"
+      body: "消息列表 + 底部输入框"
+
+    messageBubble:
+      component: "MessageBubble (lib/ui/core/shared/message_bubble.dart)"
+      userMessage:
+        style: "AppTheme.body"
+        bgColor: "AppColors.accentLight"
+        alignment: "right"
+      assistantMessage:
+        style: "AppTheme.body"
+        bgColor: "AppColors.surface"
+        alignment: "left"
+        renderer: "GptMarkdown"
+      trailingActions:
+        - icon: "AppIcons.copy"
+          action: "复制消息"
+        - icon: "AppIcons.share"
+          action: "分享消息"
+        - icon: "AppIcons.refresh"
+          action: "重试/重新生成"
+        # TTS 播放按钮（MVP 阶段）
+        - icon: "speaker.wave.2 → stop.fill"
+          action: "TTS 播放/停止"
+          visibility: "仅 assistant 消息，非 streaming/error 状态"
+
+    inputArea:
+      component: "底部输入框"
+      sendButton: "AppIcons.send (arrow_up_circle_fill)"
+      stopButton: "AppIcons.stop (stop_circle_fill) — 生成中显示"
+      modelSelector: "AppIcons.modelSelector → ModelSelectorPanel"
+
+    modelSelector:
+      component: "ModelSelectorPanel"
+      file: "lib/ui/features/chat/widgets/model_selector_panel.dart"
+      trigger: "点击模型选择入口"
+      behavior: "抽屉弹出，列出所有可用 Provider + 模型"
+
+    interactions:
+      - trigger: "send message"
+        action: "chatController.send(text)"
+        flow: "用户输入 → appendUserMessage → SSE 流式请求 → 逐 token 渲染"
+      - trigger: "stop generation"
+        action: "chatController.cancel()"
+      - trigger: "edit message"
+        action: "编辑用户消息后重发，仅影响当前节点"
+      - trigger: "retry"
+        action: "重新生成 assistant 回复"
+      - trigger: "switch model"
+        action: "ModelSelectorPanel 选择 → 后续对话用新模型"
+
+    launchParams:
+      dartRef: "ChatScreenLaunchParams"
+      file: "lib/ui/features/chat/chat_screen_launch_params.dart"
+      params:
+        title: "String? — 对话标题"
+        autoTriggerReply: "bool — 进入页面自动发起一轮回复（笔记→对话时用）"
+
+    states:
+      loading: "CupertinoActivityIndicator"
+      streaming: "逐 token 渲染 + stop 按钮"
+      error: "错误信息 + 重试按钮"
+      empty: "引导文案"
+
+    streaming:
+      protocol: "SSE"
+      tokenRender: "逐字渲染（打字机效果）"
+      heartbeat: "心跳保活"
+      termination: "[DONE] 终止"
+      errorReconnect: "断网/超时重连"
+
+# ============================================================
+# 关键约束
+# ============================================================
+
+constraints:
+  - "不在 widget 里裸用 http.Client"
+  - "不跨节点共享消息流"
+  - "不预设 TitleSuggestionService 自动调用"
+  - "新增 LLM provider 时模型选择 panel 自动出现，无需改 chat 代码"
+  - "流式断网/超时处理参考 integration_test/chat_streaming_test.dart"
+
+# ============================================================
+# 共享组件
+# ============================================================
+
+sharedComponents:
+
+  MessageBubble:
+    file: "lib/ui/core/shared/message_bubble.dart"
+    dartRef: "MessageBubble"
+    usage: "消息气泡，user/assistant 两种样式"
+    props:
+      message: "SessionMessage"
+      onRetry: "VoidCallback? — 重试回调"
+      userQuestion: "String? — 配对的用户提问（用于分享图片）"
+    styles:
+      user:
+        bgColor: "AppColors.accentLight"
+        textColor: "AppColors.textPrimary"
+        alignment: "right"
+      assistant:
+        bgColor: "AppColors.surface"
+        textColor: "AppColors.textPrimary"
+        alignment: "left"
+        renderer: "GptMarkdown"
+        font: "AppTheme.body (17pt, height 1.6)"
+    trailingActions:
+      - name: "播放/停止"
+        icon: "speaker.wave.2 → stop.fill"
+        behavior: "TTS 播放/停止"
+        visibility: "仅 assistant 消息，非 streaming/error"
+      - name: "复制"
+        icon: "AppIcons.copy → AppIcons.checkCircle"
+        iconColor: "AppColors.accent → CupertinoColors.systemGreen (2s)"
+        behavior: "复制原始 Markdown 文本"
+      - name: "分享"
+        icon: "AppIcons.share"
+        behavior: "ShareService.shareAsImage() 截图分享"
+      - name: "重试"
+        icon: "AppIcons.refresh"
+        behavior: "onRetry 回调"
+        visibility: "仅 onRetry != null"
+    textSelection: "SelectionArea 包裹，支持系统级复制"
+
+  ChatComposer:
+    file: "lib/ui/core/shared/chat_composer.dart"
+    dartRef: "ChatComposer"
+    usage: "聊天输入框，包含发送/停止 + 模型选择入口"
+    props:
+      hintText: "String — placeholder"
+      isStreaming: "bool — 是否正在生成"
+      onSend: "Future<void> Function(String) — 发送回调"
+      onStopStreaming: "Future<void> Function() — 停止回调"
+      enabled: "bool — 默认 true"
+      onModelSelectorTap: "VoidCallback? — 模型选择按钮回调"
+    elements:
+      input: "ThkTextField"
+      sendButton: "AppIcons.send (arrow_up_circle_fill)"
+      stopButton: "AppIcons.stop (stop_circle_fill) — isStreaming 时替换 send"
+      modelSelector: "AppIcons.modelSelector (plus_circle_fill)"
+
+  ChatListView:
+    file: "lib/ui/core/shared/chat_list_view.dart"
+    dartRef: "ChatListView"
+    usage: "消息列表容器"
+    props:
+      messages: "List<SessionMessage>"
+      messageBuilder: "MessageBuilder 回调"
+    features:
+      stickyBottom: "_bottomTolerance: 24.0，新消息自动滚到底"
+      emptyState: "Center(Text(l10n.noMessagesYet))"
+      textSelection: "SelectionArea 包裹"
+
+  TitleSuggestionScreen:
+    file: "lib/ui/core/shared/title_suggestion_screen.dart"
+    dartRef: "TitleSuggestionScreen"
+    usage: "标题建议弹层，调用 LLM 生成标题建议"
+    input:
+      dartRef: "TitleSuggestionRequest"
+      params:
+        sourceLabel: "String — 来源标签（'选中文本' / '对话总结' / '对话' / '笔记'）"
+        sourceContent: "String — 源内容"
+        currentProviderId: "String? — 当前 Provider ID"
+        currentModelId: "String? — 当前模型 ID"
+    behavior: "调用 TitleSuggestionService 生成建议，用户可选择或自定义"
+
+# ============================================================
+# SSE 协议细节
+# ============================================================
+
+sseProtocol:
+  transport: "SSE (Server-Sent Events)"
+  events:
+    - type: "data"
+      description: "包含 LLM 回复的 token 片段"
+    - type: "done"
+      marker: "[DONE]"
+      description: "流结束标志"
+  heartbeat:
+    purpose: "保活连接"
+    interval: "服务端定期发送"
+  errorHandling:
+    reconnect: "断网/超时自动重连"
+    timeout: "请求超时后取消并提示用户"
+  rendering:
+    mode: "逐 token 渲染（打字机效果）"
+    statusField: "SessionMessage.status"
+    values:
+      - "streaming — 正在接收"
+      - "completed — 接收完成"
+      - "error — 接收失败"
+  cancellation:
+    trigger: "用户点停止按钮"
+    method: "chatController.cancel()"
+    behavior: "取消 HTTP 连接，保留已接收内容"

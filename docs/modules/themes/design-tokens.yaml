@@ -1,0 +1,381 @@
+# 主题模块设计规范
+# 从代码和 Markdown 文档提取
+# 生成日期: 2026-06-11
+# 源文件:
+#   - docs/modules/themes/visual/theme-list-design.md
+#   - docs/modules/themes/visual/theme-detail-design.md
+#   - lib/ui/features/themes/theme_list_screen.dart
+#   - lib/ui/features/themes/theme_detail_screen.dart
+
+meta:
+  module: "themes"
+  generated: "2026-06-11"
+  sources:
+    - "docs/modules/themes/visual/theme-list-design.md"
+    - "docs/modules/themes/visual/theme-detail-design.md"
+    - "lib/ui/features/themes/theme_list_screen.dart"
+    - "lib/ui/features/themes/theme_list_controller.dart"
+    - "lib/ui/features/themes/theme_detail_screen.dart"
+    - "lib/ui/features/themes/theme_detail_controller.dart"
+
+# ============================================================
+# 页面定义
+# ============================================================
+
+screens:
+
+  # ── 主题列表 ──────────────────────────────────────────────
+  ThemeListScreen:
+    file: "lib/ui/features/themes/theme_list_screen.dart"
+    controller: "lib/ui/features/themes/theme_list_controller.dart"
+    controllerType: "AsyncNotifier<List<ThemeEntity>>"
+    providerRef: "themeListControllerProvider"
+
+    layout:
+      type: "ThkLargeTitlePage"
+      title: "l10n.themes"
+      titleStyle: "AppTheme.largeTitle"
+      trailing:
+        - icon: "AppIcons.refresh"
+          action: "reindex()"
+        - icon: "AppIcons.add"
+          action: "_promptTitle() → createTheme()"
+      maxWidth: 800
+
+    listItem:
+      type: "ThkListTile"
+      title: "localizedThemeTitle(l10n, theme.title)"
+      subtitle: "theme.themeId (仅 kDebugMode)"
+      leading: "Icon(AppIcons.folder)"
+      leadingColor: "colorForTheme(themeId)"
+      leadingBg: "tintForTheme(themeId)"
+      trailing: "ThkListTile.chevron"
+      spineLine:
+        width: 3
+        color: "colorForTheme(themeId)"
+        radius: 1.5
+      separator:
+        thickness: 0.5
+        color: "AppColors.border"
+        indent: 56
+
+    interactions:
+      - trigger: "tap item"
+        action: "context.push('/themes/:themeId/tree')"
+      - trigger: "NavBar +"
+        action: "CupertinoAlertDialog + ThkTextField → createTheme()"
+        input:
+          autofocus: true
+          maxLength: 30
+          placeholder: "l10n.enterTitle"
+        actions: ["取消", "创建(isDefaultAction)"]
+      - trigger: "NavBar refresh"
+        action: "reindex()"
+
+    states:
+      empty:
+        icon: "AppIcons.accountTree"
+        iconSize: 40
+        iconColor: "AppColors.textTertiary"
+        text: "l10n.noThemesYet"
+        textColor: "AppColors.textSecondary"
+        topPadding: 80
+      loading:
+        widget: "CupertinoActivityIndicator"
+        topPadding: 80
+      error:
+        widget: "Text(e.toString())"
+        topPadding: 80
+
+    specialCases:
+      uncategorized:
+        marker: "kUncategorizedThemeTitle = '未分类'"
+        display: "localizedThemeTitle() → l10n.uncategorized"
+        sort: "置顶（其余字典序）"
+
+  # ── 主题详情 / 对话树 ─────────────────────────────────────
+  ThemeDetailScreen:
+    file: "lib/ui/features/themes/theme_detail_screen.dart"
+    controller: "lib/ui/features/themes/theme_detail_controller.dart"
+    controllerType: "AsyncNotifier.autoDispose.family<ThemeDetailState, String>"
+    providerRef: "themeDetailControllerProvider(themeId)"
+
+    layout:
+      type: "ThkNavBar.inline"
+      title: "l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle))"
+      trailing:
+        - icon: "AppIcons.refresh"
+          action: "refresh()"
+        - icon: "AppIcons.add"
+          action: "_promptRootTitle() → createRootChatNode()"
+      leading: "AppIcons.back → context.pop() 或 context.go('/')"
+      maxWidth: 800
+
+    treeRow:
+      component: "_TreeRowView"
+      height: 56
+      indent: 28
+      circle:
+        size: 12
+        borderWidth: 2
+        hitArea: 44
+        collapsedVisual: "实心 palette.circle"
+        expandedVisual: "空心 2px border palette.circle + fill alpha 0.15"
+        noChildrenVisual: "始终空心样式（淡色底），不可点击"
+        animation:
+          duration: 200
+          curve: "easeInOut"
+      title:
+        style: "AppTheme.body"
+        color: "AppColors.textPrimary"
+        maxLines: 1
+        overflow: "ellipsis"
+      subtitle:
+        style: "AppTheme.caption1"
+        color: "palette.subtitle"
+        maxLines: 1
+        overflow: "ellipsis"
+      dragHandle:
+        component: "_DragHandle"
+        hitArea: 52
+        icon: "CupertinoIcons.line_horizontal_3"
+        iconSize: 24
+        iconColor: "textTertiary alpha 0.4"
+        rightPadding: 8
+        longPressDelay: 400
+        scaleAnimation:
+          duration: 120
+          curve: "easeOut"
+          range: [1.0, 1.1]
+        dragBubble:
+          maxWidth: 280
+          radius: 10
+          bgColor: "AppColors.surface"
+          shadow: "黑色 20%"
+          opacity: 0.92
+        childWhenDragging:
+          opacity: 0.15
+
+    interactions:
+      - trigger: "tap node"
+        action: "context.push('/themes/:themeId/nodes/:nodeId')"
+      - trigger: "long press node"
+        action: "CupertinoAlertDialog → renameNode"
+        input:
+          widget: "CupertinoTextField"
+          autofocus: true
+        actions:
+          - "取消 (isDestructiveAction: true)"
+          - "保存 (isDefaultAction: true)"
+        emptyHandling: "静默不保存"
+        afterSave: "refresh()"
+      - trigger: "swipe left"
+        action: "delete"
+        color: "CupertinoColors.destructiveRed"
+        icon: "AppIcons.delete"
+        flow:
+          - "收集子树节点 _collectSubtreeNodes()"
+          - "查找同标题节点 sameTitleNodesOutside"
+          - "CupertinoAlertDialog 确认"
+          - "有同标题节点时：checkbox '我已了解' 二次确认"
+          - "deleteNodeSubtree()"
+          - "Toast: l10n.deletedCount(n)"
+      - trigger: "swipe right"
+        action: "create branch"
+        color: "CupertinoColors.systemBlue"
+        icon: "AppIcons.callSplit"
+        flow:
+          - "showBranchModeSheet()"
+          - "showBranchFlow()"
+      - trigger: "drag handle"
+        action: "同父级重排"
+        constraints:
+          - "只接受 parentId 相同的拖拽"
+          - "不接受拖到自己身上"
+        hover:
+          background: "systemBlue alpha 0.08"
+          indicatorLine:
+            width: 2.5
+            color: "systemBlue"
+            position: "中间节点 → 上边，最后节点 → 下边"
+        afterDrop: "refreshNodesOnly()（不走磁盘）"
+
+    collapseState:
+      storage: "Set<String> _collapsedIds (StatefulWidget 内)"
+      persistence: "不持久化，每次进入全部展开"
+
+    states:
+      empty:
+        text: "l10n.emptyTree"
+        style: "Center(Text)"
+      loading:
+        widget: "CupertinoActivityIndicator"
+        navTitle: "空字符串"
+      error:
+        widget: "Text(e.toString())"
+        navTitle: "空字符串"
+
+    newRootDialog:
+      title: "l10n.newSession"
+      input: "ThkTextField(autofocus: true, maxLength: 30)"
+      actions: ["取消", "创建(isDefaultAction)"]
+      afterCreate: "createRootChatNode(title)"
+
+# ============================================================
+# 路由约定
+# ============================================================
+
+routes:
+  - path: "/themes"
+    screen: "ThemeListScreen"
+    type: "go_router Tab"
+  - path: "/themes/:themeId/tree"
+    screen: "ThemeDetailScreen"
+    type: "context.push 推入"
+  - path: "/themes/:themeId/nodes/:nodeId"
+    screen: "ChatScreen"
+    type: "context.push，extra=ChatScreenLaunchParams"
+    note: "themeId 是 string（磁盘目录名），不要误用 themeTitle"
+
+# ============================================================
+# 分支创建 + 总结流程
+# ============================================================
+
+branchFlow:
+  source: "docs/_shared/branch-summary-flow.md"
+  description: "从节点创建新分支时，先通过总结对话页打磨总结内容，再作为新分支的第一条 user 消息"
+
+  trigger: "ThemeDetailScreen swipe 右滑 或 NavBar 创建分支按钮"
+
+  flow:
+    - step: "判断是否有父节点"
+    - step: "无父节点（根节点）→ 直接创建，跳过总结"
+    - step: "有父节点 → 读取父节点完整对话历史"
+    - step: "跳转到总结对话页面（独立路由）"
+    - step: "自动发送初始 prompt 给 LLM 总结"
+    - step: "用户与 LLM 多轮打磨总结"
+    - step: "用户点击「确认使用此总结」"
+    - step: "创建新分支节点 createChatNode()"
+    - step: "将总结内容作为第一条 user 消息写入 session.md"
+    - step: "跳转到新分支对话页"
+
+  initialPrompt: |
+    请帮我总结以下对话的核心内容，要求：
+    1. 保持关键信息完整
+    2. 语言简洁清晰
+    3. 适合作为新对话的上下文
+
+    ---
+    [父节点完整对话历史]
+
+  edgeCases:
+    - case: "父节点没有对话历史"
+      handling: "跳过总结流程，直接创建新分支"
+    - case: "用户在总结页取消"
+      handling: "返回主题详情页，不创建任何节点"
+    - case: "总结页出错"
+      handling: "显示错误提示，允许重试或取消"
+
+  titleInput: "在进入总结页面前输入，与现有 createChildChatNode 逻辑一致"
+
+# ============================================================
+# 颜色适用范围
+# ============================================================
+
+colorApplication:
+  description: "主题色用于容器层，节点色用于内容层，完全解耦"
+
+  themeColor:
+    dartRef: "AppColors.colorForTheme(themeId)"
+    appliesTo:
+      - "主题列表左侧书脊线（3px）"
+      - "ThkListTile.leading 图标颜色"
+      - "ThkListTile.leading 图标背景 (tintForTheme)"
+      - "DragTarget hover 背景 (tintForTheme)"
+      - "拖拽指示线"
+      - "swipe 右滑（分支）颜色"
+
+  nodeColor:
+    dartRef: "_paletteForNode(nodeId)"
+    appliesTo:
+      - "节点卡片圆圈（12×12）"
+      - "节点卡片标题颜色"
+      - "节点卡片副标题颜色"
+
+  systemColors:
+    - color: "CupertinoColors.destructiveRed"
+      appliesTo: "swipe 左滑（删除）"
+    - color: "CupertinoColors.systemBlue"
+      appliesTo: "拖拽 hover 指示线"
+
+  rules:
+    - "主题色不铺满页面背景/按钮/大色块"
+    - "节点色与主题色独立，切换主题时节点颜色不变"
+    - "5 套主题色共享相近明度（L≈60-70%），放在一起不冲突"
+
+# ============================================================
+# 国际化 key 列表
+# ============================================================
+
+l10nKeys:
+  # 主题列表
+  - key: "themesTabLabel"
+    usage: "TabBar 标签"
+  - key: "newTheme"
+    usage: "新建主题对话框标题"
+  - key: "noThemesYet"
+    usage: "空状态文案"
+  - key: "titleHint"
+    usage: "标题 placeholder"
+
+  # 主题详情
+  - key: "treeTitle(themeTitle)"
+    usage: "详情 NavBar 标题"
+  - key: "emptyTree"
+    usage: "树空状态文案"
+  - key: "renameNode"
+    usage: "重命名对话框标题"
+  - key: "enterNewTitle"
+    usage: "重命名 placeholder"
+  - key: "newSession"
+    usage: "新建根节点对话框标题"
+
+  # 删除
+  - key: "deleteItem"
+    usage: "删除确认标题"
+  - key: "deleteConfirm(title)"
+    usage: "确认删除 [title]?"
+  - key: "deleteDescWithChildren(n)"
+    usage: "会同时删除 n 个子节点"
+  - key: "deleteDescOnly"
+    usage: "无子节点"
+  - key: "keptSameTitleNodes(n)"
+    usage: "有 n 个同标题节点保留"
+  - key: "deleteUnderstand"
+    usage: "二次确认 checkbox 文案"
+  - key: "deletedCount(n)"
+    usage: "删除成功 toast"
+  - key: "deleteFailed(reason)"
+    usage: "删除失败 toast"
+
+  # Swipe
+  - key: "swipeDelete"
+    usage: "左滑按钮文案"
+  - key: "swipeBranch"
+    usage: "右滑按钮文案"
+  - key: "branchFailed(reason)"
+    usage: "分支失败 toast"
+
+  # 来源标签
+  - key: "sourceTypeSelectedText"
+    usage: "节点副标题：选中文本"
+  - key: "sourceTypeConversation"
+    usage: "节点副标题：对话"
+  - key: "sourceTypeSummary"
+    usage: "节点副标题：摘要"
+  - key: "sourceTypeNote"
+    usage: "节点副标题：笔记"
+
+  # 通用
+  - key: "cancel / create / save / delete / OK"
+    usage: "通用按钮"

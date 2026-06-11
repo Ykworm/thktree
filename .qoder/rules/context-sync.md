@@ -1,3 +1,8 @@
+---
+trigger: always_on
+alwaysApply: true
+---
+
 # context-sync — 文档上下文同步
 
 将本次会话中已完成的代码改动，同步回写到 `docs/` 下受影响的文档。

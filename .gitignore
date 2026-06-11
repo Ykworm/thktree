@@ -46,3 +46,6 @@ app.*.map.json
 
 # Codegraph index
 .codegraph/
+
+# IDE runtime
+.project/

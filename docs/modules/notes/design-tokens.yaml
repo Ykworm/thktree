@@ -1,0 +1,406 @@
+# 笔记模块设计规范
+# 从代码和 Markdown 文档提取
+# 生成日期: 2026-06-11
+# 源文件:
+#   - docs/modules/notes/visual/notes-list-design.md
+#   - docs/modules/notes/visual/note-detail-design.md
+#   - lib/ui/features/notes/note_browse_screen.dart
+#   - lib/ui/features/notes/note_editor_screen.dart
+#   - lib/ui/features/notes/note_select_screen.dart
+
+meta:
+  module: "notes"
+  generated: "2026-06-11"
+  sources:
+    - "docs/modules/notes/visual/notes-list-design.md"
+    - "docs/modules/notes/visual/note-detail-design.md"
+    - "lib/ui/features/notes/note_browse_screen.dart"
+    - "lib/ui/features/notes/note_editor_screen.dart"
+    - "lib/ui/features/notes/note_select_screen.dart"
+    - "lib/data/stores/note_store.dart"
+
+# ============================================================
+# 页面定义
+# ============================================================
+
+screens:
+
+  # ── 笔记总览（按主题分组）──────────────────────────────────
+  NoteBrowseScreen:
+    file: "lib/ui/features/notes/note_browse_screen.dart"
+    stateManagement: "StatefulWidget + noteListVersionProvider"
+
+    layout:
+      type: "ThkNavBar.inline"
+      title: "l10n.notes"
+      trailing:
+        - icon: "AppIcons.add"
+          action: "showThemePicker() → NoteEditorScreen(createMode: true)"
+      body: "SafeArea(top: false) + ListView + ThkListSection"
+
+    listItem:
+      type: "ThkListTile"
+      title: "localizedThemeTitle(l10n, themeTitle)"
+      subtitle: "l10n.noteCount(noteCount)"
+      trailing: "ThkListTile.chevron"
+      noSpineLine: true
+      separator: "ThkListSection 默认"
+
+    interactions:
+      - trigger: "tap item"
+        action: "Navigator.push(ThemeNoteListScreen(themeId, notesDir))"
+        route: "CupertinoPageRoute（保留左滑返回手势）"
+      - trigger: "NavBar +"
+        action: "showThemePicker() → NoteEditorScreen(createMode: true)"
+
+    sortRules:
+      uncategorizedPinned: true
+      othersBy: "title 字典序"
+
+    states:
+      empty:
+        text: "l10n.noNotesYet"
+        textColor: "CupertinoColors.secondaryLabel"
+      loading:
+        widget: "CupertinoActivityIndicator"
+      error:
+        widget: "Text(e.toString())"
+        color: "CupertinoColors.systemRed"
+
+  # ── 主题内笔记列表 ────────────────────────────────────────
+  ThemeNoteListScreen:
+    file: "lib/ui/features/notes/note_browse_screen.dart"
+    stateManagement: "StatefulWidget + noteListVersionProvider"
+
+    layout:
+      type: "ThkLargeTitlePage"
+      title: "l10n.notes"
+      titleStyle: "AppTheme.largeTitle (Cormorant Garamond)"
+      trailing:
+        - icon: "AppIcons.add"
+          action: "_createNote()"
+
+    listItem:
+      type: "SwipeableRow + ThkListTile"
+      title: "meta.title"
+      subtitle: "'{noteId} · {updatedAt}'"
+      key: "ValueKey(meta.noteId)"
+      swipeLeft:
+        color: "CupertinoColors.destructiveRed"
+        icon: "AppIcons.delete"
+        label: "l10n.swipeDelete"
+        confirmDialog:
+          title: "l10n.deleteNote"
+          content: "l10n.deleteNoteConfirmTitle(meta.title)"
+          actions: ["取消", "删除(isDestructiveAction: true)"]
+        afterDelete: "deleteNote() + bump()"
+        onFail: "ThkAlert.show(context, message: '${l10n.deleteFailed}: $e')"
+
+    interactions:
+      - trigger: "tap item"
+        action: "Navigator.push(NoteDetailScreen(notesDir, noteId))"
+      - trigger: "swipe left"
+        action: "delete（见 listItem.swipeLeft）"
+      - trigger: "NavBar +"
+        action: "_createNote()"
+
+    states:
+      empty:
+        text: "l10n.noNotesYet"
+        textColor: "AppColors.textSecondary"
+        topPadding: 80
+      loading:
+        widget: "CupertinoActivityIndicator"
+        topPadding: 80
+      error:
+        widget: "Text(e.toString())"
+        color: "CupertinoColors.systemRed"
+        topPadding: 80
+
+  # ── 笔记详情 / 阅读页 ────────────────────────────────────
+  NoteDetailScreen:
+    file: "lib/ui/features/notes/note_detail_screen.dart"
+    stateManagement: "StatefulWidget + noteListVersionProvider"
+
+    layout:
+      type: "CupertinoPageScaffold"
+      backgroundColor: "AppColors.pageBg"
+      navBar: "ThkNavBar.inline"
+      title: "_title（笔记标题）"
+      onTitleTap: "_renameNote()"
+      trailing: ["copy", "branch", "edit", "delete"]
+
+    trailingActions:
+      copy:
+        icon: "AppIcons.copy → AppIcons.checkCircle"
+        iconColor: "AppColors.accent → CupertinoColors.systemGreen (2秒)"
+        visibility: "仅阅读态 + _body.isNotEmpty"
+        action: "Clipboard.setData(_body)"
+      branch:
+        icon: "AppIcons.branch"
+        action: "showNodeLocationPicker() → createChatNode → push chat"
+        emptyGuard: "_body.isEmpty 时 ThkAlert 提示"
+      edit:
+        iconIdle: "AppIcons.edit"
+        iconActive: "AppIcons.check"
+        action: "_toggleEditing()"
+        onExitEdit: "_store.writeBody() + bump() + _updateSearchIndex()"
+      delete:
+        icon: "CupertinoIcons.trash"
+        iconColor: "CupertinoColors.systemRed"
+        confirmDialog: "CupertinoAlertDialog + isDestructiveAction"
+        afterDelete: "deleteNote() + bump() + pop()"
+
+    renameDialog:
+      trigger: "点击标题"
+      widget: "CupertinoAlertDialog"
+      input: "ThkTextField(autofocus: true, maxLength: 30)"
+      actions: ["取消", "保存(isDefaultAction)"]
+      emptyHandling: "视为取消"
+      duplicateHandling: "newTitle == _title 时跳过"
+
+    bodyModes:
+      reading:
+        widget: "Container(AppColors.surface) + SingleChildScrollView + GptMarkdown"
+        style: "fontSize: 17, height: 1.6"
+      editing:
+        widget: "Column(CupertinoTextField + MarkdownToolbar)"
+        textField:
+          style: "fontSize: 17, height: 1.6, color: AppColors.textPrimary"
+          decoration: "BoxDecoration(color: AppColors.surface)"
+          maxLines: null
+          expands: true
+          padding: 16
+        safeArea: "bottom: false（键盘顶起）"
+      loading:
+        widget: "CupertinoActivityIndicator"
+      empty:
+        text: "l10n.noMessagesYet"
+        textColor: "AppColors.textSecondary"
+
+  # ── 笔记编辑器（Notion 风格）──────────────────────────────
+  NoteEditorScreen:
+    file: "lib/ui/features/notes/note_editor_screen.dart"
+    stateManagement: "StatefulWidget + 500ms 防抖自动保存"
+
+    layout:
+      type: "CupertinoPageScaffold"
+      backgroundColor: "AppColors.pageBg"
+      navBar: "ThkNavBar.inline"
+      title: "widget.themeTitle（主题名）"
+      trailing:
+        - icon: "AppIcons.check"
+          action: "_saveNow() + pop()"
+
+    inputArea:
+      titleField:
+        widget: "CupertinoTextField"
+        style: "fontSize: 28, fontWeight: w600, color: AppColors.textPrimary"
+        placeholder: "l10n.noTitle"
+        placeholderStyle: "fontSize: 28, fontWeight: w600, color: AppColors.textTertiary"
+        decoration: "BoxDecoration(color: AppColors.surface, border: null)"
+      gap: 16
+      bodyField:
+        widget: "CupertinoTextField"
+        style: "fontSize: 17, height: 1.6, color: AppColors.textPrimary"
+        placeholder: "l10n.startWriting"
+        placeholderStyle: "fontSize: 17, color: AppColors.textTertiary"
+        decoration: "BoxDecoration(color: AppColors.surface, border: null)"
+        minLines: 10
+        maxLines: null
+      toolbar: "MarkdownToolbar(controller: _bodyController)"
+
+    autoSave:
+      debounce: 500
+      trigger: "titleField.onChanged + bodyField.onChanged"
+      onFail: "_dirty = true（下次重试）"
+      onDispose: "_saveNow()"
+
+    createMode:
+      behavior: "立即创建空文件，后续 onChanged 持续落盘"
+
+    searchIndex:
+      trigger: "每次保存后"
+      method: "searchIndex.upsertNote()"
+      fireAndForget: true
+
+  # ── 笔记选择弹窗（聊天 → 笔记）───────────────────────────
+  NoteSelectScreen:
+    file: "lib/ui/features/notes/note_select_screen.dart"
+    stateManagement: "StatefulWidget"
+
+    layout:
+      type: "CupertinoModalPopup / CupertinoPageRoute"
+      title: "l10n.addToNote"
+
+    listItem:
+      type: "ThkListTile"
+      title: "笔记标题"
+      subtitle: "l10n.noteCount(count) · 上次编辑时间"
+
+    actions:
+      selectExisting:
+        method: "_appendToNote(noteId)"
+        behavior: "读现有 body → 追加 widget.text（\\n\\n 分隔）→ writeBody → bump"
+      createNew:
+        label: "l10n.newNote"
+        method: "_createAndAppend(themeId)"
+        behavior: "createNote → writeBody(widget.text) → bump"
+      cancel:
+        behavior: "不写入磁盘"
+    afterAction: "ThkAlert.show(l10n.addedToNote) + pop()"
+
+  # ── 转对话流程（笔记 → 对话）───────────────────────────────
+  noteToChat:
+    trigger: "NoteDetailScreen.🌿 按钮"
+    flow:
+      - step: "showNodeLocationPicker(context, ref)"
+        description: "选择主题 + 父节点"
+      - step: "解析 provider/model"
+        description: "继承全局 settings，_mapLegacyProviderToPresetId()"
+      - step: "nodeStore.createChatNode()"
+        description: "创建新节点"
+      - step: "sessionStore.appendUserMessage()"
+        description: "合并 '$_title\\n\\n$_body' 作为 user input"
+      - step: "nodeStore.updateNodeSourceInfo()"
+        description: "sourceType: 'note', sourceExcerpt 截断 80 字"
+      - step: "sessionStore.updateSessionModel()"
+        description: "应用 providerId + modelId"
+      - step: "themeDetailControllerProvider.refresh()"
+        description: "刷新主题树（unawaited）"
+      - step: "context.push chat"
+        description: "extra: ChatScreenLaunchParams(autoTriggerReply: true)"
+
+# ============================================================
+# 共享工具
+# ============================================================
+
+shared:
+  noteListVersionProvider:
+    dartRef: "noteListVersionProvider"
+    file: "lib/ui/core/app_services.dart"
+    usage: "写操作 bump() → 列表/详情页自动刷新"
+
+  localizedThemeTitle:
+    dartRef: "localizedThemeTitle(l10n, title)"
+    file: "lib/ui/features/notes/note_browse_screen.dart"
+    usage: "将 '未分类' 映射到 l10n.uncategorized"
+
+  kUncategorizedThemeTitle:
+    value: "未分类"
+    usage: "稳定 marker，多语言下显示名走 l10n 但比较用 marker"
+
+  MarkdownToolbar:
+    dartRef: "MarkdownToolbar(controller:)"
+    file: "lib/ui/core/widgets/markdown_toolbar.dart"
+    usage: "Markdown 格式工具栏，按钮: B/I/S/< /• /1./🔗"
+
+# ============================================================
+# 屏幕地图
+# ============================================================
+
+screenMap:
+  tabBar: "主题 / 笔记 / 搜索 / 设置"
+  entry: "笔记 Tab"
+  hierarchy:
+    - screen: "NoteBrowseScreen"
+      type: "ThkNavBar.inline"
+      description: "笔记总览，按主题分组"
+      navigatesTo: "ThemeNoteListScreen"
+    - screen: "ThemeNoteListScreen"
+      type: "ThkLargeTitlePage"
+      description: "主题内笔记列表"
+      navigatesTo: "NoteDetailScreen"
+    - screen: "NoteDetailScreen"
+      type: "CupertinoPageScaffold + ThkNavBar.inline"
+      description: "笔记详情/阅读/编辑切换"
+      navigatesTo: "NoteEditorScreen（编辑态）"
+    - screen: "NoteEditorScreen"
+      type: "CupertinoPageScaffold + ThkNavBar.inline"
+      description: "Notion 风格独立编辑器"
+    - screen: "NoteSelectScreen"
+      type: "CupertinoModalPopup / CupertinoPageRoute"
+      description: "聊天 → 笔记的弹窗选择页（从对话中「添加到笔记」触发）"
+
+# ============================================================
+# noteListVersionProvider 详细说明
+# ============================================================
+
+noteListVersionProvider:
+  dartRef: "noteListVersionProvider"
+  file: "lib/ui/core/app_services.dart"
+  type: "NotifierProvider<NoteListVersionNotifier, int>"
+  description: "写操作 bump() → 列表/详情页自动刷新"
+
+  bumpTriggers:
+    - trigger: "聊天页选中文本追加到笔记"
+      file: "note_select_screen.dart"
+    - trigger: "笔记详情页编辑保存"
+      file: "note_detail_screen.dart#_toggleEditing"
+    - trigger: "笔记编辑器自动保存"
+      file: "note_editor_screen.dart#_saveNow"
+    - trigger: "笔记总览页新建笔记"
+      file: "note_browse_screen.dart#_createNoteInUncategorized"
+    - trigger: "用户点击底部笔记 Tab"
+      file: "router.dart#_MainShell"
+
+  consumerPattern: |
+    @override
+    Widget build(BuildContext context) {
+      final version = ref.watch(noteListVersionProvider);
+      if (_lastSeenVersion != version) {
+        _lastSeenVersion = version;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _load();
+        });
+      }
+      // ...
+    }
+
+# ============================================================
+# 笔记存储格式
+# ============================================================
+
+storageFormat:
+  path: "{root}/themes/{themeId}/notes/{noteId}.md"
+  frontmatter:
+    fields:
+      - name: "id"
+        type: "String"
+        example: "2026-06-07T10-23-45-ab12cd"
+      - name: "title"
+        type: "String"
+        example: "笔记标题"
+      - name: "themeId"
+        type: "String"
+        example: "01HXXX..."
+      - name: "createdAt"
+        type: "String (ISO8601)"
+        example: "2026-06-07T10:23:45"
+      - name: "updatedAt"
+        type: "String (ISO8601)"
+        example: "2026-06-07T10:25:12"
+  body: "Markdown 正文"
+
+  store:
+    dartRef: "NoteStore"
+    file: "lib/data/stores/note_store.dart"
+    methods:
+      - "createNote(themeId:, title:)"
+      - "listNoteMetas()"
+      - "readBody(noteId)"
+      - "writeBody(noteId, body)"
+      - "appendBody(noteId, text)"
+      - "renameNote(noteId, newTitle)"
+      - "deleteNote(noteId)"
+
+# ============================================================
+# 搜索索引联动
+# ============================================================
+
+searchIntegration:
+  trigger: "每次保存后（writeBody / appendBody / renameNote）"
+  method: "searchIndex.upsertNote(noteId, themeId, themeTitle, noteTitle, body)"
+  fireAndForget: true
+  errorHandling: "静默失败，永不阻塞主流程"
+  file: "lib/data/search/search_service.dart"

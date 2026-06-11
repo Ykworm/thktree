@@ -1,0 +1,167 @@
+# 搜索模块设计规范
+# 从代码和 Markdown 文档提取
+# 生成日期: 2026-06-11
+# 源文件:
+#   - docs/modules/search/specs/2026-06-05-搜索功能-design.md
+
+meta:
+  module: "search"
+  generated: "2026-06-11"
+  sources:
+    - "docs/modules/search/specs/2026-06-05-搜索功能-design.md"
+    - "docs/_shared/storage-format.md"
+
+# ============================================================
+# 核心设计原则
+# ============================================================
+
+principles:
+  - "Markdown 是真相源，SQLite FTS5 是搜索加速层"
+  - "先文件后索引——.md 落盘优先，索引更新失败不阻断写入"
+  - "索引异常不 crash，用户可手动修复"
+
+# ============================================================
+# 架构
+# ============================================================
+
+architecture:
+  entry: "CupertinoTabBar 新增「搜索」Tab"
+  ui: "SearchScreen + CupertinoSearchTextField"
+  data: "SearchService (search / upsert / rebuildAll)"
+  storage: "Markdown (.md) ←→ SQLite FTS5 search_index"
+
+  fts5Table:
+    fields:
+      - "entityType: 'note' | 'message'"
+      - "entityId: noteId | msgId"
+      - "themeId"
+      - "themeTitle: 主题名（搜索结果展示）"
+      - "entityTitle: 笔记标题或对话节点标题"
+      - "content: 完整正文（snippet() 需要）"
+      - "updatedAt: 排序辅助字段"
+
+# ============================================================
+# 页面定义
+# ============================================================
+
+screens:
+
+  # ── 搜索页 ────────────────────────────────────────────────
+  SearchScreen:
+    file: "lib/ui/features/search/search_screen.dart"
+
+    layout:
+      type: "SearchScreen"
+      searchBar: "CupertinoSearchTextField"
+      debounce: 300
+
+    resultList:
+      itemLayout:
+        icon: "📝 笔记 / 💬 对话"
+        title: "entityTitle"
+        snippet: "匹配片段，关键词用 <b> 高亮"
+        meta: "themeTitle · updatedAt"
+      sort: "BM25 相关性 → updatedAt 降序"
+      limit: 50
+
+    interactions:
+      - trigger: "tap result"
+        action:
+          note: "打开笔记详情页"
+          message: "导航到对应主题 → 节点对话页"
+      - trigger: "搜索按钮/键盘确认"
+        action: "展示完整结果"
+
+    states:
+      empty: "搜索引导文案"
+      loading: "CupertinoActivityIndicator"
+      error: "见异常处理"
+
+# ============================================================
+# 异常处理
+# ============================================================
+
+errorHandling:
+  upsertFailed:
+    behavior: "静默跳过，不抛异常"
+    logging: "ARMS 上报 search_index_upsert_failed"
+  queryFailed:
+    dialog:
+      title: "搜索服务异常"
+      content: "搜索功能暂时不可用，需要重建搜索索引来恢复。您的笔记和对话内容不会受到影响。"
+      actions: ["取消", "重建索引"]
+    onRebuild:
+      loading: "CupertinoActivityIndicator + '正在重建索引...'"
+      success:
+        dialog:
+          title: "索引重建完成"
+          content: "搜索功能已恢复，您的笔记和对话内容均完整保存。"
+          actions: ["知道了"]
+        degradedNote: "有 N 条记录因格式兼容性问题暂未纳入搜索范围（仅 N>0 时显示）"
+      failure:
+        dialog:
+          title: "无法重建索引"
+          content: "搜索功能暂时不可用。您的笔记和对话内容不受影响，仍可正常浏览。请检查设备存储空间后重试。"
+          actions: ["稍后重试", "知道了"]
+
+# ============================================================
+# 数据同步策略
+# ============================================================
+
+sync:
+  incremental:
+    notes: "保存/编辑后 → searchIndex.upsert()（unawaited）"
+    messages: "流结束后 → searchIndex.upsert()（不在流式过程中更新）"
+  fullRebuild:
+    trigger: "search_index 表为空时自动触发 / 用户手动点击"
+    method: "rebuildSearchIndex() — 分批 50 条 commit，中间 yield 事件循环"
+    yamlFallback: "YAML 解析失败时用文件名当标题、父目录名当 themeTitle"
+
+# ============================================================
+# 补充功能
+# ============================================================
+
+searchHistory:
+  maxItems: 10
+  storage: "本地保存（SharedPreferences 或类似）"
+  display: "输入框为空时显示历史记录"
+  interaction: "点击历史关键词直接填充并搜索"
+
+debounce:
+  duration: 300
+  unit: "ms"
+  note: "与设计系统绑定，不可改"
+  implementation: "Timer(Duration(milliseconds: 300))"
+
+crossModuleJump:
+  description: "搜索结果按 entityType 跳转到不同模块"
+  method: "routeName + args 解耦，不在 search 模块里 import 其他模块 widget"
+  rules:
+    - entityType: "note"
+      target: "笔记详情页"
+    - entityType: "message"
+      target: "对应主题 → 节点对话页"
+
+highlight:
+  description: "命中关键词在结果列表加粗"
+  implementation: "FTS5 snippet() 函数生成高亮片段"
+  format: "<b>关键词</b> 标记"
+
+performance:
+  maxResults: 200
+  rule: "超过 1000 条结果时强制收窄到 top 200，避免长列表渲染卡顿"
+  queryLimit: 50
+  sort: "BM25 相关性 → updatedAt 降序"
+
+resultItem:
+  file: "lib/ui/features/search/search_screen.dart"
+  class: "_SearchResultItem"
+  layout:
+    padding: "horizontal: 16, vertical: 12"
+    border: "bottom: BorderSide(color: AppColors.border, width: 0.5)"
+    icon:
+      note: "CupertinoIcons.doc_text (16pt, AppColors.textTertiary)"
+      message: "CupertinoIcons.chat_bubble (16pt, AppColors.textTertiary)"
+    gap: "SizedBox(width: 8)"
+    title: "16pt, w500, 单行省略"
+    themeName: "12pt, AppColors.textTertiary, 单行省略"
