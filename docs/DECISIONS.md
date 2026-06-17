@@ -50,3 +50,7 @@ iOS-first 项目的硬性决定。ThkTree 是为 iPhone 设计的笔记/聊天 a
 ## ADR-011: 文档治理——单一全局决策文件 + 纯文段格式
 
 2026-06-07 决定（治理类决策，跟技术栈无关）。**所有**架构决策集中在 `docs/DECISIONS.md` 一个文件，按 ADR-NNN 顺序号追加；每个 ADR 是一节纯文段（背景/决策/影响/实施），**不**抽字段（不写 `**日期**` / `**状态**` 这种键值对），**不**用表格做决策表。理由：表格描述力太弱（"为什么"塞不进一格），文段能写完整推理；单一文件让 AI 用 `rg ADR-` 一键定位，不用跨文件翻。配套：`docs/ARCHITECTURE.md` § 1 表格删掉（细节指向本文件）、§ 3 决策变更记录整段删除（变更通过追加新 ADR 表达，旧 ADR 不删只加"已取代"标记）、§ 6 维护约定改写。影响范围：`docs/ARCHITECTURE.md`、`docs/TECH-DEBT.md`、各 module README 里所有引用。实施要点：推翻旧决策**不要原地改**——保留原 ADR 加 `已取代` 段、新开 ADR 写新方案，让 git diff 自己说话。
+
+## ADR-012: 语音播放 UI 交互——独立播放器页面 + 语速不持久化
+
+2026-06-17 决定。语音播放的交互方式从"MessageBubble 内嵌播放/停止按钮"改为"点击播放按钮打开独立播放器页面"。理由有三：单条消息可能很长（Markdown 正文），内嵌按钮无法展示完整文本；语速调节需要滑块控件，MessageBubble 底部空间不足；独立页面让播放控制更聚焦（大按钮、清晰状态）。同时决定**语速不持久化**——每次打开播放器页面默认正常语速（0.5），用户调节仅对当前播放生效。理由：用户每次朗读的语境不同（快速浏览 vs 仔细聆听），固定默认值比记忆上次设置更合理；减少持久化状态，降低复杂度。影响范围：`lib/ui/core/shared/message_bubble.dart`（播放按钮改为打开页面）、`lib/ui/features/settings/tts_player_screen.dart`（新增）、`lib/ui/features/settings/tts_settings_screen.dart`（新增）。实施要点：播放器页面用 `CupertinoPageRoute` push 进入，导航栏返回按钮自动处理；语速滑块范围 0.0~1.0（直接映射 `AVSpeechUtterance.rate`），0.5 为正常语速。

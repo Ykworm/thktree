@@ -63,9 +63,9 @@ screens:
           action: "分享消息"
         - icon: "AppIcons.refresh"
           action: "重试/重新生成"
-        # TTS 播放按钮（MVP 阶段）
-        - icon: "speaker.wave.2 → stop.fill"
-          action: "TTS 播放/停止"
+        # TTS 入口（点击 push TtsPlayerScreen，ADR-012）
+        - icon: "AppIcons.ttsSpeak → AppIcons.ttsPause"
+          action: "打开独立播放器页面；playing 时按钮变 ttsPause + systemBlue"
           visibility: "仅 assistant 消息，非 streaming/error 状态"
 
     inputArea:
@@ -150,9 +150,9 @@ sharedComponents:
         renderer: "GptMarkdown"
         font: "AppTheme.body (17pt, height 1.6)"
     trailingActions:
-      - name: "播放/停止"
-        icon: "speaker.wave.2 → stop.fill"
-        behavior: "TTS 播放/停止"
+      - name: "朗读"
+        icon: "AppIcons.ttsSpeak → AppIcons.ttsPause"
+        behavior: "push TtsPlayerScreen 全屏播放器（ADR-012）；playing 时按钮变 ttsPause + systemBlue"
         visibility: "仅 assistant 消息，非 streaming/error"
       - name: "复制"
         icon: "AppIcons.copy → AppIcons.checkCircle"

@@ -27,7 +27,7 @@
 │  │  │ 用户消息文本                               │   │ │
 │  │  └──────────────────────────────────────────┘   │ │
 │  │  ┌──────────────────────────────────────────┐   │ │
-│  │  │ MessageBubble (assistant)         [📋][📤]│   │ │
+│  │  │ MessageBubble (assistant)         [🔊][📋][📤]│   │ │
 │  │  │ GptMarkdown 渲染                          │   │ │
 │  │  │ [🔊] [📋] [📤] [🔄]  ← 操作栏            │   │ │
 │  │  └──────────────────────────────────────────┘   │ │
@@ -110,7 +110,7 @@ CupertinoPageScaffold(
 
 | 按钮 | 图标 | 行为 | 条件 |
 |------|------|------|------|
-| 播放 | `speaker.wave.2` → `stop.fill` | TTS 播放/停止 | MVP 阶段，非 streaming/error |
+| 朗读 | `AppIcons.ttsSpeak` → `AppIcons.ttsPause` | 点击 push TtsPlayerScreen（独立播放器页面，ADR-012）；playing 时按钮变 ttsPause + systemBlue | 仅 assistant 消息，非 streaming/error（iOS only） |
 | 复制 | `AppIcons.copy` → `AppIcons.checkCircle` | 复制原始 Markdown，icon 变绿 2s | 始终 |
 | 分享 | `AppIcons.share` | 截图生成分享卡片图片 | 始终 |
 | 重试 | `AppIcons.refresh` | 重新生成 assistant 回复 | 仅 `onRetry != null` |

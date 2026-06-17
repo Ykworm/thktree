@@ -19,6 +19,9 @@ import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/stores/theme_store.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/data/services/search_service.dart';
+import 'package:thk_tree/data/services/apple_tts_service.dart';
+import 'package:thk_tree/data/services/no_op_tts_service.dart';
+import 'package:thk_tree/data/services/tts_service.dart';
 
 class NoteListVersionNotifier extends Notifier<int> {
   @override
@@ -226,3 +229,16 @@ final sessionStoreProvider = FutureProvider<SessionStore>((ref) async {
   );
 });
 
+
+// ── TTS（语音播放） ──
+
+/// TTS 服务 Provider。
+///
+/// iOS 使用 [AppleTtsService]（桥接 AVSpeechSynthesizer），
+/// 其他平台（Android / 桌面）使用 [NoOpTtsService] 静默桩。
+final ttsServiceProvider = Provider<TtsService?>((ref) {
+  if (Platform.isIOS) {
+    return AppleTtsService();
+  }
+  return NoOpTtsService();
+});

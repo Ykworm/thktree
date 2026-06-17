@@ -649,4 +649,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteThemeConfirm(String title) {
     return 'Delete theme \"$title\"? All conversations will be permanently deleted.';
   }
+
+  @override
+  String get ttsPlay => 'Read Aloud';
+
+  @override
+  String get ttsStop => 'Stop';
+
+  @override
+  String get ttsVoice => 'Voice';
+
+  @override
+  String get ttsRate => 'Speech Rate';
+
+  @override
+  String get ttsEngine => 'TTS Engine';
+
+  @override
+  String get ttsAppleSystem => 'Apple System Voice';
+
+  @override
+  String get ttsTestPlay => 'Preview';
+
+  @override
+  String get ttsVoiceSettings => 'Voice Settings';
+
+  @override
+  String get ttsVoiceSettingsSubtitle => 'Voice and speech rate settings';
+
+  @override
+  String get ttsSlow => 'Slow';
+
+  @override
+  String get ttsFast => 'Fast';
+
+  @override
+  String get ttsPlayerPlay => 'Play';
+
+  @override
+  String get ttsPlayerStop => 'Stop';
+
+  @override
+  String get ttsBackToTop => 'Back to top';
+
+  @override
+  String get ttsNoVoicesAvailable => 'No voices available';
+
+  @override
+  String get ttsIosOnly => 'Voice playback is iOS only';
 }

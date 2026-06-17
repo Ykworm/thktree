@@ -1,20 +1,48 @@
 # 设置模块设计规范
 # 从代码和 Markdown 文档提取
-# 生成日期: 2026-06-11
+# 生成日期: 2026-06-17
 # 源文件:
 #   - docs/modules/settings/README.md
 #   - docs/modules/settings/specs/2026-06-05-语音播放功能-design.md
+#   - docs/CHANGELOG/2026-06-17-tts-v1.md
 #   - lib/ui/features/settings/settings_screen.dart
 #   - lib/ui/features/settings/settings_controller.dart
+#   - lib/ui/features/settings/tts_player_screen.dart
+#   - lib/ui/features/settings/tts_settings_screen.dart
+#   - lib/ui/features/settings/tts_controller.dart
+#   - lib/ui/features/settings/tts_tokens.dart
+#   - lib/ui/features/settings/widgets/tts_player_background.dart
+#   - lib/ui/features/settings/widgets/tts_waveform.dart
+#   - lib/ui/features/settings/widgets/tts_pulse_rings.dart
+#   - lib/ui/features/settings/widgets/tts_back_to_top_button.dart
+#   - lib/ui/core/shared/message_bubble.dart
+#   - lib/data/services/tts_service.dart
+#   - lib/data/services/apple_tts_service.dart
+#   - lib/data/services/no_op_tts_service.dart
+#   - ios/Runner/TtsPlugin.swift
 
 meta:
   module: "settings"
-  generated: "2026-06-11"
+  generated: "2026-06-17"
   sources:
     - "docs/modules/settings/README.md"
     - "docs/modules/settings/specs/2026-06-05-语音播放功能-design.md"
+    - "docs/CHANGELOG/2026-06-17-tts-v1.md"
     - "lib/ui/features/settings/settings_screen.dart"
     - "lib/ui/features/settings/settings_controller.dart"
+    - "lib/ui/features/settings/tts_player_screen.dart"
+    - "lib/ui/features/settings/tts_settings_screen.dart"
+    - "lib/ui/features/settings/tts_controller.dart"
+    - "lib/ui/features/settings/tts_tokens.dart"
+    - "lib/ui/features/settings/widgets/tts_player_background.dart"
+    - "lib/ui/features/settings/widgets/tts_waveform.dart"
+    - "lib/ui/features/settings/widgets/tts_pulse_rings.dart"
+    - "lib/ui/features/settings/widgets/tts_back_to_top_button.dart"
+    - "lib/ui/core/shared/message_bubble.dart"
+    - "lib/data/services/tts_service.dart"
+    - "lib/data/services/apple_tts_service.dart"
+    - "lib/data/services/no_op_tts_service.dart"
+    - "ios/Runner/TtsPlugin.swift"
 
 # ============================================================
 # 核心设计原则
@@ -23,7 +51,7 @@ meta:
 principles:
   - "设置 = 单例持久化，写入后立即生效"
   - "外观与节点色解耦"
-  - "TTS 跨平台抽象（iOS AVSpeechSynthesizer / Android flutter_tts）"
+  - "TTS iOS 优先 + 跨平台抽象（iOS AVSpeechSynthesizer / 其他 NoOpTtsService）"
   - "危险操作二次确认"
 
 # ============================================================
@@ -77,24 +105,60 @@ screens:
 
     sectionOrder: "外观→语言→语音→LLM→生物认证→分享→调试（不可重排）"
 
-  # ── TTS 设置区域 ──────────────────────────────────────────
-  TtsSettingsSection:
-    file: "lib/ui/features/settings/tts_settings_section.dart"
+  # ── TTS 播放器全屏页 ────────────────────────────────────
+  TtsPlayerScreen:
+    file: "lib/ui/features/settings/tts_player_screen.dart"
+    controller: "lib/ui/features/settings/tts_controller.dart"
 
     layout:
-      type: "设置 section"
-      items:
-        - label: "l10n.ttsEngine"
-          value: "l10n.ttsAppleSystem（MVP 固定）"
-          type: "标签"
-        - label: "l10n.ttsVoice"
-          value: "系统中文语音列表"
-          type: "选择器"
-          onTap: "列出可用中文语音，点击试听"
-        - label: "l10n.ttsRate"
-          value: "0.0 ~ 1.0"
-          type: "滑块"
-          default: 0.5
+      type: "全屏页面（push 进入）"
+      navBar: "ThkNavBar.inline（透明背景，叠在 background 之上）"
+      title: "l10n.ttsPlay"
+      background: "3 层（base + radial ambient + per-message tint）"
+
+    sections:
+      - name: "文本区"
+        items:
+          - "可滚动 SingleChildScrollView，maxWidth 520（与 MessageBubble 一致）"
+          - "text.lineHeight 1.7 提升阅读体验"
+      - name: "语速控制"
+        items:
+          - "v1.1 移除 CupertinoSlider，改速度档位文字标签：0.75×/1×/1.5×/2×（rate 0.35/0.5/0.75/1.0）"
+          - "点击 _SpeedLabel 触发 _cycleSpeed() 循环切换，每次打开重置为默认 0.75×"
+      - name: "播放控制"
+        items:
+          - "圆形按钮 40dp（半径 20 = size/2）"
+          - "外圈 2 环 pulse_rings（仅 speaking 时扩散）"
+          - "图标：idle AppIcons.ttsPlay (sf_play_fill) / playing AppIcons.ttsPause (sf_pause_fill) 配 accent"
+      - name: "波形"
+        items:
+          - "5-bar 均衡器，width 5 / gap 8 / height 8~48"
+          - "仅 speaking 时通过 Ticker 采样（10fps）"
+          - "颜色：idle textTertiary / active systemBlue"
+      - name: "设置入口"
+        items:
+          - "ThkListTile，点击 push TtsSettingsScreen"
+
+  # ── TTS 设置页 ────────────────────────────────────────────
+  TtsSettingsScreen:
+    file: "lib/ui/features/settings/tts_settings_screen.dart"
+
+    layout:
+      type: "ThkLargeTitlePage + ThkListSection"
+      title: "l10n.ttsVoiceSettings"
+
+    sections:
+      - name: "语音引擎"
+        items:
+          - "只读标签，显示 l10n.ttsAppleSystem（MVP 固定）"
+      - name: "朗读语音（zh-CN 优先）"
+        items:
+          - "系统中文声线（zh-CN-Tingting 等）按 person name 升序"
+          - "CupertinoListTile：name 主行 + locale 副行 + check 图标（选中态 AppColors.accent）"
+          - "点击 → setVoice + 自动试听 '你好，我是[人物名称]，这是我的声音。'"
+      - name: "其他（兜底）"
+        items:
+          - "非中文声线折叠在此 section"
 
 # ============================================================
 # TTS 架构
@@ -102,58 +166,329 @@ screens:
 
 tts:
   architecture:
-    ui: "MessageBubble 播放按钮 + 状态绑定"
-    controller: "ttsControllerProvider（Riverpod State）"
-    service: "TtsService（抽象接口）"
-    impl: "AppleTtsService（MethodChannel → AVSpeechSynthesizer）"
+    L1_native: "ios/Runner/TtsPlugin.swift（AVSpeechSynthesizer 桥接，FlutterPlugin 协议）"
+    L2_interface: "lib/data/services/tts_service.dart（abstract TtsService + TtsVoice + TtsException）"
+    L3_impl_ios: "lib/data/services/apple_tts_service.dart（MethodChannel 'thktree/tts' + EventChannel 'thktree/tts/events'）"
+    L3_impl_android: "lib/data/services/no_op_tts_service.dart（所有方法静默 no-op）"
+    L4_controller: "lib/ui/features/settings/tts_controller.dart（Riverpod 3 Notifier<TtsState>）"
+    L5_ui: "tts_player_screen.dart 组合层 + 4 个 widget 子组件 + tts_settings_screen.dart + message_bubble.dart 播放按钮 + settings_screen.dart 入口"
 
   ttsServiceInterface:
     methods:
-      - "speak(String text) → Future<bool>"
+      - "speak(String text, {String? voiceId, double? rate}) → Future<bool>"
       - "stop() → Future<void>"
-      - "isSpeaking → Stream<bool>"
+      - "isSpeaking → bool（同步快照）"
+      - "isSpeakingStream → Stream<bool>（iOS EventChannel 推送）"
       - "availableVoices → Future<List<TtsVoice>>"
-      - "setVoice(String voiceId) → Future<void>"
-      - "setRate(double rate) → Future<void>"
-      - "dispose()"
+      - "currentVoiceId → String?"
+      - "setVoice(String? voiceId) → Future<void>"
+      - "dispose() → void"
+
+  ttsState:
+    playingMessageId: "String?（null = 无人在播）"
+    isSpeaking: "bool（来自 service 流）"
+    currentVoiceId: "String?（持久化字段，AppSettings 同步）"
 
   playbackButton:
-    idle: "speaker 图标"
-    playing: "stop.fill 图标，颜色变系统蓝"
-    unavailable: "隐藏（streaming / error 状态）"
-    placement: "assistant 消息底部操作栏，复制按钮左侧"
+    idle_icon: "AppIcons.ttsSpeak（speaker.wave.2.fill，喇叭）"
+    idle_color: "AppColors.textSecondary"
+    playing_icon: "AppIcons.ttsPause（pause.fill，两竖）"
+    playing_color: "CupertinoColors.systemBlue"
+    unavailable: "隐藏（streaming / error / body 为空）"
+    placement: "assistant 消息底部操作栏，复制按钮右侧（与 share、retry 串联，gap 12）"
+    tap_action: "push TtsPlayerScreen(messageId, text)"
 
-  playMutex: "同一时间只有一条消息在播放，点击新消息先 stop 再播放"
+  playMutex: "TtsController.play() 内部互斥：先 svc.stop() 再 svc.speak()。同一时间只有一条消息在播"
 
   chineseVoices:
+    filter: "language.toLowerCase().startsWith('zh')"
+    sort: "按 name 升序"
     enhanced: "zh-CN-Tingting"
     others: "zh-CN-Pingting 等"
+    fallback_section: "其他（非中文声线折叠）"
 
   errorHandling:
     emptyText: "播放按钮不可见"
-    ttsInitFailed: "播放按钮不可见，控制台 warn"
-    incomingCall: "AVSpeechSynthesizer 自动处理"
-    pageSwitch: "自动停止当前播放"
-    noChineseVoice: "fallback 到默认系统语音"
+    ttsInitFailed: "TtsException 抛出，UI 层 try/catch + ThkAlert.show"
+    incomingCall: "AVSpeechSynthesizer 自动处理（iOS 系统行为）"
+    pageSwitch: "不自动停止（per design doc §4.1）"
+    noChineseVoice: "TtsSettingsScreen 显示 '暂无可用语音'；Apple 端 fallback 到默认系统语音"
     streaming: "播放按钮隐藏"
+    rateOutOfRange: "clamp 到 0.0~1.0 范围"
 
   i18n:
     - key: "ttsPlay"
       zh: "朗读"
+      en: "Read Aloud"
     - key: "ttsStop"
-      zh: "停止朗读"
+      zh: "停止"
+      en: "Stop"
+    - key: "ttsPlayerPlay"
+      zh: "播放"
+      en: "Play"
+    - key: "ttsPlayerStop"
+      zh: "停止"
+      en: "Stop"
     - key: "ttsVoice"
       zh: "朗读语音"
-    - key: "ttsRate"
-      zh: "语速"
+      en: "Voice"
+    - key: "ttsVoiceSettings"
+      zh: "语音设置"
+      en: "Voice Settings"
+    - key: "ttsVoiceSettingsSubtitle"
+      zh: "朗读语音、语速设置"
+      en: "Voice and speech rate settings"
     - key: "ttsEngine"
       zh: "语音引擎"
+      en: "TTS Engine"
     - key: "ttsAppleSystem"
       zh: "Apple 系统语音"
+      en: "Apple System Voice"
     - key: "ttsTestPlay"
       zh: "试听"
+      en: "Preview"
+    - key: "ttsRate"
+      zh: "语速"
+      en: "Speech Rate"
+    - key: "ttsSlow"
+      zh: "慢"
+      en: "Slow"
+    - key: "ttsFast"
+      zh: "快"
+      en: "Fast"
+    - key: "ttsBackToTop"
+      zh: "回到顶部"
+      en: "Back to top"
+    - key: "ttsNoVoicesAvailable"
+      zh: "暂无可用语音"
+      en: "No voices available"
+    - key: "ttsIosOnly"
+      zh: "语音播放仅在 iOS 上可用"
+      en: "Voice playback is iOS only"
 
   files:
-    - "lib/data/services/tts_service.dart — 抽象接口"
-    - "lib/data/services/apple_tts_service.dart — iOS 实现"
-    - "ios/Runner/TtsPlugin.swift — 原生桥接"
+    L1:
+      - "ios/Runner/TtsPlugin.swift — AVSpeechSynthesizer 桥接（FlutterPlugin 协议）"
+      - "ios/Runner/AppDelegate.swift — 注册 TtsPlugin（didInitializeImplicitFlutterEngine）"
+    L2:
+      - "lib/data/services/tts_service.dart — 抽象接口 + TtsVoice + TtsException"
+    L3:
+      - "lib/data/services/apple_tts_service.dart — iOS 实现（MethodChannel + EventChannel）"
+      - "lib/data/services/no_op_tts_service.dart — Android 桩"
+    L4:
+      - "lib/ui/features/settings/tts_controller.dart — Riverpod 3 Notifier<TtsState>"
+    L5:
+      - "lib/ui/features/settings/tts_player_screen.dart — 组合层"
+      - "lib/ui/features/settings/tts_settings_screen.dart — 声音选择 + 试听"
+      - "lib/ui/features/settings/widgets/tts_player_background.dart — 3 层背景"
+      - "lib/ui/features/settings/widgets/tts_waveform.dart — 5-bar 均衡器"
+      - "lib/ui/features/settings/widgets/tts_pulse_rings.dart — 扩散脉冲环"
+      - "lib/ui/features/settings/widgets/tts_back_to_top_button.dart — 浮按钮"
+      - "lib/ui/features/settings/tts_tokens.dart — Design tokens 集中点"
+    shared:
+      - "lib/ui/core/shared/message_bubble.dart — + 播放按钮（_TtsPlayButton）"
+      - "lib/ui/features/settings/settings_screen.dart — + 语音设置入口（_TtsEntry）"
+      - "lib/ui/core/app_services.dart — + ttsServiceProvider"
+      - "lib/data/services/settings_store.dart — + ttsVoiceId 字段 + saveTtsVoiceId"
+      - "lib/ui/core/theme/app_icons.dart — + 6 个 TTS SF icon (chevronUp/ttsPlay/ttsPause/ttsSpeak/ttsSlow/ttsFast，iOS 17+ tortoise/hare)"
+
+# ============================================================
+# Design Tokens（TTS 模块）
+# ============================================================
+# 集中定义在 lib/ui/features/settings/tts_tokens.dart
+# 本节是该文件的"文档镜像"，供设计 review / Figma 对齐
+
+ttsTokens:
+
+  # 对应 lib/ui/features/settings/tts_tokens.dart 的 4 个 class（TtsSpacing / TtsDimensions / TtsMotion / TtsColors）。
+  # v1.1 落地值（2026-06-17 第二次 UI 迭代后）：mini bar 居中 + alpha 0.35 + 圆形按钮 40。
+  # 浮按钮已删除（scrollBackToTopBottom/Right 移除），改用双击导航栏标题回顶。
+
+  # ── Spacing（8pt 网格） ──
+  spacing:
+    playerPagePaddingX: 24
+    playerPagePaddingY: 12
+    playerSectionGap: 20
+    playerTextMaxWidth: 520
+    playerTextLineHeight: 1.7
+    messageBubbleButtonGap: 12
+    messageBubbleIconSize: 18
+    settingSectionGap: 8
+    voiceRowPaddingX: 16
+    voiceRowPaddingY: 12
+    voiceRowGap: 12
+    voiceRowHeight: 56
+    voiceLeadingIconSize: 28
+    # 底部毛玻璃控制面板
+    controlPanelRadius: 20.0
+    controlPanelBlurSigma: 20.0
+    controlPanelSurfaceAlpha: 0.35   # 比 iOS systemMaterial (0.5) 更透，背后渐变可见
+    controlPanelPaddingH: 20.0
+    controlPanelPaddingV: 14.0       # 顶/底对称，mini bar 内按钮居中
+
+  # ── Dimensions ──
+  dimensions:
+    controlPanelHeight: 68.0         # mini bar 总高（40 button + 14 top + 14 bottom = 68）
+    # 播放按钮 — 圆形
+    playerButtonSize: 40             # 圆形直径
+    playerButtonIconSize: 18         # 图标尺寸
+    playerButtonRadius: 20           # 圆形 = size / 2
+    # slider
+    sliderHeight: 28
+    sliderTrackHeight: 4
+    # 脉冲点（Champagne gold 指示）
+    pulseDotSize: 8
+    pulseDotGap: 8
+
+  # ── Motion ──
+  motion:
+    transitionButton: "200ms"
+    fadeInText: "400ms"
+    pressDuration: "100ms"
+    pressScale: 0.97
+    # 波形 — 放大增强视觉存在感
+    waveformBarCount: 5
+    waveformBarWidth: 5
+    waveformBarGap: 8
+    waveformBarHeightMin: 8
+    waveformBarHeightMax: 48
+    waveformBarRadius: 3
+    waveformTickInterval: "100ms (10fps)"
+    waveformTickNoise: 0.35
+    waveformTickSinAmp: 0.65
+    # 脉冲环
+    pulseRingCount: 2
+    pulseRingDuration: "1800ms"
+    pulseRingStagger: "900ms"
+    pulseRingStartSize: 1.0
+    pulseRingEndSize: 1.8
+    pulseRingAlphaFrom: 0.35
+    pulseRingAlphaTo: 0.0
+    pulseRingStrokeWidth: 1.5
+    # 背景 ambient
+    glowShiftDuration: "2400ms"
+    glowShiftAlphaIdle: 0.04
+    glowShiftAlphaSpeaking: 0.08
+    glowShiftRadius: 0.55
+    glowShiftCenter: "Alignment.topCenter"
+    perMessageTintAlpha: 0.02
+    # scroll 回顶（双击标题触发 animateTo(0)，由 tts_player_screen._scrollToTop 调用）
+    scrollShowThreshold: 100      # px — 保留备用
+    scrollFadeDuration: "250ms"  # 保留备用
+    scrollBackToTopDuration: "300ms"
+    scrollBackToTopCurve: "Curves.easeOut"
+
+  # ── Colors ──
+  colors:
+    playerBg: "AppColors.pageBg"
+    playerSurface: "AppColors.surface"
+    textPrimary: "AppColors.textPrimary"
+    textSecondary: "AppColors.textSecondary"
+    textTertiary: "AppColors.textTertiary"
+    divider: "AppColors.border"
+    actionActive: "CupertinoColors.systemBlue"
+    actionIdle: "Color(0xFF64748B) # Slate 500 = AppColors.textSecondary light"
+    sliderTrack: "AppColors.surfaceMuted"
+    pulseDot: "AppColors.champagneGold    # warm-minimal 调性，替代 systemBlue"
+    checkmark: "AppColors.accent          # Indigo"
+    waveformIdle: "AppColors.textTertiary"
+    waveformActive: "CupertinoColors.systemBlue"
+
+# ============================================================
+# TTS 动效设计（Background & Effects）
+# ============================================================
+
+ttsEffects:
+
+  background:
+    description: "3 层组合（base + radial ambient + per-message tint），warm-minimal 调性"
+    layers:
+      - name: "Layer 1 — Base"
+        spec: "AppColors.pageBg 纯色填充"
+      - name: "Layer 2 — Ambient Radial"
+        spec: "RadialGradient，从 Alignment.topCenter 扩散，半径 0.55 屏宽"
+        color: "AppColors.champagneGold"
+        alpha_idle: 0.06
+        alpha_speaking: 0.10
+        motion: "GlowShift（AnimationController 2400ms / 2，repeat reverse）"
+      - name: "Layer 3 — Per-message Tint"
+        spec: "ColorFiltered + BlendMode.softLight，AppColors.paletteForNode(messageId).title × 0.03 alpha"
+        purpose: "'这条消息属于你' 细微身份信号"
+
+  effects:
+    - name: "Waveform Equalizer"
+      widget: "TtsWaveform（5-bar 均衡器）"
+      spec: "5 条 vertical bars，width 5 / gap 8 / height 8~48（max 48，视觉存在感强化）"
+      algorithm: "h = lerp(8, 48, clamp(0.5 + sin(t * 1.7 + i*0.4) * 0.65 + (random-0.5) * 0.35, 0, 1))"
+      tick: "100ms（10fps）"
+      color_idle: "AppColors.textTertiary（静态等高 8px）"
+      color_active: "CupertinoColors.systemBlue"
+      battery: "仅 isActive=true 时 Ticker.start()"
+    - name: "Pulse Rings"
+      widget: "TtsPulseRings（2 环扩散）"
+      spec: "2 圈 BoxShape.circle 边框，1.0x → 1.8x 扩散，alpha 0.35 → 0"
+      duration: "1800ms / 环"
+      stagger: "900ms"
+      color: "CupertinoColors.systemBlue"
+      stroke: 1.5
+      battery: "仅 isActive=true 时各 controller.repeat()；dispose 时 stop + 归零"
+    - name: "Glow Shift"
+      widget: "TtsPlayerBackground._AmbientRadial"
+      spec: "Layer 2 alpha 在 0.06 ↔ 0.10 之间循环"
+      duration: "2400ms / 2，repeat reverse"
+      curves: "默认（lerp）"
+    - name: "Text Fade-in"
+      widget: "TtsPlayerScreen 文本区（一次性）"
+      spec: "push 进入后正文渐入"
+      duration: "400ms"
+    - name: "Press Feedback"
+      widget: "所有可点元素（按钮 / 列表行）"
+      spec: "scale 0.97 按压"
+      duration: "100ms"
+
+  scrollBehavior:
+    description: "v1.1 移除浮按钮（TtsBackToTopButton），改 ThkNavBar.onTitleDoubleTap 触发 animateTo(0)；v2 跟随朗读见 design doc §11.1"
+    trigger: "双击导航栏标题 '朗读'"
+    backToTopDuration: 300
+    backToTopCurve: "Curves.easeOut"
+    # 保留 showThreshold / fadeDuration 备用（v2+ 跟随朗读可能复用）
+    showThreshold: 100
+    fadeDuration: 250
+
+  constraints:
+    - name: "prefersReducedMotion"
+      v1_status: "v1.1 浮按钮已删，回顶改 ThkNavBar.onTitleDoubleTap 瞬时 animateTo；waveform/rings 仍显式 isActive 控制"
+      v2_status: "v2 全局降级：waveform/rings/scale 全部 prefersReducedMotion 时停用"
+    - name: "Battery"
+      rule: "Ticker / AnimationController 仅在 isSpeaking==true 时启动；离开页面 dispose"
+    - name: "Performance"
+      rule: "每个动效子树独立 RepaintBoundary，frame budget 不互相影响"
+
+# ============================================================
+# v2+ 路线图
+# ============================================================
+
+ttsRoadmap:
+  v2:
+    - "跟随朗读 + auto-scroll（iOS willSpeakRangeOfSpeechString delegate）"
+    - "选中文字部分播放"
+    - "iOS XCTest 覆盖 channel 协议"
+    - "scroll 浮按钮 '继续跟随' 模式"
+  v3:
+    - "连续播放所有 assistant 消息"
+    - "后台播放（Info.plist 后台 audio 权限）"
+    - "用户消息 TTS"
+    - "语速持久化（AppSettings.ttsRate）"
+    - "实时频谱（AVAudioEngine tap PCM）"
+    - "字符级高亮（依赖 v2 逐字 timing）"
+  v4plus:
+    - "Sherpa-ONNX 本地推理（SherpaOnnxTtsService）"
+    - "MiniMax 在线 TTS（MiniMaxTtsService）"
+    - "模型导入（.onnx 文件选择）"
+    - "Android 平台（AndroidTtsService，替换 NoOpTtsService）"
+  rejected:
+    - "粒子动效（偏离 warm-minimal 调性）"
+    - "Mesh gradient 背景（同上）"
+    - "触觉反馈（iPad 不支持）"
+    - "Player 页离开自动 stop（doc §4.1 明确不做）"
+    - "语速默认值持久化（doc §1.2 明确不做）"

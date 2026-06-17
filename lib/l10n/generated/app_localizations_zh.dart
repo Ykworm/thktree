@@ -627,4 +627,52 @@ class AppLocalizationsZh extends AppLocalizations {
   String deleteThemeConfirm(String title) {
     return '确认删除主题「$title」？所有对话将被永久删除。';
   }
+
+  @override
+  String get ttsPlay => '朗读';
+
+  @override
+  String get ttsStop => '停止';
+
+  @override
+  String get ttsVoice => '朗读语音';
+
+  @override
+  String get ttsRate => '语速';
+
+  @override
+  String get ttsEngine => '语音引擎';
+
+  @override
+  String get ttsAppleSystem => 'Apple 系统语音';
+
+  @override
+  String get ttsTestPlay => '试听';
+
+  @override
+  String get ttsVoiceSettings => '语音设置';
+
+  @override
+  String get ttsVoiceSettingsSubtitle => '朗读语音、语速设置';
+
+  @override
+  String get ttsSlow => '慢';
+
+  @override
+  String get ttsFast => '快';
+
+  @override
+  String get ttsPlayerPlay => '播放';
+
+  @override
+  String get ttsPlayerStop => '停止';
+
+  @override
+  String get ttsBackToTop => '回到顶部';
+
+  @override
+  String get ttsNoVoicesAvailable => '暂无可用语音';
+
+  @override
+  String get ttsIosOnly => '语音播放仅在 iOS 上可用';
 }

@@ -9,7 +9,6 @@
 | `BiometricService` 已实现但 `AuthGate` 未接线 | 中 | settings 模块 feature 表"生物认证（Face ID）"标 🔨 进行中；服务在但启动时的鉴权门未完成 | 2026-06-07 |
 | `ShareService` + `ShareCardWidget` 存在但分享流程未闭环 | 中 | settings 模块 feature 表"分享功能"标 🔨 部分实现，缺触发入口/分享内容生成 | 2026-06-07 |
 | 标题自动建议触发时机未集成 | 中 | chat 模块 `TitleSuggestionService` 已写，但"何时调用"（首次进入/对话超过 N 轮/手动按钮）决策未定 | 2026-06-07 |
-| iOS 原生 TTS 语音播放实现进行中 | 中 | docs/modules/settings/specs/2026-06-05-语音播放功能-design.md 设计完成，代码未完成 | 2026-06-05 |
 | LLM 模型列表刷新 UI 未完成 | 低 | `ModelFetcher` 存在但模型列表手动刷新的入口/UI 未实现 | 2026-06-07 |
 | 全文搜索结果准确性未做对比测试 | 低 | SQLite FTS5 + BM25 已上线，无 query 质量基线，5 套配色方案行高 56px 的实际体验数据未收集 | 2026-06-07 |
 
