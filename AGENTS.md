@@ -19,35 +19,92 @@
 6. **每个 doc 都要给出影响/不影响/待确认的判断** — 即使"不影响"也要写一行理由
 7. **不问用户"准备好了没有"** — 用户触发即执行，不设前置条件
 
+## 执行范式（ReAct）
+
+每次执行 context-sync 必须严格遵循 THOUGHT → ACTION → OBSERVATION 循环。
+禁止跳过任何步骤的 OBSERVATION，禁止在未看到工具返回值之前做假设。
+
+### 范例 1（正常流程）
+
+**用户**：ctsync
+
+**Agent**：
+
+> **THOUGHT**：用户触发 context-sync。第一步必须确认工具可用性。
+>
+> **ACTION**：`codegraph status`
+>
+> **OBSERVATION**：[返回索引状态：文件数、节点数、是否最新]
+>
+> **THOUGHT**：CodeGraph 可用，符号引用判断使用 codegraph。接下来收集改动范围。
+>
+> **ACTION**：`git diff --name-only HEAD`
+>
+> **OBSERVATION**：[返回改动文件列表]
+>
+> **THOUGHT**：改动涉及 XX 模块。接下来遍历 docs 并做三重判断。
+> （继续后续步骤...）
+
+### 范例 2（CodeGraph 不可用时的降级处理）
+
+**Agent**：
+
+> **THOUGHT**：第一步必须确认工具可用性。
+>
+> **ACTION**：`codegraph status`
+>
+> **OBSERVATION**：[Error: index not found / not running]
+>
+> **THOUGHT**：CodeGraph 不可用，必须执行降级策略并告知用户。使用 rg 搜索符号引用，精度有限需在影响清单前声明。
+>
+> **ACTION**：`rg "ClassName" docs/ --type md`
+>
+> **OBSERVATION**：[返回匹配文件列表]
+>
+> **THOUGHT**：继续使用 rg 完成后续影响评估...
+
 ## 流程
+
+### 🛑 [BLOCKER] Step 0：工具可用性前置检查 (MANDATORY)
+
+不管用户后续要求做什么，本步骤是 BLOCKER（阻塞项）。
+未获得 `codegraph status` 的真实 OBSERVATION 前，严禁推进到 Step 1。
+
+> **THOUGHT**：执行 context-sync 前必须确认 CodeGraph 状态。
+>
+> **ACTION**：`codegraph status`
+>
+> **OBSERVATION**：[等待返回结果]
+>
+> **THOUGHT**：根据返回结果决定符号引用判断工具：
+> - 索引最新 → 使用 codegraph（精确）
+> - 索引过期 → 先 `codegraph sync`，再用 codegraph
+> - 不可用 → 降级为 rg，必须在影响清单前告知用户
 
 ### Step 1：收集改动范围
 
-```bash
-git diff --name-only HEAD
-```
-
-拿到本次会话中改动过的文件列表（未 commit 的也算）。
+> **ACTION**：`git diff --name-only HEAD`
+> **OBSERVATION**：[文件列表]
+> **THOUGHT**：记录改动文件，推断涉及的模块和符号。
 
 如果 git diff 为空（全部已 commit），则基于会话中的对话上下文推断本次改动范围。
 
 ### Step 2：遍历 docs 全量
 
-```bash
-find docs -type f \( -name "*.md" -o -name "*.yaml" \)
-```
-
-拿到 docs/ 下所有 Markdown + YAML 文件清单（递归）。
+> **ACTION**：`find docs -type f \( -name "*.md" -o -name "*.yaml" \)`
+> **OBSERVATION**：[doc 文件列表]
 
 - `*.md` — 文档主体
 - `*.yaml` — 模块级 design-tokens 规范（页面定义、交互、存储格式等结构化描述）
 
 ### Step 3：逐 doc 三重判断
 
-对每个 doc 文件，依次跑三层判断：
+> **THOUGHT**：对每个 doc 跑路径/内容/类型三层判断。
+> **ACTION**：[rg/codegraph 搜索]
+> **OBSERVATION**：[匹配结果]
 
 1. **路径相关** — 文件路径是否含本次改动的模块名（例：改动涉及 `lib/ui/notes/` → `docs/modules/notes/**` 路径相关）
-2. **内容相关** — doc 内容是否引用本次改动涉及的类名/函数名/组件名/常量名（用 rg 快扫，rg 不可用则 fallback grep）
+2. **内容相关** — doc 内容是否引用本次改动涉及的类名/函数名/组件名/常量名
 3. **类型相关** — 改动类型 × doc 类型的对应关系：
    - 功能新增/删除 → `FEATURES.md` + 对应模块 README
    - 依赖变更 → `TECH-DEBT.md` + `DECISIONS.md`
@@ -142,24 +199,22 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 - docs/DECISIONS.md（新增 ADR-013）
 ```
 
-## 工具优先级
+## 工具参考（核心命令）
 
-| 步骤 | 优先工具 | fallback |
-|------|---------|----------|
-| 收集改动范围 | `git diff --name-only HEAD` | 会话上下文推断 |
-| 遍历 docs | `find docs -type f \( -name "*.md" -o -name "*.yaml" \)` | — |
-| 内容相关判断 | `rg -l "类名" docs/` | `grep -rl "类名" docs/` |
-| 符号引用判断 | CodeGraph MCP（如运行中） | rg / grep（精度有限，告知用户） |
-| 改 doc 文件 | 直接写文件 | — |
+最常用命令（直接使用，无需查阅手册）：
+- 检查状态：`codegraph status`
+- 同步索引：`codegraph sync`
+- 文本搜索：`rg "keyword" <path>`
 
-**工具降级时必须告知用户**：
+完整命令参考、使用场景、fallback 策略：
+> 读取 `docs/_shared/tool-reference.md`
 
-如果 CodeGraph 不可用，在影响清单之前输出：
-```
-⚠️ CodeGraph 未运行，符号引用判断降级为 rg/grep 文本匹配，结果可能有误判。
-```
-
-如果 rg 不可用，自动 fallback 到 grep，无需告知。
+规则：
+- 代码智能优先 `codegraph`，fallback `rg`
+- 文本搜索优先 `rg`，fallback `grep`
+- 文件查找优先 `fd`，fallback `find`
+- 工具不可用时必须告知用户（CodeGraph）或静默 fallback（rg → grep）
+- ⚠️ rg 必须优先于 grep，任何场景不得跳过
 
 ## 不在本 Skill 管辖范围
 
@@ -167,129 +222,3 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 - 代码 commit（由代码改动的 Agent/会话决定）
 - doc 的 git add / commit / push（用户统一收口时处理）
 - 预判哪些文档会受影响（用户随时可触发，不限时机）
-
-## tool-priority
-
-## 代码智能工具（CodeGraph）
-
-**查符号、调用关系、影响分析时，优先用 `codegraph`，不可用则 fallback 到 `rg`。**
-
-### 常用命令
-
-```bash
-# 搜索符号（类、函数、方法、常量）
-codegraph query "AppColors"
-codegraph query "ThkListTile" --kind class
-codegraph query "colorForTheme" --limit 20
-
-# 谁调用了它（callers）
-codegraph callers "colorForTheme"
-codegraph callers "ThkListTile"
-
-# 它调用了谁（callees）
-codegraph callees "ChatScreen.build"
-
-# 改它会影响什么（impact）
-codegraph impact "AppColors.accent"
-codegraph impact "ThkListTile" --depth 3
-
-# 找受影响的测试文件
-codegraph affected lib/ui/core/widgets/thk_list_tile.dart
-
-# 查看项目文件结构
-codegraph files --filter lib/ui/features/themes
-
-# 查看索引状态
-codegraph status
-
-# 增量同步（代码改动后）
-codegraph sync
-
-# 全量重建索引
-codegraph index --force
-```
-
-### 使用场景
-
-| 场景 | 命令 | 说明 |
-|------|------|------|
-| 验证 dartRef 是否存在 | `codegraph query "符号名"` | 比 rg 精确，直接返回符号类型和位置 |
-| 查看组件被谁使用 | `codegraph callers "组件名"` | 知道改组件会影响哪些页面 |
-| 评估重构影响范围 | `codegraph impact "符号名"` | 知道改这个符号会波及哪些代码 |
-| 理解模块依赖关系 | `codegraph callees "入口方法"` | 知道一个方法内部调用了什么 |
-| 改代码后找要跑的测试 | `codegraph affected 改动的文件` | 自动找出关联的测试文件 |
-| 查看模块文件结构 | `codegraph files --filter 目录` | 比 ls 更智能，带符号统计 |
-
-### fallback 策略
-
-```bash
-# 优先尝试 codegraph
-codegraph query "AppColors" 2>/dev/null || rg "AppColors" lib/
-```
-
-### 索引维护
-
-- 项目已初始化，索引了 252 个文件、3766 个符号节点
-- 代码改动后运行 `codegraph sync` 增量更新
-- 索引损坏时运行 `codegraph index --force` 全量重建
-- 索引目录：`.codegraph/`（已在 .gitignore 中）
-
-### MCP 模式
-
-CodeGraph 也可以作为 MCP server 运行，提供 `codegraph_query`、`codegraph_callers` 等工具：
-```bash
-codegraph serve --mcp
-```
-
----
-
-## 文本搜索工具
-
-**优先使用 `rg`（ripgrep），不可用则 fallback 到 `grep`。**
-
-### 原因
-- `rg` 默认递归、自动忽略 `.gitignore`、速度更快
-- `rg` 的正则表达式语法更现代（`|` 无需转义）
-- 项目已统一文档中的示例命令为 `rg`
-
-### 常用命令
-
-```bash
-# 搜索文本
-rg "pattern" lib/
-rg "pattern" docs/ --type md
-
-# 只看文件名
-rg -l "AppColors.accent" lib/
-
-# 搜索 YAML/Markdown 中的引用
-rg "dartRef" docs/_shared/design-tokens.yaml
-rg "colorForTheme" docs/modules/
-
-# 限制搜索深度
-rg "pattern" lib/ --max-depth 3
-```
-
-### fallback 策略
-
-```bash
-# 优先尝试 rg
-rg "pattern" docs/ 2>/dev/null || grep -r "pattern" docs/
-```
-
----
-
-## 其他工具优先级
-
-| 工具类型 | 优先 | fallback |
-|---------|------|----------|
-| 代码智能 | `codegraph` | `rg`（精度有限） |
-| 文本搜索 | `rg` | `grep -r` |
-| 文件查找 | `fd` | `find` |
-| JSON 处理 | `jq` | `python -m json.tool` |
-
-## 工具降级时的行为
-
-- CodeGraph 不可用时，用 `rg` 搜索符号引用，但精度有限（可能误判），需告知用户
-- rg 不可用时自动 fallback 到 grep，无需告知
-
