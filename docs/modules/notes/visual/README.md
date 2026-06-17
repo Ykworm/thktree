@@ -49,10 +49,11 @@
             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  NoteDetailScreen        笔记详情/阅读页                     │
-│  ── 标题栏右侧四件套：📋复制 / 🌿分支 / ✏️编辑 / 🗑️删除      │
-│  ── 阅读态：GptMarkdown 渲染                                │
+│  ── 标题栏：无标题，右侧 🌿分支 / ✏️编辑 / ...更多           │
+│  ── ... → ThkGridBottomSheet（复制/重命名/删除）             │
+│  ── 阅读态：GptMarkdown 渲染（填满页面）                     │
 │  ── 编辑态：CupertinoTextField + MarkdownToolbar             │
-│  ── 点击标题 → 重命名 dialog                                │
+│  ── GptMarkdownTheme 全局配置 h1/h2/h3 标题样式              │
 └─────────────────────────────────────────────────────────────┘
             │
             ▼ (新建/编辑)
@@ -71,7 +72,8 @@
 ## 共享设计原则
 
 ### 2.1 iOS HIG
-- 所有页面用 `CupertinoPageScaffold` + `CupertinoButton` + `CupertinoAlertDialog` + `CupertinoActionSheet`
+- 所有页面用 `CupertinoPageScaffold` + `CupertinoButton` + `CupertinoAlertDialog`
+- 操作菜单用 `ThkGridBottomSheet`（网格底栏）替代 `CupertinoActionSheet`
 - 所有页面包裹 `SafeArea`
 - 新建按钮**统一在标题栏右上角**（参见重要决策经验）
 - 危险操作用 `isDestructiveAction: true`
@@ -197,4 +199,6 @@ void _updateSearchIndex() {
 | `lib/ui/features/notes/note_select_screen.dart` | 聊天 → 笔记的弹窗选择页 |
 | `lib/ui/features/notes/node_location_picker.dart` | 笔记 → 对话时选择主题/父节点的 picker |
 | `lib/data/stores/note_store.dart` | 笔记 CRUD |
+| `lib/ui/core/widgets/thk_grid_bottom_sheet.dart` | 网格底栏 Action Sheet |
+| `lib/ui/core/widgets/markdown_toolbar.dart` | Markdown 工具栏（标题切换 + 表格插入） |
 | `lib/ui/core/app_services.dart` | 定义 `noteListVersionProvider` |

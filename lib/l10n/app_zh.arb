@@ -300,5 +300,65 @@
   "startWriting": "开始写点什么...",
   "@startWriting": {
     "description": "笔记编辑器内容占位符"
+  },
+  "justNow": "刚刚",
+  "@justNow": {
+    "description": "相对时间：不到1分钟前"
+  },
+  "minutesAgo": "{count}分钟前",
+  "@minutesAgo": {
+    "description": "相对时间：X分钟前",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{count}小时前",
+  "@hoursAgo": {
+    "description": "相对时间：X小时前",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{count}天前",
+  "@daysAgo": {
+    "description": "相对时间：X天前",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthDay": "{month}月{day}日",
+  "@monthDay": {
+    "description": "绝对日期：月/日",
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "pin": "置顶",
+  "@pin": {
+    "description": "将主题置顶"
+  },
+  "unpin": "取消置顶",
+  "@unpin": {
+    "description": "取消主题置顶"
+  },
+  "deleteThemeConfirm": "确认删除主题「{title}」？所有对话将被永久删除。",
+  "@deleteThemeConfirm": {
+    "description": "删除主题确认对话框内容",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   }
 }

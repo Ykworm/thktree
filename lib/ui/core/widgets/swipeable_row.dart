@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// iOS Mail 风格的滑动操作行：左滑/右滑露出按钮，点击按钮触发对应回调。
 ///
@@ -158,7 +159,7 @@ class _SwipeableRowState extends State<SwipeableRow>
               onHorizontalDragUpdate: _onPanUpdate,
               onHorizontalDragEnd: _onPanEnd,
               child: Container(
-                color: CupertinoColors.systemBackground.resolveFrom(context),
+                color: AppColors.surface,
                 child: widget.child,
               ),
             ),
@@ -196,7 +197,7 @@ class _SwipeableRowState extends State<SwipeableRow>
               label,
               maxLines: 1,
               softWrap: false,
-              style: const TextStyle(
+              style: TextStyle(
                 color: CupertinoColors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,

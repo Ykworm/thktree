@@ -12,6 +12,7 @@ class NoteMeta {
     required this.updatedAt,
     this.sourceNodeId,
     this.spawnedNodeId,
+    this.preview,
   });
 
   final String themeId;
@@ -21,6 +22,9 @@ class NoteMeta {
   final String updatedAt;
   final String? sourceNodeId;
   final String? spawnedNodeId;
+
+  /// Runtime-only: first ~60 chars of body, populated by [NoteStore.listNoteMetas].
+  String? preview;
 
   factory NoteMeta.fromJson(Map<String, dynamic> json) => NoteMeta(
         themeId: json['themeId'] as String,
@@ -55,7 +59,7 @@ class NoteStore {
 
   final Directory notesDir;
 
-  Future<List<NoteMeta>> listNoteMetas() async {
+  Future<List<NoteMeta>> listNoteMetas({bool includePreview = false}) async {
     if (!await notesDir.exists()) return [];
     final entities = await notesDir.list().toList();
     final metas = <NoteMeta>[];
@@ -64,7 +68,17 @@ class NoteStore {
       try {
         final raw = await entity.readAsString();
         final meta = _parseFrontmatter(raw);
-        if (meta != null) metas.add(meta);
+        if (meta == null) continue;
+        if (includePreview) {
+          final idx = raw.indexOf('\n---\n');
+          if (idx >= 0) {
+            final body = raw.substring(idx + 5).trim();
+            meta.preview = body.isEmpty
+                ? null
+                : (body.length <= 60 ? body : '${body.substring(0, 60)}...');
+          }
+        }
+        metas.add(meta);
       } catch (_) {}
     }
     metas.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));

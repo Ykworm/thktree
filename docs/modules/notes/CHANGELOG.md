@@ -231,3 +231,41 @@ final int contextWindow; // 0 表示未知
 | 🟢 | 模型选择器优化 | 显示模型的实际 context window 大小，帮助用户决策 |
 | 🟢 | 批量设置 context window | 多个模型未知时，支持一次性设置所有 |
 
+
+## 8. 笔记详情页 UI 重构 + 工具栏增强（2026-06-17）
+
+### 8.1 已完成的功能
+
+#### 8.1.1 GptMarkdown 标题样式修复
+- **问题**：`# 标题` 在 CupertinoApp 中渲染为正文大小
+- **根因**：CupertinoApp 不提供 Material text theme，GptMarkdown 的 HTag 组件依赖 `Theme.of(context).textTheme.headlineLarge`
+- **方案**：app 级别添加 `GptMarkdownTheme`，提供 h1/h2/h3 标题样式
+- **附带修复**：`highlightColor` 改为 `AppColors.surfaceMuted`，`autoAddDividerLineAfterH1: false`
+
+#### 8.1.2 导航栏重构
+- 去掉导航栏标题（title: ''）
+- 操作按钮从 4 个减为 3 个（分支/编辑/...）
+- "..." 按钮弹出 `ThkGridBottomSheet` 网格底栏
+
+#### 8.1.3 ThkGridBottomSheet 网格底栏
+- WeChat/备忘录风格：圆形图标 + 文字标签
+- 支持主操作和 destructive 操作分组
+- 替代 `CupertinoActionSheet` 列表风格
+
+#### 8.1.4 内容区填满页面
+- `Container` + `SingleChildScrollView` → `Column` + `Expanded` + `Container` + `SingleChildScrollView`
+- 背景色铺满整个内容区
+
+#### 8.1.5 Markdown 工具栏增强
+- **标题循环切换**：无 → h2 → h3 → h1 → 无（默认 h2，参考 Notion/Typora）
+- **表格插入按钮**：插入 3x3 markdown 表格模板
+
+### 8.2 文件变更
+- `lib/main.dart` — GptMarkdownTheme
+- `lib/ui/features/notes/note_detail_screen.dart` — 导航栏 + ThkGridBottomSheet + 内容区布局
+- `lib/ui/core/widgets/thk_grid_bottom_sheet.dart` — 新建
+- `lib/ui/core/widgets/widgets.dart` — 新增 export
+- `lib/ui/core/widgets/markdown_toolbar.dart` — 标题切换 + 表格插入
+
+### 8.3 待实现
+- 图片插入功能（📋 待开发）

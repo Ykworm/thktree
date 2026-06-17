@@ -33,7 +33,7 @@ iOS-first 项目的硬性决定。ThkTree 是为 iPhone 设计的笔记/聊天 a
 
 ## ADR-007: Markdown 渲染库 gpt_markdown 替代 flutter_markdown
 
-2026-06-07 决定迁移。`flutter_markdown` 在代码块高亮、表格列宽、维护频率上都有问题：代码块不支持自定义高亮主题（跟 Cupertino 风格不搭）、表格列宽自适应差（窄屏要横滚）、社区最近发版是 4 个月前。换成 `gpt_markdown`：性能更好（实测 chat 长消息流畅度 +30%）、代码块/表格/LaTeX 公式支持更完整、社区活跃（最近 commit 2 周内）。影响范围：所有渲染 Markdown 的 UI——chat 消息、笔记详情、节点预览、引用块。实施要做 4 件事：`pubspec.yaml` 换依赖、所有 `Markdown(...)` widget 改成 `GptMarkdown(...)`、3 个屏幕（chat/note detail/node preview）的视觉回归测试、`docs/modules/notes/README.md` 与 `docs/modules/chat/README.md` 同步注明渲染库变更。
+2026-06-07 决定迁移。`flutter_markdown` 在代码块高亮、表格列宽、维护频率上都有问题：代码块不支持自定义高亮主题（跟 Cupertino 风格不搭）、表格列宽自适应差（窄屏要横滚）、社区最近发版是 4 个月前。换成 `gpt_markdown`：性能更好（实测 chat 长消息流畅度 +30%）、代码块/表格/LaTeX 公式支持更完整、社区活跃（最近 commit 2 周内）。影响范围：所有渲染 Markdown 的 UI——chat 消息、笔记详情、节点预览、引用块。实施要做 4 件事：`pubspec.yaml` 换依赖、所有 `Markdown(...)` widget 改成 `GptMarkdown(...)`、3 个屏幕（chat/note detail/node preview）的视觉回归测试、`docs/modules/notes/README.md` 与 `docs/modules/chat/README.md` 同步注明渲染库变更。**补充（2026-06-17）**：CupertinoApp 不提供 Material text theme，导致 GptMarkdown 的 h1/h2/h3 标题渲染为正文大小。解决方案：app 级别添加 `GptMarkdownTheme`（`lib/main.dart` builder 中），配置 h1/h2/h3 样式、`highlightColor`、`autoAddDividerLineAfterH1: false`。同时修复了反击号高亮颜色异常。
 
 ## ADR-008: 国际化 flutter_localizations + intl + 双语硬性
 

@@ -202,7 +202,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                             onPressed: widget.onRetry,
                             child: Text(
                               l10n.retry,
-                              style: const TextStyle(fontSize: 14, color: CupertinoColors.white),
+                              style: TextStyle(fontSize: 14, color: CupertinoColors.white),
                             ),
                           )
                         else
@@ -252,7 +252,7 @@ Widget _buildCodeBlock(
     ),
     child: SelectableText(
       code,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'monospace',
         fontSize: 14,
       ),
@@ -314,7 +314,7 @@ class _TableExpandedView extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: GptMarkdown(
               content,
-              style: const TextStyle(fontSize: 17, height: 1.6),
+              style: TextStyle(fontSize: 17, height: 1.6),
               codeBuilder: _buildCodeBlock,
               tableBuilder: _buildTable,
             ),

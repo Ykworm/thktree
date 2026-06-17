@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
@@ -43,6 +44,12 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     state = AsyncData(await store.load());
   }
 
+  Future<void> saveDarkMode(bool dark) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveDarkMode(dark);
+    state = AsyncData(await store.load());
+  }
+
   Future<void> saveTitleModel({String? providerId, String? modelId}) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveTitleModel(providerId: providerId, modelId: modelId);
@@ -73,3 +80,26 @@ class LocaleNotifier extends Notifier<Locale?> {
 }
 
 final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(() => LocaleNotifier(null));
+
+class BrightnessNotifier extends Notifier<Brightness> {
+  BrightnessNotifier(this._initial);
+
+  final Brightness _initial;
+
+  @override
+  Brightness build() => _initial;
+
+  void setBrightness(Brightness b) {
+    state = b;
+  }
+
+  void toggle() {
+    state = state == Brightness.light
+        ? Brightness.dark
+        : Brightness.light;
+  }
+}
+
+final brightnessProvider =
+    NotifierProvider<BrightnessNotifier, Brightness>(
+        () => BrightnessNotifier(Brightness.light));

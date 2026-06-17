@@ -801,5 +801,65 @@
   "startWriting": "Start writing...",
   "@startWriting": {
     "description": "Note editor body placeholder"
+  },
+  "justNow": "Just now",
+  "@justNow": {
+    "description": "Relative time: less than 1 minute ago"
+  },
+  "minutesAgo": "{count}m ago",
+  "@minutesAgo": {
+    "description": "Relative time: X minutes ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{count}h ago",
+  "@hoursAgo": {
+    "description": "Relative time: X hours ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{count}d ago",
+  "@daysAgo": {
+    "description": "Relative time: X days ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthDay": "{month}/{day}",
+  "@monthDay": {
+    "description": "Absolute date: month/day",
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "pin": "Pin",
+  "@pin": {
+    "description": "Pin a theme to the top of the list"
+  },
+  "unpin": "Unpin",
+  "@unpin": {
+    "description": "Unpin a theme from the top of the list"
+  },
+  "deleteThemeConfirm": "Delete theme \"{title}\"? All conversations will be permanently deleted.",
+  "@deleteThemeConfirm": {
+    "description": "Confirmation message for deleting a theme",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   }
 }

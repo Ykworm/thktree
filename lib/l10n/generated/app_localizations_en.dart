@@ -615,4 +615,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get startWriting => 'Start writing...';
+
+  @override
+  String get justNow => 'Just now';
+
+  @override
+  String minutesAgo(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String hoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String daysAgo(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String monthDay(int month, int day) {
+    return '$month/$day';
+  }
+
+  @override
+  String get pin => 'Pin';
+
+  @override
+  String get unpin => 'Unpin';
+
+  @override
+  String deleteThemeConfirm(String title) {
+    return 'Delete theme \"$title\"? All conversations will be permanently deleted.';
+  }
 }

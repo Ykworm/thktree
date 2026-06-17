@@ -17,7 +17,7 @@ class MarkdownToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 44,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surfaceMuted,
         border: Border(
           top: BorderSide(color: AppColors.border, width: 0.5),
@@ -46,7 +46,7 @@ class MarkdownToolbar extends StatelessWidget {
             _ToolbarButton(
               icon: SFIcons.sf_textformat_size,
               tooltip: '标题',
-              onPressed: () => _insertAtLineStart('## ', ''),
+              onPressed: _toggleHeading,
             ),
             const _Divider(),
             _ToolbarButton(
@@ -85,10 +85,64 @@ class MarkdownToolbar extends StatelessWidget {
               tooltip: '分隔线',
               onPressed: () => _insertText('\n---\n'),
             ),
+            const _Divider(),
+            _ToolbarButton(
+              icon: SFIcons.sf_tablecells,
+              tooltip: '表格',
+              onPressed: _insertTable,
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// 标题级别循环切换：无 → h2 → h3 → h1 → 无
+  void _toggleHeading() {
+    final text = controller.text;
+    final selection = controller.selection;
+    final offset = selection.isValid ? selection.start : text.length;
+
+    // 找到当前行起止位置
+    int lineStart = offset;
+    while (lineStart > 0 && text[lineStart - 1] != '\n') {
+      lineStart--;
+    }
+    int lineEnd = offset;
+    while (lineEnd < text.length && text[lineEnd] != '\n') {
+      lineEnd++;
+    }
+
+    final line = text.substring(lineStart, lineEnd);
+
+    // 检测当前行的标题前缀
+    String newLine;
+    if (line.startsWith('### ')) {
+      // h3 → h1
+      newLine = '# ${line.substring(4)}';
+    } else if (line.startsWith('## ')) {
+      // h2 → h3
+      newLine = '### ${line.substring(3)}';
+    } else if (line.startsWith('# ') && !line.startsWith('## ')) {
+      // h1 → 取消
+      newLine = line.substring(2);
+    } else {
+      // 无前缀 → h2
+      newLine = '## $line';
+    }
+
+    final before = text.substring(0, lineStart);
+    final after = text.substring(lineEnd);
+    controller.text = '$before$newLine$after';
+    controller.selection = TextSelection.collapsed(
+      offset: lineStart + newLine.length,
+    );
+  }
+
+  /// 插入 3x3 markdown 表格模板
+  void _insertTable() {
+    final table = '\n| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n|  |  |  |\n|  |  |  |\n';
+    _insertText(table);
   }
 
   /// 在选中文本两侧插入 [left] 和 [right]。

@@ -135,7 +135,7 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
       return Center(
         child: Text(
           _error.toString(),
-          style: const TextStyle(color: CupertinoColors.systemRed),
+          style: TextStyle(color: CupertinoColors.systemRed),
         ),
       );
     }
@@ -143,7 +143,7 @@ class _NoteSelectScreenState extends ConsumerState<NoteSelectScreen> {
       return Center(
         child: Text(
           l10n.noNotesYet,
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       );
     }

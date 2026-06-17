@@ -59,7 +59,7 @@ class ShareCardWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Text(
+                Text(
                   'ThkTree',
                   style: TextStyle(
                     fontSize: 13,
@@ -83,7 +83,7 @@ class ShareCardWidget extends StatelessWidget {
                 ),
                 child: Text(
                   userQuestion!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     height: 1.5,
                     color: AppColors.textSecondary,
@@ -98,7 +98,7 @@ class ShareCardWidget extends StatelessWidget {
             const SizedBox(height: 16),
             GptMarkdown(
               assistantAnswer,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 height: 1.6,
                 color: AppColors.textPrimary,
@@ -112,7 +112,7 @@ class ShareCardWidget extends StatelessWidget {
               color: AppColors.border,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Shared from ThkTree',
               style: TextStyle(
                 fontSize: 11,

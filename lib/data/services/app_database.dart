@@ -8,7 +8,7 @@ class AppDatabase {
   static Future<AppDatabase> open({required String path}) async {
     final db = await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) => _createSchema(db),
       onUpgrade: (db, oldVersion, newVersion) async {
         await _createSchema(db);
@@ -17,6 +17,9 @@ class AppDatabase {
         }
         if (oldVersion < 4) {
           await _migrateV4(db);
+        }
+        if (oldVersion < 5) {
+          await _migrateV5(db);
         }
       },
       onOpen: (db) => _createSchema(db),
@@ -32,7 +35,8 @@ CREATE TABLE IF NOT EXISTS themes (
   title TEXT NOT NULL,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
-  themePath TEXT NOT NULL
+  themePath TEXT NOT NULL,
+  pinned INTEGER NOT NULL DEFAULT 0
 )
 ''');
 
@@ -95,6 +99,13 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
   updatedAt UNINDEXED
 )
 ''');
+}
+
+/// v5: add pinned column to themes table
+Future<void> _migrateV5(Database db) async {
+  await _addColumnIfNotExists(db, 'themes', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
+  // Mark "未分类" theme as pinned (backward compat)
+  await db.execute("UPDATE themes SET pinned = 1 WHERE title = '未分类'");
 }
 
 Future<void> _addColumnIfNotExists(

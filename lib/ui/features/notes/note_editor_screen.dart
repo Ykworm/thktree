@@ -192,17 +192,17 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                     CupertinoTextField(
                       controller: _titleController,
                       placeholder: l10n.noTitle,
-                      placeholderStyle: const TextStyle(
+                      placeholderStyle: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textTertiary,
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.surface,
                         border: null,
                       ),
@@ -214,16 +214,16 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                     CupertinoTextField(
                       controller: _bodyController,
                       placeholder: l10n.startWriting,
-                      placeholderStyle: const TextStyle(
+                      placeholderStyle: TextStyle(
                         fontSize: 17,
                         color: AppColors.textTertiary,
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         height: 1.6,
                         color: AppColors.textPrimary,
                       ),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.surface,
                         border: null,
                       ),

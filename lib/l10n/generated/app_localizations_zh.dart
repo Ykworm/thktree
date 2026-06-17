@@ -593,4 +593,38 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get startWriting => '开始写点什么...';
+
+  @override
+  String get justNow => '刚刚';
+
+  @override
+  String minutesAgo(int count) {
+    return '$count分钟前';
+  }
+
+  @override
+  String hoursAgo(int count) {
+    return '$count小时前';
+  }
+
+  @override
+  String daysAgo(int count) {
+    return '$count天前';
+  }
+
+  @override
+  String monthDay(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String get pin => '置顶';
+
+  @override
+  String get unpin => '取消置顶';
+
+  @override
+  String deleteThemeConfirm(String title) {
+    return '确认删除主题「$title」？所有对话将被永久删除。';
+  }
 }

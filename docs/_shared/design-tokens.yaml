@@ -71,9 +71,17 @@ colors:
     value: "#DC2626"
     dartRef: "AppColors.destructive"
     usage: "危险操作（删除按钮）"
+  success:
+    value: "#34C759"
+    dartRef: "AppColors.success"
+    usage: "成功状态（对应 systemGreen）"
+  onSurface:
+    value: "#FFFFFF"
+    dartRef: "AppColors.onSurface"
+    usage: "卡片上前景色（白色）"
 
 # ============================================================
-# 2. 主题色 — 5 套清新调色板
+# 2. 主题色 — 5 套典雅黑金色调
 # ============================================================
 
 themeColors:
@@ -86,67 +94,67 @@ themeColors:
       dartRef: "AppColors.tintForTheme(themeId)"
       usage: "主题色的 15% tint，用于 leading icon 背景"
   palette:
-    - name: skyBlue
-      value: "#38BDF8"
-      dartRef: "AppColors.skyBlue"
-      hsl: "HSL(200, 80%, 60%)"
+    - name: champagneGold
+      value: "#C4A77D"
+      dartRef: "AppColors.champagneGold"
+      hsl: "HSL(36, 33%, 63%)"
       index: 0
-    - name: mint
-      value: "#34D399"
-      dartRef: "AppColors.mint"
-      hsl: "HSL(160, 60%, 55%)"
+    - name: warmGray
+      value: "#8E8B82"
+      dartRef: "AppColors.warmGray"
+      hsl: "HSL(42, 4%, 53%)"
       index: 1
-    - name: lavender
-      value: "#A78BFA"
-      dartRef: "AppColors.lavender"
-      hsl: "HSL(260, 70%, 70%)"
+    - name: dustyRose
+      value: "#A89090"
+      dartRef: "AppColors.dustyRose"
+      hsl: "HSL(0, 10%, 61%)"
       index: 2
-    - name: coral
-      value: "#FB7185"
-      dartRef: "AppColors.coral"
-      hsl: "HSL(350, 80%, 70%)"
+    - name: sageGray
+      value: "#8B9080"
+      dartRef: "AppColors.sageGray"
+      hsl: "HSL(80, 7%, 53%)"
       index: 3
-    - name: amber
-      value: "#FBBF24"
-      dartRef: "AppColors.amber"
-      hsl: "HSL(35, 85%, 65%)"
+    - name: slateBlue
+      value: "#6B7B8E"
+      dartRef: "AppColors.slateBlue"
+      hsl: "HSL(210, 14%, 49%)"
       index: 4
 
 # ============================================================
-# 3. 节点色 — 5 套 _NodePalette（themes 模块内部类）
+# 3. 节点色 — 5 套 NodePalette（AppColors 内公开类）
 # ============================================================
 
 nodePalettes:
   description: "节点卡片配色，基于 nodeId.hashCode.abs() % 5，与主题色完全解耦"
-  dartRef: "_NodePalette (theme_detail_screen.dart 内部类)"
+  dartRef: "NodePalette (app_colors.dart 公开类)"
   helperMethod:
-    dartRef: "_paletteForNode(nodeId)"
+    dartRef: "AppColors.paletteForNode(nodeId)"
   palette:
     - index: 0
-      circle: "#3B82F6"
-      title: "#1E1B4B"
-      subtitle: "#6366F1"
-      style: "electric"
+      circle: "#B8A07A"
+      title: "#4A4A4A"
+      subtitle: "#8B7355"
+      style: "暖金"
     - index: 1
-      circle: "#10B981"
-      title: "#881337"
-      subtitle: "#EA580C"
-      style: "暖色"
+      circle: "#7A8B7A"
+      title: "#3D4A3D"
+      subtitle: "#6B7B6B"
+      style: "灰绿"
     - index: 2
-      circle: "#8B5CF6"
-      title: "#134E4A"
-      subtitle: "#0369A1"
-      style: "冷色"
+      circle: "#8B7A8B"
+      title: "#4A3D4A"
+      subtitle: "#7B6B7B"
+      style: "灰紫"
     - index: 3
-      circle: "#EC4899"
-      title: "#312E81"
-      subtitle: "#0D9488"
-      style: "粉冷对比"
+      circle: "#8B7A7A"
+      title: "#4A3D3D"
+      subtitle: "#7B6B6B"
+      style: "灰粉"
     - index: 4
-      circle: "#FBBF24"
-      title: "#0F172A"
-      subtitle: "#7C3AED"
-      style: "复古"
+      circle: "#7A7A8B"
+      title: "#3D3D4A"
+      subtitle: "#6B6B7B"
+      style: "灰蓝"
 
 # ============================================================
 # 4. 字体

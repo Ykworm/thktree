@@ -26,6 +26,7 @@ docs/
 ├── FEATURES.md           # 功能状态总表（含 README/Visual 路径导航）
 ├── TECH-DEBT.md          # 技术债
 ├── CHANGELOG/            # 已完成的设计/重构/迁移历史记录
+├── _tmp/                 # AI 与人类讨论方案时的临时草稿（方案确认后保留作历史参考）
 └── modules/              # 按模块聚合（与 lib/ui/features/ 对齐）
     ├── themes/    # 主题列表 + 树视图
     ├── notes/     # 笔记浏览/编辑/详情
@@ -96,4 +97,5 @@ docs/
 - **`docs/DECISIONS.md`**：人类 + AI 共同维护。**所有架构决策**（状态管理/路由/存储/关键库替换/治理）追加 ADR（`## ADR-NNN` 格式），纯文段。旧决策不删，加"已取代"段。详见 ADR-011。
 - **`docs/FEATURES.md`**：人类 + AI 共同维护；新增功能/状态变更由 AI 提示人类确认。
 - **`docs/CHANGELOG/`**：每次有重大设计/重构/迁移，新开一个 `YYYY-MM-DD-简述.md` 归档。
+- **`docs/_tmp/`**：AI 与人类讨论方案时的临时草稿存放处。文件命名 `<topic>.md`，版本迭代加 `-v2`、`-v3`。方案确认实施后，关键决策归入 `DECISIONS.md`，功能变更归入 `FEATURES.md` / 模块 README，`_tmp` 文件保留作历史参考，不自动删除。
 - **`docs/_shared/`** 和 **`docs/modules/`**：人类 + AI 共同维护——AI 改代码时同步更新对应文档。

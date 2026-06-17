@@ -83,7 +83,7 @@ class ThkButton extends StatelessWidget {
   Widget get _content {
     final text = Text(
       label,
-      style: const TextStyle(fontWeight: FontWeight.w600),
+      style: TextStyle(fontWeight: FontWeight.w600),
     );
     if (icon != null) {
       return Row(
@@ -112,7 +112,7 @@ class ThkButton extends StatelessWidget {
           disabledColor: AppColors.accentDeep.withValues(alpha: 0.4),
           onPressed: _effectiveOnPressed,
           child: DefaultTextStyle(
-            style: const TextStyle(color: CupertinoColors.white, fontWeight: FontWeight.w600),
+            style: TextStyle(color: CupertinoColors.white, fontWeight: FontWeight.w600),
             child: _content,
           ),
         );

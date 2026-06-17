@@ -126,9 +126,8 @@ screens:
       type: "CupertinoPageScaffold"
       backgroundColor: "AppColors.pageBg"
       navBar: "ThkNavBar.inline"
-      title: "_title（笔记标题）"
-      onTitleTap: "_renameNote()"
-      trailing: ["copy", "branch", "edit", "delete"]
+      title: "''（不显示标题）"
+      trailing: ["branch", "edit", "ellipsis（ThkGridBottomSheet）"]
 
     trailingActions:
       copy:
@@ -152,7 +151,7 @@ screens:
         afterDelete: "deleteNote() + bump() + pop()"
 
     renameDialog:
-      trigger: "点击标题"
+      trigger: "overflow menu → 重命名"
       widget: "CupertinoAlertDialog"
       input: "ThkTextField(autofocus: true, maxLength: 30)"
       actions: ["取消", "保存(isDefaultAction)"]
@@ -161,8 +160,9 @@ screens:
 
     bodyModes:
       reading:
-        widget: "Container(AppColors.surface) + SingleChildScrollView + GptMarkdown"
+        widget: "Column(Expanded(Container(AppColors.surface) + SingleChildScrollView + GptMarkdown)) — 填满页面"
         style: "fontSize: 17, height: 1.6"
+        theme: "GptMarkdownTheme 全局配置 h1/h2/h3/highlightColor/autoAddDividerLineAfterH1"
       editing:
         widget: "Column(CupertinoTextField + MarkdownToolbar)"
         textField:
@@ -293,7 +293,12 @@ shared:
   MarkdownToolbar:
     dartRef: "MarkdownToolbar(controller:)"
     file: "lib/ui/core/widgets/markdown_toolbar.dart"
-    usage: "Markdown 格式工具栏，按钮: B/I/S/< /• /1./🔗"
+    usage: "Markdown 格式工具栏，按钮: B/I/S/标题循环/•/1./📋/code/quote/🔗/---/表格"
+
+  ThkGridBottomSheet:
+    dartRef: "ThkGridBottomSheet.show(context:, actions:, destructiveActions:)"
+    file: "lib/ui/core/widgets/thk_grid_bottom_sheet.dart"
+    usage: "WeChat 风格网格底栏 Action Sheet（圆形图标 + 文字标签）"
 
 # ============================================================
 # 屏幕地图

@@ -30,8 +30,6 @@ void main() {
       await goToThemesTab(tester);
 
       expect(find.text('Start your first knowledge theme'), findsOneWidget);
-      // 注意：settings 按钮已从 theme list 顶栏移除，改用底部 tab bar 入口（见 router.dart）。
-      expect(find.byIcon(AppIcons.refresh), findsOneWidget);
       expect(find.byIcon(AppIcons.add), findsOneWidget);
     });
 
@@ -56,7 +54,6 @@ void main() {
       await goToThemesTab(tester);
 
       expect(find.text('My Theme'), findsOneWidget);
-      expect(find.text('theme_1'), findsOneWidget);
       // ThkListTile.chevron 内部用 CupertinoListTileChevron 渲染（不用 AppIcons.chevronRight）。
       expect(find.byType(CupertinoListTileChevron), findsOneWidget);
       // 每个主题 tile 带 folder 图标作为 leading。
@@ -109,4 +106,13 @@ class FakeThemeListController extends ThemeListController {
 
   @override
   Future<void> reindex() async {}
+
+  @override
+  Future<void> togglePin({required String themeId, required bool pinned}) async {}
+
+  @override
+  Future<void> deleteTheme({required String themeId}) async {}
+
+  @override
+  Future<void> renameTheme({required String themeId, required String title}) async {}
 }

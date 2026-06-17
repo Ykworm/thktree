@@ -34,6 +34,8 @@
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 笔记功能 | notes | ✅ 完成 | 2026-06-07 | [README](modules/notes/README.md) | [notes-list-design](modules/notes/visual/notes-list-design.md) | `lib/ui/features/notes/note_browse_screen.dart` 等 | NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteStore |
+| Markdown 工具栏增强 | notes | ✅ 完成 | 2026-06-17 | [README](modules/notes/README.md) | — | `lib/ui/core/widgets/markdown_toolbar.dart` | 标题级别循环切换（h2→h3→h1→无）+ 表格插入按钮 |
+| 图片插入 | notes | 📋 待开发 | 2026-06-17 | [README](modules/notes/README.md) | — | — | 编辑器工具栏插入图片，支持相册/拍照 |
 
 ## 3. 对话模块（chat）
 
@@ -78,6 +80,8 @@
 
 > 倒序排列，最新在上。
 
+- **2026-06-17** — 笔记详情页 UI 重构：GptMarkdown 标题样式修复、导航栏去掉标题、操作按钮收纳到网格底栏（ThkGridBottomSheet）、内容区填满页面
+- **2026-06-17** — Markdown 工具栏增强：标题级别循环切换逻辑 + 表格插入按钮
 - **2026-06-07** — 树节点圆圈改为所有节点均显示空心圆（叶子节点不可点击），圆圈与标题间距缩至 0px
 - **2026-06-07** — 对话树节点卡片重构：5 套配色方案（nodeId hash 分配），圆圈 toggle 替换 chevron，行高固定 56px，标题 maxLines=1
 - **2026-06-07** — 笔记列表页改为 ThkLargeTitlePage + slivers 布局（与主题列表一致）

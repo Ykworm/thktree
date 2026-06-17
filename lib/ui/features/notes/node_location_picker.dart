@@ -46,7 +46,7 @@ Future<ThemeSelectionResult?> showThemePicker(
     context: context,
     builder: (_) => Container(
       height: MediaQuery.of(context).size.height * 0.5,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -64,7 +64,7 @@ Future<NodeLocationResult?> showNodeLocationPicker(
     context: context,
     builder: (_) => Container(
       height: MediaQuery.of(context).size.height * 0.6,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),

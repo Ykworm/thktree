@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:alibabacloud_rum_flutter_plugin/alibabacloud_rum_flutter_plugin.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -11,9 +12,11 @@ import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/auth_gate.dart';
 import 'package:thk_tree/ui/core/router.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +65,8 @@ Future<void> main() async {
   final initialLocale = savedSettings.localeLanguageCode == null
       ? null
       : Locale(savedSettings.localeLanguageCode!);
+  final initialBrightness =
+      savedSettings.darkMode ? Brightness.dark : Brightness.light;
 
   runApp(
     ProviderScope(
@@ -69,6 +74,8 @@ Future<void> main() async {
         appPathsProvider.overrideWithValue(AsyncData(paths)),
         appLoggerProvider.overrideWithValue(AsyncData(logger)),
         localeProvider.overrideWith(() => LocaleNotifier(initialLocale)),
+        brightnessProvider
+            .overrideWith(() => BrightnessNotifier(initialBrightness)),
       ],
       child: AlibabaCloudActionCapture(
         child: const AuthGate(
@@ -85,6 +92,8 @@ class ThkTreeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
+    final brightness = ref.watch(brightnessProvider);
+    AppColors.setBrightness(brightness);
     return CupertinoApp.router(
       locale: locale,
       localeResolutionCallback: (locale, supportedLocales) {
@@ -97,7 +106,7 @@ class ThkTreeApp extends ConsumerWidget {
         return const Locale('en');
       },
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
-      theme: AppTheme.light,
+      theme: brightness == Brightness.light ? AppTheme.light : AppTheme.dark,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -106,10 +115,26 @@ class ThkTreeApp extends ConsumerWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: appRouter,
-      builder: (context, child) => GestureDetector(
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        return GptMarkdownTheme(
+          gptThemeData: GptMarkdownThemeData(
+            brightness: brightness,
+            h1: AppTheme.title1.copyWith(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+            ),
+            h2: AppTheme.headline.copyWith(fontSize: 22),
+            h3: AppTheme.headline.copyWith(fontSize: 19),
+            highlightColor: AppColors.surfaceMuted,
+            linkColor: AppColors.accent,
+            autoAddDividerLineAfterH1: false,
+          ),
+          child: GestureDetector(
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 }

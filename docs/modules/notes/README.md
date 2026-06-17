@@ -26,15 +26,18 @@
 | Feature | 状态 | 最后更新 | 备注 |
 |---------|------|----------|------|
 | 笔记功能 | ✅ 完成 | 2026-06-07 | NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteStore |
+| Markdown 工具栏增强 | ✅ 完成 | 2026-06-17 | 标题循环切换（h2→h3→h1→无）+ 表格插入 |
+| 网格底栏 Action Sheet | ✅ 完成 | 2026-06-17 | ThkGridBottomSheet（圆形图标 + 文字标签） |
 | 节点位置选择器 | ✅ 完成 | 2026-06-07 | node_location_picker |
 | 笔记选择器 | ✅ 完成 | 2026-06-07 | note_select_screen（主题创建对话入口） |
+| 图片插入 | 📋 待开发 | 2026-06-17 | 编辑器工具栏插入图片 |
 
 ## 3. 代码文件
 
 ```
 lib/ui/features/notes/
 ├── note_browse_screen.dart         # 笔记浏览（Large Title + slivers）
-├── note_detail_screen.dart         # 笔记详情
+├── note_detail_screen.dart         # 笔记详情（网格底栏 Action Sheet）
 ├── note_editor_screen.dart         # 笔记编辑器
 ├── note_select_screen.dart         # 笔记选择器
 └── node_location_picker.dart       # 节点位置选择器
@@ -42,7 +45,8 @@ lib/ui/features/notes/
 
 依赖：
 - `lib/data/stores/note_store.dart`
-- `lib/ui/core/widgets/markdown_toolbar.dart`（编辑器工具栏）
+- `lib/ui/core/widgets/markdown_toolbar.dart`（编辑器工具栏：标题切换 + 表格插入）
+- `lib/ui/core/widgets/thk_grid_bottom_sheet.dart`（网格底栏 Action Sheet）
 - `lib/l10n/`（笔记相关 l10n key）
 
 ## 4. 子文档

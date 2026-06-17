@@ -1,3 +1,4 @@
+import 'package:thk_tree/ui/features/notes/note_browse_screen.dart' show formatRelativeTime;
 import 'dart:async';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'dart:io';
@@ -79,7 +80,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
   Future<void> _loadTitle() async {
     try {
-      final metas = await _store.listNoteMetas();
+      final metas = await _store.listNoteMetas(includePreview: true);
       final meta = metas.firstWhere(
         (m) => m.noteId == widget.noteId,
         orElse: () => NoteMeta(
@@ -249,6 +250,36 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
   }
 
+  void _showMoreActions() {
+    final l10n = AppLocalizations.of(context)!;
+    ThkGridBottomSheet.show(
+      context: context,
+      actions: [
+        if (!_editing && _body.isNotEmpty)
+          GridAction(
+            label: _copied ? l10n.copied : l10n.copy,
+            icon: _copied ? AppIcons.checkCircle : AppIcons.copy,
+            color: _copied ? CupertinoColors.systemGreen : AppColors.accent,
+            onPressed: _copyAll,
+          ),
+        GridAction(
+          label: l10n.renameNote,
+          icon: AppIcons.edit,
+          color: AppColors.textSecondary,
+          onPressed: _renameNote,
+        ),
+      ],
+      destructiveActions: [
+        GridAction(
+          label: l10n.delete,
+          icon: AppIcons.delete,
+          color: CupertinoColors.systemRed,
+          onPressed: _deleteNote,
+        ),
+      ],
+    );
+  }
+
   /// 从笔记创建一个新对话（简化流程）。
   ///
   /// 流程：选位置 → 直接创建对话（title = note title）→ 写入笔记内容 → 跳转。
@@ -387,21 +418,10 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
-        title: _title,
+        title: '',
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!_editing && _body.isNotEmpty)
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: _copyAll,
-                child: Icon(
-                  _copied ? AppIcons.checkCircle : AppIcons.copy,
-                  color: _copied
-                      ? CupertinoColors.systemGreen
-                      : AppColors.accent,
-                ),
-              ),
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: _createChatFromNote,
@@ -414,46 +434,43 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
-              onPressed: _deleteNote,
-              child: const Icon(
-                CupertinoIcons.trash,
-                color: CupertinoColors.systemRed,
-              ),
+              onPressed: _showMoreActions,
+              child: const Icon(CupertinoIcons.ellipsis),
             ),
           ],
         ),
-        onTitleTap: _renameNote,
       ),
-      child: SafeArea(
-        bottom: !_editing,
-        child: _buildBody(l10n),
-      ),
+      child: _buildBody(l10n),
     );
   }
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_editing) {
-      return Column(
-        children: [
-          Expanded(
-            child: CupertinoTextField(
-              controller: _controller,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              padding: const EdgeInsets.all(16),
-              style: const TextStyle(
-                fontSize: 17,
-                height: 1.6,
-                color: AppColors.textPrimary,
-              ),
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
+      return SafeArea(
+        top: false,
+        bottom: true,
+        child: Column(
+          children: [
+            Expanded(
+              child: CupertinoTextField(
+                controller: _controller,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                padding: const EdgeInsets.all(16),
+                style: TextStyle(
+                  fontSize: 17,
+                  height: 1.6,
+                  color: AppColors.textPrimary,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                ),
               ),
             ),
-          ),
-          MarkdownToolbar(controller: _controller),
-        ],
+            MarkdownToolbar(controller: _controller),
+          ],
+        ),
       );
     }
     if (_loading) {
@@ -463,7 +480,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       return Center(
         child: Text(
           _error.toString(),
-          style: const TextStyle(color: CupertinoColors.systemRed),
+          style: TextStyle(color: CupertinoColors.systemRed),
         ),
       );
     }
@@ -471,17 +488,29 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       return Center(
         child: Text(
           l10n.noMessagesYet,
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       );
     }
-    return Container(
-      color: AppColors.surface,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.zero,
-        child: GptMarkdown(
-          _body,
-          style: const TextStyle(fontSize: 17, height: 1.6),
+    // 修复: SingleChildScrollView 默认 shrink-wrap 到 child intrinsic height,
+    // 会让父级 Container 跟着 shrink-wrap. 用 SizedBox.expand 强制填满父级约束.
+    return SizedBox.expand(
+      child: Container(
+        color: AppColors.surface,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            12 + MediaQuery.of(context).padding.bottom,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: GptMarkdown(
+              _body,
+              style: TextStyle(fontSize: 17, height: 1.6),
+            ),
+          ),
         ),
       ),
     );
@@ -554,6 +583,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
 
     return ThkLargeTitlePage(
       title: l10n.notes,
+      backgroundColor: AppColors.surface,
       trailing: CupertinoButton(
         padding: EdgeInsets.zero,
         onPressed: () => _createNote(context, ref),
@@ -606,7 +636,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
           child: Center(
             child: Text(
               '${l10n.noNotesYet}: $_error',
-              style: const TextStyle(color: CupertinoColors.systemRed),
+              style: TextStyle(color: CupertinoColors.systemRed),
             ),
           ),
         ),
@@ -618,81 +648,101 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
         Padding(
           padding: const EdgeInsets.only(top: 80),
           child: Center(
-            child: Text(
-              l10n.noNotesYet,
-              style: const TextStyle(color: AppColors.textSecondary),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  AppIcons.note,
+                  size: 40,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.noNotesYet,
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
             ),
           ),
         ),
       ];
     }
     return [
-      ThkListSection(
-          children: metas
-              .map(
-                (meta) => SwipeableRow(
-                  key: ValueKey(meta.noteId),
-                  onSwipeLeft: () async {
-                    final l10n = AppLocalizations.of(context)!;
-                    final confirmed = await showCupertinoDialog<bool>(
-                      context: context,
-                      builder: (ctx) {
-                        return CupertinoAlertDialog(
-                          title: Text(l10n.deleteNote),
-                          content: Text(
-                              l10n.deleteNoteConfirmTitle(meta.title)),
-                          actions: [
-                            CupertinoDialogAction(
-                              onPressed: () =>
-                                  Navigator.of(ctx).pop(false),
-                              child: Text(l10n.cancel),
-                            ),
-                            CupertinoDialogAction(
-                              isDestructiveAction: true,
-                              onPressed: () =>
-                                  Navigator.of(ctx).pop(true),
-                              child: Text(l10n.delete),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                    if (confirmed != true) return;
-                    try {
-                      await _store.deleteNote(noteId: meta.noteId);
-                      ref
-                          .read(noteListVersionProvider.notifier)
-                          .bump();
-                    } catch (e) {
-                      if (!mounted) return;
-                      ThkAlert.show(
-                        context: context,
-                        message: '${l10n.deleteFailed}: $e',
-                        defaultAction: l10n.ok,
-                      );
-                    }
-                  },
-                  leftActionLabel: l10n.swipeDelete,
-                  leftActionIcon: AppIcons.delete,
-                  leftActionColor: CupertinoColors.destructiveRed,
-                  child: ThkListTile(
-                    title: meta.title,
-                    subtitle:
-                        '${meta.noteId} \u00b7 ${meta.updatedAt}',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (_) => NoteDetailScreen(
-                            notesDir: widget.notesDir,
-                            noteId: meta.noteId,
-                          ),
+      Column(
+        children: [
+          for (int i = 0; i < metas.length; i++) ...[
+            SwipeableRow(
+              key: ValueKey(metas[i].noteId),
+              onSwipeLeft: () async {
+                final l10n = AppLocalizations.of(context)!;
+                final confirmed = await showCupertinoDialog<bool>(
+                  context: context,
+                  builder: (ctx) {
+                    return CupertinoAlertDialog(
+                      title: Text(l10n.deleteNote),
+                      content: Text(
+                          l10n.deleteNoteConfirmTitle(metas[i].title)),
+                      actions: [
+                        CupertinoDialogAction(
+                          onPressed: () =>
+                              Navigator.of(ctx).pop(false),
+                          child: Text(l10n.cancel),
                         ),
-                      );
-                    },
-                  ),
+                        CupertinoDialogAction(
+                          isDestructiveAction: true,
+                          onPressed: () =>
+                              Navigator.of(ctx).pop(true),
+                          child: Text(l10n.delete),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (confirmed != true) return;
+                try {
+                  await _store.deleteNote(noteId: metas[i].noteId);
+                  ref
+                      .read(noteListVersionProvider.notifier)
+                      .bump();
+                } catch (e) {
+                  if (!mounted) return;
+                  ThkAlert.show(
+                    context: context,
+                    message: '${l10n.deleteFailed}: $e',
+                    defaultAction: l10n.ok,
+                  );
+                }
+              },
+              leftActionLabel: l10n.swipeDelete,
+              leftActionIcon: AppIcons.delete,
+              leftActionColor: CupertinoColors.destructiveRed,
+              child: ThkListTile(
+                title: metas[i].title,
+                subtitle: metas[i].preview != null
+                    ? metas[i].preview!
+                    : formatRelativeTime(l10n, metas[i].updatedAt),
+                onTap: () {
+                  Navigator.of(context).push(
+                    CupertinoPageRoute(
+                      builder: (_) => NoteDetailScreen(
+                        notesDir: widget.notesDir,
+                        noteId: metas[i].noteId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (i < metas.length - 1)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 56),
+                child: Container(
+                  height: 0.5,
+                  color: AppColors.border,
                 ),
-              )
-              .toList(),
+              ),
+          ],
+        ],
       ),
     ];
   }

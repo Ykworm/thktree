@@ -32,9 +32,7 @@ class ThkListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconBg = themeId != null
-        ? AppColors.tintForTheme(themeId!)
-        : AppColors.accentLight;
+    // 修复：使用主题色而不是固定的 textPrimary
     final iconColor = themeId != null
         ? AppColors.colorForTheme(themeId!)
         : AppColors.accent;
@@ -44,20 +42,9 @@ class ThkListTile extends StatelessWidget {
       subtitle: subtitle != null ? Text(subtitle!) : null,
       additionalInfo: additionalInfo != null ? Text(additionalInfo!) : null,
       leading: leading != null
-          ? Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: IconTheme(
-                data: IconThemeData(
-                  color: iconColor,
-                  size: 16,
-                ),
-                child: Center(child: leading!),
-              ),
+          ? IconTheme(
+              data: IconThemeData(color: iconColor, size: 22),
+              child: leading!,
             )
           : null,
       trailing: trailing,

@@ -107,7 +107,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   l10n.searchError,
-                  style: const TextStyle(color: CupertinoColors.destructiveRed),
+                  style: TextStyle(color: CupertinoColors.destructiveRed),
                 ),
               ),
             Expanded(
@@ -288,7 +288,7 @@ class _SearchResultItem extends StatelessWidget {
                 Expanded(
                   child: Text(
                     result.entityTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),

@@ -8,7 +8,7 @@
 
 ## Summary
 
-笔记详情页是笔记模块的"工作台"：单屏内集成阅读、编辑、复制、转对话、重命名、删除六大能力。独立的 `NoteEditorScreen` 提供 Notion 风格的从零创作体验，500ms 防抖自动保存。`NoteSelectScreen` 是从聊天上下文注入笔记的弹窗，承担"添加到笔记"的入口。
+笔记详情页是笔记模块的"工作台"：单屏内集成阅读、编辑、转对话三大核心能力，复制/重命名/删除收纳到网格底栏 overflow menu。独立的 `NoteEditorScreen` 提供 Notion 风格的从零创作体验，500ms 防抖自动保存。`NoteSelectScreen` 是从聊天上下文注入笔记的弹窗，承担"添加到笔记"的入口。
 
 ---
 
@@ -16,8 +16,8 @@
 
 | 决策点 | 选择 | 说明 |
 |--------|------|------|
-| 详情页操作密度 | 单屏 4 按钮（复制/分支/编辑/删除） | iOS HIG 推荐 3-4 个 trailing actions |
-| 标题交互 | 点击标题重命名 | 与详情内容形成视觉区分 |
+| 详情页操作密度 | 3 按钮（分支/编辑/...）+ overflow menu | 核心操作直接展示，低频操作收纳到网格底栏 |
+| 标题交互 | 重命名收纳到 overflow menu | 导航栏保持简洁，标题不显示 |
 | 阅读态渲染 | GptMarkdown | 复用项目已有的 Markdown 渲染 |
 | 编辑模式切换 | 详情页内就地切换 vs 跳转独立编辑器 | 详情页内 edit 适合轻编辑，独立编辑器适合重写 |
 | 编辑器风格 | Notion 风格（28pt w600 标题 + 17pt 正文，无边框） | 简洁、可聚焦 |
@@ -36,10 +36,10 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  ← 心理学读书笔记            [📋] [🌿] [✏️] [🗑️]            │  ← ThkNavBar.inline
+│  ←                     [🌿] [✏️] [...]                      │  ← ThkNavBar.inline（无标题）
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  # 焦虑与防御机制                                           │
+│  # 焦虑与防御机制          ← GptMarkdown h1 大号标题        │
 │                                                             │
 │  ## 核心观点                                                 │
 │  焦虑是个体面对威胁时...                                    │
@@ -48,7 +48,7 @@
 │  1. 原始防御：否认、投射、分裂...                           │
 │  2. 成熟防御：升华、幽默、合理化...                         │
 │                                                             │
-│  --- GptMarkdown 渲染区域 ---                               │
+│  --- GptMarkdown 渲染区域（填满页面）---                    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -109,11 +109,12 @@ CupertinoPageScaffold(
 
 | 元素 | 规范 |
 |------|------|
-| 背景 | `AppColors.pageBg`（区别于 `surface` 的页面级背景） |
-| 标题 | `_title`（笔记元数据中的标题） |
-| `onTitleTap` | 触发重命名 dialog |
-| 复制按钮 | 仅阅读态 + 内容非空时显示 |
-| 分支/编辑/删除 | 始终显示 |
+| 背景 | `AppColors.pageBg` |
+| 标题 | 不显示（title: ''） |
+| 分支按钮 | `AppIcons.branch` → `_createChatFromNote` |
+| 编辑按钮 | `AppIcons.edit` / `AppIcons.check` → `_toggleEditing` |
+| "..." 按钮 | `CupertinoIcons.ellipsis` → `ThkGridBottomSheet.show()` |
+| overflow menu | 网格底栏：复制、重命名、删除（destructive）+ 取消 |
 
 ### 1.3 四件套操作
 
@@ -271,15 +272,21 @@ Widget _buildBody(AppLocalizations l10n) {
   if (_loading) return const Center(child: CupertinoActivityIndicator());
   if (_error != null) return Center(child: Text(_error.toString(), ...));
   if (_body.isEmpty) return Center(child: Text(l10n.noMessagesYet, ...));
-  return Container(
-    color: AppColors.surface,
-    child: SingleChildScrollView(
-      padding: EdgeInsets.zero,
-      child: GptMarkdown(
-        _body,
-        style: const TextStyle(fontSize: 17, height: 1.6),
+  return Column(
+    children: [
+      Expanded(
+        child: Container(
+          color: AppColors.surface,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.zero,
+            child: GptMarkdown(
+              _body,
+              style: TextStyle(fontSize: 17, height: 1.6),
+            ),
+          ),
+        ),
       ),
-    ),
+    ],
   );
 }
 ```
@@ -290,7 +297,7 @@ Widget _buildBody(AppLocalizations l10n) {
 | 加载中 | `Center(CupertinoActivityIndicator)` |
 | 错误 | `Center(systemRed 文字)` |
 | 内容为空 | `Center(l10n.noMessagesYet + textSecondary)` |
-| 正常阅读 | `Container(surface) + SingleChildScrollView + GptMarkdown` |
+| 正常阅读 | `Column(Expanded(Container(surface) + SingleChildScrollView + GptMarkdown))` — 填满页面 |
 
 **SafeArea 处理**：
 
@@ -303,17 +310,28 @@ child: SafeArea(
 
 ### 1.6 GptMarkdown 渲染
 
-复用项目已引入的 `package:gpt_markdown`：
+复用项目已引入的 `package:gpt_markdown`，通过 app 级别 `GptMarkdownTheme` 配置标题样式：
 
 ```dart
-GptMarkdown(
-  _body,
-  style: const TextStyle(fontSize: 17, height: 1.6),
+// main.dart — 全局主题配置
+GptMarkdownTheme(
+  gptThemeData: GptMarkdownThemeData(
+    brightness: brightness,
+    h1: AppTheme.title1.copyWith(fontSize: 28, fontWeight: FontWeight.w700),
+    h2: AppTheme.headline.copyWith(fontSize: 22),
+    h3: AppTheme.headline.copyWith(fontSize: 19),
+    highlightColor: AppColors.surfaceMuted,
+    linkColor: AppColors.accent,
+    autoAddDividerLineAfterH1: false,
+  ),
+  child: ...,
 )
 ```
 
 - 字体 17pt、行高 1.6 — 与编辑器正文保持一致
-- GptMarkdown 支持流式渲染 + 代码高亮，**适合大段内容**
+- h1/h2/h3 标题样式由 `GptMarkdownTheme` 全局配置（CupertinoApp 不提供 Material text theme）
+- `autoAddDividerLineAfterH1: false` — h1 标题下方不自动插入分隔线
+- `highlightColor: AppColors.surfaceMuted` — 反击号文字使用浅色背景
 - 容器 `padding: EdgeInsets.zero`，由父级控制内边距
 
 ### 1.7 状态管理
@@ -442,7 +460,7 @@ SafeArea(
           ),
         ),
       ),
-      // Markdown 工具栏
+      // Markdown 工具栏（标题循环切换 + 表格插入）
       MarkdownToolbar(controller: _bodyController),
     ],
   ),
@@ -460,7 +478,7 @@ SafeArea(
 | `maxLines` | null（自适应扩展） |
 | `onChanged` | 触发 `_scheduleSave()` |
 | 间距 | 标题与正文之间 `SizedBox(height: 16)` |
-| 工具栏 | `MarkdownToolbar(controller: _bodyController)` |
+| 工具栏 | `MarkdownToolbar(controller: _bodyController)` — 标题循环切换(h2→h3→h1→无) + 表格插入 |
 
 ### 2.4 自动保存（500ms 防抖）
 
@@ -756,7 +774,8 @@ Future<void> _createChatFromNote() async {
 | `lib/ui/features/notes/note_editor_screen.dart` | `NoteEditorScreen` |
 | `lib/ui/features/notes/note_select_screen.dart` | `NoteSelectScreen` |
 | `lib/ui/features/notes/node_location_picker.dart` | `showNodeLocationPicker` — 主题/父节点选择 |
-| `lib/ui/core/widgets/markdown_toolbar.dart` | `MarkdownToolbar` 组件 |
+| `lib/ui/core/widgets/markdown_toolbar.dart` | `MarkdownToolbar` 组件（标题循环切换 + 表格插入） |
+| `lib/ui/core/widgets/thk_grid_bottom_sheet.dart` | `ThkGridBottomSheet` 网格底栏 Action Sheet |
 | `lib/data/stores/note_store.dart` | `readBody / writeBody / renameNote / deleteNote / createNote / listNoteMetas` |
 | `lib/ui/core/theme/app_colors.dart` | `AppColors.accent / surface / pageBg / textPrimary / textSecondary / textTertiary` |
 | `lib/ui/core/theme/app_icons.dart` | `AppIcons.add / edit / check / copy / branch / delete / checkCircle` |

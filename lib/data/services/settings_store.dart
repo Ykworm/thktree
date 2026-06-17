@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:thk_tree/data/services/llm_provider.dart';
 
@@ -18,6 +19,7 @@ class AppSettings {
     required this.kimiModel,
     required this.localeLanguageCode,
     required this.faceIdEnabled,
+    required this.darkMode,
     this.titleModelProviderId,
     this.titleModelModelId,
     this.summaryModelProviderId,
@@ -39,6 +41,7 @@ class AppSettings {
   final String kimiModel;
   final String? localeLanguageCode;
   final bool faceIdEnabled;
+  final bool darkMode;
   final String? titleModelProviderId;
   final String? titleModelModelId;
   final String? summaryModelProviderId;
@@ -94,6 +97,7 @@ class AppSettings {
     String? kimiModel,
     String? localeLanguageCode,
     bool? faceIdEnabled,
+    bool? darkMode,
     String? titleModelProviderId,
     String? titleModelModelId,
     String? summaryModelProviderId,
@@ -115,6 +119,7 @@ class AppSettings {
       kimiModel: kimiModel ?? this.kimiModel,
       localeLanguageCode: localeLanguageCode ?? this.localeLanguageCode,
       faceIdEnabled: faceIdEnabled ?? this.faceIdEnabled,
+      darkMode: darkMode ?? this.darkMode,
       titleModelProviderId: titleModelProviderId ?? this.titleModelProviderId,
       titleModelModelId: titleModelModelId ?? this.titleModelModelId,
       summaryModelProviderId: summaryModelProviderId ?? this.summaryModelProviderId,
@@ -131,6 +136,7 @@ class SettingsStore {
   static const _keyLocale = 'locale_language_code';
   static const _keyProvider = 'llm_provider';
   static const _keyFaceIdEnabled = 'face_id_enabled';
+  static const _keyDarkMode = 'dark_mode';
   static const _keyTitleModelProviderId = 'title_model_provider_id';
   static const _keyTitleModelModelId = 'title_model_model_id';
   static const _keySummaryModelProviderId = 'summary_model_provider_id';
@@ -165,6 +171,9 @@ class SettingsStore {
     // Default: true (Face ID ON by default)
     final faceIdEnabled = faceIdStr == null ? true : faceIdStr == 'true';
 
+    final darkModeStr = await _secureStorage.read(key: _keyDarkMode);
+    final darkMode = darkModeStr == 'true';
+
     final titleModelProviderId = await _secureStorage.read(key: _keyTitleModelProviderId);
     final titleModelModelId = await _secureStorage.read(key: _keyTitleModelModelId);
     final summaryModelProviderId = await _secureStorage.read(key: _keySummaryModelProviderId);
@@ -186,6 +195,7 @@ class SettingsStore {
       kimiModel: kimiModel,
       localeLanguageCode: locale,
       faceIdEnabled: faceIdEnabled,
+      darkMode: darkMode,
       titleModelProviderId: titleModelProviderId,
       titleModelModelId: titleModelModelId,
       summaryModelProviderId: summaryModelProviderId,
@@ -222,6 +232,10 @@ class SettingsStore {
 
   Future<void> saveFaceIdEnabled(bool enabled) async {
     await _secureStorage.write(key: _keyFaceIdEnabled, value: enabled.toString());
+  }
+
+  Future<void> saveDarkMode(bool dark) async {
+    await _secureStorage.write(key: _keyDarkMode, value: dark.toString());
   }
 
   Future<void> saveTitleModel({String? providerId, String? modelId}) async {

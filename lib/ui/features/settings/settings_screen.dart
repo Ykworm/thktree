@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -44,6 +46,14 @@ class SettingsScreen extends ConsumerWidget {
             _FaceIdToggle(),
           ],
         ),
+        if (kDebugMode) ...[
+          ThkListSection(
+            header: 'Dev Tools',
+            children: [
+              _DarkModeToggle(),
+            ],
+          ),
+        ],
         loggerAsync.when(
           data: (logger) => ThkListSection(
             children: _buildLogTiles(context, logger, l10n),
@@ -140,7 +150,7 @@ class SettingsScreen extends ConsumerWidget {
               child: SingleChildScrollView(
                 child: Text(
                   pretty.isEmpty ? l10n.emptyLogs : pretty,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Menlo',
                     fontSize: 12,
                   ),
@@ -157,6 +167,33 @@ class SettingsScreen extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _DarkModeToggle extends ConsumerWidget {
+  const _DarkModeToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final brightness = ref.watch(brightnessProvider);
+    final isDark = brightness == Brightness.dark;
+
+    return ThkListTile(
+      leading: Icon(isDark
+          ? CupertinoIcons.moon_fill
+          : CupertinoIcons.sun_max_fill),
+      title: 'Dark Mode',
+      subtitle: isDark ? 'Dark' : 'Light',
+      trailing: CupertinoSwitch(
+        value: isDark,
+        onChanged: (_) {
+          ref.read(brightnessProvider.notifier).toggle();
+          ref
+              .read(settingsControllerProvider.notifier)
+              .saveDarkMode(!isDark);
+        },
+      ),
     );
   }
 }
@@ -508,7 +545,7 @@ List<Widget> _buildProviderActions(LlmProviderConfig provider, WidgetRef ref, Bu
             children: [
               Text(
                 provider.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
@@ -541,7 +578,7 @@ List<Widget> _buildProviderActions(LlmProviderConfig provider, WidgetRef ref, Bu
           children: [
             Text(
               provider.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
               ),

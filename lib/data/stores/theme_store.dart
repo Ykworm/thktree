@@ -14,10 +14,11 @@ class ThemeStore {
   final AppPaths paths;
   final Database db;
 
-  static const _pinnedTitle = '未分类';
+  /// "未分类" is always pinned to top regardless of DB pinned column.
+  static const _kUncategorized = '未分类';
 
   Future<List<ThemeEntity>> listThemes() async {
-    final rows = await db.query('themes', orderBy: 'updatedAt DESC');
+    final rows = await db.query('themes', orderBy: 'pinned DESC, updatedAt DESC');
     return rows
         .map(
           (row) => ThemeEntity(
@@ -25,16 +26,44 @@ class ThemeStore {
             title: row['title']! as String,
             createdAtUtcIso8601: row['createdAt']! as String,
             updatedAtUtcIso8601: row['updatedAt']! as String,
+            pinned: (row['pinned'] as int? ?? 0) == 1,
           ),
         )
         .toList()
       ..sort((a, b) {
-        final aPinned = a.title == _pinnedTitle;
-        final bPinned = b.title == _pinnedTitle;
-        if (aPinned && !bPinned) return -1;
-        if (!aPinned && bPinned) return 1;
+        // "未分类" always on top
+        if (a.title == _kUncategorized && b.title != _kUncategorized) return -1;
+        if (a.title != _kUncategorized && b.title == _kUncategorized) return 1;
         return 0;
       });
+  }
+
+  Future<void> togglePin({required String themeId, required bool pinned}) async {
+    await db.update(
+      'themes',
+      {'pinned': pinned ? 1 : 0},
+      where: 'themeId = ?',
+      whereArgs: [themeId],
+    );
+  }
+
+  Future<void> deleteTheme({required String themeId}) async {
+    // 1. Get themePath
+    final rows = await db.query('themes', where: 'themeId = ?', whereArgs: [themeId], limit: 1);
+    if (rows.isEmpty) return;
+    final themePath = rows.first['themePath'] as String;
+    final absPath = paths.toAbsolutePath(themePath);
+
+    // 2. Delete DB records (search_index, nodes, then theme)
+    await db.delete('search_index', where: 'themeId = ?', whereArgs: [themeId]);
+    await db.delete('nodes', where: 'themeId = ?', whereArgs: [themeId]);
+    await db.delete('themes', where: 'themeId = ?', whereArgs: [themeId]);
+
+    // 3. Delete filesystem directory
+    final dir = Directory(absPath);
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
   }
 
   Future<ThemeEntity> createTheme({required String title}) async {
@@ -117,6 +146,15 @@ class ThemeStore {
   }
 
   Future<void> reindexThemesFromDisk() async {
+    // 1. Save current pinned state
+    final pinnedRows = await db.query(
+      'themes',
+      columns: ['themeId'],
+      where: 'pinned = 1',
+    );
+    final pinnedIds = pinnedRows.map((r) => r['themeId'] as String).toSet();
+
+    // 2. Sync from disk
     await paths.ensureCreated();
     final themeDirs = await paths.themesDir.list(followLinks: false).toList();
     final metas = <ThemeMetaV1>[];
@@ -142,6 +180,15 @@ class ThemeStore {
             'themePath': paths.toRootRelativePath(themePath),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      // 3. Restore pinned state
+      for (final id in pinnedIds) {
+        await txn.update(
+          'themes',
+          {'pinned': 1},
+          where: 'themeId = ?',
+          whereArgs: [id],
         );
       }
     });

@@ -21,29 +21,6 @@ import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/session_markdown.dart';
 
 // ---------------------------------------------------------------------------
-// Node color palettes — 5 schemes (circle + title + subtitle)
-// ---------------------------------------------------------------------------
-
-class _NodePalette {
-  const _NodePalette(this.circle, this.title, this.subtitle);
-  final Color circle;
-  final Color title;
-  final Color subtitle;
-}
-
-const _nodePalettes = [
-  _NodePalette(Color(0xFF3B82F6), Color(0xFF1E1B4B), Color(0xFF6366F1)), // 0: electric blue + deep purple + indigo
-  _NodePalette(Color(0xFF10B981), Color(0xFF881337), Color(0xFFEA580C)), // 1: emerald + deep rose + coral
-  _NodePalette(Color(0xFF8B5CF6), Color(0xFF134E4A), Color(0xFF0369A1)), // 2: violet + deep teal + ocean
-  _NodePalette(Color(0xFFEC4899), Color(0xFF312E81), Color(0xFF0D9488)), // 3: hot pink + deep indigo + jade
-  _NodePalette(Color(0xFFFBBF24), Color(0xFF0F172A), Color(0xFF7C3AED)), // 4: amber + deep slate + purple
-];
-
-_NodePalette _paletteForNode(String nodeId) {
-  return _nodePalettes[nodeId.hashCode.abs() % _nodePalettes.length];
-}
-
-// ---------------------------------------------------------------------------
 // ThemeDetailScreen
 // ---------------------------------------------------------------------------
 
@@ -71,7 +48,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             .toList(growable: false);
         roots.sort(_compareNodes);
         return CupertinoPageScaffold(
-          backgroundColor: CupertinoColors.white,
+          backgroundColor: AppColors.surface,  // 使用设计系统的白色
           navigationBar: ThkNavBar.inline(
             title:
                 l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),
@@ -243,7 +220,7 @@ class _TreeRowView extends ConsumerWidget {
     final children = _children();
     final isCollapsed = collapsedIds.contains(node.nodeId);
     final hasChildren = children.isNotEmpty;
-    final palette = _paletteForNode(node.nodeId);
+    final palette = AppColors.paletteForNode(node.nodeId);
     // ── Source type label ──
     final sourceLabel = _sourceTypeLabel(l10n, node.sourceType);
 
@@ -484,9 +461,7 @@ class _DragHandleState extends State<_DragHandle>
               padding: const EdgeInsets.symmetric(
                   horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: CupertinoColors.systemBackground
-                    .resolveFrom(context)
-                    .withValues(alpha: 0.92),
+                color: AppColors.surface.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
@@ -511,7 +486,7 @@ class _DragHandleState extends State<_DragHandle>
           child: Icon(
             CupertinoIcons.line_horizontal_3,
             size: 24,
-            color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+            color: AppColors.textTertiary,
           ),
         ),
         child: AnimatedBuilder(
@@ -527,9 +502,7 @@ class _DragHandleState extends State<_DragHandle>
               child: Icon(
                 CupertinoIcons.line_horizontal_3,
                 size: 24,
-                color: CupertinoColors.tertiaryLabel
-                    .resolveFrom(context)
-                    .withValues(alpha: 0.4),
+                color: AppColors.textTertiary.withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -647,7 +620,7 @@ void _showAlert(BuildContext context, String message) {
         CupertinoDialogAction(
           isDefaultAction: true,
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('OK'),
+          child: Text('OK'),
         ),
       ],
     ),
@@ -796,7 +769,7 @@ Future<bool?> _confirmDeleteNode(
                     const SizedBox(height: 12),
                     Text(
                       l10n.keptSameTitleNodes(sameTitleNodesOutside.length),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
                     Text(keptNodeIds),
@@ -817,7 +790,7 @@ Future<bool?> _confirmDeleteNode(
                               size: 20,
                               color: acknowledged
                                   ? CupertinoColors.systemRed
-                                  : CupertinoColors.secondaryLabel,
+                                  : AppColors.textSecondary,
                             ),
                           ),
                           Expanded(
@@ -826,8 +799,8 @@ Future<bool?> _confirmDeleteNode(
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
                                 color: acknowledged
-                                    ? CupertinoColors.label
-                                    : CupertinoColors.secondaryLabel,
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
                               ),
                             ),
                           ),

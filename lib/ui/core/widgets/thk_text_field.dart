@@ -79,7 +79,7 @@ class ThkTextField extends StatelessWidget {
         textAlign: textAlign,
         style: style,
         placeholderStyle: placeholderStyle ??
-            const TextStyle(color: AppColors.textTertiary),
+            TextStyle(color: AppColors.textTertiary),
         padding: padding,
         decoration: BoxDecoration(
           color: effectiveBackground,

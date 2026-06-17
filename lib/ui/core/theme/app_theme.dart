@@ -3,15 +3,33 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
-/// 清新多彩主题配置
+/// 典雅黑金主题配置
 class AppTheme {
   AppTheme._();
 
   static const _fontFamily = '.SF Pro Text';
   static const _fontFamilyFallback = ['PingFang SC'];
 
-  static CupertinoThemeData get light => const CupertinoThemeData(
+  static CupertinoThemeData get light => CupertinoThemeData(
         brightness: Brightness.light,
+        primaryColor: AppColors.accent,
+        scaffoldBackgroundColor: AppColors.pageBg,
+        barBackgroundColor: AppColors.surface,
+        textTheme: CupertinoTextThemeData(
+          primaryColor: AppColors.accent,
+          textStyle: TextStyle(
+            fontFamily: _fontFamily,
+            fontFamilyFallback: _fontFamilyFallback,
+            fontSize: 17,
+            fontWeight: FontWeight.w400,
+            letterSpacing: -0.41,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      );
+
+  static CupertinoThemeData get dark => CupertinoThemeData(
+        brightness: Brightness.dark,
         primaryColor: AppColors.accent,
         scaffoldBackgroundColor: AppColors.pageBg,
         barBackgroundColor: AppColors.surface,
@@ -30,7 +48,7 @@ class AppTheme {
 
   // ── Serif display styles (Cormorant Garamond) ────────────────────
 
-  static TextStyle get largeTitle => const TextStyle(
+  static TextStyle get largeTitle => TextStyle(
         fontFamily: 'Cormorant Garamond',
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 34,
@@ -39,7 +57,7 @@ class AppTheme {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get displayTitle => const TextStyle(
+  static TextStyle get displayTitle => TextStyle(
         fontFamily: 'Cormorant Garamond',
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 28,
@@ -50,7 +68,7 @@ class AppTheme {
 
   // ── SF Pro text tokens ───────────────────────────────────────────
 
-  static TextStyle get title1 => const TextStyle(
+  static TextStyle get title1 => TextStyle(
         fontFamily: '.SF Pro Display',
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 28,
@@ -59,7 +77,7 @@ class AppTheme {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get headline => const TextStyle(
+  static TextStyle get headline => TextStyle(
         fontFamily: _fontFamily,
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 17,
@@ -68,7 +86,7 @@ class AppTheme {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get body => const TextStyle(
+  static TextStyle get body => TextStyle(
         fontFamily: _fontFamily,
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 17,
@@ -77,7 +95,7 @@ class AppTheme {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get callout => const TextStyle(
+  static TextStyle get callout => TextStyle(
         fontFamily: _fontFamily,
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 16,
@@ -86,7 +104,7 @@ class AppTheme {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get subhead => const TextStyle(
+  static TextStyle get subhead => TextStyle(
         fontFamily: _fontFamily,
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 15,
@@ -95,7 +113,7 @@ class AppTheme {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get footnote => const TextStyle(
+  static TextStyle get footnote => TextStyle(
         fontFamily: _fontFamily,
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 13,
@@ -104,7 +122,7 @@ class AppTheme {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get caption1 => const TextStyle(
+  static TextStyle get caption1 => TextStyle(
         fontFamily: _fontFamily,
         fontFamilyFallback: _fontFamilyFallback,
         fontSize: 12,

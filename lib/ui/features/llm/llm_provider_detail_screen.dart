@@ -126,7 +126,7 @@ class _LlmProviderDetailScreenState
                             title: Text(l10n.providerDefaultUrl),
                             additionalInfo: Text(
                               widget.provider!.defaultBaseUrl,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
                               ),
@@ -318,7 +318,7 @@ class _LlmProviderDetailScreenState
           title: Text(l10n.contextWindowTitle(model.name)),
           message: Text(
             '${i + 1} / ${modelsWithUnknown.length}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
             ),

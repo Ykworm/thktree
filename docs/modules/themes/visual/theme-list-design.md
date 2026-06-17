@@ -4,9 +4,9 @@
 
 ## Summary
 
-`ThemeListScreen` 是主题 Tab 的入口屏幕，展示用户所有主题（按磁盘扫描顺序），通过 `ThkLargeTitlePage` + 列表呈现。每个主题是一条 `ThkListTile`，左侧 3px 主题色书脊线 + folder 图标作为视觉记忆点。右上角支持 `↻`（重新索引）和 `+`（新建主题）。空状态用 accountTree icon + 友好文案引导创建第一个主题。
+`ThemeListScreen` 是主题 Tab 的入口屏幕，展示用户所有主题（按 `updatedAt DESC` 排序，置顶优先）。每个主题是一条 `ThkListTile`，左侧 folder 图标跟随主题色（典雅黑金色调）。右上角 `+` 按钮新建主题。支持下拉刷新和长按操作（重命名/置顶/删除）。
 
-**核心设计语言**：与全局 [design-system.md](../../../_shared/design-system.md) 对齐——`pageBg` 背景、`surface` 卡片、`accent`（indigo）通用交互色、每个主题分配一个 5 色调色板色（书脊线 + leading icon 背景/前景）。
+**核心设计语言**：与全局 [design-system.md](../../../_shared/design-system.md) 对齐——`surface` 白色背景、`accent`（indigo）通用交互色、每个主题分配一个典雅黑金色调颜色（图标跟随）。
 
 ---
 
@@ -14,13 +14,42 @@
 
 | 决策点 | 选择 | 说明 |
 |--------|------|------|
-| 页面结构 | `ThkLargeTitlePage` | 大标题 + 滚动内容，统一 iOS 大标题模式 |
-| 列表项 | `ThkListTile` | 复用核心 widget，leading/trailing/subtitle 全 token 化 |
-| 主题视觉记忆点 | 3px 竖线书脊线 + folder icon | 5 色调色板（与节点卡片解耦） |
+| 页面结构 | `CupertinoPageScaffold` + `CustomScrollView` | 参照笔记列表，支持下拉刷新 |
+| 列表项 | `ThkListTile` | 复用核心 widget，leading 跟随主题色 |
+| 主题视觉记忆点 | folder 图标跟随主题色 | 典雅黑金色调 5 色调色板 |
 | 导航方式 | `context.push('/themes/:themeId/tree')` | 推入式导航，保留 Tab 状态 |
 | 新建主题 | `CupertinoAlertDialog` + `ThkTextField` | 复用详情页的 `_promptTitle` 模式 |
-| 调试模式 | 显示 themeId 在 subtitle | 仅 `kDebugMode` 可见，发布模式隐藏 |
+| 刷新方式 | 下拉刷新 | `CupertinoSliverRefreshControl`，去掉 NavBar 刷新按钮 |
+| 长按操作 | Action Sheet | 重命名/置顶/删除三个选项 |
+| 置顶功能 | 数据库 `pinned` 列 | SQLite 存储，重启后保持 |
+| 列表排序 | `pinned DESC, updatedAt DESC` | 置顶优先，然后按最后活跃时间 |
+| Subtitle | 最后消息预览或相对时间 | 从 `search_index` 查询预览，无预览则显示时间 |
 | 列表分隔 | 0.5px 容器，缩进 56px | 与 ThkListTile 的内边距对齐 |
+
+---
+
+## 配色方案（典雅黑金色调）
+
+### 主题色（5 色）
+
+| 颜色 | 色值 | HSL | 感觉 |
+|------|------|-----|------|
+| 香槟金 | `#C4A77D` | HSL(36, 33%, 63%) | 哑光金，不闪亮 |
+| 烟灰 | `#8E8B82` | HSL(42, 4%, 53%) | 温暖中性灰 |
+| 玫瑰灰 | `#A89090` | HSL(0, 10%, 61%) | 细腻的粉灰 |
+| 橄榄灰 | `#8B9080` | HSL(80, 7%, 53%) | 沉稳的绿灰 |
+| 深蓝灰 | `#6B7B8E` | HSL(210, 14%, 49%) | 冷静的锚点 |
+
+**分配规则**：`themeId.hashCode.abs() % 5` 稳定分配
+
+### 图标颜色
+
+```dart
+// ThkListTile 中
+final iconColor = themeId != null
+    ? AppColors.colorForTheme(themeId!)  // 主题色
+    : AppColors.accent;  // 默认 indigo
+```
 
 ---
 
@@ -28,58 +57,50 @@
 
 ```
 ┌────────────────────────────────────┐
-│  主题                          ↻  + │  ← ThkLargeTitlePage，trailing
+│  主题                              + │  ← NavBar trailing（只有新建按钮）
 │ ─────────────────────────────────── │
 │                                    │
-│  ▎ 📁 主题 A                    ›  │  ← 3px 书脊线 + folder + chevron
+│  📁 主题 A    帮我看看这段代码...   ›  │  ← folder 图标跟随主题色
 │  ──────────────────────────────── │  ← 0.5px 分隔（缩进 56px）
-│  ▎ 📁 主题 B                    ›  │
+│  📁 主题 B    3天前               ›  │
 │  ──────────────────────────────── │
-│  ▎ 📁 未分类                      ›  │  ← kUncategorizedThemeTitle 特殊
+│  📁 未分类    ⭐                  ›  │  ← 置顶图标
 │                                    │
 └────────────────────────────────────┘
 ```
 
 **页面基色**：
-- 背景：跟随 `ThkLargeTitlePage` 默认（`AppColors.pageBg`）
+- 背景：`AppColors.surface`（纯白）
 - 标题色：`AppColors.textPrimary`
-- Trailing icon：`AppColors.accent`（来自 `ThkLargeTitlePage` 默认）
+- Trailing icon：`AppColors.accent`
 
 ---
 
 ## 2. NavBar Trailing
 
-右侧两个 0-padding `CupertinoButton`：
+右侧只有新建按钮：
 
 ```dart
-trailing: Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: () => ref.read(themeListControllerProvider.notifier).reindex(),
-      child: Icon(AppIcons.refresh),
-    ),
-    CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: () async {
-        final title = await _promptTitle(context);
-        if (title == null) return;
-        if (!context.mounted) return;
-        await ref.read(themeListControllerProvider.notifier).createTheme(title: title);
-      },
-      child: Icon(AppIcons.add),
-    ),
-  ],
+trailing: CupertinoButton(
+  padding: EdgeInsets.zero,
+  onPressed: () async {
+    final title = await _promptTitle(context);
+    if (title == null) return;
+    if (!context.mounted) return;
+    await ref.read(themeListControllerProvider.notifier).createTheme(title: title);
+  },
+  child: Icon(AppIcons.add),
 ),
 ```
 
-**按钮语义**：
-
-| 按钮 | Icon | 行为 | 备注 |
-|------|------|------|------|
-| ↻ | `AppIcons.refresh` | `reindex()` 从磁盘重建索引 | 不创建主题 |
-| + | `AppIcons.add` | 弹对话框 → `createTheme()` | 见 §5 |
+**下拉刷新**：
+```dart
+CupertinoSliverRefreshControl(
+  onRefresh: () async {
+    await ref.read(themeListControllerProvider.notifier).reindex();
+  },
+),
+```
 
 ---
 
@@ -88,9 +109,11 @@ trailing: Row(
 ```dart
 ThkListTile(
   title: localizedThemeTitle(l10n, themes[i].title),
-  subtitle: kDebugMode ? themes[i].themeId : null,
-  trailing: ThkListTile.chevron,
-  themeId: themes[i].themeId,           // 关键：传 themeId 触发 5 色书脊线
+  subtitle: themes[i].lastMessagePreview ?? formatRelativeTime(l10n, themes[i].updatedAtUtcIso8601),
+  trailing: themes[i].pinned
+      ? Icon(AppIcons.star, color: AppColors.accent, size: 18)
+      : ThkListTile.chevron,
+  themeId: themes[i].themeId,  // 关键：传 themeId 触发主题色图标
   leading: Icon(AppIcons.folder),
   onTap: () => context.push('/themes/${themes[i].themeId}/tree'),
 )
@@ -101,48 +124,26 @@ ThkListTile(
 | 元素 | 来源 | 备注 |
 |------|------|------|
 | 标题 | `localizedThemeTitle(l10n, theme.title)` | "未分类" 会映射到 `l10n.uncategorized` |
-| Subtitle | `theme.themeId`（仅 debug 模式） | 发布模式不显示 |
-| Leading icon 背景 | `AppColors.tintForTheme(themeId)` | 15% tint（自动） |
-| Leading icon 颜色 | `AppColors.colorForTheme(themeId)` | 5 色调色板色 |
-| 左侧书脊线 | `AppColors.colorForTheme(themeId)`，3px，圆角 1.5px | 由 `ThkListTile.themeId` 参数自动渲染 |
-| Trailing | `ThkListTile.chevron` | 默认 chevron 图标，`textTertiary` 色 |
+| Subtitle | `lastMessagePreview` 或 `formatRelativeTime()` | 优先显示预览，无预览显示时间 |
+| Leading icon 颜色 | `AppColors.colorForTheme(themeId)` | 典雅黑金色调 5 色 |
+| Trailing | 置顶图标或 chevron | 置顶显示星标 |
 | 点击 | `context.push('/themes/.../tree')` | 推入详情页 |
-
-**分隔线**（手动绘制，不依赖 `ThkListSection`）：
-
-```dart
-if (i < themes.length - 1)
-  Padding(
-    padding: const EdgeInsetsDirectional.only(start: 56),
-    child: Container(
-      height: 0.5,
-      color: AppColors.border,
-    ),
-  ),
-```
-
-缩进 56px 与 `ThkListTile` 的 leading 区域对齐。
 
 ---
 
-## 4. 特殊标题：未分类
-
-`localizedThemeTitle()` 是从 `note_browse_screen.dart` 共享的助手：
+## 4. 长按 Action Sheet
 
 ```dart
-const String kUncategorizedThemeTitle = '未分类';
-
-String localizedThemeTitle(AppLocalizations l10n, String title) {
-  if (title == kUncategorizedThemeTitle) return l10n.uncategorized;
-  return title;
-}
+GestureDetector(
+  onLongPress: () => _showThemeActions(context, ref, themes[i], l10n),
+  child: ThkListTile(...),
+)
 ```
 
-**为什么主题列表会有"未分类"**：
-
-当用户在笔记里创建节点但未选主题时，节点会被归到"未分类"主题的虚拟文件夹（磁盘上没有 `themes/未分类/` 目录，由控制器逻辑创建）。所以即便用户没主动建过任何主题，列表也可能有"未分类"一项。
-
-**l10n**：`AppLocalizations.uncategorized`（"Uncategorized" / "未分类"）。
+**Action Sheet 选项**：
+- 重命名
+- 置顶/取消置顶
+- 删除（isDestructiveAction）
 
 ---
 
@@ -158,27 +159,11 @@ Future<String?> _promptTitle(BuildContext context) async {
 }
 ```
 
-**关键点**：
-
-- `autofocus: true`：键盘自动弹起
-- `maxLength: 30`：限制标题长度（磁盘目录名不宜过长）
-- `controller.value.composing`：处理中文输入法"未确认"状态，按回车不要提前 dismiss
-- trim() 去除首尾空白；空字符串返回 null
-- 按回车（`onSubmitted`）等同于点击"创建"
-- 取消按钮 vs 创建按钮：`isDefaultAction: true` 让创建成为回车默认
-
-**返回 null 的两种情况**：
-
-1. 用户点取消
-2. 用户输入空字符串 / 纯空白
-
-`createTheme` 只在非 null 时调用。
-
 ---
 
 ## 6. 空状态
 
-0 个主题时（实际上几乎不可能，因为"未分类"总会存在）：
+0 个主题时：
 
 ```dart
 Padding(
@@ -187,54 +172,18 @@ Padding(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          AppIcons.accountTree,
-          size: 40,
-          color: AppColors.textTertiary,
-        ),
+        Icon(AppIcons.accountTree, size: 40, color: AppColors.textTertiary),
         const SizedBox(height: 12),
-        Text(
-          l10n.noThemesYet,
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
+        Text(l10n.noThemesYet, style: TextStyle(color: AppColors.textSecondary)),
       ],
     ),
   ),
 )
 ```
 
-**视觉**：
-
-- 40pt accountTree icon，`textTertiary`
-- 12px 间距
-- `l10n.noThemesYet` 文案（"还没有主题" / "No themes yet"），`textSecondary`
-- 居中，距顶 80px
-
-**与全局空状态规范一致**：icon + SizedBox(12) + Text，无 CTA 按钮（用户可用右上 + 按钮创建）。
-
 ---
 
-## 7. 错误 / Loading 状态
-
-```dart
-themesAsync.when(
-  data: ...,
-  error: (e, st) => Padding(
-    padding: const EdgeInsets.only(top: 80),
-    child: Center(child: Text(e.toString())),
-  ),
-  loading: () => Padding(
-    padding: const EdgeInsets.only(top: 80),
-    child: Center(child: CupertinoActivityIndicator()),
-  ),
-)
-```
-
-错误直接打印 `e.toString()`，loading 用 Cupertino 菊花。视觉与空状态保持对称（同样距顶 80px 居中）。
-
----
-
-## 8. ThemeListController
+## 7. ThemeListController
 
 `AsyncNotifier<List<ThemeEntity>>`，全局单实例。
 
@@ -244,47 +193,22 @@ class ThemeListController extends AsyncNotifier<List<ThemeEntity>> {
   Future<List<ThemeEntity>> build() async {
     final store = await ref.watch(themeStoreProvider.future);
     await store.reindexThemesFromDisk();
-    return store.listThemes();
+    final themes = await store.listThemes();
+    return await _loadPreviews(themes);
   }
 
-  Future<void> createTheme({required String title}) async {
-    final store = await ref.read(themeStoreProvider.future);
-    await store.createTheme(title: title);
-    state = AsyncData(await store.listThemes());
+  Future<List<ThemeEntity>> _loadPreviews(List<ThemeEntity> themes) async {
+    // 从 search_index 查询每个主题的最新消息
+    // 截取前 40 字符作为预览
   }
 
-  Future<void> reindex() async {
-    final store = await ref.read(themeStoreProvider.future);
-    await store.reindexThemesFromDisk();
-    state = AsyncData(await store.listThemes());
-  }
+  Future<void> createTheme({required String title}) async { ... }
+  Future<void> reindex() async { ... }
+  Future<void> togglePin({required String themeId, required bool pinned}) async { ... }
+  Future<void> deleteTheme({required String themeId}) async { ... }
+  Future<void> renameTheme({required String themeId, required String title}) async { ... }
 }
-
-final themeListControllerProvider =
-    AsyncNotifierProvider<ThemeListController, List<ThemeEntity>>(ThemeList.new);
 ```
-
-**关键行为**：
-
-- `build()`：从 `themeStoreProvider` 拿 store → 磁盘 reindex → 返回列表
-- `createTheme()`：创建 + 全量重新 `listThemes()` 同步 state
-- `reindex()`：只重新索引（不创建），然后 `listThemes()` 同步 state
-- 全部用 `await store.xxx()` 串行执行，不并发
-
-**注意**：不要在 `build()` 里监听 `themeDetailControllerProvider`——两个 provider 数据流独立。详情页的修改不直接影响列表（删除/重命名不修改 theme.title）。
-
----
-
-## 实现文件清单
-
-| 文件 | 角色 |
-|------|------|
-| `lib/ui/features/themes/theme_list_screen.dart` | 屏幕本体（149 行） |
-| `lib/ui/features/themes/theme_list_controller.dart` | controller（28 行） |
-| `lib/ui/features/notes/note_browse_screen.dart` | 共享 `localizedThemeTitle()` 工具 |
-| `lib/ui/core/widgets/widgets.dart` | `ThkLargeTitlePage` / `ThkListTile` / `ThkTextField` |
-| `lib/ui/core/theme/app_colors.dart` | `colorForTheme` / `tintForTheme` / `border` / `pageBg` |
-| `lib/ui/core/theme/app_icons.dart` | `folder` / `accountTree` / `add` / `refresh` |
 
 ---
 
@@ -292,45 +216,28 @@ final themeListControllerProvider =
 
 1. **空列表**
    - 0 个主题：accountTree icon + noThemesYet
-   - 1 个"未分类"：显示该条（l10n.uncategorized 标题）
 
 2. **多条主题**
-   - 排序：按 `listThemes()` 返回顺序（通常是 `createdAt` 升序，磁盘扫描）
-   - 每个 ThkListTile 书脊线色不同（基于 themeId hash）
-   - debug 模式 subtitle 显示 themeId；release 模式不显示
+   - 排序：置顶优先，然后按 updatedAt DESC
+   - 每个 ThkListTile 图标颜色不同（基于 themeId hash）
+   - Subtitle 显示预览或相对时间
 
-3. **NavBar 按钮**
-   - ↻：调 `reindex()`，state 更新但 list 内容可能不变（除非磁盘有变化）
-   - +：弹 CupertinoAlertDialog
-     - 输入有效标题：调 `createTheme()`，列表自动更新
-     - 输入空 / 纯空白：返回 null，不创建
-     - 取消：返回 null，不创建
-     - 回车（onSubmitted）：等同于创建（注意 composing 状态）
+3. **下拉刷新**
+   - 下拉触发 reindex()
 
-4. **导航**
-   - 点击 ThkListTile：`context.push('/themes/:themeId/tree')` 进入详情
-   - 返回：从详情页 `context.pop()` 回到列表，列表状态保持
+4. **长按操作**
+   - 重命名：弹对话框
+   - 置顶/取消置顶：切换 pinned 状态
+   - 删除：带确认对话框
 
-5. **跨屏刷新**
-   - 在详情页新建/删除节点：列表**不刷新**（节点属于主题，不影响 theme.title 列表）
-   - 在详情页重命名节点：列表**不刷新**
-
-6. **加载 / 错误**
-   - loading：菊花
-   - error：`e.toString()` 文本（无错误图标）
-
-7. **设计令牌合规**
-   - `rg "CupertinoColors\." lib/ui/features/themes/theme_list_screen.dart` 0 命中
-   - 颜色全部来自 `AppColors.*`
+5. **导航**
+   - 点击 ThkListTile：`context.push('/themes/:themeId/tree')`
 
 ---
 
 ## Assumptions
 
-- "未分类"主题的显示优先级与其他主题一致（按 `listThemes()` 返回顺序），不会置顶
-- 主题列表的"创建时间排序"由 `themeStore.listThemes()` 保证，UI 层不二次排序
-- 主题重命名功能**当前不存在**（不在本屏幕范围内）；如果未来添加，需要 `ref.invalidate(themeListControllerProvider)`
-- `ThkListTile.themeId` 参数是触发书脊线的唯一条件；不传则不显示书脊线（保持纯白底）
-- 列表滚动由 `ThkLargeTitlePage` 内部 ListView 处理，外层不需 `SingleChildScrollView`
+- "未分类"主题可以通过置顶功能手动置顶（不再硬编码）
 - 主题数很多时（100+）不做虚拟滚动优化（暂时未遇到性能问题）
-- 调试模式通过 `kDebugMode` 编译期常量判断，零运行时开销
+- 预览从 search_index 查询，可能有轻微延迟（取决于上次 reindex 时间）
+- 相对时间格式复用 `formatRelativeTime()` 函数（支持 l10n）

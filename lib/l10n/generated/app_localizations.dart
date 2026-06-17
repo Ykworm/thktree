@@ -1171,6 +1171,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start writing...'**
   String get startWriting;
+
+  /// Relative time: less than 1 minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
+  /// Relative time: X minutes ago
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m ago'**
+  String minutesAgo(int count);
+
+  /// Relative time: X hours ago
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String hoursAgo(int count);
+
+  /// Relative time: X days ago
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
+  String daysAgo(int count);
+
+  /// Absolute date: month/day
+  ///
+  /// In en, this message translates to:
+  /// **'{month}/{day}'**
+  String monthDay(int month, int day);
+
+  /// Pin a theme to the top of the list
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get pin;
+
+  /// Unpin a theme from the top of the list
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get unpin;
+
+  /// Confirmation message for deleting a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Delete theme \"{title}\"? All conversations will be permanently deleted.'**
+  String deleteThemeConfirm(String title);
 }
 
 class _AppLocalizationsDelegate

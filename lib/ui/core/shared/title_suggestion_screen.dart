@@ -632,7 +632,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
           Expanded(
             child: Text(
               '${l10n.titleAutoGenFailed}: $_error',
-              style: const TextStyle(
+              style: TextStyle(
                 color: CupertinoColors.systemRed,
                 fontSize: 12,
               ),
@@ -719,7 +719,7 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                     child: Text(
                       l10n.branchModeSheetTitle,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1330,7 +1330,7 @@ class _ModelSelectorSheet extends StatelessWidget {
               children: [
                 Text(
                   provider.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -1351,7 +1351,7 @@ class _ModelSelectorSheet extends StatelessWidget {
             children: [
               Text(
                 provider.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),

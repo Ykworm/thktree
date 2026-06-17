@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart' show brightnessProvider;
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
@@ -25,6 +27,20 @@ String localizedThemeTitle(AppLocalizations l10n, String title) {
   return title;
 }
 
+/// Formats an ISO 8601 timestamp as a human-readable relative time string.
+String formatRelativeTime(AppLocalizations l10n, String iso8601) {
+  final dt = DateTime.tryParse(iso8601);
+  if (dt == null) return iso8601;
+  final now = DateTime.now().toUtc();
+  final diff = now.difference(dt.toUtc());
+
+  if (diff.isNegative || diff.inMinutes < 1) return l10n.justNow;
+  if (diff.inHours < 1) return l10n.minutesAgo(diff.inMinutes);
+  if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
+  if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
+  return l10n.monthDay(dt.month, dt.day);
+}
+
 class NoteBrowseScreen extends ConsumerStatefulWidget {
   const NoteBrowseScreen({super.key});
 
@@ -33,10 +49,17 @@ class NoteBrowseScreen extends ConsumerStatefulWidget {
 }
 
 class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
+  final _searchController = TextEditingController();
   List<_ThemeNotes>? _themes;
   bool _loading = true;
   Object? _error;
   int? _lastSeenVersion;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -68,6 +91,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(brightnessProvider);
     final version = ref.watch(noteListVersionProvider);
     if (_lastSeenVersion != version) {
       _lastSeenVersion = version;
@@ -79,66 +103,115 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
     }
     final l10n = AppLocalizations.of(context)!;
     return CupertinoPageScaffold(
-      navigationBar: ThkNavBar.inline(
-        title: l10n.notes,
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => _createNoteInUncategorized(context, ref),
-          child: Icon(AppIcons.add),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: _buildBody(l10n),
+      backgroundColor: AppColors.surface,
+      resizeToAvoidBottomInset: false,
+      child: CustomScrollView(
+        slivers: [
+          ThkNavBar.large(
+            title: l10n.notes,
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _createNoteInUncategorized(context, ref),
+              child: Icon(AppIcons.add),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: CupertinoSearchTextField(
+                controller: _searchController,
+                placeholder: l10n.searchHint,
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+          ),
+          _buildBody(l10n),
+        ],
       ),
     );
   }
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_loading) {
-      return const Center(child: CupertinoActivityIndicator());
+      return const SliverFillRemaining(
+        child: Center(child: CupertinoActivityIndicator()),
+      );
     }
     if (_error != null) {
-      return Center(
+      return SliverFillRemaining(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text(
-            _error.toString(),
-            style: const TextStyle(color: CupertinoColors.systemRed),
+          child: Center(
+            child: Text(
+              _error.toString(),
+              style: TextStyle(color: CupertinoColors.systemRed),
+            ),
           ),
         ),
       );
     }
-    final themes = _themes ?? [];
+    final query = _searchController.text.trim().toLowerCase();
+    final allThemes = _themes ?? [];
+    final themes = query.isEmpty
+        ? allThemes
+        : allThemes.where((t) => t.title.toLowerCase().contains(query)).toList();
     if (themes.isEmpty) {
-      return Center(
-        child: Text(
-          l10n.noNotesYet,
-          style: const TextStyle(color: CupertinoColors.secondaryLabel),
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                AppIcons.note,
+                size: 40,
+                color: AppColors.textTertiary,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                query.isEmpty ? l10n.noNotesYet : l10n.searchNoResults,
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
       );
     }
-    return ListView(
-      children: [
-        ThkListSection(
-          children: themes
-              .map((tn) => ThkListTile(
-                    title: localizedThemeTitle(l10n, tn.title),
-                    subtitle: l10n.noteCount(tn.noteCount),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (_) => ThemeNoteListScreen(
-                            themeId: tn.themeId,
-                            notesDir: '${tn.themePath}/notes',
-                          ),
-                        ),
-                      );
-                    },
-                  ))
-              .toList(),
-        ),
-      ],
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final tn = themes[index];
+          return Column(
+            children: [
+              ThkListTile(
+                key: ValueKey(tn.themeId),
+                title: localizedThemeTitle(l10n, tn.title),
+                subtitle: l10n.noteCount(tn.noteCount),
+                leading: Icon(AppIcons.folder),
+                themeId: tn.themeId,
+                onTap: () {
+                  Navigator.of(context).push(
+                    CupertinoPageRoute(
+                      builder: (_) => ThemeNoteListScreen(
+                        themeId: tn.themeId,
+                        notesDir: '${tn.themePath}/notes',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (index < themes.length - 1)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 56),
+                  child: Container(
+                    height: 0.5,
+                    color: AppColors.border,
+                  ),
+                ),
+            ],
+          );
+        },
+        childCount: themes.length,
+      ),
     );
   }
 }
@@ -199,7 +272,8 @@ Future<void> _createNoteInUncategorized(
   // 2. 获取 notesDir
   final paths = await ref.read(appPathsProvider.future);
   if (!context.mounted) return;
-  final notesDir = Directory('${paths.themesDir.path}/${themeResult.themeId}/notes');
+  final notesDir =
+      Directory('${paths.themesDir.path}/${themeResult.themeId}/notes');
 
   // 3. 跳转到编辑器
   if (!context.mounted) return;
