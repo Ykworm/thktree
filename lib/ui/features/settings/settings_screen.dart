@@ -14,6 +14,7 @@ import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
+import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -39,6 +40,11 @@ class SettingsScreen extends ConsumerWidget {
             _LlmProvidersEntry(),
             _TitleModelEntry(),
             _SummaryModelEntry(),
+          ],
+        ),
+        ThkListSection(
+          children: [
+            _TtsEntry(),
           ],
         ),
         ThkListSection(
@@ -612,6 +618,26 @@ class _FaceIdToggle extends ConsumerWidget {
           ref.read(settingsControllerProvider.notifier).saveFaceIdEnabled(value);
         },
       ),
+    );
+  }
+}
+
+
+class _TtsEntry extends ConsumerWidget {
+  const _TtsEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return ThkListTile(
+      leading: const Icon(AppIcons.ttsPlay),
+      title: l10n.ttsVoiceSettings,
+      subtitle: l10n.ttsVoiceSettingsSubtitle,
+      onTap: () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(builder: (_) => const TtsSettingsScreen()),
+        );
+      },
     );
   }
 }

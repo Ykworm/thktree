@@ -24,6 +24,7 @@ class AppSettings {
     this.titleModelModelId,
     this.summaryModelProviderId,
     this.summaryModelModelId,
+    this.ttsVoiceId,
   });
 
   final LlmProvider llmProvider;
@@ -46,6 +47,7 @@ class AppSettings {
   final String? titleModelModelId;
   final String? summaryModelProviderId;
   final String? summaryModelModelId;
+  final String? ttsVoiceId;
 
   String get apiKey {
     switch (llmProvider) {
@@ -102,6 +104,7 @@ class AppSettings {
     String? titleModelModelId,
     String? summaryModelProviderId,
     String? summaryModelModelId,
+    String? ttsVoiceId,
   }) {
     return AppSettings(
       llmProvider: llmProvider ?? this.llmProvider,
@@ -124,6 +127,7 @@ class AppSettings {
       titleModelModelId: titleModelModelId ?? this.titleModelModelId,
       summaryModelProviderId: summaryModelProviderId ?? this.summaryModelProviderId,
       summaryModelModelId: summaryModelModelId ?? this.summaryModelModelId,
+      ttsVoiceId: ttsVoiceId ?? this.ttsVoiceId,
     );
   }
 }
@@ -141,6 +145,7 @@ class SettingsStore {
   static const _keyTitleModelModelId = 'title_model_model_id';
   static const _keySummaryModelProviderId = 'summary_model_provider_id';
   static const _keySummaryModelModelId = 'summary_model_model_id';
+  static const _keyTtsVoiceId = 'tts_voice_id';
 
   static String _apiKeyKey(LlmProvider p) => 'llm_api_key_${p.name}';
   static String _modelKey(LlmProvider p) => 'llm_model_${p.name}';
@@ -178,6 +183,7 @@ class SettingsStore {
     final titleModelModelId = await _secureStorage.read(key: _keyTitleModelModelId);
     final summaryModelProviderId = await _secureStorage.read(key: _keySummaryModelProviderId);
     final summaryModelModelId = await _secureStorage.read(key: _keySummaryModelModelId);
+    final ttsVoiceId = await _secureStorage.read(key: _keyTtsVoiceId);
 
     return AppSettings(
       llmProvider: provider,
@@ -200,6 +206,7 @@ class SettingsStore {
       titleModelModelId: titleModelModelId,
       summaryModelProviderId: summaryModelProviderId,
       summaryModelModelId: summaryModelModelId,
+      ttsVoiceId: ttsVoiceId,
     );
   }
 
@@ -255,6 +262,15 @@ class SettingsStore {
     } else {
       await _secureStorage.write(key: _keySummaryModelProviderId, value: providerId);
       await _secureStorage.write(key: _keySummaryModelModelId, value: modelId);
+    }
+  }
+
+  /// TTS 选中的声音 ID（null = 清除 / 用系统默认）
+  Future<void> saveTtsVoiceId(String? voiceId) async {
+    if (voiceId == null || voiceId.isEmpty) {
+      await _secureStorage.delete(key: _keyTtsVoiceId);
+    } else {
+      await _secureStorage.write(key: _keyTtsVoiceId, value: voiceId);
     }
   }
 }

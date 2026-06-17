@@ -42,7 +42,7 @@
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 流式对话 | chat | ✅ 完成 | 2026-06-07 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart` | LlmClient + SSE, FileWriteQueue, ChatComposer 优化 |
-| 标题自动建议 | chat | 🔨 部分实现 | — | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` | TitleSuggestionService 存在，触发时机未集成 |
+| 标题自动建议 | chat | ✅ 完成 | 2026-06-17 | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` | 分支创建时触发，支持选中文本/对话总结/笔记多种来源 |
 
 ## 4. 搜索模块（search）
 
@@ -63,9 +63,9 @@
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 设置页 | settings | ✅ 完成 | 2026-06-07 | [README](modules/settings/README.md) | — | `lib/ui/features/settings/settings_screen.dart` | LlmProvidersScreen, API Key 配置, 模型选择入口 |
-| 生物认证（Face ID） | settings | 🔨 进行中 | — | [README](modules/settings/README.md) | — | `lib/data/services/biometric_service.dart` | BiometricService 存在，AuthGate 未完成 |
+| 生物认证（Face ID） | settings | ✅ 完成 | 2026-06-17 | [README](modules/settings/README.md) | — | `lib/data/services/biometric_service.dart` | BiometricService + AuthGate + WidgetsBindingObserver，进前台弹验证 |
 | 分享功能 | settings | 🔨 部分实现 | — | [README](modules/settings/README.md) | — | `lib/data/services/share_service.dart` | ShareService + ShareCardWidget 存在，分享流程未闭环 |
-| 语音播放 | settings | 🔨 进行中 | 2026-06-05 | [README](modules/settings/README.md) | — | `docs/modules/settings/specs/2026-06-05-语音播放功能-design.md` | 完整设计 spec 已有，iOS 原生 TTS 实现进行中 |
+| 语音播放 | settings | ✅ 完成（iOS only） | 2026-06-17 | [README](modules/settings/README.md) | [语音播放设计](modules/settings/specs/2026-06-05-语音播放功能-design.md) | `lib/ui/features/settings/tts_player_screen.dart` 等 | v1.1 上线：iOS 原生 AVSpeechSynthesizer，5 层架构（Plugin→Service→Controller→UI），单条消息互斥，语速不持久化、声音持久化；3 层背景（base + radial ambient + per-message tint）+ 4 类动效（波形/脉冲环/glow shift/文字渐入）；scroll 浮按钮解决长文本回顶；Android 平台用 NoOpTtsService 静默桩。v2+ 路线图见设计 doc §11 |
 
 ## 7. 跨模块（_shared / 基础设施）
 

@@ -1219,6 +1219,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete theme \"{title}\"? All conversations will be permanently deleted.'**
   String deleteThemeConfirm(String title);
+
+  /// 播放器页面标题
+  ///
+  /// In en, this message translates to:
+  /// **'Read Aloud'**
+  String get ttsPlay;
+
+  /// 停止按钮
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get ttsStop;
+
+  /// 设置页标签
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get ttsVoice;
+
+  /// 播放器页面标签
+  ///
+  /// In en, this message translates to:
+  /// **'Speech Rate'**
+  String get ttsRate;
+
+  /// 设置页标签
+  ///
+  /// In en, this message translates to:
+  /// **'TTS Engine'**
+  String get ttsEngine;
+
+  /// 引擎标签
+  ///
+  /// In en, this message translates to:
+  /// **'Apple System Voice'**
+  String get ttsAppleSystem;
+
+  /// 声线选择后试听
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get ttsTestPlay;
+
+  /// SettingsScreen 入口
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Settings'**
+  String get ttsVoiceSettings;
+
+  /// SettingsScreen 副标题
+  ///
+  /// In en, this message translates to:
+  /// **'Voice and speech rate settings'**
+  String get ttsVoiceSettingsSubtitle;
+
+  /// 语速滑块左侧标签
+  ///
+  /// In en, this message translates to:
+  /// **'Slow'**
+  String get ttsSlow;
+
+  /// 语速滑块右侧标签
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get ttsFast;
+
+  /// 播放器大按钮
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get ttsPlayerPlay;
+
+  /// 播放器大按钮（停止状态）
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get ttsPlayerStop;
+
+  /// 滚动浮按钮的辅助功能标签
+  ///
+  /// In en, this message translates to:
+  /// **'Back to top'**
+  String get ttsBackToTop;
+
+  /// 声音列表为空时的提示
+  ///
+  /// In en, this message translates to:
+  /// **'No voices available'**
+  String get ttsNoVoicesAvailable;
+
+  /// Android 平台提示
+  ///
+  /// In en, this message translates to:
+  /// **'Voice playback is iOS only'**
+  String get ttsIosOnly;
 }
 
 class _AppLocalizationsDelegate

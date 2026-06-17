@@ -861,5 +861,69 @@
         "type": "String"
       }
     }
+  },
+  "ttsPlay": "Read Aloud",
+  "@ttsPlay": {
+    "description": "播放器页面标题"
+  },
+  "ttsStop": "Stop",
+  "@ttsStop": {
+    "description": "停止按钮"
+  },
+  "ttsVoice": "Voice",
+  "@ttsVoice": {
+    "description": "设置页标签"
+  },
+  "ttsRate": "Speech Rate",
+  "@ttsRate": {
+    "description": "播放器页面标签"
+  },
+  "ttsEngine": "TTS Engine",
+  "@ttsEngine": {
+    "description": "设置页标签"
+  },
+  "ttsAppleSystem": "Apple System Voice",
+  "@ttsAppleSystem": {
+    "description": "引擎标签"
+  },
+  "ttsTestPlay": "Preview",
+  "@ttsTestPlay": {
+    "description": "声线选择后试听"
+  },
+  "ttsVoiceSettings": "Voice Settings",
+  "@ttsVoiceSettings": {
+    "description": "SettingsScreen 入口"
+  },
+  "ttsVoiceSettingsSubtitle": "Voice and speech rate settings",
+  "@ttsVoiceSettingsSubtitle": {
+    "description": "SettingsScreen 副标题"
+  },
+  "ttsSlow": "Slow",
+  "@ttsSlow": {
+    "description": "语速滑块左侧标签"
+  },
+  "ttsFast": "Fast",
+  "@ttsFast": {
+    "description": "语速滑块右侧标签"
+  },
+  "ttsPlayerPlay": "Play",
+  "@ttsPlayerPlay": {
+    "description": "播放器大按钮"
+  },
+  "ttsPlayerStop": "Stop",
+  "@ttsPlayerStop": {
+    "description": "播放器大按钮（停止状态）"
+  },
+  "ttsBackToTop": "Back to top",
+  "@ttsBackToTop": {
+    "description": "滚动浮按钮的辅助功能标签"
+  },
+  "ttsNoVoicesAvailable": "No voices available",
+  "@ttsNoVoicesAvailable": {
+    "description": "声音列表为空时的提示"
+  },
+  "ttsIosOnly": "Voice playback is iOS only",
+  "@ttsIosOnly": {
+    "description": "Android 平台提示"
   }
 }

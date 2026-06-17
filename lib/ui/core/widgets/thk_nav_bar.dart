@@ -56,10 +56,12 @@ class ThkNavBar {
     Border? border,
     Color? backgroundColor,
     VoidCallback? onTitleTap,
+    VoidCallback? onTitleDoubleTap,
   }) {
     return CupertinoNavigationBar(
       middle: middle ?? GestureDetector(
         onTap: onTitleTap,
+        onDoubleTap: onTitleDoubleTap,
         child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       ),
       leading: leading,

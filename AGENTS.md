@@ -1,3 +1,18 @@
+## 功能开发工作流
+
+收到新功能需求时，必须严格遵循以下阶段，**不可跳步**：
+
+1. **brainstorming** — 先讨论方案，不写代码。探索用户意图、需求、设计方案，达成共识
+2. **草稿归档** — 讨论结果写入 `docs/_tmp/<topic>.md`（版本迭代加 `-v2`、`-v3`）
+3. **用户确认** — 用户明确说"可以"后才进入下一步
+4. **writing-plans** — 输出书面实现计划
+5. **TDD** — 先写测试，再写实现
+6. **context-sync** — 完成后同步文档
+
+**硬约束**：方案确认前禁止写任何业务代码。
+
+---
+
 ## context-sync
 
 将本次会话中已完成的代码改动，同步回写到 `docs/` 下受影响的文档。
@@ -222,3 +237,7 @@
 - 代码 commit（由代码改动的 Agent/会话决定）
 - doc 的 git add / commit / push（用户统一收口时处理）
 - 预判哪些文档会受影响（用户随时可触发，不限时机）
+
+## 项目级 Skill 约定
+
+ThkTree 是 Flutter 项目，`flutter-dev` 是主线 skill；`ios-application-dev` / `android-native-dev` 等平台原生 skill 仅在处理 platform channel、原生构建问题时按需触发。

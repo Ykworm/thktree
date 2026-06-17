@@ -113,4 +113,25 @@ class AppIcons {
 
   /// AI / 模型选择（iOS 18+ AI 风格闪光图标）
   static const IconData sparkles = SFIcons.sf_sparkles;
+
+  // ── TTS（语音播放） ──
+
+  /// 滚动到顶部（用于 player 页浮按钮）
+  static const IconData chevronUp = SFIcons.sf_chevron_up;
+
+  /// TTS 播放按钮·空闲态（play.fill 三角形）— 主播放器大按钮
+  static const IconData ttsPlay = SFIcons.sf_play_fill;
+
+  /// TTS 播放按钮·播放中态（pause.fill 两竖）— 主播放器大按钮
+  static const IconData ttsPause = SFIcons.sf_pause_fill;
+
+  /// 朗读入口·空闲态（speaker.wave.2.fill 喇叭）— chat 气泡小按钮
+  /// 设计意图见 docs/modules/chat/design-tokens.yaml
+  static const IconData ttsSpeak = SFIcons.sf_speaker_wave_2_fill;
+
+  /// 语速·慢（tortoise.fill，iOS 17+）
+  static const IconData ttsSlow = SFIcons.sf_tortoise_fill;
+
+  /// 语速·快（hare.fill，iOS 17+）
+  static const IconData ttsFast = SFIcons.sf_hare_fill;
 }

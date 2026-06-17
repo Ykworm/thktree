@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
@@ -9,6 +10,8 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
+import 'package:thk_tree/ui/features/settings/tts_controller.dart';
+import 'package:thk_tree/ui/features/settings/tts_player_screen.dart';
 
 final _tablePattern = RegExp(r'^\|.+\|', multiLine: true);
 final _tableSepPattern = RegExp(r'^\|[\s\-:]+\|', multiLine: true);
@@ -23,7 +26,7 @@ bool _hasMarkdownTable(String text) {
   return false;
 }
 
-class MessageBubble extends StatefulWidget {
+class MessageBubble extends ConsumerStatefulWidget {
   const MessageBubble({
     super.key,
     required this.message,
@@ -38,10 +41,10 @@ class MessageBubble extends StatefulWidget {
   final String? userQuestion;
 
   @override
-  State<MessageBubble> createState() => _MessageBubbleState();
+  ConsumerState<MessageBubble> createState() => _MessageBubbleState();
 }
 
-class _MessageBubbleState extends State<MessageBubble> {
+class _MessageBubbleState extends ConsumerState<MessageBubble> {
   bool _copied = false;
   bool _sharing = false;
   final _shareButtonKey = GlobalKey();
@@ -178,6 +181,12 @@ class _MessageBubbleState extends State<MessageBubble> {
                               ? CupertinoColors.systemGreen
                               : AppColors.textSecondary,
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      _TtsPlayButton(
+                        messageId: widget.message.msgId,
+                        body: widget.message.body,
+                        text: widget.message.body,
                       ),
                       const SizedBox(width: 12),
                       CupertinoButton(
@@ -320,6 +329,53 @@ class _TableExpandedView extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// MessageBubble 上的"播放"按钮。assistant 消息可见，streaming 时隐藏。
+/// 点击后 push [TtsPlayerScreen] 跳到全屏播放器。
+class _TtsPlayButton extends ConsumerWidget {
+  const _TtsPlayButton({
+    required this.messageId,
+    required this.body,
+    required this.text,
+  });
+
+  final String messageId;
+  final String body;
+  final String text;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isThisPlaying = ref.watch(
+      ttsControllerProvider.select((s) =>
+          s.isSpeaking && s.playingMessageId == messageId),
+    );
+
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: Size.zero,
+      onPressed: body.isEmpty
+          ? null
+          : () {
+              Navigator.of(context).push(
+                CupertinoPageRoute(
+                  builder: (_) => TtsPlayerScreen(
+                    messageId: messageId,
+                    text: text,
+                  ),
+                ),
+              );
+            },
+      child: Icon(
+        isThisPlaying ? AppIcons.ttsPause : AppIcons.ttsSpeak,
+        size: 18,
+        color: isThisPlaying
+            ? CupertinoColors.systemBlue
+            : AppColors.textSecondary,
       ),
     );
   }
