@@ -697,4 +697,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ttsIosOnly => 'Voice playback is iOS only';
+
+  @override
+  String get backupAndRestore => 'Backup & Restore';
+
+  @override
+  String get backupData => 'Backup Data';
+
+  @override
+  String get restoreData => 'Restore Data';
+
+  @override
+  String get backupInProgress => 'Backing up...';
+
+  @override
+  String get restoreInProgress => 'Restoring...';
+
+  @override
+  String get restoreConflictTitle => 'Data Conflict';
+
+  @override
+  String get restoreConflictMessage =>
+      'Local data already exists. How would you like to proceed?';
+
+  @override
+  String get restoreOverwrite => 'Overwrite';
+
+  @override
+  String get restoreMerge => 'Merge';
 }

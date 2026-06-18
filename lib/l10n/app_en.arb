@@ -925,5 +925,41 @@
   "ttsIosOnly": "Voice playback is iOS only",
   "@ttsIosOnly": {
     "description": "Android 平台提示"
+  },
+  "backupAndRestore": "Backup & Restore",
+  "@backupAndRestore": {
+    "description": "Settings section header for backup and restore"
+  },
+  "backupData": "Backup Data",
+  "@backupData": {
+    "description": "Settings tile title for backup"
+  },
+  "restoreData": "Restore Data",
+  "@restoreData": {
+    "description": "Settings tile title for restore"
+  },
+  "backupInProgress": "Backing up...",
+  "@backupInProgress": {
+    "description": "Dialog title shown while backup is in progress"
+  },
+  "restoreInProgress": "Restoring...",
+  "@restoreInProgress": {
+    "description": "Dialog title shown while restore is in progress"
+  },
+  "restoreConflictTitle": "Data Conflict",
+  "@restoreConflictTitle": {
+    "description": "Dialog title when restore conflicts with local data"
+  },
+  "restoreConflictMessage": "Local data already exists. How would you like to proceed?",
+  "@restoreConflictMessage": {
+    "description": "Dialog message when restore conflicts with local data"
+  },
+  "restoreOverwrite": "Overwrite",
+  "@restoreOverwrite": {
+    "description": "Button to overwrite local data during restore"
+  },
+  "restoreMerge": "Merge",
+  "@restoreMerge": {
+    "description": "Button to merge with local data during restore"
   }
 }

@@ -52,6 +52,13 @@ class SettingsScreen extends ConsumerWidget {
             _FaceIdToggle(),
           ],
         ),
+        ThkListSection(
+          header: l10n.backupAndRestore,
+          children: [
+            _BackupEntry(),
+            _RestoreEntry(),
+          ],
+        ),
         if (kDebugMode) ...[
           ThkListSection(
             header: 'Dev Tools',
@@ -637,6 +644,47 @@ class _TtsEntry extends ConsumerWidget {
         Navigator.of(context).push(
           CupertinoPageRoute(builder: (_) => const TtsSettingsScreen()),
         );
+      },
+    );
+  }
+}
+
+class _BackupEntry extends ConsumerWidget {
+  const _BackupEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return ThkListTile(
+      title: l10n.backupData,
+      leading: const Icon(AppIcons.share),
+      onTap: () async {
+        // TODO: 实现备份逻辑
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: Text(l10n.backupInProgress),
+            content: const CupertinoActivityIndicator(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RestoreEntry extends ConsumerWidget {
+  const _RestoreEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return ThkListTile(
+      title: l10n.restoreData,
+      leading: const Icon(AppIcons.download),
+      onTap: () async {
+        // TODO: 实现恢复逻辑
       },
     );
   }

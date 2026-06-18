@@ -675,4 +675,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ttsIosOnly => '语音播放仅在 iOS 上可用';
+
+  @override
+  String get backupAndRestore => '备份与恢复';
+
+  @override
+  String get backupData => '备份数据';
+
+  @override
+  String get restoreData => '恢复数据';
+
+  @override
+  String get backupInProgress => '正在备份...';
+
+  @override
+  String get restoreInProgress => '正在恢复...';
+
+  @override
+  String get restoreConflictTitle => '数据冲突';
+
+  @override
+  String get restoreConflictMessage => '本地已存在数据，如何处理？';
+
+  @override
+  String get restoreOverwrite => '覆盖';
+
+  @override
+  String get restoreMerge => '合并';
 }

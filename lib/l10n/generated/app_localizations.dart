@@ -1315,6 +1315,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Voice playback is iOS only'**
   String get ttsIosOnly;
+
+  /// Settings section header for backup and restore
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & Restore'**
+  String get backupAndRestore;
+
+  /// Settings tile title for backup
+  ///
+  /// In en, this message translates to:
+  /// **'Backup Data'**
+  String get backupData;
+
+  /// Settings tile title for restore
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Data'**
+  String get restoreData;
+
+  /// Dialog title shown while backup is in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Backing up...'**
+  String get backupInProgress;
+
+  /// Dialog title shown while restore is in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring...'**
+  String get restoreInProgress;
+
+  /// Dialog title when restore conflicts with local data
+  ///
+  /// In en, this message translates to:
+  /// **'Data Conflict'**
+  String get restoreConflictTitle;
+
+  /// Dialog message when restore conflicts with local data
+  ///
+  /// In en, this message translates to:
+  /// **'Local data already exists. How would you like to proceed?'**
+  String get restoreConflictMessage;
+
+  /// Button to overwrite local data during restore
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite'**
+  String get restoreOverwrite;
+
+  /// Button to merge with local data during restore
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get restoreMerge;
 }
 
 class _AppLocalizationsDelegate

@@ -424,5 +424,14 @@
   "ttsIosOnly": "语音播放仅在 iOS 上可用",
   "@ttsIosOnly": {
     "description": "Android 平台提示"
-  }
+  },
+  "backupAndRestore": "备份与恢复",
+  "backupData": "备份数据",
+  "restoreData": "恢复数据",
+  "backupInProgress": "正在备份...",
+  "restoreInProgress": "正在恢复...",
+  "restoreConflictTitle": "数据冲突",
+  "restoreConflictMessage": "本地已存在数据，如何处理？",
+  "restoreOverwrite": "覆盖",
+  "restoreMerge": "合并"
 }
