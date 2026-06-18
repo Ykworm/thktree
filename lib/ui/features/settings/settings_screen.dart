@@ -16,6 +16,8 @@ import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
+import 'package:thk_tree/data/services/export_service.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -655,19 +657,60 @@ class _BackupEntry extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-
+    final pathsAsync = ref.watch(appPathsProvider);
+    
     return ThkListTile(
       title: l10n.backupData,
       leading: const Icon(AppIcons.share),
       onTap: () async {
-        // TODO: 实现备份逻辑
+        final paths = pathsAsync.value;
+        if (paths == null) return;
+
+        // 显示进度
         showCupertinoDialog(
           context: context,
+          barrierDismissible: false,
           builder: (context) => CupertinoAlertDialog(
             title: Text(l10n.backupInProgress),
-            content: const CupertinoActivityIndicator(),
+            content: const Padding(
+              padding: EdgeInsets.only(top: 16),
+              child: CupertinoActivityIndicator(),
+            ),
           ),
         );
+
+        try {
+          final exportService = ExportService(rootDir: paths.rootDir);
+          final zipFile = await exportService.exportFull(
+            appVersion: '1.0.0', // TODO: 从 package_info 获取
+          );
+
+          // 关闭进度对话框
+          if (context.mounted) Navigator.of(context).pop();
+
+          // 分享文件
+          await Share.shareXFiles(
+            [XFile(zipFile.path)],
+            sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
+          );
+        } catch (e) {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+            showCupertinoDialog(
+              context: context,
+              builder: (context) => CupertinoAlertDialog(
+                title: Text(l10n.error),
+                content: Text(e.toString()),
+                actions: [
+                  CupertinoDialogAction(
+                    child: Text(l10n.ok),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
       },
     );
   }

@@ -565,6 +565,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get faceIdLockSubtitle => 'Require Face ID to open the app';
 
   @override
+  String get error => 'Error';
+
+  @override
   String get ok => 'OK';
 
   @override

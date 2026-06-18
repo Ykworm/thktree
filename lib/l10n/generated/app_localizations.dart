@@ -1076,6 +1076,12 @@ abstract class AppLocalizations {
   /// **'Require Face ID to open the app'**
   String get faceIdLockSubtitle;
 
+  /// Generic error dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get error;
+
   /// OK button label
   ///
   /// In en, this message translates to:

@@ -733,6 +733,10 @@
   "@faceIdLockSubtitle": {
     "description": "Settings tile subtitle for Face ID lock toggle"
   },
+  "error": "Error",
+  "@error": {
+    "description": "Generic error dialog title"
+  },
   "ok": "OK",
   "@ok": {
     "description": "OK button label"

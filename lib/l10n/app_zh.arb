@@ -232,6 +232,7 @@
   "retry": "重试",
   "faceIdLock": "Face ID 锁定",
   "faceIdLockSubtitle": "打开 App 时需要 Face ID 验证",
+  "error": "错误",
   "ok": "确定",
   "@ok": {
     "description": "确定按钮"

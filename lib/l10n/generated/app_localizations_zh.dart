@@ -544,6 +544,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get faceIdLockSubtitle => '打开 App 时需要 Face ID 验证';
 
   @override
+  String get error => '错误';
+
+  @override
   String get ok => '确定';
 
   @override
