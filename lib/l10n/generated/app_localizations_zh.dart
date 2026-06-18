@@ -705,4 +705,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get restoreMerge => '合并';
+
+  @override
+  String get success => '成功';
+
+  @override
+  String get restoreSuccess => '数据恢复成功';
+
+  @override
+  String get restoreFailed => '恢复失败';
 }

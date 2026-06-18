@@ -434,5 +434,8 @@
   "restoreConflictTitle": "数据冲突",
   "restoreConflictMessage": "本地已存在数据，如何处理？",
   "restoreOverwrite": "覆盖",
-  "restoreMerge": "合并"
+  "restoreMerge": "合并",
+  "success": "成功",
+  "restoreSuccess": "数据恢复成功",
+  "restoreFailed": "恢复失败"
 }

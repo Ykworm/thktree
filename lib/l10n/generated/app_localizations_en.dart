@@ -728,4 +728,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get restoreMerge => 'Merge';
+
+  @override
+  String get success => 'Success';
+
+  @override
+  String get restoreSuccess => 'Data restored successfully';
+
+  @override
+  String get restoreFailed => 'Restore failed';
 }

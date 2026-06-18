@@ -1375,6 +1375,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Merge'**
   String get restoreMerge;
+
+  /// Generic success dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Success'**
+  String get success;
+
+  /// Dialog message after successful restore
+  ///
+  /// In en, this message translates to:
+  /// **'Data restored successfully'**
+  String get restoreSuccess;
+
+  /// Dialog message when restore fails
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed'**
+  String get restoreFailed;
 }
 
 class _AppLocalizationsDelegate

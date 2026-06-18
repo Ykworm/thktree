@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +19,8 @@ import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/export_service.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:thk_tree/data/services/import_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -722,13 +725,134 @@ class _RestoreEntry extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-
+    final pathsAsync = ref.watch(appPathsProvider);
+    
     return ThkListTile(
       title: l10n.restoreData,
       leading: const Icon(AppIcons.download),
       onTap: () async {
-        // TODO: 实现恢复逻辑
+        final paths = pathsAsync.value;
+        if (paths == null) return;
+
+        // 选择文件
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['zip'],
+        );
+
+        if (result == null || result.files.isEmpty) return;
+        final zipFile = File(result.files.first.path!);
+
+        // 检查是否有本地数据
+        final importService = ImportService(rootDir: paths.rootDir);
+        final hasExisting = importService.hasExistingData();
+
+        ImportMode? mode = ImportMode.overwrite;
+        if (hasExisting && context.mounted) {
+          // 显示冲突对话框
+          mode = await showCupertinoDialog<ImportMode>(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: Text(l10n.restoreConflictTitle),
+              content: Text(l10n.restoreConflictMessage),
+              actions: [
+                CupertinoDialogAction(
+                  child: Text(l10n.restoreOverwrite),
+                  onPressed: () => Navigator.of(context).pop(ImportMode.overwrite),
+                ),
+                CupertinoDialogAction(
+                  child: Text(l10n.restoreMerge),
+                  onPressed: () => Navigator.of(context).pop(ImportMode.merge),
+                ),
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
+                  child: Text(l10n.cancel),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          );
+
+          if (mode == null) return;
+        }
+
+        // 显示进度
+        if (context.mounted) {
+          showCupertinoDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => CupertinoAlertDialog(
+              title: Text(l10n.restoreInProgress),
+              content: const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: CupertinoActivityIndicator(),
+              ),
+            ),
+          );
+        }
+
+        try {
+          final result = await importService.importFull(
+            zipFile: zipFile,
+            mode: mode,
+          );
+
+          if (context.mounted) {
+            Navigator.of(context).pop(); // 关闭进度
+
+            if (result.status == ImportResultStatus.success) {
+              // 刷新页面
+              ref.invalidate(appPathsProvider);
+              
+              showCupertinoDialog(
+                context: context,
+                builder: (context) => CupertinoAlertDialog(
+                  title: Text(l10n.success),
+                  content: Text(l10n.restoreSuccess),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: Text(l10n.ok),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              showCupertinoDialog(
+                context: context,
+                builder: (context) => CupertinoAlertDialog(
+                  title: Text(l10n.error),
+                  content: Text(result.message ?? l10n.restoreFailed),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: Text(l10n.ok),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+            showCupertinoDialog(
+              context: context,
+              builder: (context) => CupertinoAlertDialog(
+                title: Text(l10n.error),
+                content: Text(e.toString()),
+                actions: [
+                  CupertinoDialogAction(
+                    child: Text(l10n.ok),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
       },
     );
   }
 }
+

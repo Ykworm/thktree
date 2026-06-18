@@ -965,5 +965,17 @@
   "restoreMerge": "Merge",
   "@restoreMerge": {
     "description": "Button to merge with local data during restore"
+  },
+  "success": "Success",
+  "@success": {
+    "description": "Generic success dialog title"
+  },
+  "restoreSuccess": "Data restored successfully",
+  "@restoreSuccess": {
+    "description": "Dialog message after successful restore"
+  },
+  "restoreFailed": "Restore failed",
+  "@restoreFailed": {
+    "description": "Dialog message when restore fails"
   }
 }
