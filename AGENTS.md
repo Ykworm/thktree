@@ -13,6 +13,54 @@
 
 ---
 
+## 并行开发与分支管理（Worktree + Rebase 规范）
+
+当多个讨论/议题并行、且需要同时改代码时，遵循以下默认策略。
+
+### 默认规则
+
+- **讨论默认在主分支**（`dev`）进行：头脑风暴、方案评审、文档沉淀不切分支
+- **实现默认起独立分支**：按议题创建 `codex/<topic>`，如 `codex/model-config-redesign`
+- **高并行场景默认用 `git worktree`**：每个议题一个独立工作目录，互不干扰
+  - 目录建议：`../ThkTree-worktrees/<topic>`
+  - 主仓库继续留在 `dev` 讨论，worktree 里做实现
+
+### Rebase 安全策略
+
+| 场景 | 策略 | 说明 |
+|------|------|------|
+| 共享分支（dev / 已公开分支） | 优先 `merge` | 保持历史稳定，避免他人同步问题 |
+| 个人/未公开分支 | 可 `rebase` | 整理提交历史，便于 PR review |
+| 推送已 rebase 的个人分支 | 仅允许 `--force-with-lease` | 比 `--force` 安全，检查远端是否有别人新提交 |
+| 共享分支 | **禁止** `rebase` / `reset --hard` / `push --force` | 不可破坏性重写公开历史 |
+
+### 常见命令
+
+```bash
+# 创建 worktree + 新分支
+git worktree add ../ThkTree-worktrees/<topic> -b codex/<topic>
+
+# 查看所有 worktree
+git worktree list
+
+# 删除 worktree（合并完成后）
+git worktree remove ../ThkTree-worktrees/<topic>
+
+# 个人分支同步主干（rebase）
+git fetch origin
+git rebase origin/dev
+git push --force-with-lease
+```
+
+### 风险提示
+
+- **rebase 会改写提交历史**：生成新的 commit id，原有提交可通过 `git reflog` 找回
+- **冲突处理流程**：rebase 暂停后，手动解决冲突 → `git add <file>` → `git rebase --continue`；若不想继续：`git rebase --abort`
+- **同一分支不能在多个 worktree 同时 checkout**：这是 git 的硬限制
+
+
+---
+
 ## 测试与验收策略
 
 在实现前，必须先明确本次改动的验收方式。
@@ -40,6 +88,32 @@
 - 不得机械要求"先写单测再实现"
 - 当集成测试、静态检查和手工验证已足够可信时，可以不补低价值单测
 - focused tests 的目标是固定长期约束，而不是追求覆盖率
+
+---
+
+## Flutter Page Layout
+
+当任务涉及以下任一场景时，必须先读取 `docs/_shared/page-layout-rules.md`，再决定页面骨架与滚动结构：
+
+- 新建 Flutter page / screen
+- 重构页面布局
+- 列表、Grid、空态、加载态无法填满 body
+- `Large Title` 页面
+- `CustomScrollView` / `Sliver` / `ListView` / `Column + scrollable`
+
+### 硬约束
+
+- 禁止默认将整页 `ListView` / `GridView` 直接作为 `ThkLargeTitlePage.children` 的一个 child 注入，除非已确认该页面属于 section 流式内容页
+- 若页面使用 `Column` 承载滚动区，滚动区必须放进 `Expanded` 或 `Flexible`
+- 若页面使用 `CustomScrollView`，优先使用 `SliverList` / `SliverFillRemaining` / `SliverGrid`，不要先套一层普通滚动组件再塞进 sliver child
+- 若页面需要 `Large Title` 且主体是主列表或需要填满剩余视口，优先参考 `ThemeListScreen` 的 sliver 模式，不要直接套用设置页写法
+- 设置页、表单区块页、说明页等 section 流式内容，才优先使用 `ThkLargeTitlePage`
+
+### 参考实现
+
+- 主列表 + `Large Title`：参考 `ThemeListScreen`
+- 单主内容列表页：参考 `ThemeDetailScreen`
+- section 流式设置页：参考 `SettingsScreen`
 
 ---
 
