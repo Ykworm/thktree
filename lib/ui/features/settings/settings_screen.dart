@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,13 +15,13 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
-import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
+import 'package:thk_tree/ui/features/settings/llm_settings_screen.dart';
 import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
-import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/export_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:thk_tree/data/services/import_service.dart';
+import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -42,9 +43,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ThkListSection(
           children: [
-            _LlmProvidersEntry(),
-            _TitleModelEntry(),
-            _SummaryModelEntry(),
+            _LlmSettingsEntry(),
           ],
         ),
         ThkListSection(
@@ -254,8 +253,8 @@ String _formatLogTail(String raw) {
   return buf.toString();
 }
 
-class _LlmProvidersEntry extends ConsumerWidget {
-  const _LlmProvidersEntry();
+class _LlmSettingsEntry extends ConsumerWidget {
+  const _LlmSettingsEntry();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -270,12 +269,12 @@ class _LlmProvidersEntry extends ConsumerWidget {
 
     return ThkListTile(
       leading: const Icon(AppIcons.cloud),
-      title: l10n.llmProvidersTitle,
+      title: l10n.llmSettings,
       subtitle: subtitle,
       onTap: () {
         Navigator.of(context).push(
           CupertinoPageRoute(
-            builder: (_) => const LlmProvidersScreen(),
+            builder: (_) => const LlmSettingsScreen(),
           ),
         );
       },
@@ -384,233 +383,6 @@ class _LanguageTile extends ConsumerWidget {
 }
 
 
-class _TitleModelEntry extends ConsumerWidget {
-  const _TitleModelEntry();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final settingsAsync = ref.watch(settingsControllerProvider);
-
-    return settingsAsync.when(
-      data: (settings) {
-        final subtitle = settings.titleModelProviderId != null && settings.titleModelModelId != null
-            ? _getModelDisplayName(ref, settings.titleModelProviderId!, settings.titleModelModelId!)
-            : l10n.notConfigured;
-
-        return ThkListTile(
-          leading: const Icon(CupertinoIcons.textformat),
-          title: l10n.titleModelTitle,
-          subtitle: subtitle,
-          onTap: () => _showModelSelector(context, ref, isTitleModel: true),
-        );
-      },
-      loading: () => ThkListTile(
-        leading: const Icon(CupertinoIcons.textformat),
-        title: l10n.titleModelTitle,
-        subtitle: l10n.loadingSettings,
-      ),
-      error: (e, _) => ThkListTile(
-        leading: const Icon(CupertinoIcons.textformat),
-        title: l10n.titleModelTitle,
-        subtitle: e.toString(),
-      ),
-    );
-  }
-
-  String _getModelDisplayName(WidgetRef ref, String providerId, String modelId) {
-    final providersAsync = ref.read(llmProvidersProvider);
-    return providersAsync.when(
-      data: (providers) {
-        final provider = providers.where((p) => p.id == providerId).firstOrNull;
-        if (provider == null) return modelId;
-        final model = provider.models.where((m) => m.id == modelId).firstOrNull;
-        return model?.name ?? modelId;
-      },
-      loading: () => modelId,
-      error: (_, __) => modelId,
-    );
-  }
-
-  void _showModelSelector(BuildContext context, WidgetRef ref, {required bool isTitleModel}) {
-    final providersAsync = ref.read(llmProvidersProvider);
-    providersAsync.whenData((providers) {
-      showModelPicker(context, ref, providers, isTitleModel: isTitleModel);
-    });
-  }
-}
-
-class _SummaryModelEntry extends ConsumerWidget {
-  const _SummaryModelEntry();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final settingsAsync = ref.watch(settingsControllerProvider);
-
-    return settingsAsync.when(
-      data: (settings) {
-        final subtitle = settings.summaryModelProviderId != null && settings.summaryModelModelId != null
-            ? _getModelDisplayName(ref, settings.summaryModelProviderId!, settings.summaryModelModelId!)
-            : l10n.notConfigured;
-
-        return ThkListTile(
-          leading: const Icon(CupertinoIcons.doc_text),
-          title: l10n.summaryModelTitle,
-          subtitle: subtitle,
-          onTap: () => _showModelSelector(context, ref, isTitleModel: false),
-        );
-      },
-      loading: () => ThkListTile(
-        leading: const Icon(CupertinoIcons.doc_text),
-        title: l10n.summaryModelTitle,
-        subtitle: l10n.loadingSettings,
-      ),
-      error: (e, _) => ThkListTile(
-        leading: const Icon(CupertinoIcons.doc_text),
-        title: l10n.summaryModelTitle,
-        subtitle: e.toString(),
-      ),
-    );
-  }
-
-  String _getModelDisplayName(WidgetRef ref, String providerId, String modelId) {
-    final providersAsync = ref.read(llmProvidersProvider);
-    return providersAsync.when(
-      data: (providers) {
-        final provider = providers.where((p) => p.id == providerId).firstOrNull;
-        if (provider == null) return modelId;
-        final model = provider.models.where((m) => m.id == modelId).firstOrNull;
-        return model?.name ?? modelId;
-      },
-      loading: () => modelId,
-      error: (_, __) => modelId,
-    );
-  }
-
-  void _showModelSelector(BuildContext context, WidgetRef ref, {required bool isTitleModel}) {
-    final providersAsync = ref.read(llmProvidersProvider);
-    providersAsync.whenData((providers) {
-      showModelPicker(context, ref, providers, isTitleModel: isTitleModel);
-    });
-  }
-}
-
-void showModelPicker(BuildContext context, WidgetRef ref, List<LlmProviderConfig> providers, {required bool isTitleModel}) {
-  final l10n = AppLocalizations.of(context)!;
-  
-  // Filter providers that have models
-  final configuredProviders = providers
-      .where((p) => p.models.isNotEmpty || (p.selectedModelId != null && p.selectedModelId!.isNotEmpty))
-      .toList();
-
-  if (configuredProviders.isEmpty) {
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        content: Text(l10n.pleaseFetchModels),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.close),
-          ),
-        ],
-      ),
-    );
-    return;
-  }
-
-  showCupertinoModalPopup(
-    context: context,
-    builder: (ctx) => CupertinoActionSheet(
-      title: Text(isTitleModel ? l10n.titleModelTitle : l10n.summaryModelTitle),
-      actions: [
-        for (final provider in configuredProviders)
-          ..._buildProviderActions(provider, ref, context, isTitleModel),
-      ],
-      cancelButton: CupertinoActionSheetAction(
-        isDestructiveAction: true,
-        onPressed: () => Navigator.of(ctx).pop(),
-        child: Text(l10n.cancel),
-      ),
-    ),
-  );
-}
-
-List<Widget> _buildProviderActions(LlmProviderConfig provider, WidgetRef ref, BuildContext context, bool isTitleModel) {
-  final actions = <Widget>[];
-  
-  if (provider.models.isNotEmpty) {
-    for (final model in provider.models) {
-      actions.add(
-        CupertinoActionSheetAction(
-          onPressed: () {
-            if (isTitleModel) {
-              ref.read(settingsControllerProvider.notifier).saveTitleModel(
-                providerId: provider.id,
-                modelId: model.id,
-              );
-            } else {
-              ref.read(settingsControllerProvider.notifier).saveSummaryModel(
-                providerId: provider.id,
-                modelId: model.id,
-              );
-            }
-            Navigator.of(context).pop();
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                provider.name,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              Text(model.name),
-            ],
-          ),
-        ),
-      );
-    }
-  } else if (provider.selectedModelId != null && provider.selectedModelId!.isNotEmpty) {
-    actions.add(
-      CupertinoActionSheetAction(
-        onPressed: () {
-          if (isTitleModel) {
-            ref.read(settingsControllerProvider.notifier).saveTitleModel(
-              providerId: provider.id,
-              modelId: provider.selectedModelId!,
-            );
-          } else {
-            ref.read(settingsControllerProvider.notifier).saveSummaryModel(
-              providerId: provider.id,
-              modelId: provider.selectedModelId!,
-            );
-          }
-          Navigator.of(context).pop();
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              provider.name,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            Text(provider.selectedModelId!),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  return actions;
-}
-
 class _FaceIdToggle extends ConsumerWidget {
   const _FaceIdToggle();
 
@@ -668,52 +440,71 @@ class _BackupEntry extends ConsumerWidget {
       onTap: () async {
         final paths = pathsAsync.value;
         if (paths == null) return;
+        if (!context.mounted) return;
 
-        // 显示进度
-        showCupertinoDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => CupertinoAlertDialog(
-            title: Text(l10n.backupInProgress),
-            content: const Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: CupertinoActivityIndicator(),
+        // 关键：在异步操作前固定 navigator 引用，避免 widget 销毁时
+        // 直接调 Navigator.of(context).pop() 触发 NavigatorState.dispose
+        // 期间的 !_debugLocked 断言。
+        final navigator = Navigator.of(context, rootNavigator: true);
+
+        // 显示进度对话框（fire-and-forget，不阻塞后续 export 流程）。
+        unawaited(
+          showCupertinoDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => CupertinoAlertDialog(
+              title: Text(l10n.backupInProgress),
+              content: const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: CupertinoActivityIndicator(),
+              ),
             ),
-          ),
+          ).then((_) {}).catchError((_) {}),
         );
 
+        File? zipFile;
+        Object? exportError;
         try {
           final exportService = ExportService(rootDir: paths.rootDir);
-          final zipFile = await exportService.exportFull(
+          zipFile = await exportService.exportFull(
             appVersion: '1.0.0', // TODO: 从 package_info 获取
           );
-
-          // 关闭进度对话框
-          if (context.mounted) Navigator.of(context).pop();
-
-          // 分享文件
-          await Share.shareXFiles(
-            [XFile(zipFile.path)],
-            sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
-          );
         } catch (e) {
+          exportError = e;
+        } finally {
+          // 无论成功失败，都关闭进度对话框。
+          // 用 navigator.canPop() 而非 context.mounted：
+          //   - canPop() 检查 root navigator 自身状态（不受 widget 销毁影响）
+          //   - 避免 widget 已 dispose 时仍尝试 pop 触发 _debugLocked
+          if (navigator.canPop()) {
+            navigator.pop();
+          }
+        }
+
+        if (exportError != null) {
           if (context.mounted) {
-            Navigator.of(context).pop();
             showCupertinoDialog(
               context: context,
-              builder: (context) => CupertinoAlertDialog(
+              builder: (ctx) => CupertinoAlertDialog(
                 title: Text(l10n.error),
-                content: Text(e.toString()),
+                content: Text(exportError.toString()),
                 actions: [
                   CupertinoDialogAction(
                     child: Text(l10n.ok),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ],
               ),
             );
           }
+          return;
         }
+
+        // 弹系统分享面板，期间 Flutter 可能进入 inactive；不再操作 Navigator。
+        await Share.shareXFiles(
+          [XFile(zipFile!.path)],
+          sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
+        );
       },
     );
   }
@@ -733,118 +524,143 @@ class _RestoreEntry extends ConsumerWidget {
       onTap: () async {
         final paths = pathsAsync.value;
         if (paths == null) return;
+        if (!context.mounted) return;
 
-        // 选择文件
-        final result = await FilePicker.platform.pickFiles(
-          type: FileType.custom,
-          allowedExtensions: ['zip'],
-        );
+        // 1. 选文件（异步，期间 widget 可能被销毁）
+        FilePickerResult? pickResult;
+        try {
+          pickResult = await FilePicker.platform.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: ['zip'],
+          );
+        } catch (_) {
+          return;
+        }
+        if (!context.mounted) return;
+        if (pickResult == null || pickResult.files.isEmpty) return;
+        final zipFile = File(pickResult.files.first.path!);
 
-        if (result == null || result.files.isEmpty) return;
-        final zipFile = File(result.files.first.path!);
-
-        // 检查是否有本地数据
+        // 2. 冲突对话框（await user choice）
         final importService = ImportService(rootDir: paths.rootDir);
         final hasExisting = importService.hasExistingData();
 
         ImportMode? mode = ImportMode.overwrite;
-        if (hasExisting && context.mounted) {
-          // 显示冲突对话框
+        if (hasExisting) {
+          if (!context.mounted) return;
           mode = await showCupertinoDialog<ImportMode>(
             context: context,
-            builder: (context) => CupertinoAlertDialog(
+            builder: (ctx) => CupertinoAlertDialog(
               title: Text(l10n.restoreConflictTitle),
               content: Text(l10n.restoreConflictMessage),
               actions: [
                 CupertinoDialogAction(
                   child: Text(l10n.restoreOverwrite),
-                  onPressed: () => Navigator.of(context).pop(ImportMode.overwrite),
+                  onPressed: () =>
+                      Navigator.of(ctx).pop(ImportMode.overwrite),
                 ),
                 CupertinoDialogAction(
                   child: Text(l10n.restoreMerge),
-                  onPressed: () => Navigator.of(context).pop(ImportMode.merge),
+                  onPressed: () => Navigator.of(ctx).pop(ImportMode.merge),
                 ),
                 CupertinoDialogAction(
                   isDestructiveAction: true,
                   child: Text(l10n.cancel),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(ctx).pop(),
                 ),
               ],
             ),
           );
-
           if (mode == null) return;
         }
+        if (!context.mounted) return;
 
-        // 显示进度
-        if (context.mounted) {
-          showCupertinoDialog(
+        // 3. 在异步操作前固定 navigator，进度对话框关闭统一走 navigator.canPop()
+        final navigator = Navigator.of(context, rootNavigator: true);
+
+        // 显示进度对话框（fire-and-forget）。
+        unawaited(
+          showCupertinoDialog<void>(
             context: context,
             barrierDismissible: false,
-            builder: (context) => CupertinoAlertDialog(
+            builder: (dialogContext) => CupertinoAlertDialog(
               title: Text(l10n.restoreInProgress),
               content: const Padding(
                 padding: EdgeInsets.only(top: 16),
                 child: CupertinoActivityIndicator(),
               ),
             ),
-          );
-        }
+          ).then((_) {}).catchError((_) {}),
+        );
 
+        ImportResult? importResult;
+        Object? importError;
         try {
-          final result = await importService.importFull(
+          importResult = await importService.importFull(
             zipFile: zipFile,
             mode: mode,
           );
-
-          if (context.mounted) {
-            Navigator.of(context).pop(); // 关闭进度
-
-            if (result.status == ImportResultStatus.success) {
-              // 刷新页面
-              ref.invalidate(appPathsProvider);
-              
-              showCupertinoDialog(
-                context: context,
-                builder: (context) => CupertinoAlertDialog(
-                  title: Text(l10n.success),
-                  content: Text(l10n.restoreSuccess),
-                  actions: [
-                    CupertinoDialogAction(
-                      child: Text(l10n.ok),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              showCupertinoDialog(
-                context: context,
-                builder: (context) => CupertinoAlertDialog(
-                  title: Text(l10n.error),
-                  content: Text(result.message ?? l10n.restoreFailed),
-                  actions: [
-                    CupertinoDialogAction(
-                      child: Text(l10n.ok),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              );
-            }
-          }
         } catch (e) {
-          if (context.mounted) {
-            Navigator.of(context).pop();
+          importError = e;
+        } finally {
+          // 无论成功失败，都关闭进度对话框。
+          // canPop() 不依赖 context，避免 widget 销毁时触发 _debugLocked。
+          if (navigator.canPop()) {
+            navigator.pop();
+          }
+        }
+
+        if (!context.mounted) return;
+
+        // 4. 错误优先（原始异常对象）
+        if (importError != null) {
+          showCupertinoDialog(
+            context: context,
+            builder: (ctx) => CupertinoAlertDialog(
+              title: Text(l10n.error),
+              content: Text(importError.toString()),
+              actions: [
+                CupertinoDialogAction(
+                  child: Text(l10n.ok),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+
+        // 5. 业务结果
+        if (importResult != null) {
+          // 复制到非空局部变量，避免嵌套 if 内 Dart type promotion 失效
+          final result = importResult;
+          if (result.status == ImportResultStatus.success) {
+            // 刷新页面
+            ref.invalidate(appPathsProvider);
+            ref.invalidate(themeListControllerProvider);
+
             showCupertinoDialog(
               context: context,
-              builder: (context) => CupertinoAlertDialog(
-                title: Text(l10n.error),
-                content: Text(e.toString()),
+              builder: (ctx) => CupertinoAlertDialog(
+                title: Text(l10n.success),
+                content: Text(l10n.restoreSuccess),
                 actions: [
                   CupertinoDialogAction(
                     child: Text(l10n.ok),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            showCupertinoDialog(
+              context: context,
+              builder: (ctx) => CupertinoAlertDialog(
+                title: Text(l10n.error),
+                content: Text(result.message ?? l10n.restoreFailed),
+                actions: [
+                  CupertinoDialogAction(
+                    child: Text(l10n.ok),
+                    onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ],
               ),

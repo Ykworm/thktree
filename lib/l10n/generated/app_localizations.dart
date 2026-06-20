@@ -1411,6 +1411,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not set'**
   String get contextSizeNotSet;
+
+  /// Settings - LLM entry title
+  ///
+  /// In en, this message translates to:
+  /// **'LLM'**
+  String get llmSettings;
+
+  /// LLM page - default model config option
+  ///
+  /// In en, this message translates to:
+  /// **'Default Model Config'**
+  String get defaultModelConfig;
+
+  /// Default model config page - chat default model title
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Default Model'**
+  String get chatDefaultModel;
+
+  /// Generic - not set state
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
 }
 
 class _AppLocalizationsDelegate

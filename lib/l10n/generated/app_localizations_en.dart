@@ -747,4 +747,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contextSizeNotSet => 'Not set';
+
+  @override
+  String get llmSettings => 'LLM';
+
+  @override
+  String get defaultModelConfig => 'Default Model Config';
+
+  @override
+  String get chatDefaultModel => 'Chat Default Model';
+
+  @override
+  String get notSet => 'Not set';
 }

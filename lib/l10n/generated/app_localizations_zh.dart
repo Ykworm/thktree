@@ -724,4 +724,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get contextSizeNotSet => '未设置';
+
+  @override
+  String get llmSettings => '大模型';
+
+  @override
+  String get defaultModelConfig => '默认模型配置';
+
+  @override
+  String get chatDefaultModel => '聊天默认模型';
+
+  @override
+  String get notSet => '未设置';
 }

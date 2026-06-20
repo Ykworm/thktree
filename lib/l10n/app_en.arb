@@ -989,5 +989,21 @@
   "contextSizeNotSet": "Not set",
   "@contextSizeNotSet": {
     "description": "Placeholder text when context size is not set"
+  },
+  "llmSettings": "LLM",
+  "@llmSettings": {
+    "description": "Settings - LLM entry title"
+  },
+  "defaultModelConfig": "Default Model Config",
+  "@defaultModelConfig": {
+    "description": "LLM page - default model config option"
+  },
+  "chatDefaultModel": "Chat Default Model",
+  "@chatDefaultModel": {
+    "description": "Default model config page - chat default model title"
+  },
+  "notSet": "Not set",
+  "@notSet": {
+    "description": "Generic - not set state"
   }
 }

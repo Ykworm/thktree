@@ -440,5 +440,9 @@
   "restoreFailed": "恢复失败",
   "contextSize": "上下文大小",
   "contextSizeDescription": "用于计算剩余可用 token，影响长对话的截断策略。如 Claude 等模型无需设置。",
-  "contextSizeNotSet": "未设置"
+  "contextSizeNotSet": "未设置",
+  "llmSettings": "大模型",
+  "defaultModelConfig": "默认模型配置",
+  "chatDefaultModel": "聊天默认模型",
+  "notSet": "未设置"
 }
