@@ -61,6 +61,12 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     await store.saveSummaryModel(providerId: providerId, modelId: modelId);
     state = AsyncData(await store.load());
   }
+
+  Future<void> saveChatDefaultModel({String? providerId, String? modelId}) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveChatDefaultModel(providerId: providerId, modelId: modelId);
+    state = AsyncData(await store.load());
+  }
 }
 
 final settingsControllerProvider =
@@ -81,13 +87,13 @@ class LocaleNotifier extends Notifier<Locale?> {
 
 final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(() => LocaleNotifier(null));
 
+final initialBrightnessProvider = Provider<Brightness>((ref) => Brightness.light);
+
 class BrightnessNotifier extends Notifier<Brightness> {
-  BrightnessNotifier(this._initial);
-
-  final Brightness _initial;
-
   @override
-  Brightness build() => _initial;
+  Brightness build() {
+    return ref.watch(initialBrightnessProvider);
+  }
 
   void setBrightness(Brightness b) {
     state = b;
@@ -101,5 +107,4 @@ class BrightnessNotifier extends Notifier<Brightness> {
 }
 
 final brightnessProvider =
-    NotifierProvider<BrightnessNotifier, Brightness>(
-        () => BrightnessNotifier(Brightness.light));
+    NotifierProvider<BrightnessNotifier, Brightness>(BrightnessNotifier.new);

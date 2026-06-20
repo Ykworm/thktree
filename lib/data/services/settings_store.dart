@@ -24,6 +24,8 @@ class AppSettings {
     this.titleModelModelId,
     this.summaryModelProviderId,
     this.summaryModelModelId,
+    this.chatDefaultProviderId,
+    this.chatDefaultModelId,
     this.ttsVoiceId,
   });
 
@@ -47,6 +49,8 @@ class AppSettings {
   final String? titleModelModelId;
   final String? summaryModelProviderId;
   final String? summaryModelModelId;
+  final String? chatDefaultProviderId;
+  final String? chatDefaultModelId;
   final String? ttsVoiceId;
 
   String get apiKey {
@@ -104,6 +108,8 @@ class AppSettings {
     String? titleModelModelId,
     String? summaryModelProviderId,
     String? summaryModelModelId,
+    String? chatDefaultProviderId,
+    String? chatDefaultModelId,
     String? ttsVoiceId,
   }) {
     return AppSettings(
@@ -127,6 +133,8 @@ class AppSettings {
       titleModelModelId: titleModelModelId ?? this.titleModelModelId,
       summaryModelProviderId: summaryModelProviderId ?? this.summaryModelProviderId,
       summaryModelModelId: summaryModelModelId ?? this.summaryModelModelId,
+      chatDefaultProviderId: chatDefaultProviderId ?? this.chatDefaultProviderId,
+      chatDefaultModelId: chatDefaultModelId ?? this.chatDefaultModelId,
       ttsVoiceId: ttsVoiceId ?? this.ttsVoiceId,
     );
   }
@@ -145,6 +153,8 @@ class SettingsStore {
   static const _keyTitleModelModelId = 'title_model_model_id';
   static const _keySummaryModelProviderId = 'summary_model_provider_id';
   static const _keySummaryModelModelId = 'summary_model_model_id';
+  static const _keyChatDefaultProviderId = 'chat_default_provider_id';
+  static const _keyChatDefaultModelId = 'chat_default_model_id';
   static const _keyTtsVoiceId = 'tts_voice_id';
 
   static String _apiKeyKey(LlmProvider p) => 'llm_api_key_${p.name}';
@@ -183,6 +193,8 @@ class SettingsStore {
     final titleModelModelId = await _secureStorage.read(key: _keyTitleModelModelId);
     final summaryModelProviderId = await _secureStorage.read(key: _keySummaryModelProviderId);
     final summaryModelModelId = await _secureStorage.read(key: _keySummaryModelModelId);
+    final chatDefaultProviderId = await _secureStorage.read(key: _keyChatDefaultProviderId);
+    final chatDefaultModelId = await _secureStorage.read(key: _keyChatDefaultModelId);
     final ttsVoiceId = await _secureStorage.read(key: _keyTtsVoiceId);
 
     return AppSettings(
@@ -206,6 +218,8 @@ class SettingsStore {
       titleModelModelId: titleModelModelId,
       summaryModelProviderId: summaryModelProviderId,
       summaryModelModelId: summaryModelModelId,
+      chatDefaultProviderId: chatDefaultProviderId,
+      chatDefaultModelId: chatDefaultModelId,
       ttsVoiceId: ttsVoiceId,
     );
   }
@@ -262,6 +276,16 @@ class SettingsStore {
     } else {
       await _secureStorage.write(key: _keySummaryModelProviderId, value: providerId);
       await _secureStorage.write(key: _keySummaryModelModelId, value: modelId);
+    }
+  }
+
+  Future<void> saveChatDefaultModel({String? providerId, String? modelId}) async {
+    if (providerId == null || modelId == null) {
+      await _secureStorage.delete(key: _keyChatDefaultProviderId);
+      await _secureStorage.delete(key: _keyChatDefaultModelId);
+    } else {
+      await _secureStorage.write(key: _keyChatDefaultProviderId, value: providerId);
+      await _secureStorage.write(key: _keyChatDefaultModelId, value: modelId);
     }
   }
 
