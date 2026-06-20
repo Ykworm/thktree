@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/llm/llm_provider_detail_screen.dart';
@@ -16,65 +17,87 @@ class LlmProvidersScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final providersAsync = ref.watch(llmProvidersProvider);
 
-    return ThkLargeTitlePage(
-      title: l10n.llmProvidersTitle,
-      trailing: CupertinoButton(
-        padding: EdgeInsets.zero,
-        onPressed: () async {
-          final result = await Navigator.of(context).push<bool>(
-            CupertinoPageRoute(
-              builder: (_) => const LlmProviderDetailScreen(),
-            ),
-          );
-          if (result == true) {
-            ref.invalidate(llmProvidersProvider);
-          }
-        },
-        child: Icon(AppIcons.add),
-      ),
-      children: [
-        providersAsync.when(
-          data: (providers) => _ProviderList(providers: providers),
-          loading: () => const Center(child: CupertinoActivityIndicator()),
-          error: (e, st) => Center(child: Text(e.toString())),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProviderList extends ConsumerWidget {
-  const _ProviderList({required this.providers});
-
-  final List<LlmProviderConfig> providers;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-
-    if (providers.isEmpty) {
-      return Center(child: Text(l10n.noModels));
-    }
-
-    return ThkListSection(
-      children: providers.map((provider) {
-        final isCustom = provider.type == LlmProviderType.custom;
-        return _ProviderTile(
-          provider: provider,
-          isCustom: isCustom,
-          onTap: () async {
+    return CupertinoPageScaffold(
+      backgroundColor: AppColors.pageBg,
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(l10n.llmProvidersTitle),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () async {
             final result = await Navigator.of(context).push<bool>(
               CupertinoPageRoute(
-                builder: (_) =>
-                    LlmProviderDetailScreen(provider: provider),
+                builder: (_) => const LlmProviderDetailScreen(),
               ),
             );
             if (result == true) {
               ref.invalidate(llmProvidersProvider);
             }
           },
-        );
-      }).toList(),
+          child: Icon(AppIcons.add),
+        ),
+      ),
+      child: SafeArea(
+        child: providersAsync.when(
+          data: (providers) {
+            if (providers.isEmpty) {
+              return ThkFillCardPageBody(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        AppIcons.cloud,
+                        size: 40,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.noModels,
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return ThkFillCardPageBody(
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemCount: providers.length,
+                separatorBuilder: (context, index) => Container(
+                  height: 0.5,
+                  margin: const EdgeInsetsDirectional.only(start: 16),
+                  color: CupertinoColors.separator.resolveFrom(context),
+                ),
+                itemBuilder: (context, index) {
+                  final provider = providers[index];
+                  return _ProviderTile(
+                    provider: provider,
+                    onTap: () async {
+                      final result = await Navigator.of(context).push<bool>(
+                        CupertinoPageRoute(
+                          builder: (_) =>
+                              LlmProviderDetailScreen(provider: provider),
+                        ),
+                      );
+                      if (result == true) {
+                        ref.invalidate(llmProvidersProvider);
+                      }
+                    },
+                  );
+                },
+              ),
+            );
+          },
+          loading: () => const ThkFillCardPageBody(
+            child: Center(child: CupertinoActivityIndicator()),
+          ),
+          error: (e, st) => ThkFillCardPageBody(
+            child: Center(child: Text(e.toString())),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -82,12 +105,10 @@ class _ProviderList extends ConsumerWidget {
 class _ProviderTile extends StatelessWidget {
   const _ProviderTile({
     required this.provider,
-    required this.isCustom,
     required this.onTap,
   });
 
   final LlmProviderConfig provider;
-  final bool isCustom;
   final VoidCallback onTap;
 
   @override
@@ -100,7 +121,7 @@ class _ProviderTile extends StatelessWidget {
     return ThkListTile(
       title: provider.name,
       subtitle: modelText,
-      leading: Icon(isCustom ? AppIcons.extensionIcon : AppIcons.cloud),
+      leading: null,
       onTap: onTap,
     );
   }

@@ -82,10 +82,6 @@ flutter:
 
   assets:
     - assets/fonts/
-    - assets/test_llm_config/
-    # assets/test_llm_config/test_llm_config.json 持有真实 API Key，
-    # 已加入 .gitignore，不会被提交，但 build 时会打进 .app bundle，
-    # 让集成测试在 iOS simulator 进程里能通过 rootBundle 读到。
 
   uses-material-design: false
 

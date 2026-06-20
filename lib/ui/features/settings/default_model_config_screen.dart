@@ -5,6 +5,8 @@ import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
+import 'package:thk_tree/ui/features/settings/default_model_picker_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 /// 默认模型配置页
@@ -20,57 +22,73 @@ class DefaultModelConfigScreen extends ConsumerWidget {
     final settingsAsync = ref.watch(settingsControllerProvider);
 
     return CupertinoPageScaffold(
+      backgroundColor: AppColors.pageBg,
       navigationBar: CupertinoNavigationBar(
         middle: Text(l10n.defaultModelConfig),
       ),
       child: SafeArea(
-        child: ListView(
-          children: [
-            CupertinoListSection.insetGrouped(
-              header: Text(l10n.defaultModelConfig.toUpperCase()),
-              children: [
-                // 聊天默认模型
-                _buildModelTile(
-                  context: context,
-                  ref: ref,
-                  title: l10n.chatDefaultModel,
-                  settingsAsync: settingsAsync,
-                  getProviderId: (s) => s.chatDefaultProviderId,
-                  getModelId: (s) => s.chatDefaultModelId,
-                  onSave: (providerId, modelId) => ref
-                      .read(settingsControllerProvider.notifier)
-                      .saveChatDefaultModel(
-                          providerId: providerId, modelId: modelId),
-                ),
-                // 标题生成模型
-                _buildModelTile(
-                  context: context,
-                  ref: ref,
-                  title: l10n.titleModelTitle,
-                  settingsAsync: settingsAsync,
-                  getProviderId: (s) => s.titleModelProviderId,
-                  getModelId: (s) => s.titleModelModelId,
-                  onSave: (providerId, modelId) => ref
-                      .read(settingsControllerProvider.notifier)
-                      .saveTitleModel(
-                          providerId: providerId, modelId: modelId),
-                ),
-                // 对话总结模型
-                _buildModelTile(
-                  context: context,
-                  ref: ref,
-                  title: l10n.summaryModelTitle,
-                  settingsAsync: settingsAsync,
-                  getProviderId: (s) => s.summaryModelProviderId,
-                  getModelId: (s) => s.summaryModelModelId,
-                  onSave: (providerId, modelId) => ref
-                      .read(settingsControllerProvider.notifier)
-                      .saveSummaryModel(
-                          providerId: providerId, modelId: modelId),
-                ),
-              ],
+        child: settingsAsync.when(
+          data: (_) => ThkFillCardPageBody(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: 3,
+              separatorBuilder: (context, index) => Container(
+                height: 0.5,
+                margin: const EdgeInsetsDirectional.only(start: 16),
+                color: CupertinoColors.separator.resolveFrom(context),
+              ),
+              itemBuilder: (context, index) {
+                switch (index) {
+                  case 0:
+                    return _buildModelTile(
+                      context: context,
+                      ref: ref,
+                      title: l10n.chatDefaultModel,
+                      settingsAsync: settingsAsync,
+                      getProviderId: (s) => s.chatDefaultProviderId,
+                      getModelId: (s) => s.chatDefaultModelId,
+                      onSave: (providerId, modelId) => ref
+                          .read(settingsControllerProvider.notifier)
+                          .saveChatDefaultModel(
+                              providerId: providerId, modelId: modelId),
+                    );
+                  case 1:
+                    return _buildModelTile(
+                      context: context,
+                      ref: ref,
+                      title: l10n.titleModelTitle,
+                      settingsAsync: settingsAsync,
+                      getProviderId: (s) => s.titleModelProviderId,
+                      getModelId: (s) => s.titleModelModelId,
+                      onSave: (providerId, modelId) => ref
+                          .read(settingsControllerProvider.notifier)
+                          .saveTitleModel(
+                              providerId: providerId, modelId: modelId),
+                    );
+                  case 2:
+                    return _buildModelTile(
+                      context: context,
+                      ref: ref,
+                      title: l10n.summaryModelTitle,
+                      settingsAsync: settingsAsync,
+                      getProviderId: (s) => s.summaryModelProviderId,
+                      getModelId: (s) => s.summaryModelModelId,
+                      onSave: (providerId, modelId) => ref
+                          .read(settingsControllerProvider.notifier)
+                          .saveSummaryModel(
+                              providerId: providerId, modelId: modelId),
+                    );
+                }
+                return const SizedBox.shrink();
+              },
             ),
-          ],
+          ),
+          loading: () => const ThkFillCardPageBody(
+            child: Center(child: CupertinoActivityIndicator()),
+          ),
+          error: (e, st) => ThkFillCardPageBody(
+            child: Center(child: Text(e.toString())),
+          ),
         ),
       ),
     );
@@ -86,108 +104,77 @@ class DefaultModelConfigScreen extends ConsumerWidget {
     required void Function(String? providerId, String? modelId) onSave,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final providersAsync = ref.watch(llmProvidersProvider);
 
     return settingsAsync.when(
       data: (settings) {
         final providerId = getProviderId(settings);
         final modelId = getModelId(settings);
-        final hasValue = providerId != null && modelId != null;
+        final subtitle = _resolveModelSubtitle(
+          l10n: l10n,
+          providersAsync: providersAsync,
+          providerId: providerId,
+          modelId: modelId,
+        );
 
-        return CupertinoListTile(
-          title: Text(title),
-          subtitle: hasValue ? Text(modelId) : Text(l10n.notSet),
-          trailing: const Icon(CupertinoIcons.chevron_right),
-          onTap: () => _showModelPicker(context, ref, onSave),
+        return ThkListTile(
+          title: title,
+          subtitle: subtitle,
+          onTap: () => _openModelPicker(
+            context: context,
+            title: title,
+            providerId: providerId,
+            modelId: modelId,
+            onSave: onSave,
+          ),
         );
       },
-      loading: () => CupertinoListTile(
-        title: Text(title),
+      loading: () => ThkListTile(
+        title: title,
         trailing: const CupertinoActivityIndicator(),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
-  void _showModelPicker(
-    BuildContext context,
-    WidgetRef ref,
-    void Function(String? providerId, String? modelId) onSave,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    final providersAsync = ref.read(llmProvidersProvider);
+  String _resolveModelSubtitle({
+    required AppLocalizations l10n,
+    required AsyncValue<List<LlmProviderConfig>> providersAsync,
+    required String? providerId,
+    required String? modelId,
+  }) {
+    if (providerId == null || modelId == null) return l10n.notSet;
 
-    providersAsync.whenData((providers) {
-      final configuredProviders =
-          providers.where((p) => p.models.isNotEmpty).toList();
+    final providers = providersAsync.value;
+    if (providers == null) return modelId;
 
-      if (configuredProviders.isEmpty) {
-        showCupertinoDialog(
-          context: context,
-          builder: (ctx) => CupertinoAlertDialog(
-            content: Text(l10n.pleaseFetchModels),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(l10n.close),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
+    final provider = providers.where((item) => item.id == providerId).firstOrNull;
+    if (provider == null) return modelId;
 
-      showCupertinoModalPopup(
-        context: context,
-        builder: (ctx) => CupertinoActionSheet(
-          title: Text(l10n.selectModel),
-          actions: [
-            for (final provider in configuredProviders)
-              ..._buildProviderActions(provider, onSave, ctx),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.cancel),
-          ),
-        ),
-      );
-    });
+    final model = provider.models.where((item) => item.id == modelId).firstOrNull;
+    if (model == null) return '${provider.name} · $modelId';
+
+    return '${provider.name} · ${model.name}';
   }
 
-  List<Widget> _buildProviderActions(
-    LlmProviderConfig provider,
-    void Function(String? providerId, String? modelId) onSave,
-    BuildContext context,
-  ) {
-    final actions = <Widget>[];
-
-    // 提供商名称作为小标题（灰色小字）
-    actions.add(
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-        child: Text(
-          provider.name,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
+  void _openModelPicker({
+    required void Function(String? providerId, String? modelId) onSave,
+    required BuildContext context,
+    required String title,
+    required String? providerId,
+    required String? modelId,
+  }) {
+    Navigator.of(context).push<bool>(
+      CupertinoPageRoute(
+        builder: (_) => DefaultModelPickerScreen(
+          title: title,
+          currentProviderId: providerId,
+          currentModelId: modelId,
+          onSelected: (nextProviderId, nextModelId) async {
+            onSave(nextProviderId, nextModelId);
+          },
         ),
       ),
     );
-
-    for (final model in provider.models) {
-      actions.add(
-        CupertinoActionSheetAction(
-          onPressed: () {
-            onSave(provider.id, model.id);
-            Navigator.of(context).pop();
-          },
-          child: Text(model.name),
-        ),
-      );
-    }
-
-    return actions;
   }
 }

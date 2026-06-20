@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/settings/default_model_config_screen.dart';
 
@@ -17,41 +19,50 @@ class LlmSettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return CupertinoPageScaffold(
+      backgroundColor: AppColors.pageBg,
       navigationBar: CupertinoNavigationBar(
         middle: Text(l10n.llmSettings),
       ),
       child: SafeArea(
-        child: ListView(
-          children: [
-            CupertinoListSection.insetGrouped(
-              children: [
-                // 模型提供商
-                CupertinoListTile(
-                  title: Text(l10n.llmProvidersTitle),
-                  trailing: const Icon(CupertinoIcons.chevron_right),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (context) => const LlmProvidersScreen(),
-                      ),
-                    );
-                  },
-                ),
-                // 默认模型配置
-                CupertinoListTile(
-                  title: Text(l10n.defaultModelConfig),
-                  trailing: const Icon(CupertinoIcons.chevron_right),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (context) => const DefaultModelConfigScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
+        child: ThkFillCardPageBody(
+          child: ListView.separated(
+            padding: EdgeInsets.zero,
+            itemCount: 2,
+            separatorBuilder: (context, index) => Container(
+              height: 0.5,
+              margin: const EdgeInsetsDirectional.only(start: 16),
+              color: CupertinoColors.separator.resolveFrom(context),
             ),
-          ],
+            itemBuilder: (context, index) {
+              switch (index) {
+                case 0:
+                  return ThkListTile(
+                    title: l10n.llmProvidersTitle,
+                    backgroundColor: AppColors.surface,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (context) => const LlmProvidersScreen(),
+                        ),
+                      );
+                    },
+                  );
+                case 1:
+                  return ThkListTile(
+                    title: l10n.defaultModelConfig,
+                    backgroundColor: AppColors.surface,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (context) => const DefaultModelConfigScreen(),
+                        ),
+                      );
+                    },
+                  );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ),
     );

@@ -121,7 +121,7 @@ class SettingsScreen extends ConsumerWidget {
         subtitle: logger.hasRemoteLogging
             ? '${l10n.enabled}\n${logger.remoteLogUrl}'
             : l10n.disabled,
-        leading: Icon(logger.hasRemoteLogging ? CupertinoIcons.cloud_fill : CupertinoIcons.cloud),
+        leading: Icon(logger.hasRemoteLogging ? AppIcons.cloudFill : AppIcons.cloud),
         trailing: null,
         onTap: logger.hasRemoteLogging
             ? () async {
@@ -133,7 +133,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       ThkListTile(
         title: l10n.viewLogs,
-        leading: const Icon(CupertinoIcons.doc_text),
+        leading: const Icon(AppIcons.document),
         onTap: () async {
           final text = await logger.readTail();
           if (!context.mounted) return;
@@ -198,8 +198,8 @@ class _DarkModeToggle extends ConsumerWidget {
 
     return ThkListTile(
       leading: Icon(isDark
-          ? CupertinoIcons.moon_fill
-          : CupertinoIcons.sun_max_fill),
+          ? AppIcons.moonFill
+          : AppIcons.sunMaxFill),
       title: 'Dark Mode',
       subtitle: isDark ? 'Dark' : 'Light',
       trailing: CupertinoSwitch(
@@ -268,7 +268,10 @@ class _LlmSettingsEntry extends ConsumerWidget {
     );
 
     return ThkListTile(
-      leading: const Icon(AppIcons.cloud),
+      leading: const Padding(
+        padding: EdgeInsets.only(bottom: 1.5),
+        child: Icon(AppIcons.cloud),
+      ),
       title: l10n.llmSettings,
       subtitle: subtitle,
       onTap: () {
@@ -292,7 +295,10 @@ class _LanguageTile extends ConsumerWidget {
     final currentName = _localeName(currentLocale, l10n);
 
     return ThkListTile(
-      leading: const Icon(CupertinoIcons.globe),
+      leading: const Padding(
+        padding: EdgeInsets.only(top: 1.5),
+        child: Icon(AppIcons.globe),
+      ),
       title: l10n.language,
       subtitle: l10n.languageSubtitle(currentName),
       additionalInfo: currentName,
@@ -393,7 +399,10 @@ class _FaceIdToggle extends ConsumerWidget {
     final enabled = settingsAsync.whenOrNull(data: (s) => s.faceIdEnabled) ?? true;
 
     return ThkListTile(
-      leading: const Icon(CupertinoIcons.lock_shield),
+      leading: const Padding(
+        padding: EdgeInsets.only(top: 1),
+        child: Icon(AppIcons.lockShield),
+      ),
       title: l10n.faceIdLock,
       subtitle: l10n.faceIdLockSubtitle,
       trailing: CupertinoSwitch(
@@ -414,7 +423,10 @@ class _TtsEntry extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ThkListTile(
-      leading: const Icon(AppIcons.ttsPlay),
+      leading: const Padding(
+        padding: EdgeInsets.only(bottom: 2),
+        child: Icon(AppIcons.ttsPlay),
+      ),
       title: l10n.ttsVoiceSettings,
       subtitle: l10n.ttsVoiceSettingsSubtitle,
       onTap: () {
@@ -436,7 +448,10 @@ class _BackupEntry extends ConsumerWidget {
     
     return ThkListTile(
       title: l10n.backupData,
-      leading: const Icon(AppIcons.share),
+      leading: const Padding(
+        padding: EdgeInsets.only(top: 0.5),
+        child: Icon(AppIcons.share),
+      ),
       onTap: () async {
         final paths = pathsAsync.value;
         if (paths == null) return;
@@ -520,7 +535,10 @@ class _RestoreEntry extends ConsumerWidget {
     
     return ThkListTile(
       title: l10n.restoreData,
-      leading: const Icon(AppIcons.download),
+      leading: const Padding(
+        padding: EdgeInsets.only(top: 0.5),
+        child: Icon(AppIcons.download),
+      ),
       onTap: () async {
         final paths = pathsAsync.value;
         if (paths == null) return;

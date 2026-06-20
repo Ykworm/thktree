@@ -96,6 +96,24 @@ class AppIcons {
   /// Icons.cloud
   static const IconData cloud = SFIcons.sf_cloud;
 
+  /// 语言 (globe)
+  static const IconData globe = SFIcons.sf_globe;
+
+  /// Cloud fill (remote logging on)
+  static const IconData cloudFill = SFIcons.sf_cloud_fill;
+
+  /// Document (view logs)
+  static const IconData document = SFIcons.sf_document;
+
+  /// Moon fill (dark mode on)
+  static const IconData moonFill = SFIcons.sf_moon_fill;
+
+  /// Sun max fill (dark mode off)
+  static const IconData sunMaxFill = SFIcons.sf_sun_max_fill;
+
+  /// Lock shield (Face ID)
+  static const IconData lockShield = SFIcons.sf_lock_shield;
+
   // ── 树 / 分支 ──
 
   /// Icons.account_tree / Icons.account_tree_outlined

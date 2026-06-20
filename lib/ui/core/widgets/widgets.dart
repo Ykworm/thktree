@@ -1,6 +1,7 @@
 export 'thk_nav_bar.dart';
 export 'thk_list_section.dart';
 export 'thk_list_tile.dart';
+export 'thk_fill_card_page_body.dart';
 export 'thk_button.dart';
 export 'thk_alert.dart';
 export 'thk_action_sheet.dart';
