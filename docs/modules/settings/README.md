@@ -8,14 +8,15 @@
 
 ## 职责
 
-应用设置模块。承载所有用户级偏好配置：外观（主题/字体）、语言、语音播放（TTS）、LLM 入口、账户/数据管理、About。
+应用设置模块。承载所有用户级偏好配置：外观（主题/字体）、语言、语音播放（TTS）、大模型入口、账户/数据管理、About。
 
 ## 功能列表
 
 - 外观：主题模式（浅色/深色/跟随系统）、字体大小、节点配色方案
 - 语言：i18n 切换（中/英）
 - 语音播放：TTS 引擎选择、语速（播放器内循环切换 0.75× / 1× / 1.5× / 2×）、试听
-- LLM：跳转到 [LLM 模块](../llm/README.md) 配置 Provider
+- 大模型：从设置页进入独立的"大模型"子页，再进入"模型提供商"和"默认模型配置"
+- 默认模型配置：集中设置聊天 / 标题生成 / 对话总结 3 个默认模型，点选后进入独立模型选择页
 - 数据：导出全部笔记/对话（JSON）、清空本地缓存、修复索引
 - 关于：版本号、开源许可、隐私政策
 - 调试（仅 debug 模式）：查看 SQLite 大小、强制重索引、日志级别
@@ -24,7 +25,10 @@
 
 | 文件 | 角色 | 行数 |
 |------|------|------|
-| `lib/ui/features/settings/settings_screen.dart` | 设置主屏幕（分组列表） | 580 |
+| `lib/ui/features/settings/settings_screen.dart` | 设置主屏幕（分组列表） | 692 |
+| `lib/ui/features/settings/llm_settings_screen.dart` | 大模型入口页 | 70 |
+| `lib/ui/features/settings/default_model_config_screen.dart` | 默认模型配置页 | 180 |
+| `lib/ui/features/settings/default_model_picker_screen.dart` | 默认模型选择页（单选） | 130 |
 | `lib/ui/features/settings/settings_controller.dart` | 偏好状态管理（持久化） | 75 |
 
 ## 子文档
@@ -42,6 +46,7 @@
 ## 维护要点
 
 - 新增设置项：先在 `arb` 文件加 key → `SettingsController` 加字段 → 设置 UI 渲染
+- 大模型相关设置保持三层导航：`设置页 -> 大模型 -> 具体子页`，不要把默认模型项重新摊回主设置页
 - TTS 相关改动必读 [specs/2026-06-05-语音播放功能-design.md](specs/2026-06-05-语音播放功能-design.md)
 - 主题相关改动跨 [themes 模块](../themes/README.md)
 - 数据导出格式参考 [storage-format](../../_shared/storage-format.md)
@@ -54,5 +59,7 @@
 - 2026-05：TTS 接入（iOS AVSpeechSynthesizer 优先）
 - 2026-05：LLM 入口从设置页跳转
 - 2026-06：数据导出/索引修复工具入口
+- 2026-06-20：LLM 区域重构为"大模型"入口，默认模型选择改为独立页面单选列表
 - 2026-06：调试面板（debug only）
 - 2026-06-17：TTS v1 上线 + UI 迭代（mini bar 布局、毛玻璃、双击标题回顶）
+- 2026-06-20：设置页 icon 从 CupertinoIcons 全量迁移 SF Symbols（统一 optical alignment，padding 微调）

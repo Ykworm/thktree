@@ -41,7 +41,7 @@
 | 维度 | 决策 | 理由 |
 |------|------|------|
 | API 来源 | **真实 API**（不 mock） | 测真链路，能抓 SSE 解析、超时、重连等真实问题 |
-| 配置来源 | `assets/test_llm_config/test_llm_config.json` | Simulator 看不到 host `tool/`（详见 [fixtures.md § 1](./fixtures.md#1-为什么用-asset-而不是-host-文件)） |
+| 配置来源 | `--dart-define-from-file` 注入 `TEST_LLM_CONFIG_JSON` 编译期常量 | Key 不进 bundle，从根上消除 release 包泄露 Key 的可能（详见 [fixtures.md § 1](./fixtures.md#1-为什么用-asset-而不是-host-文件) 历史背景） |
 | 厂商/模型 | 用 JSON 配的 `activeProvider`（默认 deepseek） | 用户可切换厂商验证多厂商兼容性 |
 | 单轮超时 | **90 秒** | 真 API 冷启动慢，普通 round 30s 内完成，留 buffer |
 | 整体超时 | **5 分钟**（`Timeout(Duration(minutes: 5))`） | 2 round + 准备 + 收尾 |
@@ -54,14 +54,13 @@
 
 为了让这个测试跑通，需要 4 处代码改动（已全部完成）：
 
-### 4.1 改动 1：`lib/main_test.dart` — 加中文 locale 注入
+### 4.1 改动 1：`lib/main_test.dart` — 加中文 locale 注入 + 双注入
 
 ```dart
 Future<Widget> createTestApp({
   Locale? locale,
   AppSettings? llmSettings,
   LlmConfigStore? llmConfigStore,
-  List<Override> extraOverrides = const [],
 }) async {
   // 默认 zh（中文），可被参数覆盖
   final initialLocale = locale ?? const Locale('zh');
@@ -74,7 +73,6 @@ Future<Widget> createTestApp({
         appSettingsProvider.overrideWith((ref) async => llmSettings),
       if (llmConfigStore != null)
         llmConfigStoreProvider.overrideWithValue(llmConfigStore),
-      ...extraOverrides,
     ],
     child: const ThkTreeApp(),
   );
@@ -127,9 +125,8 @@ Future<Widget> createTestApp({
 
 ```dart
 // integration_test/theme_chat_e2e_test.dart:33-35
-final llmConfigFuture = LlmTestConfig.loadFromAsset(
-  'assets/test_llm_config/test_llm_config.json',
-);
+// Key 来自 --dart-define-from-file 注入的 TEST_LLM_CONFIG_JSON 编译期常量。
+final llmConfig = LlmTestConfig.loadFromDefine();
 ```
 
 放在 `main()` 顶层（不在 testWidgets 内）——让 3 次加载复用同一份配置，避免每个 testWidgets 都重新读 asset。
@@ -280,13 +277,20 @@ expect(
 # 1. 启动 iOS Simulator
 open -a Simulator
 
-# 2. 配置 LLM Key（首次）
-cp assets/test_llm_config/test_llm_config.example.json \
-   assets/test_llm_config/test_llm_config.json
-# 编辑填入真 Key
+# 2. 创建 Key 配置文件（首次；推荐放 ~/.thktree/，不入仓）
+mkdir -p ~/.thktree
+$EDITOR ~/.thktree/test_llm_config.json
+# 填入真 Key（JSON 结构参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7）
 
-# 3. 跑测试
-flutter test integration_test/theme_chat_e2e_test.dart -d "iPhone 15 Pro"
+# 3. 经生成器压缩为 build/dart_define.json（不能在 dart-define value 里留字面 \n）
+dart run tools/gen_dart_define.dart \
+  $HOME/.thktree/test_llm_config.json \
+  build/dart_define.json
+
+# 4. 跑测试
+flutter test integration_test/theme_chat_e2e_test.dart \
+  --dart-define-from-file=build/dart_define.json \
+  -d "iPhone 15 Pro"
 ```
 
 ---
@@ -298,6 +302,7 @@ flutter test integration_test/theme_chat_e2e_test.dart -d "iPhone 15 Pro"
 - ✅ 改动 3：`theme_detail_screen.dart` 补 3 个 ValueKey
 - ✅ 改动 4：`theme_chat_e2e_test.dart` 新建（250 行）
 - ✅ iOS 模拟器跑通
+- ✅ 2026-06-20：`loadFromAsset` → `loadFromDefine`（dart-define 编译期注入）
 
 ---
 

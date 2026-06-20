@@ -64,9 +64,8 @@ testWidgets('xxx', (tester) async {
 ```dart
 testWidgets('发送消息并等待流式回复', (tester) async {
   // 加载 LLM 配置（参考 theme_chat_e2e_test.dart）
-  final llmConfig = await LlmTestConfig.loadFromAsset(
-    'assets/test_llm_config/test_llm_config.json',
-  );
+  // Key 来自 --dart-define-from-file 注入的 TEST_LLM_CONFIG_JSON 编译期常量。
+  final llmConfig = LlmTestConfig.loadFromDefine();
 
   // 启动 App，强制中文 locale + 注入 LLM 配置
   final app = await createTestApp(
@@ -226,7 +225,7 @@ testWidgets('快速连续发送消息', (tester) async {
 
 来自 [`integration_test/_support/llm_test_config.dart`](../../../integration_test/_support/llm_test_config.dart)：
 
-- `LlmTestConfig.loadFromAsset(...)` — 加载 LLM Key 配置
+- `LlmTestConfig.loadFromDefine()` — 同步从编译期常量读 LLM Key 配置（推荐）
 - `config.toAppSettings()` — 转 AppSettings
 - `config.toLlmConfigStore()` — 转 InMemoryLlmConfigStore
 
@@ -270,20 +269,29 @@ Future<void> _createNode(WidgetTester tester, String title) async { ... }
 ## 7. 跑通步骤
 
 ```bash
-# 1. 配置 LLM Key（首次）
-cp assets/test_llm_config/test_llm_config.example.json \
-   assets/test_llm_config/test_llm_config.json
-# 编辑填入真 Key
+# 1. 创建 Key 配置文件（首次；推荐放 ~/.thktree/，不入仓）
+mkdir -p ~/.thktree
+cp docs/_tmp/2026-06-20-llm-test-config-redesign.md ~/.thktree/test_llm_config.example.md   # 参考 JSON 结构
+$EDITOR ~/.thktree/test_llm_config.json
+# 填入真 Key（参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7 JSON 结构）
 
 # 2. 启动 iOS Simulator
 open -a Simulator
 
-# 3. 跑测试
-flutter test integration_test/chat_streaming_test.dart -d "iPhone 15 Pro"
+# 3. 经生成器压缩为 build/dart_define.json（不在 dart-define value 里留字面 \n）
+dart run tools/gen_dart_define.dart \
+  $HOME/.thktree/test_llm_config.json \
+  build/dart_define.json
 
-# 4. 跑指定测试
+# 4. 跑测试
+flutter test integration_test/chat_streaming_test.dart \
+  --dart-define-from-file=build/dart_define.json \
+  -d "iPhone 15 Pro"
+
+# 5. 跑指定测试
 flutter test integration_test/chat_streaming_test.dart \
   --plain-name "发送空消息" \
+  --dart-define-from-file=build/dart_define.json \
   -d "iPhone 15 Pro"
 ```
 
@@ -292,9 +300,10 @@ flutter test integration_test/chat_streaming_test.dart \
 ## 8. 改进建议
 
 1. **共享前置**：把导航代码（创建主题→节点→进聊天页）抽成 `setUp` 或私有 helper
-2. **提取 LLM 加载到 setUpAll**：避免每个 testWidgets 重复 `LlmTestConfig.loadFromAsset`
+2. **提取 LLM 加载到 setUpAll**：避免每个 testWidgets 重复 `LlmTestConfig.loadFromDefine`
 3. **改用 ValueKey 定位**：所有 `find.text` 都换成 `find.byKey`，提高稳定性
 4. **共享 helper 到 _support/**：见 helpers.md § 8.3
+5. **CI 注入**：CI runner 在 `~/.thktree/test_llm_config.json` 预置 Key，命令行只传路径，不把 Key 写进任何脚本
 
 ---
 

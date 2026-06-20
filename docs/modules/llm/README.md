@@ -8,11 +8,11 @@
 
 ## 职责
 
-LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / Anthropic / 自定义端点等）的配置：增删改、连接测试、模型列表拉取、参数预设（temperature / max_tokens 等）。
+LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / Anthropic / 自定义端点等）的配置：增删改、连接测试、模型列表拉取、参数预设（temperature / max_tokens 等）。默认模型入口与模型选择流程归 `settings` 模块维护。
 
 ## 功能列表
 
-- Provider 列表：所有已配置 LLM 提供方（卡片列表）
+- Provider 列表：所有已配置 LLM 提供方（pane 式整页列表，subtitle 展示模型数量）
 - 新增 Provider：填写 base URL、API key、支持的模型列表
 - Provider 详情：编辑 Provider 配置、查看可用模型、调整默认参数
 - 连接测试：发送 ping 请求验证 base URL + API key 有效性
@@ -24,7 +24,7 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 
 | 文件 | 角色 | 行数 |
 |------|------|------|
-| `lib/ui/features/llm/llm_providers_screen.dart` | Provider 列表页 | 107 |
+| `lib/ui/features/llm/llm_providers_screen.dart` | Provider 列表页 | 128 |
 | `lib/ui/features/llm/llm_provider_detail_screen.dart` | Provider 详情/编辑页 | 493 |
 
 ## 子文档
@@ -39,6 +39,7 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - **Provider 与模型解耦**：1 个 Provider 可有 N 个模型；chat 模块按"Provider + model"粒度选择
 - **流式统一**：所有 Provider 走同一套 SSE 解析器，差异在请求协议层
 - **失败可观测**：连接测试失败时把 HTTP status + body 摘要展示给用户，便于排错
+- **无可信 logo 时不硬上图标**：Provider 列表宁可保持纯文字 + 模型数量，也不要使用会误导用户的占位 icon
 
 ## 维护要点
 
@@ -47,6 +48,7 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - API key 存储路径：platform secure storage，迁移时注意 [ios-migration-plan](../../_shared/ios-migration-plan.md)
 - Provider 删除是软删除（标记 isDeleted），避免历史对话失去模型引用
 - 注意 Provider 配置变更后，正在进行的对话不会被中断（chat 已缓存当时的 client）
+- Provider 列表页的标题、副标题和 chevron 是核心信息；厂商图标仅在拿到可信品牌资产时再加
 
 ## 相关历史
 
@@ -54,3 +56,4 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - 2026-05：扩展多 Provider 架构 + 流式统一
 - 2026-05：API key 改用 Keychain 加密
 - 2026-06：模型预置 + 默认参数功能
+- 2026-06-20：Provider 列表页改为填满 body 的 pane 式设置子页，subtitle 改为模型数量

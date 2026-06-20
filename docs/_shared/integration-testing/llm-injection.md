@@ -1,7 +1,9 @@
 # LLM 配置注入（导航版）
 
-> **本文件**：30 行导航 + TL;DR  
+> **本文件**：30 行导航 + TL;DR
 > **详细版**（208 行）：[docs/modules/llm/specs/integration-test-llm-injection.md](../../modules/llm/specs/integration-test-llm-injection.md) — 强烈建议先读
+>
+> **最近变更**：2026-06-20 — API Key 注入机制从 `assets/test_llm_config/` 物理文件迁移到 `--dart-define-from-file` 编译期注入。详见 [设计稿](../../_tmp/2026-06-20-llm-test-config-redesign.md)。
 
 ---
 
@@ -10,7 +12,8 @@
 1. **`chat_controller` 读 `llmConfigStoreProvider`**，不是 `appSettingsProvider`
 2. **注入点只在 `lib/main_test.dart`**（生产路径 `lib/main.dart` 不引用它）
 3. **必须 override `LlmConfigStore` 子类**（`InMemoryLlmConfigStore`），单独 override `appSettingsProvider` 是死注入
-4. **API Key 来自 assets JSON**（不是 host `tool/` 目录，Simulator 看不到）
+4. **API Key 来自 `--dart-define-from-file` 编译期注入**（同步 `loadFromDefine()` 读 `String.fromEnvironment`），**不**打进 .app / .apk / .ipa bundle
+5. **Key 不入仓**——配置文件放工程外（如 `~/.thktree/test_llm_config.json`），只传路径给 dart-define
 
 ## 双注入
 

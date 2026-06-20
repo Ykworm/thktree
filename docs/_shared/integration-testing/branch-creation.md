@@ -252,9 +252,8 @@ Future<void> sendChatMessage(WidgetTester tester, String text) async { ... }
 ```dart
 testWidgets('选中文本 + raw 模式创建分支', (tester) async {
   // 前置：构造真实 LLM（用于创建子节点后 autoTriggerReply）
-  final llmConfig = await LlmTestConfig.loadFromAsset(
-    'assets/test_llm_config/test_llm_config.json',
-  );
+  // Key 来自 --dart-define-from-file 注入的 TEST_LLM_CONFIG_JSON 编译期常量。
+  final llmConfig = LlmTestConfig.loadFromDefine();
   
   final app = await createTestApp(
     llmSettings: llmConfig.toAppSettings(),
@@ -306,7 +305,7 @@ await safeTap(tester, find.byKey(const ValueKey('branch_mode_summarize_option'))
 
 ```dart
 testWidgets('无选中文本 + raw 模式创建分支', (tester) async {
-  final llmConfig = await LlmTestConfig.loadFromAsset(/* ... */);
+  final llmConfig = LlmTestConfig.loadFromDefine(/* ... */);
   final app = await createTestApp(
     llmSettings: llmConfig.toAppSettings(),
     llmConfigStore: llmConfig.toLlmConfigStore(),
@@ -343,7 +342,7 @@ testWidgets('无选中文本 + raw 模式创建分支', (tester) async {
 
 ```dart
 testWidgets('无选中文本 + summarize 模式创建分支', (tester) async {
-  final llmConfig = await LlmTestConfig.loadFromAsset(/* ... */);
+  final llmConfig = LlmTestConfig.loadFromDefine(/* ... */);
   final app = await createTestApp(
     llmSettings: llmConfig.toAppSettings(),
     llmConfigStore: llmConfig.toLlmConfigStore(),
@@ -422,7 +421,7 @@ testWidgets('LLM 失败 fallback', (tester) async {
   );
   
   // 用 settings 里填 apiKey（不让 _resolveModelForSummary 早期 return null）
-  final llmConfig = await LlmTestConfig.loadFromAsset(/* ... */);
+  final llmConfig = LlmTestConfig.loadFromDefine(/* ... */);
   final app = await createTestApp(
     llmSettings: llmConfig.toAppSettings(),
     llmConfigStore: llmConfig.toLlmConfigStore(),
@@ -452,7 +451,7 @@ testWidgets('LLM 失败 fallback', (tester) async {
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | `createTestApp(llmSettings, llmConfigStore)` | `lib/main_test.dart` | 注入真实 LLM（4、7 测试） |
-| `LlmTestConfig.loadFromAsset()` | `_support/llm_test_config.dart` | 读 asset JSON 拿 Key |
+| `LlmTestConfig.loadFromDefine()` | `_support/llm_test_config.dart` | 同步从编译期常量读 Key（推荐） |
 | `createThemeViaUi` / `createNodeViaUi` / `sendChatMessage` | **⚠️ 需提取到 `_support/`** | 公共前置 |
 | `_switchToTab` | theme_chat_e2e_test.dart（**需提取**） | 跳到主题 tab |
 | `longPressAndWait` | `test_helpers.dart:117` | 触发 SelectionArea |
@@ -508,18 +507,27 @@ testWidgets('LLM 失败 fallback', (tester) async {
 ## 9. 执行命令
 
 ```bash
+# 0. 生成 build/dart_define.json（先生成再跑测试，不能直接传 ~/.thktree/test_llm_config.json）
+dart run tools/gen_dart_define.dart \
+  $HOME/.thktree/test_llm_config.json \
+  build/dart_define.json
+
 # 单跑 branch_creation_test（当前 7 个测试都立即通过但无实质覆盖）
-flutter test integration_test/branch_creation_test.dart -d "<iOS Simulator>"
+flutter test integration_test/branch_creation_test.dart \
+  --dart-define-from-file=build/dart_define.json \
+  -d "<iOS Simulator>"
 
 # 带 driver 跑
 flutter drive \
   --driver=test_driver/integration_test.dart \
   --target=integration_test/branch_creation_test.dart \
+  --dart-define-from-file=build/dart_define.json \
   -d "<iOS Simulator>"
 
 # 仅跑不需要 LLM 的测试（1, 2, 3, 5, 6）节省时间
 flutter test integration_test/branch_creation_test.dart \
   --plain-name "raw|summarize|取消" \
+  --dart-define-from-file=build/dart_define.json \
   -d "<iOS Simulator>"
 ```
 

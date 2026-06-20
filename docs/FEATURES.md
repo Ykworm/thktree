@@ -55,14 +55,14 @@
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| LLM Provider 管理 | llm | ✅ 完成 | 2026-06-07 | [README](modules/llm/README.md) | — | `lib/ui/features/llm/llm_providers_screen.dart` 等 | 多 Provider + API Key 配置 + 模型选择 |
+| LLM Provider 管理 | llm | ✅ 完成 | 2026-06-20 | [README](modules/llm/README.md) | [README](modules/llm/visual/README.md) | `lib/ui/features/llm/llm_providers_screen.dart` 等 | 多 Provider + API Key 配置 + 模型数量列表 + pane 式子页 |
 | LLM 模型列表获取 | llm | 🔨 进行中 | — | [README](modules/llm/README.md) | — | `lib/data/services/model_fetcher.dart` | ModelFetcher 存在，模型列表刷新 UI 未完成 |
 
 ## 6. 设置模块（settings）
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| 设置页 | settings | ✅ 完成 | 2026-06-07 | [README](modules/settings/README.md) | — | `lib/ui/features/settings/settings_screen.dart` | LlmProvidersScreen, API Key 配置, 模型选择入口 |
+| 设置页 | settings | ✅ 完成 | 2026-06-20 | [README](modules/settings/README.md) | [README](modules/settings/visual/README.md) | `lib/ui/features/settings/settings_screen.dart` 等 | 大模型入口 + 默认模型配置页 + 独立模型选择页 |
 | 生物认证（Face ID） | settings | ✅ 完成 | 2026-06-17 | [README](modules/settings/README.md) | — | `lib/data/services/biometric_service.dart` | BiometricService + AuthGate + WidgetsBindingObserver，进前台弹验证 |
 | 分享功能 | settings | 🔨 部分实现 | — | [README](modules/settings/README.md) | — | `lib/data/services/share_service.dart` | ShareService + ShareCardWidget 存在，分享流程未闭环 |
 | 语音播放 | settings | ✅ 完成（iOS only） | 2026-06-17 | [README](modules/settings/README.md) | [语音播放设计](modules/settings/specs/2026-06-05-语音播放功能-design.md) | `lib/ui/features/settings/tts_player_screen.dart` 等 | v1.1 上线：iOS 原生 AVSpeechSynthesizer，5 层架构（Plugin→Service→Controller→UI），单条消息互斥，语速不持久化、声音持久化；3 层背景（base + radial ambient + per-message tint）+ 4 类动效（波形/脉冲环/glow shift/文字渐入）；scroll 浮按钮解决长文本回顶；Android 平台用 NoOpTtsService 静默桩。v2+ 路线图见设计 doc §11 |
@@ -81,6 +81,7 @@
 > 倒序排列，最新在上。
 
 - **2026-06-20** — `ChatController.onDone` stop_button 卡死 bug 修复：fire-and-forget 错误日志（`_safeLogError`，`logger.await` 不再阻塞清理路径）+ 立即清 `_handle` / `_cancelToken` 让 `_read()` 自愈逻辑生效 + 兜底 `_read()` 三层防线
+- **2026-06-20** — LLM 设置链路 UI 收敛：设置页改为"大模型"入口，子页采用 inline title + fill pane 布局，默认模型选择改为独立单选页
 - **2026-06-20** — `MessageBubble._TableExpandedView` LaTeX 渲染补全：与主消息体一致注入 `latexBuilder: buildLatex` + `useDollarSignsForLatex: true`，修复"主消息体可看、点开表格后 LaTeX 不渲染"的体验不一致
 - **2026-06-20** — 单测文件全量清理：`pubspec.yaml` 移除 `flutter_test` 直接依赖，`test/` 目录 13 个单测文件全部删除（约 1100 行），与项目"集成测试优先 + 禁止凑覆盖率"约定一致
 - **2026-06-17** — 笔记详情页 UI 重构：GptMarkdown 标题样式修复、导航栏去掉标题、操作按钮收纳到网格底栏（ThkGridBottomSheet）、内容区填满页面

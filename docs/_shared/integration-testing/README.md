@@ -33,26 +33,39 @@
 │                                                                   │
 │ 依赖 ↓                                                           │
 │   ├── _support/test_helpers.dart           （325 行 UI 工具）      │
-│   ├── _support/llm_test_config.dart        （236 行 JSON 加载器） │
-│   └── _support/in_memory_llm_config_store.dart （47 行假 Store） │
+│   ├── _support/llm_test_config.dart        （JSON 加载器）        │
+│   │    ├── loadFromDefine()                （同步读编译期常量）   │
+│   │    └── loadFromAsset() @Deprecated     （逃生通道）           │
+│   └── _support/in_memory_llm_config_store.dart （假 Store）      │
 │                                                                   │
 │ 入口 ↓                                                           │
 │   └── lib/main_test.dart                   ⭐ 唯一 ProviderScope  │
 │        ├── createTestApp()                                       │
 │        │   ├── locale: Locale('zh')                              │
 │        │   ├── llmSettings: AppSettings?                         │
-│        │   ├── llmConfigStore: LlmConfigStore?                   │
-│        │   └── extraOverrides: List<Override>                    │
+│        │   └── llmConfigStore: LlmConfigStore?                   │
 │        └── ProviderScope(overrides: [...])                       │
 │                                                                   │
 │ 资产 ↓                                                           │
-│   └── assets/test_llm_config/test_llm_config.json   （gitignored） │
+│   ~/.thktree/test_llm_config.json          （不入仓，工程外）    │
 │        ├── activeProvider: "deepseek"                            │
 │        └── providers: { deepseek: { apiKey, model }, ... }       │
+│                                                                   │
+│ 生成器 ↓                                                         │
+│   tools/gen_dart_define.dart               （把开发者 JSON 压缩   │
+│        └── jsonDecode → jsonEncode(compact) → wrap as 映射）     │
+│           输出 build/dart_define.json     （build/ 在 .gitignore） │
 └─────────────────────────────────────────────────────────────────┘
 
 测试运行路径：
-  flutter test integration_test/<file>.dart -d <device>
+  # 0. 生成 build/dart_define.json（必须，先生成再跑测试）
+  dart run tools/gen_dart_define.dart \
+    ~/.thktree/test_llm_config.json \
+    build/dart_define.json
+
+  flutter test integration_test/<file>.dart \
+    --dart-define-from-file=build/dart_define.json \
+    -d <device>
       ↓
   Simulator 进程跑测试代码（不是 host）
       ↓
@@ -62,7 +75,7 @@
       ↓
   chat_controller.ref.read(llmConfigStoreProvider)  → 拿到假 Store
       ↓
-  假 Store.readApiKey(id)  → 返回真 Key（来自 assets JSON）
+  假 Store.readApiKey(id)  → 返回真 Key（来自 dart-define 注入）
       ↓
   LlmClient.forConfig(provider).streamChatCompletion(apiKey, model)
       ↓
@@ -73,7 +86,9 @@
 1. **集成测试跑在 Simulator 进程**，不是 host 进程
 2. **`lib/main_test.dart` 是唯一注入点**——生产路径 `lib/main.dart` 完全不引用它
 3. **`chat_controller` 读 `llmConfigStoreProvider`**——不是 `appSettingsProvider`，单独 override 后者是死注入
-4. **API Key 来自 assets JSON**（不是 host `tool/` 目录，因为 Simulator 看不到 host 工程）
+4. **API Key 来自 `--dart-define-from-file` 编译期注入**（同步 `loadFromDefine()` 读 `String.fromEnvironment`），**不**打进 .app / .apk / .ipa bundle
+5. **Key 不入仓**——配置文件放工程外（如 `~/.thktree/test_llm_config.json`），开发者友好的 pretty-print JSON 经 `tools/gen_dart_define.dart` 压缩为单行紧凑 JSON 后再注入
+6. **不要直接把 `~/.thktree/test_llm_config.json` 喂给 `--dart-define-from-file`**——`--dart-define-from-file` 只接受 `{"KEY":"VALUE"}` 简单映射，且 value 不能含字面 `\n`，否则 `frontend_server` 报 URI 解析错
 
 ---
 
@@ -176,7 +191,7 @@ void main() {
 ### 当前策略：真实 API
 
 - 不 mock LLM，直接打真 API
-- API Key 来自 `assets/test_llm_config/test_llm_config.json`（gitignored）
+- API Key 来自 `--dart-define-from-file` 编译期注入（同步 `LlmTestConfig.loadFromDefine()` 读 `String.fromEnvironment`），配置文件放工程外（推荐 `~/.thktree/test_llm_config.json`），**不**打进 .app / .apk / .ipa bundle
 - 优点：测的就是真链路，能抓出 SSE 解析、超时、重连等真实问题
 - 缺点：CI 需要 key、依赖网络、可能 flake
 
@@ -194,7 +209,7 @@ void main() {
 
 如果 CI 无法访问外部 API，可以：
 1. 写一个 `FakeLlmClient extends LlmClient` 返回预定义 SSE 流
-2. 在 `lib/main_test.dart` 的 `extraOverrides` 里 override `llmClientProvider`
+2. 扩展 `lib/main_test.dart` 的 `createTestApp()` 增加 `List<Override> extraOverrides` 参数（当前未实现，签名只有 `locale` / `llmSettings` / `llmConfigStore` 三个），在 `ProviderScope.overrides` 里追加 `llmClientProvider.overrideWithValue(...)`
 3. fixtures JSON 里加 `mock: true` 字段切换
 
 **当前未实现**，因为真实 API 链路测试价值更高。
@@ -209,20 +224,34 @@ flutter devices
 ```
 
 ### 7.2 跑单个测试文件
+
 ```bash
-flutter test integration_test/theme_chat_e2e_test.dart -d "<iOS Simulator>"
+# 0. 先生成 build/dart_define.json（必须，把 ~/.thktree/test_llm_config.json 压缩为单行紧凑 JSON）
+dart run tools/gen_dart_define.dart \
+  ~/.thktree/test_llm_config.json \
+  build/dart_define.json
+
+# 1. 跑测试（必须带 --dart-define-from-file，否则 LlmTestConfig.loadFromDefine() 会抛 StateError）
+flutter test integration_test/theme_chat_e2e_test.dart \
+  --dart-define-from-file=build/dart_define.json \
+  -d "<iOS Simulator>"
 ```
 
 ### 7.3 跑指定 testWidgets
+
 ```bash
 flutter test integration_test/chat_streaming_test.dart \
+  --dart-define-from-file=build/dart_define.json \
   --plain-name "发送消息并等待流式回复" \
   -d "<iOS Simulator>"
 ```
 
 ### 7.4 跑全部集成测试
+
 ```bash
-flutter test integration_test/ -d "<iOS Simulator>"
+flutter test integration_test/ \
+  --dart-define-from-file=build/dart_define.json \
+  -d "<iOS Simulator>"
 ```
 
 ### 7.5 跑 iOS 模拟器（推荐）
@@ -230,18 +259,26 @@ flutter test integration_test/ -d "<iOS Simulator>"
 - 推荐 iPhone 15 Pro / iPhone 16 系列
 
 ### 7.6 配置 LLM Key
-第一次跑前必须配置 `assets/test_llm_config/test_llm_config.json`：
+
+第一次跑前必须创建工程外 JSON 配置（**不放工程内**，避免 `.gitignore` 失误导致 Key 进 release 包），并经生成器压缩后注入：
 
 ```bash
-# 复制模板
-cp assets/test_llm_config/test_llm_config.example.json \
-   assets/test_llm_config/test_llm_config.json
+# 1. 创建工程外配置目录（推荐 ~/.thktree/）
+mkdir -p ~/.thktree
 
-# 编辑填入真实 Key
-vim assets/test_llm_config/test_llm_config.json
+# 2. 创建配置文件并填入真实 Key（JSON 结构见 fixtures.md § 2.1）
+$EDITOR ~/.thktree/test_llm_config.json
+
+# 3. 跑生成器：把 pretty-print JSON 压缩为单行紧凑 JSON（不能直接喂给 --dart-define-from-file）
+dart run tools/gen_dart_define.dart \
+  ~/.thktree/test_llm_config.json \
+  build/dart_define.json
+
+# 验证 JSON 合法
+jq . ~/.thktree/test_llm_config.json
 ```
 
-格式参考 `assets/test_llm_config/test_llm_config.example.json`：
+JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)）：
 
 ```json
 {
@@ -254,6 +291,8 @@ vim assets/test_llm_config/test_llm_config.json
   }
 }
 ```
+
+⚠️ **两个约束同时生效**才安全：① Key 配置文件放工程外（不入仓） ② 跑测试前必须经生成器压缩为 `build/dart_define.json` 再注入（不要直接把 `~/.thktree/test_llm_config.json` 喂给 `--dart-define-from-file`，含字面 `\n` 会触发 frontend_server URI 解析错）。
 
 ---
 
@@ -271,12 +310,14 @@ vim assets/test_llm_config/test_llm_config.json
 - `waitForWidget(send_button, timeout: 90s)` 出现说明流式结束
 
 ### 8.3 常见错误
+
 | 现象 | 根因 | 解决 |
 |------|------|------|
 | 点发送 10s 后找不到 stop_button | 路径 B 拿到空 loadAll() 直接退出，路径 C Keychain 空 | 双注入：llmSettings + llmConfigStore（详见 [fixtures.md](./fixtures.md)） |
-| `StateError: LLM test config asset not found` | pubspec.yaml 没声明 assets 目录 | 检查 `pubspec.yaml` `flutter.assets` |
-| `FormatException: Invalid JSON` | JSON 格式错或字段缺失 | 用 `jq . assets/test_llm_config/test_llm_config.json` 验证 |
-| `Unknown LlmProvider: xxx` | activeProvider 用了不在 enum 里的值 | 参考 [fixtures.md § 6](#6-如何新增一种-llm) |
+| `StateError: LLM test config not injected (TEST_LLM_CONFIG_JSON is empty)` | 跑测试没带 `--dart-define-from-file=...` | 先跑生成器，再用 `--dart-define-from-file=build/dart_define.json` |
+| `FormatException: Invalid JSON` | JSON 格式错或字段缺失 | 用 `jq . ~/.thktree/test_llm_config.json` 验证（注意：错误信息不会带本地文件路径，Key 是从 dart-define 读出来的） |
+| frontend_server `URI parse error` | 直接把 pretty-print JSON 喂给 `--dart-define-from-file`，含字面 `\n` 触发 URI 解析错 | 必须先跑 `tools/gen_dart_define.dart` 压缩为单行紧凑 JSON |
+| `Unknown LlmProvider: xxx` | activeProvider 用了不在 enum 里的值 | 参考 [fixtures.md § 6](./fixtures.md) |
 | 超时但 UI 没动 | Riverpod state 没刷新 | 加 `await tester.pump(Duration(milliseconds: 500))` |
 
 ### 8.4 抓取日志
@@ -293,7 +334,7 @@ vim assets/test_llm_config/test_llm_config.json
 - [ ] **2. 写场景** — 用"操作 → 期望"两列表格描述（如 [theme-chat-e2e § 2](./theme-chat-e2e.md#2-场景表)）
 - [ ] **3. 补 ValueKey** — 列出所有 `find.byKey(ValueKey('xxx'))` 需要的 Key，检查生产 widget 是否已加；缺的补上
 - [ ] **4. 用 helpers** — 优先复用 `_support/test_helpers.dart` 的工具，避免重复
-- [ ] **5. 选 fixtures** — 涉及 LLM 调用时用 `LlmTestConfig.loadFromAsset(...)`
+- [ ] **5. 选 fixtures** — 涉及 LLM 调用时用 `LlmTestConfig.loadFromDefine()`（读 `--dart-define-from-file` 注入的编译期常量）
 - [ ] **6. 加文档** — 在 `_shared/integration-testing/<场景>.md` 写一份 spec（参照已有 5 个）
 - [ ] **7. 跑通** — `flutter test integration_test/<file>.dart -d "<iOS Simulator>"`
 - [ ] **8. 更新本 README 速览表** — 在 § 10 加一行
@@ -340,3 +381,4 @@ vim assets/test_llm_config/test_llm_config.json
 - 2026-06：theme_chat_e2e_test.dart 跑通，建立 LLM 注入机制（双层：llmSettings + llmConfigStore）
 - 2026-06：LLM 注入原理文档化（`docs/modules/llm/specs/integration-test-llm-injection.md`）
 - 2026-06：集成测试文档体系建立（本 README + 7 个 spec）
+- 2026-06-20：**LLM Key 注入机制迁移** — 从 `assets/test_llm_config/test_llm_config.json`（含真 Key 进 bundle 风险）迁移到 `--dart-define-from-file` 编译期常量注入（Key 不进 .app / .apk / .ipa bundle）；新增 `tools/gen_dart_define.dart` 生成器（压缩 pretty-print JSON 为单行紧凑 JSON），详见 [docs/_tmp/2026-06-20-llm-test-config-redesign.md](../../_tmp/2026-06-20-llm-test-config-redesign.md) + [docs/CHANGELOG/2026-06-20-llm-test-config-redesign.md](../../CHANGELOG/2026-06-20-llm-test-config-redesign.md)

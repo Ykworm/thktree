@@ -77,15 +77,15 @@ sendUserMessage(text)
 - ✅ 改 `lib/main_test.dart`（本身是测试专用入口，文件名带 `_test`）
 - ❌ 在 integration_test/ 里复制一份 ProviderScope（70 行重复，更糟）
 
-### createTestApp 扩展点（推荐方案 B：通用 overrides）
+### createTestApp 当前签名
 
-`lib/main_test.dart` 加 `List<Override> extraOverrides` 参数，未来任何 provider 都能注入：
+`lib/main_test.dart` 当前只接受 3 个参数（无通用 `extraOverrides` 入口）：
 
 ```dart
 Future<Widget> createTestApp({
   Locale? locale,
   AppSettings? llmSettings,
-  List<Override> extraOverrides = const [],   // ← 新增
+  LlmConfigStore? llmConfigStore,
 }) async {
   // ...
   return ProviderScope(
@@ -94,12 +94,15 @@ Future<Widget> createTestApp({
       localeProvider.overrideWith(() => LocaleNotifier(initialLocale)),
       if (llmSettings != null)
         appSettingsProvider.overrideWith((ref) async => llmSettings),
-      ...extraOverrides,   // ← 新增：向后追加，调用方可覆盖任何 provider
+      if (llmConfigStore != null)
+        llmConfigStoreProvider.overrideWithValue(llmConfigStore),
     ],
     child: const ThkTreeApp(),
   );
 }
 ```
+
+> **未来扩展路线图**：如果需要注入其他 provider（如 Mock LLM 场景下的 `llmClientProvider`），需要给 `createTestApp` 增加 `List<Override> extraOverrides = const []` 参数并在 `overrides` 里 `...extraOverrides` 展开。当前未实现，因为 LLM 链路测试只需要 `llmConfigStoreProvider` 这一项注入。
 
 ---
 
@@ -161,18 +164,16 @@ class InMemoryLlmConfigStore extends LlmConfigStore {
 ```
 testWidgets('...')
    │
-   ├─ LlmTestConfig.loadFromAsset('assets/test_llm_config/test_llm_config.json')
-   │    └─ rootBundle.loadString → JSON → LlmTestConfig 对象
+   ├─ LlmTestConfig.loadFromDefine()                            // 同步读编译期常量
+   │    └─ String.fromEnvironment('TEST_LLM_CONFIG_JSON') → JSON → LlmTestConfig 对象
    │
    ├─ config.toLlmConfigStore()  // 新增方法
    │    └─ 用 preset_anthropic 等 + apiKeys 构造 InMemoryLlmConfigStore
    │
    ├─ createTestApp(
    │      locale: Locale('zh'),
-   │      llmSettings: config.toAppSettings(),       // 兼容老路径
-   │      extraOverrides: [
-   │        llmConfigStoreProvider.overrideWithValue(config.toLlmConfigStore()),
-   │      ],
+   │      llmSettings: config.toAppSettings(),               // 覆盖 appSettingsProvider
+   │      llmConfigStore: config.toLlmConfigStore(),         // 覆盖 llmConfigStoreProvider ⭐
    │    )
    │
    └─ tester.pumpWidget(app)
@@ -208,7 +209,7 @@ testWidgets('...')
 | `lib/data/services/settings_store.dart` | `AppSettings` / `SettingsStore`（旧格式） |
 | `lib/ui/features/chat/chat_controller.dart:300-394` | 3 路径查找链 |
 | `lib/main_test.dart` | 唯一 ProviderScope 注入点 |
-| `integration_test/_support/llm_test_config.dart` | JSON 配置加载器（要加 `toLlmConfigStore()`） |
+| `integration_test/_support/llm_test_config.dart` | JSON 配置加载器（`loadFromDefine()` 同步读编译期常量，`loadFromAsset()` 已 @Deprecated 作为逃生通道） |
 | `integration_test/_support/in_memory_llm_config_store.dart` | 假 Store 实现（新建） |
 | `integration_test/theme_chat_e2e_test.dart` | 使用例 |
-| `assets/test_llm_config/test_llm_config.json` | 真 Key 存储（gitignored） |
+| `~/.thktree/test_llm_config.json` | 真 Key 存储（**不入仓**，通过 `--dart-define-from-file` 路径注入） |
