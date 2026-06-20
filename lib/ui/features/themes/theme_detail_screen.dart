@@ -77,6 +77,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   child: Icon(AppIcons.refresh),
                 ),
                 CupertinoButton(
+                  key: const ValueKey('add_node_button'),
                   padding: EdgeInsets.zero,
                   onPressed: () async {
                     final title = await _promptRootTitle(context);
@@ -846,6 +847,7 @@ Future<String?> _promptRootTitle(BuildContext context) async {
         content: Padding(
           padding: const EdgeInsets.only(top: 12),
           child: ThkTextField(
+            key: const ValueKey('node_title_input'),
             controller: controller,
             placeholder: l10n.titleHint,
             autofocus: true,
@@ -864,6 +866,7 @@ Future<String?> _promptRootTitle(BuildContext context) async {
             child: Text(l10n.cancel),
           ),
           CupertinoDialogAction(
+            key: const ValueKey('node_create_button'),
             isDefaultAction: true,
             onPressed: () {
               final value = controller.text.trim();

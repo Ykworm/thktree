@@ -5,6 +5,29 @@ description: 在实现任何功能或修复 bug 时使用，在编写实现代�
 
 # 测试驱动开发（TDD）
 
+## ⚠️ ThkTree 项目特例：禁止生成单测
+
+本项目已主动禁用所有单测（`test/` 目录已删除，`flutter_test` 依赖已移除）。
+
+**禁用范围：**
+- ❌ `flutter_test` SDK 下的 `test()` 单测
+- ❌ `flutter_test` SDK 下的 `testWidgets()` Widget 单测
+- ❌ `bloc_test` 之类的 bloc 单测
+- ❌ 任何进入 `test/` 目录的测试文件
+
+**保留：**
+- ✅ `integration_test/` 目录下的白盒/灰盒集成测试（真实运行 App，作用于 `lib/main_test.dart` 入口）
+- ✅ 手动跑通的开发流程
+
+**原因：**
+1. 单测是 AI 写、AI 修的循环，每改一次内部代码结构，单测就失效，增加维护成本
+2. AI 更适合写白盒集成测试——理解业务流程后写 end-to-end 用例
+3. 真实运行的集成测试更能反映用户场景
+
+**遇到触发此 skill 的场景时**：停下来询问用户是否真的需要单测；如无明确要求，改为写 `integration_test/` 集成测试。
+
+---
+
 ## 概述
 
 先写测试。看它失败。写最少的代码让它通过。

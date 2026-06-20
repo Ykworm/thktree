@@ -148,6 +148,13 @@ sharedComponents:
         textColor: "AppColors.textPrimary"
         alignment: "left"
         renderer: "GptMarkdown"
+        rendererOptions:
+          latexBuilder: "buildLatex (lib/ui/core/shared/markdown_builders.dart)"
+          useDollarSignsForLatex: true
+        # LaTeX 溢出背景：flutter_math_fork 0.7.4 的 RenderLine 宽度计算偏短约 15px，
+        # buildLatex 用 FittedBox(scaleDown) 兜底避免 `RenderFlex overflowed`。
+        # 其他 4 处 GptMarkdown 调用（main / note_detail / share_card / tts_player）
+        # 暂未注入 latexBuilder，新增 LaTeX 上下文需复测。
         font: "AppTheme.body (17pt, height 1.6)"
     trailingActions:
       - name: "朗读"
@@ -166,6 +173,22 @@ sharedComponents:
         behavior: "onRetry 回调"
         visibility: "仅 onRetry != null"
     textSelection: "SelectionArea 包裹，支持系统级复制"
+
+  MarkdownBuilders:
+    file: "lib/ui/core/shared/markdown_builders.dart"
+    dartRef: "MarkdownBuilders"
+    usage: "GptMarkdown 自定义元素构建器集合（当前主要为 LaTeX 渲染服务）"
+    exports:
+      buildLatex: "LatexBuilder = Widget Function(BuildContext, String tex, TextStyle textStyle, bool inline)"
+    pipeline:
+      - "SelectableAdapter（支持长按复制原始 LaTeX 文本）"
+      - "Math.tex（mathStyle: MathStyle.display，mathOptions.onErrorFallbackFont: AppTheme.codeFont，color 走 CupertinoColors.label.resolveFrom(context)）"
+      - "FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft) — 兜底 flutter_math_fork 0.7.4 的 RenderLine 宽度计算偏短问题"
+    notes: |
+      类型签名通过 `_ensureSignature: LatexBuilder = buildLatex;` 静态保护，
+      gpt_markdown 升级时若函数签名变化此处会编译报错，提醒同步 buildLatex。
+      已知问题：仅在 chat 模块 message_bubble.dart 注入；其他 4 处 GptMarkdown
+      调用（main / note_detail / share_card / tts_player）未注入，存在 LaTeX 溢出隐患。
 
   ChatComposer:
     file: "lib/ui/core/shared/chat_composer.dart"

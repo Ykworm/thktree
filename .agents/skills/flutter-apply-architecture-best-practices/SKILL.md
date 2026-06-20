@@ -65,8 +65,8 @@ Follow this sequential workflow when adding a new feature to the application. Co
 - [ ] **Step 5: Implement the ViewModel.** Create the ViewModel extending `ChangeNotifier`. Inject required Repositories/Use Cases. Expose immutable state and command methods.
 - [ ] **Step 6: Implement the View.** Create the UI widget. Use `ListenableBuilder` or `AnimatedBuilder` to listen to ViewModel changes.
 - [ ] **Step 7: Inject Dependencies.** Register the new Service, Repository, and ViewModel in the dependency injection container (e.g., `provider` or `get_it`).
-- [ ] **Step 8: Run Validator.** Execute unit tests for the ViewModel and Repository.
-  - *Feedback Loop:* Run tests -> Review failures -> Fix logic -> Re-run until passing.
+- [ ] **Step 8: Validate in real app.** ⚠️ 项目禁用单测。在真实 App 或 `integration_test/` 中验证 ViewModel 和 Repository 行为。
+  - *Feedback Loop:* 手动验证 -> 调整逻辑 -> 重复直到符合预期。
 
 ## Examples
 

@@ -1,8 +1,8 @@
 ---
 name: flutter-dev
 description: |
-  Flutter cross-platform development guide covering widget patterns, Riverpod/Bloc state management, GoRouter navigation, performance optimization, and platform-specific implementations. Includes const optimization, responsive layouts, testing strategies, and DevTools profiling.
-  Use when: building Flutter apps, implementing state management (Riverpod/Bloc), setting up GoRouter navigation, creating custom widgets, optimizing performance, writing widget tests, cross-platform development.
+  Flutter cross-platform development guide covering widget patterns, Riverpod/Bloc state management, GoRouter navigation, performance optimization, and platform-specific implementations. Includes const optimization, responsive layouts, integration testing strategies, and DevTools profiling.
+  Use when: building Flutter apps, implementing state management (Riverpod/Bloc), setting up GoRouter navigation, creating custom widgets, optimizing performance, writing integration tests (not unit tests — unit tests are disabled in this project), cross-platform development.
 license: MIT
 metadata:
   version: "1.0.0"
@@ -102,10 +102,9 @@ A practical guide for building cross-platform applications with Flutter 3 and Da
 - [ ] Heavy computation in isolates
 
 ### Testing
-- [ ] Widget tests for UI components
-- [ ] Unit tests for business logic
-- [ ] Integration tests for user flows
-- [ ] Bloc tests with `blocTest()`
+- [ ] ⚠️ 项目禁用单测——`test/` 目录已删除，`flutter_test` 依赖已移除
+- [ ] Integration tests for user flows in `integration_test/` (real app via `lib/main_test.dart`)
+- [ ] Manual smoke testing in dev / profile builds
 
 ## References
 

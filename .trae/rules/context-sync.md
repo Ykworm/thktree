@@ -56,8 +56,37 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
    - 架构层变更 → `ARCHITECTURE.md`
    - 数据模型 → `_shared/storage-format.md` + 对应模块 README
    - 主题/样式 → `modules/themes/` 相关
+   - 技术性问题修复 / 排障 / 兼容性坑 / 构建坑 → 若满足 war-story 候选条件，则纳入 `docs/war-stories/**`；并继续评估是否需要同步 `docs/CHANGELOG/**`、模块 README 或 `ARCHITECTURE.md`
 
 **白名单兜底**：`FEATURES.md`、`TECH-DEBT.md`、`DECISIONS.md` 任何代码改动都要扫一遍。
+
+### Step 3.5：war-story 候选判断
+
+`ctsync` 默认不自动写 `war-story`。只有在完成常规文档影响评估后，额外判断本次会话是否应将 `docs/war-stories/**` 纳入影响清单。
+
+只有同时满足以下前提时，才允许进入 war-story 候选：
+
+- 问题已经被解决，不是未完成事项
+- 本次会话中已形成"现象 + 根因 + 解决方案"的完整信息
+
+候选判定标准：以下 4 条命中 2 条及以上，即可列入候选。
+
+1. **排查成本较高** — 不是一眼修复，经历了定位、验证、排除或多轮尝试
+2. **根因具有隐蔽性** — 涉及时序、平台差异、依赖行为、构建链路、状态同步或边界条件
+3. **对未来排障有复用价值** — 同类问题大概率会再次出现
+4. **知识不易留存** — 若不沉淀文档，团队难以仅凭记忆复原关键上下文
+
+明确排除：
+
+- 拼写、文案、import、简单判空等一眼可修的问题
+- 无技术陷阱的普通样式微调
+- 尚未解决的问题，或仅有临时绕过方案的问题
+
+命中候选时：
+
+- 仅将对应 `docs/war-stories/**` 作为"新增 / 小补 / 待确认"列入影响清单
+- 默认不自动写入，等待用户确认后再创建或更新文档
+- 若新增或更新 war-story，必须同步维护 `docs/war-stories/README.md` 索引
 
 ### Step 4：输出影响清单
 
@@ -71,6 +100,7 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 - 📄 `docs/DECISIONS.md` — 新增 · ADR-013
 - 📄 `docs/ARCHITECTURE.md` — 不影响 · 未涉及架构层变更
 - 📄 `docs/_shared/design-system.md` — 待确认 · 本次改了 button 样式，是否需要更新 spacing token？
+- 📄 `docs/war-stories/ui-ux/2026-06-20-xxx.md` — 待确认 · 本次会话解决了一个需要排查才能定位、且有复盘价值的技术问题
 ```
 
 **变更强度枚举**：大改版 / 小补 / 新增 / 删除 / 不影响 / 待确认
@@ -103,6 +133,26 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 #### § 2.3 密码保护 — 小补
 
 **变更描述**：补充密码 fallback 路径——忘记密码可重新创建主题（数据无法恢复）
+
+---
+
+## 📄 docs/war-stories/ui-ux/2026-06-20-xxx.md
+
+**变更类型**：新增
+**影响范围**：新增 war-story + 更新索引
+**触发原因**：本次会话已形成"现象 + 根因 + 解决方案"，且问题需要排查才能定位、并有复盘价值
+
+### § 现象 — 新增
+
+**变更描述**：补充用户可感知的异常表现、触发条件和复现环境。
+
+### § 根因分析 — 新增
+
+**变更描述**：说明问题为何发生，涉及哪些依赖、时序、平台差异或实现细节。
+
+### § 解决方案 — 新增
+
+**变更描述**：记录最终采用的修复方案、放弃的错误方向，以及后续避免方式。
 ```
 
 **卡片字段说明**：
@@ -119,12 +169,20 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 
 用户可以说：
 - "OK" / "全部" / "都改" → 全部执行
+- "只改 war-story" → 仅创建或更新 `docs/war-stories/**`
+- "跳过 war-story" → 保留其他 doc，同步跳过 war-story
 - "跳过 XX" / "只改 XX" → 按指示执行
 - "调整" → 修改后再确认
 
 ### Step 7：改 doc 文件
 
 对每个确认的 doc，按卡片描述逐章节修改。改完即停，不 commit。
+
+如果用户确认新增或更新 war-story：
+
+- 按 `docs/war-stories/README.md` 的单篇模板创建或更新对应文档
+- 同步维护 `docs/war-stories/README.md` 的倒序索引
+- 若该问题同时影响模块说明、架构说明或发布记录，不省略其他受影响文档
 
 ### Step 8：汇报
 
@@ -140,6 +198,8 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 - docs/FEATURES.md（§ 1.1、§ 1.3、§ 2.3）
 - docs/modules/notes/README.md（§ API 列表）
 - docs/DECISIONS.md（新增 ADR-013）
+- docs/war-stories/ui-ux/2026-06-20-xxx.md（新增 war-story）
+- docs/war-stories/README.md（更新索引）
 ```
 
 ## 工具优先级

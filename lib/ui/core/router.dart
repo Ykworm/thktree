@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
-import 'package:thk_tree/ui/features/settings/settings_controller.dart' show brightnessProvider;
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
@@ -132,7 +131,6 @@ class _MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(brightnessProvider);
     final l10n = AppLocalizations.of(context)!;
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,

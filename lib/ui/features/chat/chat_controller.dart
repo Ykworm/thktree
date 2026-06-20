@@ -64,6 +64,20 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     }();
   }
 
+  /// Fire-and-forget error log. Never blocks caller (unlike raw `await logger.error`).
+  ///
+  /// 关键设计：catch 块必须非阻塞，否则异常处理会卡住后续清理和 state 刷新。
+  /// 历史 onDone catch 路径 stop_button 卡死的根因之一就是 logger.await 阻塞了清理路径。
+  void _safeLogError(Object e, StackTrace st, String hint, {Map<String, Object?>? attrs}) {
+    () async {
+      try {
+        final logger = await ref.read(appLoggerProvider.future);
+        final fullAttrs = <String, Object?>{'nodeId': nodeId, 'title': title, ...?attrs};
+        await logger.error(e, st, hint: hint, attrs: fullAttrs);
+      } catch (_) {}
+    }();
+  }
+
   @override
   Future<List<SessionMessage>> build() async {
     _trace('chat_controller.build');
@@ -472,6 +486,14 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       onDone: () async {
         final handle = _handle;
         if (handle == null) return;
+
+        // 关键修复：立即清理 _handle，让 _read() 自愈逻辑（_read 内的
+        // `hasStreaming && _handle == null` 分支）生效。
+        // 即使 finishAssistant 抛错导致磁盘 streaming marker 残留，
+        // 下一次 _read() 也会把残留 streaming 状态修正为 done，让 stop_button 消失。
+        _handle = null;
+        _cancelToken = null;
+
         try {
           if (_stopRequested) return;
           await sessionStore.finishAssistant(handle: handle);
@@ -480,14 +502,31 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           // Update search index (fire-and-forget, failures don't block)
           _updateSearchIndex(nodeId, handle);
 
-          _handle = null;
-          _cancelToken = null;
           final readResult = await _read();
           if (_stopRequested) return; // 读取完成后再检查一次
           state = AsyncData(readResult);
         } catch (e, st) {
-          final logger = await ref.read(appLoggerProvider.future);
-          await logger.error(e, st, hint: 'finishAssistant', attrs: {'nodeId': nodeId, 'title': title});
+          // 详细日志：暴露 catch 进入的根因（之前被 logger.await 默默吞掉）
+          dev.log('[ChatController.onDone] finishAssistant FAILED nodeId=$nodeId', name: 'ChatController');
+          dev.log('  error: $e', name: 'ChatController');
+          dev.log('  stack: $st', name: 'ChatController');
+
+          // Fire-and-forget logger（避免 logger await 阻塞清理路径）
+          _safeLogError(e, st, 'finishAssistant');
+
+          // 兜底刷新 UI：无论 finishAssistant 是否成功，必须让 stop_button 消失。
+          // _handle 已置 null → _read() 自愈逻辑生效
+          try {
+            final readResult = await _read();
+            if (_stopRequested) return;
+            state = AsyncData(readResult);
+          } catch (readError, readSt) {
+            dev.log('[ChatController.onDone] _read fallback FAILED: $readError', name: 'ChatController');
+            dev.log('  stack: $readSt', name: 'ChatController');
+            // 最后兜底：基于现有 state 触发刷新（让 UI 重新评估 stop_button）
+            final fallback = state.value ?? const <SessionMessage>[];
+            state = AsyncData(fallback);
+          }
         }
       },
       cancelOnError: true,

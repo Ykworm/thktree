@@ -102,7 +102,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   @override
   void dispose() {
     _saveTimer?.cancel();
-    _saveNow();
     _titleController.dispose();
     _bodyController.dispose();
     super.dispose();
@@ -172,9 +171,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         title: widget.themeTitle,
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () {
-            _saveNow();
-            Navigator.of(context).pop();
+          onPressed: () async {
+            await _saveNow();
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
           },
           child: Icon(AppIcons.check),
         ),

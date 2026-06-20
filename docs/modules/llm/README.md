@@ -29,7 +29,8 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 
 ## 子文档
 
-本模块暂无子文档。
+- [集成测试：LLM 配置注入原理与实践](./specs/integration-test-llm-injection.md) — 集成测试如何注入 LLM 配置到 Riverpod（详细版，208 行）
+- [集成测试总论 / fixtures / helpers](../../_shared/integration-testing/README.md) — 面向新成员的完整索引
 
 ## 关键设计原则
 

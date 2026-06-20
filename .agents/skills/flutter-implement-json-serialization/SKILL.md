@@ -29,13 +29,13 @@ Use this checklist to implement manual JSON serialization for a data model.
 - [ ] Define the plain model class with `final` properties.
 - [ ] Implement the `factory Model.fromJson(Map<String, dynamic> json)` constructor.
 - [ ] Implement the `Map<String, dynamic> toJson()` method.
-- [ ] Write unit tests for both serialization methods.
-- [ ] Run validator -> review type mismatch errors -> fix casting logic.
+- [ ] ~~Write unit tests for both serialization methods.~~ ⚠️ 项目禁用单测
+- [ ] Validate in real app or `integration_test/` (no `flutter test`).
 
 1. **Define the Model**: Create a class with properties matching the JSON keys.
 2. **Implement `fromJson`**: Extract values from the `Map` and cast them to the appropriate Dart types. Use pattern matching or explicit casting.
 3. **Implement `toJson`**: Return a `Map<String, dynamic>` mapping the class properties back to their JSON string keys.
-4. **Validate**: Execute unit tests to ensure type safety, autocompletion, and compile-time exception handling function correctly.
+4. **Validate**: ⚠️ 项目禁用单测。在真实 App 中验证序列化逻辑，或写 `integration_test/` 集成测试覆盖关键路径。
 
 ## Workflow: Fetching and Parsing JSON
 

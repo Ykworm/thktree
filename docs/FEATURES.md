@@ -80,6 +80,9 @@
 
 > 倒序排列，最新在上。
 
+- **2026-06-20** — `ChatController.onDone` stop_button 卡死 bug 修复：fire-and-forget 错误日志（`_safeLogError`，`logger.await` 不再阻塞清理路径）+ 立即清 `_handle` / `_cancelToken` 让 `_read()` 自愈逻辑生效 + 兜底 `_read()` 三层防线
+- **2026-06-20** — `MessageBubble._TableExpandedView` LaTeX 渲染补全：与主消息体一致注入 `latexBuilder: buildLatex` + `useDollarSignsForLatex: true`，修复"主消息体可看、点开表格后 LaTeX 不渲染"的体验不一致
+- **2026-06-20** — 单测文件全量清理：`pubspec.yaml` 移除 `flutter_test` 直接依赖，`test/` 目录 13 个单测文件全部删除（约 1100 行），与项目"集成测试优先 + 禁止凑覆盖率"约定一致
 - **2026-06-17** — 笔记详情页 UI 重构：GptMarkdown 标题样式修复、导航栏去掉标题、操作按钮收纳到网格底栏（ThkGridBottomSheet）、内容区填满页面
 - **2026-06-17** — Markdown 工具栏增强：标题级别循环切换逻辑 + 表格插入按钮
 - **2026-06-07** — 树节点圆圈改为所有节点均显示空心圆（叶子节点不可点击），圆圈与标题间距缩至 0px
@@ -92,6 +95,8 @@
 
 ## 活跃开发区域
 
+- `lib/ui/features/chat/` — `ChatController.onDone` stop_button 自愈 + `MessageBubble` LaTeX 在表格展开视图注入收敛
+- `lib/data/stores/llm_config_store.dart` — `tmp+rename` 原子写（POSIX `rename` 原子性）+ 防共享引用（`List.from` 复制）
 - `lib/ui/features/notes/` — 笔记列表布局优化（Large Title 滚动）
 - `lib/ui/features/search/` — 全文搜索功能
 - `lib/ui/core/widgets/` — 基础组件持续迭代

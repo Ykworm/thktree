@@ -76,13 +76,16 @@ YYYY-MM-DD-简短问题描述.md
 
 - **新建**：解决问题后 24h 内补充记录，趁记忆新鲜。
 - **更新**：发现之前的记录有误或方案有更新，直接修改原文件，在末尾加 **更新日志** 段。
-- **AI 维护时机**：当 AI 协助排查并解决一个非 trivial 问题时，主动询问用户是否需要登记为 war story。
+- **AI 维护时机**：当 AI 协助排查并解决一个需要排查才能定位、且有复盘价值的技术问题时，主动询问用户是否需要登记为 war story。
+- **ctsync 候选机制**：当 `ctsync` 识别到"已解决、需要排查才能定位、且有复盘价值的技术问题"时，应先将对应 war-story 列入影响清单，待用户确认后再新增或更新文档。
 - **不写 diff 块**：具体代码改动用 git diff 查看，文档里只写关键片段和思路。
 
 ## 索引（按时间倒序）
 
 ### 2026-06
 
+- `ui-ux/2026-06-20-chat-controller-stop-button-stuck.md` — ChatController stop_button 卡死（fire-and-forget 错误日志 + `_handle` 时序自愈）
+- `ui-ux/2026-06-18-gptmarkdown-latex-renderline-overflow.md` — GptMarkdown LaTeX 公式 RenderLine 溢出（flutter_math_fork 0.7.4 宽度计算偏短，FittedBox 兜底）
 - `build/2026-06-18-rum-initialize-blocks-runapp.md` — AlibabaCloudRUM initialize 阻塞 runApp 导致黑屏
 - `build/2026-06-18-log-url-duplicate-define.md` — THKTREE_LOG_URL 重复定义 + String.fromEnvironment 编译期陷阱
 - `ui-ux/2026-06-18-tts-noop-on-android.md` — Android 上 TTS 按钮可点击但无声音（NoOpTtsService 静默桩）

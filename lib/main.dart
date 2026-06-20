@@ -74,8 +74,7 @@ Future<void> main() async {
         appPathsProvider.overrideWithValue(AsyncData(paths)),
         appLoggerProvider.overrideWithValue(AsyncData(logger)),
         localeProvider.overrideWith(() => LocaleNotifier(initialLocale)),
-        brightnessProvider
-            .overrideWith(() => BrightnessNotifier(initialBrightness)),
+        initialBrightnessProvider.overrideWithValue(initialBrightness),
       ],
       child: AlibabaCloudActionCapture(
         child: const AuthGate(

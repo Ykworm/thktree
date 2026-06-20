@@ -40,23 +40,31 @@ class LlmConfigStore {
   }
 
   /// 保存所有提供商配置到文件
+  ///
+  /// 使用 tmp + rename 实现原子写入：先写到 `llm_providers.json.tmp`，
+  /// 再调用 `rename` 原子替换 `llm_providers.json`。
+  /// 这样即使进程在写入中途崩溃，也不会留下半截 JSON（`rename` 在 POSIX 上是原子的，
+  /// 要么旧文件完整保留，要么新文件完整替换）。
   Future<void> _saveAll(List<LlmProviderConfig> providers) async {
-    _cache = providers;
+    _cache = List<LlmProviderConfig>.from(providers);
     final file = await _getFile();
-    final json = providers.map((p) => p.toJson()).toList();
-    await file.writeAsString(jsonEncode(json));
+    final json = _cache!.map((p) => p.toJson()).toList();
+    final tmpPath = '${file.path}.tmp';
+    final tmpFile = File(tmpPath);
+    await tmpFile.writeAsString(jsonEncode(json));
+    await tmpFile.rename(file.path);
   }
 
   /// 添加提供商
   Future<void> addProvider(LlmProviderConfig provider) async {
-    final providers = await loadAll();
+    final providers = List<LlmProviderConfig>.from(await loadAll());
     providers.add(provider);
     await _saveAll(providers);
   }
 
   /// 更新提供商
   Future<void> updateProvider(LlmProviderConfig provider) async {
-    final providers = await loadAll();
+    final providers = List<LlmProviderConfig>.from(await loadAll());
     final index = providers.indexWhere((p) => p.id == provider.id);
     if (index >= 0) {
       providers[index] = provider;
@@ -66,7 +74,7 @@ class LlmConfigStore {
 
   /// 删除提供商
   Future<void> deleteProvider(String providerId) async {
-    final providers = await loadAll();
+    final providers = List<LlmProviderConfig>.from(await loadAll());
     providers.removeWhere((p) => p.id == providerId);
     await _saveAll(providers);
     // 同时删除对应的 API Key
@@ -119,7 +127,7 @@ class LlmConfigStore {
     String providerId,
     List<LlmModelConfig> models,
   ) async {
-    final providers = await loadAll();
+    final providers = List<LlmProviderConfig>.from(await loadAll());
     final index = providers.indexWhere((p) => p.id == providerId);
     if (index >= 0) {
       providers[index] = providers[index].copyWith(models: models);

@@ -27,10 +27,13 @@
 | `lib/ui/features/chat/chat_controller.dart` | 状态机：消息流、发送/重试/取消、模型切换 | 555 |
 | `lib/ui/features/chat/chat_screen_launch_params.dart` | 启动参数（autoTriggerReply 等） | 16 |
 | `lib/ui/features/chat/widgets/model_selector_panel.dart` | 模型选择抽屉 | - |
+| `lib/ui/core/shared/message_bubble.dart` | 消息气泡（user + assistant，GptMarkdown 渲染 + LaTeX 注入） | 388 |
+| `lib/ui/core/shared/markdown_builders.dart` | GptMarkdown 自定义构建器（含 `buildLatex`——`FittedBox(scaleDown)` 包裹 `Math.tex`） | 61 |
 
 ## 子文档
 
-本模块暂无子文档。
+- 集成测试 — 对话流式（含流式边界用例 / 空消息 / 快速连续发送）：[docs/_shared/integration-testing/chat-streaming.md](../../_shared/integration-testing/chat-streaming.md)
+- 集成测试总论 / fixtures / helpers：[docs/_shared/integration-testing/README.md](../../_shared/integration-testing/README.md)
 
 ## 关键设计原则
 
@@ -46,6 +49,7 @@
 - 新增 LLM provider 时，模型选择 panel 会自动出现（无需改 chat 代码），但要在 llm 模块注册 provider
 - 流式断网/超时处理：参考 `integration_test/chat_streaming_test.dart` 的边界用例
 - 注意 `autoTriggerReply` 启动参数与 notes 模块的"从笔记续聊"按钮联动
+- **LaTeX 公式渲染**：assistant 消息走 `lib/ui/core/shared/markdown_builders.dart` 的 `buildLatex`（`SelectableAdapter` + `Math.tex` + `FittedBox(scaleDown)`，解决 `flutter_math_fork 0.7.4` 的 `RenderLine` 溢出）。其他 4 处 `GptMarkdown` 调用（`lib/main.dart`、`lib/ui/features/notes/note_detail_screen.dart`、`lib/ui/core/shared/share_card_widget.dart`、`lib/ui/features/settings/tts_player_screen.dart`）暂未注入 `latexBuilder`，新增 LaTeX 上下文时需主动复测。详见 [war-story](../../war-stories/ui-ux/2026-06-18-gptmarkdown-latex-renderline-overflow.md) 与 [CHANGELOG/2026-06-18](../../CHANGELOG/2026-06-18-latex-overflow-fix.md)。
 
 ## 相关历史
 

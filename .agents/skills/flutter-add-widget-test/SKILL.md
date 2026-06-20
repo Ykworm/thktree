@@ -1,11 +1,26 @@
 ---
 name: flutter-add-widget-test
-description: Implement a component-level test using `WidgetTester` to verify UI rendering and user interactions (tapping, scrolling, entering text). Use when validating that a specific widget displays correct data and responds to events as expected.
+description: ⚠️ ThkTree 项目禁用——此 skill 教学的是 `WidgetTester` 单测。本项目禁止生成单测，请改用 `flutter-add-integration-test` 写集成测试。
 metadata:
   model: models/gemini-3.1-pro-preview
   last_modified: Tue, 21 Apr 2026 21:15:41 GMT
 ---
 # Writing Flutter Widget Tests
+
+## ⚠️ ThkTree 项目禁用声明
+
+本 skill 教学的是 `WidgetTester` 单测，属于本项目禁止范围（参见 `.qoder/skills/test-driven-development/SKILL.md` 的项目特例说明）。
+
+**本项目现状：**
+- `test/` 目录已删除
+- `pubspec.yaml` 中 `flutter_test` 依赖已移除
+- 验证 UI 应改用 `integration_test/` 下的集成测试（真实跑 App，作用于 `lib/main_test.dart` 入口）
+
+**需要 UI 验证时：** 请调用 `flutter-add-integration-test` skill。
+
+**本 skill 文件保留为参考**——可用于查阅 `WidgetTester` / `Finder` / `Matcher` API 语义，但不应用于生成项目内的测试代码。
+
+---
 
 ## Contents
 - [Setup & Configuration](#setup--configuration)

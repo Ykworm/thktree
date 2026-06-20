@@ -141,6 +141,7 @@ lib/
 | `go_router` | 路由 | 声明式路由，deep linking |
 | `sqflite` | SQLite | 本地数据库 + FTS5 |
 | `flutter_markdown` / `gpt_markdown` | Markdown 渲染 | UI 层 |
+| `flutter_math_fork` | LaTeX 公式渲染 | UI 层（chat 模块 `message_bubble.dart` 注入 `latexBuilder`——`FittedBox(scaleDown)` 包裹避免 `RenderLine` 溢出；详见 [CHANGELOG/2026-06-18](CHANGELOG/2026-06-18-latex-overflow-fix.md) 与 [war-story/ui-ux/2026-06-18](war-stories/ui-ux/2026-06-18-gptmarkdown-latex-renderline-overflow.md)） |
 | `shared_preferences` | 轻量 KV | LLM Provider / 设置项 |
 | `flutter_secure_storage` | 安全存储 | API Key、Face ID 相关 |
 

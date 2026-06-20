@@ -26,6 +26,7 @@ class ThemeListScreen extends ConsumerWidget {
           ThkNavBar.large(
             title: l10n.themesTabLabel,
             trailing: CupertinoButton(
+              key: const ValueKey('add_theme_button'),
               padding: EdgeInsets.zero,
               onPressed: () async {
                 final title = await _promptTitle(context);
@@ -248,6 +249,7 @@ Future<String?> _promptTitle(BuildContext context) async {
         content: Padding(
           padding: const EdgeInsets.only(top: 12),
           child: ThkTextField(
+            key: const ValueKey('theme_title_input'),
             controller: controller,
             placeholder: l10n.titleHint,
             autofocus: true,
@@ -266,6 +268,7 @@ Future<String?> _promptTitle(BuildContext context) async {
             child: Text(l10n.cancel),
           ),
           CupertinoDialogAction(
+            key: const ValueKey('theme_create_button'),
             isDefaultAction: true,
             onPressed: () {
               final value = controller.text.trim();

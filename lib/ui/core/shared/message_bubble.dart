@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
+import 'package:thk_tree/ui/core/shared/markdown_builders.dart';
 import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
@@ -163,6 +164,8 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                   style: baseStyle,
                   tableBuilder: _buildTable,
                   codeBuilder: _buildCodeBlock,
+                  latexBuilder: buildLatex,
+                  useDollarSignsForLatex: true,
                 ),
                 if (widget.message.role == SessionRole.assistant &&
                     widget.message.status != SessionMessageStatus.streaming) ...[
@@ -326,6 +329,8 @@ class _TableExpandedView extends StatelessWidget {
               style: TextStyle(fontSize: 17, height: 1.6),
               codeBuilder: _buildCodeBlock,
               tableBuilder: _buildTable,
+              latexBuilder: buildLatex,
+              useDollarSignsForLatex: true,
             ),
           ),
         ),

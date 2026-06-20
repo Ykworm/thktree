@@ -61,11 +61,19 @@ class ImportService {
       }
 
       int importedCount = 0;
+
       for (final file in archive) {
         if (file.isFile && file.name.startsWith('thktree-export/themes/')) {
           final relativePath =
               file.name.replaceFirst('thktree-export/themes/', '');
-          final targetFile = File('${themesDir.path}/$relativePath');
+
+          // 防止路径穿越
+          final normalized = p.normalize(relativePath);
+          if (normalized.startsWith('..') || p.isAbsolute(normalized)) {
+            continue; // 跳过路径穿越条目
+          }
+
+          final targetFile = File('${themesDir.path}/$normalized');
 
           // 确保父目录存在
           await targetFile.parent.create(recursive: true);
@@ -86,7 +94,9 @@ class ImportService {
       }
 
       return ImportResult(
-        status: ImportResultStatus.success,
+        status: importedCount > 0
+            ? ImportResultStatus.success
+            : ImportResultStatus.conflict,
         importedThemes: importedCount,
       );
     } catch (e) {
@@ -118,4 +128,5 @@ class ImportService {
 
     return newPath;
   }
+
 }
