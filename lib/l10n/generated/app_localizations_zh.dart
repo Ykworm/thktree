@@ -714,4 +714,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get restoreFailed => '恢复失败';
+
+  @override
+  String get contextSize => '上下文大小';
+
+  @override
+  String get contextSizeDescription =>
+      '用于计算剩余可用 token，影响长对话的截断策略。如 Claude 等模型无需设置。';
+
+  @override
+  String get contextSizeNotSet => '未设置';
 }

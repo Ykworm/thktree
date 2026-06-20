@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
@@ -36,7 +38,6 @@ class _LlmProviderDetailScreenState
   bool _isLoadingApiKey = true;
   bool _isFetchingModels = false;
   List<LlmModelConfig> _fetchedModels = [];
-  Set<String> _selectedModelIds = {};
 
   @override
   void initState() {
@@ -52,9 +53,8 @@ class _LlmProviderDetailScreenState
     );
     _apiKeyController = TextEditingController();
 
-    // 初始化已保存的模型勾选状态
+    // 初始化已获取的模型列表
     if (!_isNew) {
-      _selectedModelIds = widget.provider!.models.map((m) => m.id).toSet();
       _fetchedModels = List.from(widget.provider!.models);
     }
 
@@ -183,21 +183,17 @@ class _LlmProviderDetailScreenState
                       ThkListSection(
                         header: l10n.selectModel,
                         children: _fetchedModels.map((model) {
-                          final selected =
-                              _selectedModelIds.contains(model.id);
-                          return CupertinoListTile(
-                            title: Text(model.name),
-                            subtitle: Text(model.id),
-                            trailing: CupertinoCheckbox(
-                              value: selected,
-                              onChanged: null,
-                            ),
-                            onTap: () {
+                          return _ExpandableModelTile(
+                            model: model,
+                            onContextWindowChanged: (newValue) {
                               setState(() {
-                                if (selected) {
-                                  _selectedModelIds.remove(model.id);
-                                } else {
-                                  _selectedModelIds.add(model.id);
+                                final index = _fetchedModels.indexWhere(
+                                  (m) => m.id == model.id,
+                                );
+                                if (index != -1) {
+                                  _fetchedModels[index] = model.copyWith(
+                                    contextWindow: newValue,
+                                  );
                                 }
                               });
                             },
@@ -255,28 +251,11 @@ class _LlmProviderDetailScreenState
       );
 
       if (!mounted) return;
-      
-      // Check if any models have unknown context window and prompt user
-      final modelsWithUnknownContext = models.where((m) => m.contextWindow == 0).toList();
-      if (modelsWithUnknownContext.isNotEmpty) {
-        final updatedModels = await _promptForContextWindows(models, modelsWithUnknownContext);
-        if (!mounted) return;
-        setState(() {
-          _fetchedModels = updatedModels;
-          _selectedModelIds = _selectedModelIds
-              .where((id) => updatedModels.any((m) => m.id == id))
-              .toSet();
-          _isFetchingModels = false;
-        });
-      } else {
-        setState(() {
-          _fetchedModels = models;
-          _selectedModelIds = _selectedModelIds
-              .where((id) => models.any((m) => m.id == id))
-              .toSet();
-          _isFetchingModels = false;
-        });
-      }
+      // 出现上下文未知的模型时不再弹窗，默认填上 1M（在 LlmModelConfig.fromJson 中处理）。
+      setState(() {
+        _fetchedModels = models;
+        _isFetchingModels = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isFetchingModels = false);
@@ -287,72 +266,6 @@ class _LlmProviderDetailScreenState
     }
   }
 
-
-  /// Prompt user to set context window for models with unknown context window
-  Future<List<LlmModelConfig>> _promptForContextWindows(
-    List<LlmModelConfig> allModels,
-    List<LlmModelConfig> modelsWithUnknown,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    
-    // Context window options from largest to smallest
-    const contextWindowOptions = [
-      (1000000, '1M'),
-      (512000, '512K'),
-      (256000, '256K'),
-      (128000, '128K'),
-      (64000, '64K'),
-      (32000, '32K'),
-      (16000, '16K'),
-      (8000, '8K'),
-      (4000, '4K'),
-    ];
-
-    // Show picker for each model with unknown context window
-    for (var i = 0; i < modelsWithUnknown.length; i++) {
-      final model = modelsWithUnknown[i];
-      
-      final selectedIndex = await showCupertinoModalPopup<int>(
-        context: context,
-        builder: (ctx) => CupertinoActionSheet(
-          title: Text(l10n.contextWindowTitle(model.name)),
-          message: Text(
-            '${i + 1} / ${modelsWithUnknown.length}',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          actions: [
-            for (var j = 0; j < contextWindowOptions.length; j++)
-              CupertinoActionSheetAction(
-                onPressed: () => Navigator.of(ctx).pop(j),
-                child: Text('${contextWindowOptions[j].$2} tokens'),
-              ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.cancel),
-          ),
-        ),
-      );
-
-      if (selectedIndex != null && mounted) {
-        final contextWindow = contextWindowOptions[selectedIndex].$1;
-        final updatedModel = model.copyWith(contextWindow: contextWindow);
-        
-        // Update the model in the list
-        final index = allModels.indexWhere((m) => m.id == model.id);
-        if (index != -1) {
-          allModels = List.from(allModels);
-          allModels[index] = updatedModel;
-        }
-      }
-    }
-
-    return allModels;
-  }
 
   // ─── 保存提供商 ──────────────────────────────────────────────────
 
@@ -371,9 +284,8 @@ class _LlmProviderDetailScreenState
     }
 
     final store = ref.read(llmConfigStoreProvider);
-    final selectedModels = _fetchedModels
-        .where((m) => _selectedModelIds.contains(m.id))
-        .toList();
+    // 获取到的模型全部保存，不再按勾选过滤。
+    final selectedModels = _fetchedModels;
 
     try {
       if (_isNew) {
@@ -423,26 +335,55 @@ class _LlmProviderDetailScreenState
   Future<bool> _autoSave() async {
     if (_isNew || _isCustom) return false;
 
+    final provider = widget.provider;
+    if (provider == null) {
+      dev.log('[_autoSave] widget.provider == null, skip', name: 'LlmProviderDetailScreen');
+      return false;
+    }
+
     try {
       final store = ref.read(llmConfigStoreProvider);
       final baseUrl = _baseUrlController.text.trim();
       final apiKey = _apiKeyController.text.trim();
-      final selectedModels = _fetchedModels
-          .where((m) => _selectedModelIds.contains(m.id))
-          .toList();
+      // 获取到的模型全部保存，不再按勾选过滤。
+      final selectedModels = _fetchedModels;
 
-      final updated = widget.provider!.copyWith(
-        baseUrl: baseUrl.isEmpty ? widget.provider!.baseUrl : baseUrl,
+      dev.log('[_autoSave] start', name: 'LlmProviderDetailScreen');
+      dev.log('  provider.id=${provider.id} type=${provider.type} name=${provider.name}', name: 'LlmProviderDetailScreen');
+      dev.log('  baseUrl in="$baseUrl" kept=${baseUrl.isEmpty ? provider.baseUrl : baseUrl}', name: 'LlmProviderDetailScreen');
+      dev.log('  apiKey.length=${apiKey.length} (empty=${apiKey.isEmpty})', name: 'LlmProviderDetailScreen');
+      dev.log('  _fetchedModels.count=${_fetchedModels.length}', name: 'LlmProviderDetailScreen');
+      dev.log('  selectedModels.count=${selectedModels.length}', name: 'LlmProviderDetailScreen');
+      for (final m in selectedModels) {
+        dev.log('    - model id=${m.id} name=${m.name} contextWindow=${m.contextWindow}', name: 'LlmProviderDetailScreen');
+      }
+
+      final updated = provider.copyWith(
+        baseUrl: baseUrl.isEmpty ? provider.baseUrl : baseUrl,
         models: selectedModels,
       );
+      dev.log('[_autoSave] before store.updateProvider', name: 'LlmProviderDetailScreen');
       await store.updateProvider(updated);
+      dev.log('[_autoSave] after store.updateProvider (success)', name: 'LlmProviderDetailScreen');
+
       if (apiKey.isNotEmpty) {
+        dev.log('[_autoSave] before store.saveApiKey', name: 'LlmProviderDetailScreen');
         await store.saveApiKey(updated.id, apiKey);
+        dev.log('[_autoSave] after store.saveApiKey (success)', name: 'LlmProviderDetailScreen');
       }
+
+      dev.log('[_autoSave] before ref.invalidate(llmProvidersProvider)', name: 'LlmProviderDetailScreen');
       ref.invalidate(llmProvidersProvider);
+      dev.log('[_autoSave] DONE', name: 'LlmProviderDetailScreen');
       return true;
-    } catch (e) {
+    } catch (e, st) {
+      // 详细日志：暴露 catch 进入的根因（之前被 e.toString() 默默吞掉）
+      dev.log('[_autoSave] FAILED', name: 'LlmProviderDetailScreen');
+      dev.log('  error: $e', name: 'LlmProviderDetailScreen');
+      dev.log('  error.runtimeType: ${e.runtimeType}', name: 'LlmProviderDetailScreen');
+      dev.log('  stack: $st', name: 'LlmProviderDetailScreen');
       debugPrint('[_autoSave] 保存失败: $e');
+
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         if (l10n != null) {
@@ -489,5 +430,224 @@ class _LlmProviderDetailScreenState
       },
       cancelAction: l10n.cancel,
     );
+  }
+}
+
+// ─── 可展开模型行 ──────────────────────────────────────────────
+
+/// 展示单个模型行：点击行可展开，展开后提供 Context Size 选择器。
+///
+/// Context Size 仍为可选填项。值为 0 表示未设置（与 LlmModelConfig 约定一致）。
+class _ExpandableModelTile extends StatefulWidget {
+  const _ExpandableModelTile({
+    required this.model,
+    required this.onContextWindowChanged,
+  });
+
+  final LlmModelConfig model;
+  final ValueChanged<int> onContextWindowChanged;
+
+  @override
+  State<_ExpandableModelTile> createState() => _ExpandableModelTileState();
+}
+
+class _ExpandableModelTileState extends State<_ExpandableModelTile> {
+  bool _isExpanded = false;
+
+  // Context Size 可选项（从大到小）。
+  static const List<(int, String)> _contextSizeOptions = [
+    (1000000, '1M'),
+    (512000, '512K'),
+    (256000, '256K'),
+    (128000, '128K'),
+    (64000, '64K'),
+    (32000, '32K'),
+    (16000, '16K'),
+    (8000, '8K'),
+    (4000, '4K'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentValue = widget.model.contextWindow;
+    final hasValue = currentValue > 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 主行：点击展开
+        CupertinoListTile(
+          title: Text(widget.model.name),
+          subtitle: Text(widget.model.id),
+          additionalInfo: Text(
+            hasValue ? _formatContextSize(currentValue) : l10n.contextSizeNotSet,
+            style: TextStyle(
+              color: hasValue ? AppColors.textSecondary : AppColors.accent,
+            ),
+          ),
+          trailing: AnimatedRotation(
+            turns: _isExpanded ? 0.25 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: const Icon(
+              CupertinoIcons.chevron_right,
+              size: 18,
+              color: CupertinoColors.systemGrey,
+            ),
+          ),
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+        ),
+        // 展开区
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      l10n.contextSize,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CupertinoButton(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        color: AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(8),
+                        minimumSize: Size.zero,
+                        onPressed: () => _showContextSizePicker(l10n),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            hasValue
+                                ? _formatContextSize(currentValue)
+                                : l10n.contextSizeNotSet,
+                            style: TextStyle(
+                              color: hasValue
+                                  ? AppColors.textPrimary
+                                  : AppColors.accent,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.contextSizeDescription,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          crossFadeState:
+              _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
+        // 分隔线
+        Container(
+          height: 1,
+          color: AppColors.border,
+          margin: const EdgeInsets.only(left: 16),
+        ),
+      ],
+    );
+  }
+
+  String _formatContextSize(int value) {
+    for (final option in _contextSizeOptions) {
+      if (option.$1 == value) return option.$2;
+    }
+    // 不在预设选项中时按 K 展示原始值
+    if (value >= 1000 && value % 1000 == 0) return '${value ~/ 1000}K';
+    return '$value';
+  }
+
+  void _showContextSizePicker(AppLocalizations l10n) {
+    final currentIndex = _contextSizeOptions.indexWhere(
+      (o) => o.$1 == widget.model.contextWindow,
+    );
+
+    int pendingIndex = currentIndex >= 0 ? currentIndex : 0;
+    int? confirmedIndex;
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) {
+        return Container(
+          height: 280,
+          color: CupertinoTheme.of(ctx).scaffoldBackgroundColor,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // 工具栏
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(l10n.cancel),
+                      ),
+                      const Spacer(),
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        onPressed: () {
+                          confirmedIndex = pendingIndex;
+                          Navigator.of(ctx).pop();
+                        },
+                        child: Text(l10n.save),
+                      ),
+                    ],
+                  ),
+                ),
+                // Picker
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 44,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: pendingIndex,
+                    ),
+                    onSelectedItemChanged: (index) {
+                      pendingIndex = index;
+                    },
+                    children: _contextSizeOptions.map((option) {
+                      return Center(
+                        child: Text(
+                          '${option.$2} tokens',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      if (confirmedIndex != null) {
+        widget.onContextWindowChanged(_contextSizeOptions[confirmedIndex!].$1);
+      }
+    });
   }
 }

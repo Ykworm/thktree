@@ -737,4 +737,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get restoreFailed => 'Restore failed';
+
+  @override
+  String get contextSize => 'Context Size';
+
+  @override
+  String get contextSizeDescription =>
+      'Used to compute remaining available tokens. Affects truncation strategy for long conversations. Not required for models like Claude.';
+
+  @override
+  String get contextSizeNotSet => 'Not set';
 }

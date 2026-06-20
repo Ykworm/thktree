@@ -437,5 +437,8 @@
   "restoreMerge": "合并",
   "success": "成功",
   "restoreSuccess": "数据恢复成功",
-  "restoreFailed": "恢复失败"
+  "restoreFailed": "恢复失败",
+  "contextSize": "上下文大小",
+  "contextSizeDescription": "用于计算剩余可用 token，影响长对话的截断策略。如 Claude 等模型无需设置。",
+  "contextSizeNotSet": "未设置"
 }

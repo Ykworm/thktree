@@ -1393,6 +1393,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore failed'**
   String get restoreFailed;
+
+  /// Label for the context size selector on the provider detail screen
+  ///
+  /// In en, this message translates to:
+  /// **'Context Size'**
+  String get contextSize;
+
+  /// Description shown under the context size selector
+  ///
+  /// In en, this message translates to:
+  /// **'Used to compute remaining available tokens. Affects truncation strategy for long conversations. Not required for models like Claude.'**
+  String get contextSizeDescription;
+
+  /// Placeholder text when context size is not set
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get contextSizeNotSet;
 }
 
 class _AppLocalizationsDelegate

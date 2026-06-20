@@ -2,7 +2,7 @@
 class LlmModelConfig {
   final String id; // 模型标识（如 gpt-4o, deepseek-chat）
   final String name; // 显示名称（通常同 id）
-  final int contextWindow; // 上下文窗口大小（tokens），0 表示未知
+  final int contextWindow; // 上下文窗口大小（tokens），0 表示未知；fromJson 默认 1M
 
   const LlmModelConfig({
     required this.id,
@@ -32,7 +32,7 @@ class LlmModelConfig {
     return LlmModelConfig(
       id: json['id'] as String,
       name: json['name'] as String,
-      contextWindow: json['contextWindow'] as int? ?? 0,
+      contextWindow: json['contextWindow'] as int? ?? 1000000,
     );
   }
 }

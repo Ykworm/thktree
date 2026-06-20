@@ -977,5 +977,17 @@
   "restoreFailed": "Restore failed",
   "@restoreFailed": {
     "description": "Dialog message when restore fails"
+  },
+  "contextSize": "Context Size",
+  "@contextSize": {
+    "description": "Label for the context size selector on the provider detail screen"
+  },
+  "contextSizeDescription": "Used to compute remaining available tokens. Affects truncation strategy for long conversations. Not required for models like Claude.",
+  "@contextSizeDescription": {
+    "description": "Description shown under the context size selector"
+  },
+  "contextSizeNotSet": "Not set",
+  "@contextSizeNotSet": {
+    "description": "Placeholder text when context size is not set"
   }
 }
