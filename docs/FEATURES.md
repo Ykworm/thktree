@@ -81,7 +81,8 @@
 > 倒序排列，最新在上。
 
 - **2026-06-20** — `ChatController.onDone` stop_button 卡死 bug 修复：fire-and-forget 错误日志（`_safeLogError`，`logger.await` 不再阻塞清理路径）+ 立即清 `_handle` / `_cancelToken` 让 `_read()` 自愈逻辑生效 + 兜底 `_read()` 三层防线
-- **2026-06-20** — LLM 设置链路 UI 收敛：设置页改为"大模型"入口，子页采用 inline title + fill pane 布局，默认模型选择改为独立单选页
+- **2026-06-20** — LLM 测试 Key 注入方案:从 assets 迁移到 dart-define(Key 不进 release 包,新增 `tools/gen_dart_define.dart` 生成器压缩 JSON,集成测试命令加 `--dart-define-from-file=build/dart_define.json`,见 [CHANGELOG](CHANGELOG/2026-06-20-llm-test-config-redesign.md))
+- **2026-06-20** — LLM 设置链路 UI 收敛:设置页改为"大模型"入口,子页采用 inline title + fill pane 布局,默认模型选择改为独立单选页
 - **2026-06-20** — `MessageBubble._TableExpandedView` LaTeX 渲染补全：与主消息体一致注入 `latexBuilder: buildLatex` + `useDollarSignsForLatex: true`，修复"主消息体可看、点开表格后 LaTeX 不渲染"的体验不一致
 - **2026-06-20** — 单测文件全量清理：`pubspec.yaml` 移除 `flutter_test` 直接依赖，`test/` 目录 13 个单测文件全部删除（约 1100 行），与项目"集成测试优先 + 禁止凑覆盖率"约定一致
 - **2026-06-17** — 笔记详情页 UI 重构：GptMarkdown 标题样式修复、导航栏去掉标题、操作按钮收纳到网格底栏（ThkGridBottomSheet）、内容区填满页面
