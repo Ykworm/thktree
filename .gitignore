@@ -50,7 +50,3 @@ app.*.map.json
 # IDE runtime
 .project/
 ui-ux-pro-max-skill/
-
-# Local LLM test config (API keys)
-tool/test_llm_config.json
-assets/test_llm_config/test_llm_config.json

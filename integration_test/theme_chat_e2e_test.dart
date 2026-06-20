@@ -26,16 +26,15 @@ import 'test_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  // 加载 LLM 配置（API Key 来自 assets/test_llm_config/test_llm_config.json，
-  // 不存在或未填 Key 时 LlmTestConfig.loadFromAsset 会抛清晰错误）。
-  // 用 asset 而不是 host 文件的原因：集成测试代码运行在 iOS simulator
-  // 进程里，simulator 看不到 host 上的 tool/ 目录；asset 会被打进 .app bundle。
-  final llmConfigFuture = LlmTestConfig.loadFromAsset(
-    'assets/test_llm_config/test_llm_config.json',
-  );
+  // 加载 LLM 配置（API Key 来自 --dart-define-from-file 注入的
+  // TEST_LLM_CONFIG_JSON 编译期常量，未注入或 Key 为空时
+  // LlmTestConfig.loadFromDefine 会抛清晰错误）。
+  //
+  // 迁移记录（2026-06-20）：从 loadFromAsset 改到 loadFromDefine，
+  // Key 不再打进 .app bundle，物理上消除 release 包泄露 Key 的可能。
+  final llmConfig = LlmTestConfig.loadFromDefine();
 
   testWidgets('主题 → 节点 → 聊天 2 round 完整链路', (tester) async {
-    final llmConfig = await llmConfigFuture;
     // ignore: avoid_print
     print('[theme_chat_e2e] 使用 LLM 厂商: ${llmConfig.activeProvider.displayName}');
 

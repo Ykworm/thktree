@@ -1,17 +1,24 @@
 // LLM 集成测试配置加载器。
 //
-// 用法：
-//   final config = await LlmTestConfig.loadFromAsset(
-//     'assets/test_llm_config/test_llm_config.json',
-//   );
+// 加载机制（2026-06-20 迁移后）：
+// 1. Dart 代码读 `String.fromEnvironment('TEST_LLM_CONFIG_JSON')`
+// 2. 启动集成测试时通过 `--dart-define-from-file=<path>` 注入 JSON 字符串
+// 3. Key 物理上不进任何 bundle / .app / .apk / .ipa
+//
+// 用法（推荐）：
+//   final config = LlmTestConfig.loadFromDefine();
 //   final app = await createTestApp(llmSettings: config.toAppSettings());
 //
-// 为什么用 asset 而不是文件？
-// 集成测试代码运行在 iOS simulator 进程里，simulator 看不到 host 工程里的
-// `tool/test_llm_config.json`。把 config 打进 Flutter assets 后，
-// simulator 进程通过 rootBundle.loadString 就能读到。
+// 运行命令：
+//   flutter test integration_test/ \
+//     --dart-define-from-file=/your/path/test_llm_config.json
 //
-// 配置文件格式参考：assets/test_llm_config/test_llm_config.example.json
+// 逃生通道：
+//   [loadFromAsset] 保留一个版本作为逃生通道；如果 dart-define 遇到平台问题，
+//   可临时回退到 assets 路径。**生产环境禁止回退**。
+//
+// 配置文件 JSON 结构详见：
+//   docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7
 
 import 'dart:convert';
 
@@ -39,14 +46,47 @@ class LlmTestConfig {
   /// 所有厂商的配置（apiKey 可能为空，表示未配置）。
   final Map<LlmProvider, _ProviderEntry> _entries;
 
-  /// 从 Flutter asset 读取配置。
+  /// 从 `--dart-define-from-file` 注入的编译期常量读取配置（推荐）。
   ///
-  /// 抛出 [FlutterError] 如果 asset 不存在（pubspec.yaml 没声明或文件缺失）。
+  /// 配置来源：启动测试时通过 `flutter test integration_test/ \`
+  /// ``--dart-define-from-file=<path>`` 传入 JSON 字符串。
+  /// Key 物理上不进任何 bundle / .app / .apk / .ipa。
+  ///
+  /// 抛出 [StateError] 如果未注入（漏传 dart-define 或 JSON 为空字符串）。
   /// 抛出 [FormatException] 如果 JSON 非法或字段缺失。
   /// 抛出 [StateError] 如果 [activeProvider] 引用了未在 [providers] 中声明的厂商，
   /// 或 [activeProvider] 引用了未填 apiKey 的厂商。
+  static LlmTestConfig loadFromDefine() {
+    const raw = String.fromEnvironment('TEST_LLM_CONFIG_JSON');
+    if (raw.isEmpty) {
+      throw StateError(
+        'LLM 测试配置未注入。\n\n'
+        '集成测试需要通过 --dart-define-from-file=<path> 传入 LLM 配置 JSON。\n\n'
+        '准备步骤:\n'
+        '  1. 在工程外创建 test_llm_config.json，JSON 结构见\n'
+        '     docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7\n'
+        '  2. 填入对应厂商的 apiKey（推荐放 ~/.thktree/）\n'
+        '  3. 运行:\n'
+        '       flutter test integration_test/ \\\n'
+        '         --dart-define-from-file=/your/path/test_llm_config.json',
+      );
+    }
+    return _parse(raw);
+  }
+
+  /// 从 Flutter asset 读取配置（逃生通道）。
+  ///
+  /// **已弃用**：自 2026-06-20 起，集成测试统一走 [loadFromDefine] 注入。
+  /// 本方法保留 1 个版本作为逃生通道，仅在 dart-define 遇到平台问题时
+  /// 临时回退使用。**生产环境禁止回退**。
+  ///
+  /// 抛出 [StateError] 如果 asset 不存在（pubspec.yaml 没声明或文件缺失）。
+  /// 抛出 [FormatException] 如果 JSON 非法或字段缺失。
+  /// 抛出 [StateError] 如果 [activeProvider] 引用了未在 [providers] 中声明的厂商，
+  /// 或 [activeProvider] 引用了未填 apiKey 的厂商。
+  @Deprecated('已迁移到 loadFromDefine,本方法保留 1 个版本作为逃生通道')
   static Future<LlmTestConfig> loadFromAsset(String assetPath) async {
-    String rawString;
+    final String rawString;
     try {
       rawString = await rootBundle.loadString(assetPath);
     } catch (e) {
@@ -57,12 +97,19 @@ class LlmTestConfig {
         '原始错误: $e',
       );
     }
+    return _parse(rawString);
+  }
 
+  /// 共享解析器：从 JSON 字符串构造 [LlmTestConfig]。
+  ///
+  /// 同时被 [loadFromDefine] 和 [loadFromAsset] 复用，保证两路径的
+  /// 字段校验 / 错误信息 / 构造逻辑完全一致。
+  static LlmTestConfig _parse(String rawString) {
     final Map<String, Object?> raw;
     try {
       raw = jsonDecode(rawString) as Map<String, Object?>;
     } catch (e) {
-      throw FormatException('Invalid JSON in $assetPath: $e');
+      throw FormatException('Invalid JSON in test config: $e');
     }
 
     final activeName = raw['activeProvider'] as String?;
@@ -99,7 +146,7 @@ class LlmTestConfig {
     if (activeEntry.apiKey.isEmpty) {
       throw StateError(
         'activeProvider "$activeName" 在 providers 中没有有效的 apiKey。\n'
-        '请在 assets/test_llm_config/test_llm_config.json 里填入该厂商的 API Key。',
+        '请在 dart-define 注入的 test_llm_config.json 里填入该厂商的 API Key。',
       );
     }
 
