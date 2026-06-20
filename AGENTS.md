@@ -405,3 +405,23 @@ git push --force-with-lease
 ## 项目级 Skill 约定
 
 ThkTree 是 Flutter 项目，`flutter-dev` 是主线 skill；`ios-application-dev` / `android-native-dev` 等平台原生 skill 仅在处理 platform channel、原生构建问题时按需触发。
+
+### 集成测试文档索引
+
+当任务涉及以下场景时，必须先读取 `docs/_shared/integration-testing/` 目录下的相关文档：
+
+- 编写/修改集成测试
+- 调试测试失败
+- 添加新的测试用例
+- 理解测试基础设施（fixtures、helpers、LLM 注入）
+
+目录内容：
+- `README.md` — 总论与文档体系索引
+- `fixtures.md` — 测试夹具/固件规范
+- `helpers.md` — 测试辅助函数规范
+- `llm-injection.md` — LLM 配置注入机制（导航版）
+- `backup-restore.md` — 备份恢复测试规范
+- `branch-creation.md` — 分支创建测试规范
+- `chat-streaming.md` — 流式聊天测试规范
+- `node-reorder.md` — 节点重排序测试规范
+- `theme-chat-e2e.md` — 主题聊天端到端测试规范
