@@ -150,18 +150,6 @@ final sessionStoreProvider = FutureProvider<SessionStore>((ref) async {
       dev.log('[getSessionPathForNode] start, nodeId=$nodeId');
       unawaited(logger.info('get_session_path.start', attrs: {'nodeId': nodeId}));
       
-      // First, try to reindex all themes from disk to make sure all nodes are in DB!
-      dev.log('[getSessionPathForNode] reindexing all themes first...');
-      final themeStore = await ref.read(themeStoreProvider.future);
-      await themeStore.reindexThemesFromDisk();
-      final themes = await themeStore.listThemes();
-      for (final theme in themes) {
-        final themeRow = await nodeStore.getThemeRow(themeId: theme.themeId);
-        final themePath = themeRow['themePath']! as String;
-        dev.log('[getSessionPathForNode] reindexing theme ${theme.themeId} at $themePath');
-        await nodeStore.reindexNodesFromDisk(themePath: themePath);
-      }
-      
       try {
         final row = await nodeStore.getNodeRow(nodeId: nodeId);
         final sessionPath = row['sessionPath']! as String;
