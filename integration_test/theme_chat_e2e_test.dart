@@ -21,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/main_test.dart';
 import '_support/llm_test_config.dart';
+import '_support/step_timer.dart';
 import 'test_helpers.dart';
 
 void main() {
@@ -38,6 +39,8 @@ void main() {
     // ignore: avoid_print
     print('[theme_chat_e2e] 使用 LLM 厂商: ${llmConfig.activeProvider.displayName}');
 
+    final timer = StepTimer()..start();
+
     // 1. 启动 App，强制中文 locale + 注入 LLM 配置
     //
     // 注入两层：
@@ -53,6 +56,7 @@ void main() {
     );
     await tester.pumpWidget(app);
     await tester.pumpAndSettle();
+    timer.step('启动 App + 注入');
 
     // 生成时间戳后缀，避免重复运行冲突（不清理数据）
     final ts = DateTime.now().millisecondsSinceEpoch;
@@ -63,6 +67,7 @@ void main() {
     // 切换到底部 "主题" tab 进入主题列表。
     await _switchToTab(tester, '主题');
     await tester.pumpAndSettle();
+    timer.step('切换底部 tab 到"主题"');
 
     // ──────────────────────────────────────────────────────────────────────
     // 步骤 1: 创建主题
@@ -72,6 +77,7 @@ void main() {
     // 等新主题出现在列表
     await waitForText(tester, themeTitle, timeout: const Duration(seconds: 10));
     expect(find.text(themeTitle), findsOneWidget, reason: '新主题应出现在列表中');
+    timer.step('创建主题');
 
     // ──────────────────────────────────────────────────────────────────────
     // 步骤 2: 进入主题详情
@@ -86,6 +92,7 @@ void main() {
       findsOneWidget,
       reason: '进入主题详情后应能看到 + 按钮',
     );
+    timer.step('进入主题详情');
 
     // ──────────────────────────────────────────────────────────────────────
     // 步骤 3: 创建节点（讨论）
@@ -95,6 +102,7 @@ void main() {
     // 等新节点出现（注意节点列表用的是 _TreeRowView，需要滚到可见或用名字定位）
     await waitForText(tester, nodeTitle, timeout: const Duration(seconds: 10));
     expect(find.text(nodeTitle), findsOneWidget, reason: '新节点应出现在树中');
+    timer.step('创建节点');
 
     // ──────────────────────────────────────────────────────────────────────
     // 步骤 4: 进入 chat_screen
@@ -108,6 +116,7 @@ void main() {
       findsOneWidget,
       reason: '进入聊天页后应能看到输入框',
     );
+    timer.step('进入聊天页');
 
     // ──────────────────────────────────────────────────────────────────────
     // 步骤 5: Round 1 — 发送消息并等待流式回复
@@ -117,6 +126,7 @@ void main() {
       message: '请用一句话介绍你自己',
       timeout: const Duration(seconds: 90),
     );
+    timer.step('Round 1 发消息等回复');
 
     // ──────────────────────────────────────────────────────────────────────
     // 步骤 6: Round 2 — 发送消息并等待流式回复
@@ -126,6 +136,7 @@ void main() {
       message: '请讲一个简短的冷笑话',
       timeout: const Duration(seconds: 90),
     );
+    timer.step('Round 2 发消息等回复');
 
     // ──────────────────────────────────────────────────────────────────────
     // 步骤 7: 断言 — 至少 2 user + 2 assistant 消息，assistant body 非空
@@ -149,6 +160,9 @@ void main() {
       findsOneWidget,
       reason: '第二轮结束后，发送按钮应恢复',
     );
+    timer.step('最终断言');
+
+    timer.finish();
   }, timeout: const Timeout(Duration(minutes: 5)));
 }
 
@@ -231,11 +245,21 @@ Future<void> _sendAndWaitForReply(
   await tester.pump();
 
   // 等 stop_button 出现 → 流式已启动
-  await waitForWidget(
-    tester,
-    find.byKey(const ValueKey('stop_button')),
-    timeout: const Duration(seconds: 10),
-  );
+  // 同时检测 error 状态，避免 API 报错时傻等超时
+  final stopFinder = find.byKey(const ValueKey('stop_button'));
+  final sw = Stopwatch()..start();
+  while (stopFinder.evaluate().isEmpty) {
+    if (sw.elapsed > const Duration(seconds: 10)) {
+      // 超时前先检查界面上是否有错误信息
+      final errorText = _extractScreenError(tester);
+      if (errorText != null) {
+        fail('LLM 调用失败: $errorText');
+      }
+      fail('发送消息后 10s 内未进入流式状态（stop_button 未出现）。'
+           '可能原因：LLM API 调用失败、网络超时、或 API Key 无效。');
+    }
+    await tester.pump(const Duration(milliseconds: 500));
+  }
 
   // 等 send_button 回来 → 流式已结束
   await waitForWidget(
@@ -246,4 +270,22 @@ Future<void> _sendAndWaitForReply(
 
   // 额外 pump 一次确保 UI 稳定
   await tester.pump();
+}
+
+/// 从界面上提取错误信息（AsyncError 渲染的 Text）。
+///
+/// chat_screen 在 AsyncError 时渲染 `Center(child: Text(e.toString()))`，
+/// 这里提取该文本供测试报告使用。
+String? _extractScreenError(WidgetTester tester) {
+  for (final element in find.byType(Text).evaluate()) {
+    final data = (element.widget as Text).data;
+    if (data != null &&
+        (data.contains('Exception') ||
+         data.contains('Error') ||
+         data.contains('SocketException') ||
+         data.contains('DioException'))) {
+      return data;
+    }
+  }
+  return null;
 }
