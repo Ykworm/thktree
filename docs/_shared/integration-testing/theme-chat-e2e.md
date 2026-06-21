@@ -1,6 +1,6 @@
 # 主题 → 节点 → 聊天 E2E 测试（theme_chat_e2e_test.dart）
 
-> **文件**：[`integration_test/theme_chat_e2e_test.dart`](../../../integration_test/theme_chat_e2e_test.dart)（250 行，1 个 testWidgets）  
+> **文件**：[`integration_test/theme_chat_e2e_test.dart`](../../../integration_test/theme_chat_e2e_test.dart)（291 行，1 个 testWidgets）  
 > **状态**：✅ **完整可跑通** — 唯一跑通的集成测试  
 > **草稿来源**：[docs/_tmp/theme_chat_e2e_test.md](../../_tmp/theme_chat_e2e_test.md)（已吸收，本文档落地后删除草稿）
 
@@ -211,7 +211,7 @@ expect(
 );
 ```
 
-### 6.9 Round 1/2 发消息（第 116-129 行）
+### 6.9 Round 1/2 发消息（第 126-141 行）
 
 ```dart
 await _sendAndWaitForReply(
@@ -219,19 +219,38 @@ await _sendAndWaitForReply(
   message: '请用一句话介绍你自己',
   timeout: const Duration(seconds: 90),
 );
+timer.step('Round 1 发消息等回复');
 
 await _sendAndWaitForReply(
   tester,
   message: '请讲一个简短的冷笑话',
   timeout: const Duration(seconds: 90),
 );
+timer.step('Round 2 发消息等回复');
 ```
 
-`_sendAndWaitForReply` 是文件内私有 helper（line 216-250），逻辑：
+`_sendAndWaitForReply` 是文件内私有 helper（line 245-270），逻辑：
 1. 输入消息
 2. 点 `send_button`（流式开始前一定存在）
-3. 等待 `stop_button` 出现（10s 内）→ 流式已启动
-4. 等待 `send_button` 回来（90s 内）→ 流式已结束
+3. **手动轮询等待 `stop_button` 出现（10s 内）** → 流式已启动
+4. 等待 `send_button` 回来（90s 内） → 流式已结束
+
+**错误检测机制**（2026-06-22 新增）：步骤 3 改为手动轮询（`while` + `pump(500ms)`），替代原先的 `waitForWidget`。超时前先检查界面是否出现错误信息（通过 `_extractScreenError` 提取 `Exception` / `Error` / `SocketException` / `DioException` 文本），避免 API 报错时傻等 10s 超时。
+
+```dart
+// 核心逻辑（简化）
+final sw = Stopwatch()..start();
+while (stopFinder.evaluate().isEmpty) {
+  if (sw.elapsed > Duration(seconds: 10)) {
+    final errorText = _extractScreenError(tester);
+    if (errorText != null) fail('LLM 调用失败: $errorText');
+    fail('发送消息后 10s 内未进入流式状态');
+  }
+  await tester.pump(Duration(milliseconds: 500));
+}
+```
+
+`_extractScreenError` 扫描界面所有 `Text` widget，匹配 `Exception` / `Error` / `SocketException` / `DioException` 关键词。匹配到时直接 `fail()`，错误信息包含原始异常文本，便于定位。
 
 ### 6.10 断言（第 136-152 行）
 
@@ -256,16 +275,40 @@ expect(
 
 ---
 
+### 6.11 StepTimer 步骤耗时打点
+
+每个关键步骤后调用 `timer.step('步骤名')`，测试结束调用 `timer.finish()` 打印总耗时。
+
+打点位置（共 9 个 step）：
+
+| 步骤 | 打点名 | 作用 |
+|------|--------|------|
+| 启动 App + 注入后 | `启动 App + 注入` | measure createTestApp + pump |
+| 切 tab 后 | `切换底部 tab 到"主题"` | measure tab 切换 |
+| 创建主题后 | `创建主题` | measure 主题创建 + 列表刷新 |
+| 进入主题详情后 | `进入主题详情` | measure 导航 + 页面加载 |
+| 创建节点后 | `创建节点` | measure 节点创建 + 树刷新 |
+| 进入聊天页后 | `进入聊天页` | measure 导航 + 页面加载 |
+| Round 1 结束后 | `Round 1 发消息等回复` | measure 发消息 + LLM 流式（通常最慢） |
+| Round 2 结束后 | `Round 2 发消息等回复` | measure 发消息 + LLM 流式 |
+| 断言完成后 | `最终断言` | measure 断言逻辑 |
+
+输出会出现在 CI 日志中，用于性能回归检测和瓶颈定位。详见 [helpers.md § 10](./helpers.md#10-_support-工具steptimer-步骤耗时统计)。
+
+---
+
 ## 7. 文件内私有 helpers
 
-文件底部定义了 4 个 helper（line 156-250），**只在本文件内可用**：
+文件底部定义了 5 个 helper（line 245-291），**只在本文件内可用**：
 
 | Helper | 作用 | 提升建议 |
 |--------|------|----------|
 | `_switchToTab(tester, label)` | 点底部 tab 栏 | ✅ 应提到 `_support/` |
 | `_createTheme(tester, title)` | 点 + → 弹 dialog → 输入 → 创建主题 | ✅ 应提到 `_support/` |
 | `_createNode(tester, title)` | 点 + → 弹 dialog → 输入 → 创建节点 | ✅ 应提到 `_support/` |
-| `_sendAndWaitForReply(tester, message, timeout)` | 发消息 + 等流式结束 | ✅ 应提到 `_support/` |
+| `_sendAndWaitForReply(tester, message, timeout)` | 发消息 + 轮询等流式结束 + 错误检测 | ✅ 应提到 `_support/` |
+| `_extractScreenError(tester)` | 扫描界面 Text 提取异常信息（`Exception` / `SocketException` 等） | ✅ 应提到 `_support/` |
+| `StepTimer`（`_support/step_timer.dart`） | 步骤级耗时统计（已独立为 `_support/` 文件） | ✅ 已在 `_support/` |
 
 **未来改进**：这些 helper 在其他测试（chat_streaming / backup_restore / branch_creation）也要用，建议提到 `_support/test_helpers.dart` 或新建 `_support/test_fixtures.dart`。详见 [helpers.md § 8.3](./helpers.md#83-业务方法分散)。
 
@@ -300,9 +343,10 @@ flutter test integration_test/theme_chat_e2e_test.dart \
 - ✅ 改动 1：`main_test.dart` 加 `locale` 参数 + 双注入
 - ✅ 改动 2：`theme_list_screen.dart` 补 3 个 ValueKey
 - ✅ 改动 3：`theme_detail_screen.dart` 补 3 个 ValueKey
-- ✅ 改动 4：`theme_chat_e2e_test.dart` 新建（250 行）
+- ✅ 改动 4：`theme_chat_e2e_test.dart` 新建（291 行）
 - ✅ iOS 模拟器跑通
 - ✅ 2026-06-20：`loadFromAsset` → `loadFromDefine`（dart-define 编译期注入）
+- ✅ 2026-06-22：加入 `StepTimer` 步骤耗时统计 + `_sendAndWaitForReply` 错误检测（`_extractScreenError`）
 
 ---
 

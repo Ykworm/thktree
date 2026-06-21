@@ -349,7 +349,7 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | `backup_restore_test.dart` | 68 | 4 | 备份恢复往返 / 文件格式 / 冲突 / 覆盖 | ❌ 纯 TODO 空壳 | settings 页缺 ValueKey、缺文件 schema | [backup-restore.md](./backup-restore.md) |
 | `branch_creation_test.dart` | 217 | 7 | 4 种模式组合 + 2 取消 + 1 fallback | ⚠️ 部分（前置完成，核心 TODO） | 缺选中文本交互、缺模式 sheet ValueKey | [branch-creation.md](./branch-creation.md) |
 | `node_reorder_test.dart` | 153 | 3 | 同层重排 / 跨层禁止 / 刷新保持 | ⚠️ 部分（手写 Key，未跑通） | 拖拽把手 ValueKey 待核实 | [node-reorder.md](./node-reorder.md) |
-| `theme_chat_e2e_test.dart` | 250 | 1 | 主题 → 节点 → 聊天 2 round | ✅ **完整可跑通** | 无 | [theme-chat-e2e.md](./theme-chat-e2e.md) |
+| `theme_chat_e2e_test.dart` | 291 | 1 | 主题 → 节点 → 聊天 2 round | ✅ **完整可跑通** | 无 | [theme-chat-e2e.md](./theme-chat-e2e.md) |
 
 **实现状态图例**：
 - ✅ 完整可跑通

@@ -15,6 +15,7 @@
 | UI 操作 | 4 | 安全点击、文本输入、长按、拖拽 |
 | 断言辅助 | 2 | 收集所有 Text 内容、检查文本包含 |
 | 业务快捷方法 | 6 | 创建节点、导航、发消息、停止流式、刷新、收集节点标题 |
+| _support 工具 | 1 | `StepTimer` 步骤耗时统计（独立文件 `_support/step_timer.dart`） |
 | 空实现（⚠️ 待补） | 2 | `getNodeTitles()` / `verifyNodeOrder()` |
 
 ---
@@ -396,7 +397,62 @@ bool verifyNodeOrder(List<String> expectedOrder) {
 
 ---
 
-## 9. 相关文件
+## 10. `_support/` 工具：StepTimer 步骤耗时统计
+
+[`integration_test/_support/step_timer.dart`](../../../integration_test/_support/step_timer.dart) 是独立于 `test_helpers.dart` 的计时工具，用于测量集成测试各步骤的耗时。
+
+### 10.1 用法
+
+```dart
+final timer = StepTimer()..start();
+
+// ... 执行步骤 A ...
+timer.step('步骤 A');
+
+// ... 执行步骤 B ...
+timer.step('步骤 B');
+
+timer.finish();
+```
+
+### 10.2 API
+
+| 类 / 方法 | 说明 |
+|-----------|------|
+| `StepTimer` | 主类，内部持有 `Stopwatch` + 步骤记录列表 |
+| `StepTimer.start()` | 启动计时（必须在第一个 `step()` 前调用） |
+| `StepTimer.step(name)` | 记录当前步骤耗时（相对上一个 step / start），同时 `print` 到控制台 |
+| `StepTimer.finish()` | 停止计时，打印总耗时分隔线 |
+| `StepTimer.steps` | `List<StepRecord>` 只读，可用于自定义断言 |
+| `StepRecord` | 数据类：`index`（从 1 开始）、`name`、`elapsed`（本步骤耗时） |
+
+### 10.3 控制台输出示例
+
+```
+[Step 1] 启动 App + 注入 — 3.45s
+[Step 2] 切换底部 tab 到"主题" — 0.87s
+[Step 3] 创建主题 — 1.23s
+...
+───────────────────────────────────
+总耗时: 45.67s
+```
+
+### 10.4 使用场景
+
+- 性能回归检测：定期跑 E2E 测试时记录各步骤耗时，对比历史数据发现退化
+- 瓶颈定位：哪个步骤最慢（通常是 LLM 流式回复）
+- CI 报告：print 输出会出现在 CI 日志中，无需额外集成
+
+### 10.5 注意事项
+
+- `step()` 耗时是**相对上一个 step**，不是从 start 开始的累计
+- `finish()` 后不能再调 `step()`（`Stopwatch` 已停止）
+- 输出走 `print`（`// ignore: avoid_print`），适合集成测试但不适合生产代码
+
+---
+
+## 11. 相关文件
 
 - [`integration_test/test_helpers.dart`](../../../integration_test/test_helpers.dart) — 工具函数源码（325 行）
-- [`integration_test/theme_chat_e2e_test.dart`](../../../integration_test/theme_chat_e2e_test.dart) — 复用工具的范例（`_createTheme` / `_createNode` / `_sendAndWaitForReply`）
+- [`integration_test/_support/step_timer.dart`](../../../integration_test/_support/step_timer.dart) — 步骤耗时统计工具
+- [`integration_test/theme_chat_e2e_test.dart`](../../../integration_test/theme_chat_e2e_test.dart) — 复用工具的范例（`_createTheme` / `_createNode` / `_sendAndWaitForReply` + StepTimer 打点）
