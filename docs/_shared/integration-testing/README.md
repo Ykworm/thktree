@@ -8,7 +8,7 @@
 ## 1. 目标与边界
 
 ### 覆盖
-- 5 个 `integration_test/*.dart` 测试文件的用途、现状、阻塞点
+- 6 个 `integration_test/*.dart` 测试文件的用途、现状、阻塞点
 - `_support/` 辅助代码（fixtures + helpers）的使用约定
 - LLM 配置注入原理（Riverpod Override 机制）
 - 跑测试 / 调试 / 新增测试的完整流程
@@ -29,7 +29,8 @@
 │   ├── backup_restore_test.dart                                    │
 │   ├── branch_creation_test.dart                                   │
 │   ├── node_reorder_test.dart                                      │
-│   └── theme_chat_e2e_test.dart      ⭐ 完整可跑通                 │
+│   ├── theme_chat_e2e_test.dart      ⭐ 完整可跑通                 │
+│   └── note_crud_test.dart          ⭐ 完整可跑通（纯 CRUD）       │
 │                                                                   │
 │ 依赖 ↓                                                           │
 │   ├── _support/test_helpers.dart           （325 行 UI 工具）      │
@@ -349,7 +350,9 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | `backup_restore_test.dart` | 68 | 4 | 备份恢复往返 / 文件格式 / 冲突 / 覆盖 | ❌ 纯 TODO 空壳 | settings 页缺 ValueKey、缺文件 schema | [backup-restore.md](./backup-restore.md) |
 | `branch_creation_test.dart` | 217 | 7 | 4 种模式组合 + 2 取消 + 1 fallback | ⚠️ 部分（前置完成，核心 TODO） | 缺选中文本交互、缺模式 sheet ValueKey | [branch-creation.md](./branch-creation.md) |
 | `node_reorder_test.dart` | 153 | 3 | 同层重排 / 跨层禁止 / 刷新保持 | ⚠️ 部分（手写 Key，未跑通） | 拖拽把手 ValueKey 待核实 | [node-reorder.md](./node-reorder.md) |
+| [note-crud.md](./note-crud.md) | 笔记 CRUD 集成测试 spec |
 | `theme_chat_e2e_test.dart` | 291 | 1 | 主题 → 节点 → 聊天 2 round | ✅ **完整可跑通** | 无 | [theme-chat-e2e.md](./theme-chat-e2e.md) |
+| `note_crud_test.dart` | 245 | 1 | 笔记 CRUD 生命周期（创建/编辑/重命名/持久化/删除） | ✅ **完整可跑通** | 无 | [note-crud.md](./note-crud.md) |
 
 **实现状态图例**：
 - ✅ 完整可跑通
@@ -370,6 +373,7 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | [backup-restore.md](./backup-restore.md) | 备份恢复测试 spec |
 | [branch-creation.md](./branch-creation.md) | 分支创建测试 spec |
 | [node-reorder.md](./node-reorder.md) | 节点拖拽测试 spec |
+| [note-crud.md](./note-crud.md) | 笔记 CRUD 集成测试 spec |
 | [docs/modules/llm/specs/integration-test-llm-injection.md](../../modules/llm/specs/integration-test-llm-injection.md) | LLM 注入原理详细版（208 行） |
 | [lib/main_test.dart](../../../lib/main_test.dart) | 唯一 ProviderScope 注入点 |
 

@@ -50,6 +50,7 @@ git worktree add ../ThkTree-worktrees/<topic> -b codex/<topic>
    git merge --ff-only codex/<topic>
    git worktree remove ../ThkTree-worktrees/<topic>
    ```
+5. **清理 `docs/_tmp/`** — 删除本次任务的 planning doc（`docs/_tmp/<topic>.md`），report 按需保留
 
 ### 硬约束
 
@@ -445,3 +446,4 @@ ThkTree 是 Flutter 项目，`flutter-dev` 是主线 skill；`ios-application-de
 - `chat-streaming.md` — 流式聊天测试规范
 - `node-reorder.md` — 节点重排序测试规范
 - `theme-chat-e2e.md` — 主题聊天端到端测试规范
+- `note-crud.md` — 笔记 CRUD 集成测试规范
