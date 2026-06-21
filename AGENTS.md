@@ -2,14 +2,54 @@
 
 收到新功能需求时，必须严格遵循以下阶段，**不可跳步**：
 
-1. **brainstorming** — 先讨论方案，不写代码。探索用户意图、需求、设计方案，达成共识
+1. **brainstorming** — 先讨论方案，不写代码。探索用户意图、需求、设计方案，达成共识。**同时确定任务类型**（普通功能 / 集成测试 / 其他），后续 setup 和收尾依赖此判断
 2. **草稿归档** — 讨论结果写入 `docs/_tmp/<topic>.md`（版本迭代加 `-v2`、`-v3`）
 3. **用户确认** — 用户明确说"可以"后才进入下一步
-4. **writing-plans** — 输出书面实现计划
-5. **验证优先** — 先定义验收方式，再实现；默认优先关键路径集成测试，只有高风险纯逻辑规则才补 focused tests
-6. **context-sync** — 完成后同步文档
+4. **🛑 [BLOCKER] 起 worktree** — 确认当前在独立 worktree + 分支中，不在 `dev` 上直接改代码
+   - 分支命名：`codex/<topic>`
+   - worktree 目录：`../ThkTree-worktrees/<topic>`
+   - 仅讨论、不改代码时可跳过此步
+   - **集成测试** → 额外确保 `build/dart_define.json` 可用（`build/` 在 gitignore 中，不影响合并）：
+     - 主仓库已有生成产物 → symlink 复用
+     - 首次或 Key 变更 → 重新生成：`dart run tools/gen_dart_define.dart ~/.thktree/test_llm_config.json build/dart_define.json`
+     - 详见 [fixtures.md](docs/_shared/integration-testing/fixtures.md)
+5. **writing-plans** — 输出书面实现计划
+6. **验证优先** — 先定义验收方式，再实现；默认优先关键路径集成测试，只有高风险纯逻辑规则才补 focused tests
+7. **context-sync** — 完成后同步文档
+8. **收尾** — 按"Worktree 收尾流程"提交、rebase、合并
 
 **硬约束**：方案确认前禁止写任何业务代码。
+
+---
+
+## Worktree 收尾流程
+
+编码完成后，按以下步骤收尾并合并回 `dev`。
+
+### 步骤
+
+1. **commit 代码** — 代码改动单独 commit，不和文档混在一起
+2. **rebase dev** — 早发现冲突，避免最后合并时才发现
+   ```bash
+   git fetch origin
+   git rebase origin/dev
+   ```
+3. **处理文档** — 按 brainstorming 确定的任务类型：
+   - **集成测试** → 按 planning doc（`docs/_tmp/<topic>.md`）写/更新测试文档，commit 文档
+   - **普通功能** → 执行 context-sync，commit 文档
+   - **其他** → 提示用户自行处理
+4. **合并回 dev** — rebase + fast-forward merge
+   ```bash
+   git checkout dev
+   git merge --ff-only codex/<topic>
+   git worktree remove ../ThkTree-worktrees/<topic>
+   ```
+
+### 硬约束
+
+- 代码 commit 和文档 commit **必须分开**
+- 合并前 **必须 rebase dev**（个人分支允许 rebase，见"Rebase 安全策略"）
+- 合并用 `--ff-only`，dev 保持线性历史
 
 ---
 
