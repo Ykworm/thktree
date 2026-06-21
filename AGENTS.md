@@ -5,20 +5,26 @@
 1. **brainstorming** — 先讨论方案，不写代码。探索用户意图、需求、设计方案，达成共识。**同时确定任务类型**（普通功能 / 集成测试 / 其他），后续 setup 和收尾依赖此判断
 2. **草稿归档** — 讨论结果写入 `docs/_tmp/<topic>.md`（版本迭代加 `-v2`、`-v3`）
 3. **用户确认** — 用户明确说"可以"后才进入下一步
-4. **🛑 [BLOCKER] 起 worktree** — 确认当前在独立 worktree + 分支中，不在 `dev` 上直接改代码
-   - 分支命名：`codex/<topic>`
-   - worktree 目录：`../ThkTree-worktrees/<topic>`
-   - 仅讨论、不改代码时可跳过此步
-   - **集成测试** → 额外确保 `build/dart_define.json` 可用（`build/` 在 gitignore 中，不影响合并）：
-     - 主仓库已有生成产物 → symlink 复用
-     - 首次或 Key 变更 → 重新生成：`dart run tools/gen_dart_define.dart ~/.thktree/test_llm_config.json build/dart_define.json`
-     - 详见 [fixtures.md](docs/_shared/integration-testing/fixtures.md)
-5. **writing-plans** — 输出书面实现计划
-6. **验证优先** — 先定义验收方式，再实现；默认优先关键路径集成测试，只有高风险纯逻辑规则才补 focused tests
-7. **context-sync** — 完成后同步文档
-8. **收尾** — 按"Worktree 收尾流程"提交、rebase、合并
+4. **writing-plans** — 输出书面实现计划
+5. **验证优先** — 先定义验收方式，再实现；默认优先关键路径集成测试，只有高风险纯逻辑规则才补 focused tests
+6. **context-sync** — 完成后同步文档
+7. **收尾** — 按"Worktree 收尾流程"提交、rebase、合并
 
 **硬约束**：方案确认前禁止写任何业务代码。
+
+### Worktree 创建（按任务类型）
+
+确认进入实现阶段后，创建 worktree 并根据 brainstorming 确定的任务类型做对应 setup：
+
+```bash
+git worktree add ../ThkTree-worktrees/<topic> -b codex/<topic>
+```
+
+- **集成测试** → 额外确保 `build/dart_define.json` 可用（`build/` 在 gitignore 中，不影响合并）：
+  - 主仓库已有生成产物 → symlink 复用
+  - 首次或 Key 变更 → 重新生成：`dart run tools/gen_dart_define.dart ~/.thktree/test_llm_config.json build/dart_define.json`
+  - 详见 [fixtures.md](docs/_shared/integration-testing/fixtures.md)
+- **普通功能 / 其他** → 无额外步骤
 
 ---
 
@@ -128,32 +134,6 @@ git push --force-with-lease
 - 不得机械要求"先写单测再实现"
 - 当集成测试、静态检查和手工验证已足够可信时，可以不补低价值单测
 - focused tests 的目标是固定长期约束，而不是追求覆盖率
-
----
-
-## Flutter Page Layout
-
-当任务涉及以下任一场景时，必须先读取 `docs/_shared/page-layout-rules.md`，再决定页面骨架与滚动结构：
-
-- 新建 Flutter page / screen
-- 重构页面布局
-- 列表、Grid、空态、加载态无法填满 body
-- `Large Title` 页面
-- `CustomScrollView` / `Sliver` / `ListView` / `Column + scrollable`
-
-### 硬约束
-
-- 禁止默认将整页 `ListView` / `GridView` 直接作为 `ThkLargeTitlePage.children` 的一个 child 注入，除非已确认该页面属于 section 流式内容页
-- 若页面使用 `Column` 承载滚动区，滚动区必须放进 `Expanded` 或 `Flexible`
-- 若页面使用 `CustomScrollView`，优先使用 `SliverList` / `SliverFillRemaining` / `SliverGrid`，不要先套一层普通滚动组件再塞进 sliver child
-- 若页面需要 `Large Title` 且主体是主列表或需要填满剩余视口，优先参考 `ThemeListScreen` 的 sliver 模式，不要直接套用设置页写法
-- 设置页、表单区块页、说明页等 section 流式内容，才优先使用 `ThkLargeTitlePage`
-
-### 参考实现
-
-- 主列表 + `Large Title`：参考 `ThemeListScreen`
-- 单主内容列表页：参考 `ThemeDetailScreen`
-- section 流式设置页：参考 `SettingsScreen`
 
 ---
 
