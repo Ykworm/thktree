@@ -418,7 +418,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
-        title: '',
+        title: _title,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -430,11 +430,13 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: _toggleEditing,
+              key: const ValueKey('note_edit_button'),
               child: Icon(_editing ? AppIcons.check : AppIcons.edit),
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: _showMoreActions,
+              key: const ValueKey('note_more_actions_button'),
               child: const Icon(CupertinoIcons.ellipsis),
             ),
           ],
@@ -587,6 +589,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
       trailing: CupertinoButton(
         padding: EdgeInsets.zero,
         onPressed: () => _createNote(context, ref),
+        key: const ValueKey('add_note_button'),
         child: Icon(AppIcons.add),
       ),
       children: _buildChildren(l10n),
