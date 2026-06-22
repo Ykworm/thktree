@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'dart:developer' as dev;
 
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+
 import 'package:thk_tree/domain/ids.dart';
 import 'package:thk_tree/data/services/file_write_queue.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
@@ -13,6 +16,49 @@ class SessionStore {
   final FileWriteQueue _queue = FileWriteQueue();
   static const _streamingMarker = '\n<!-- streaming -->\n';
   static const _legacyStreamingMarker = '<!-- streaming -->\n';
+
+  /// 扫描文档目录下所有 `session.md`，找出含 `<!-- streaming -->` 标记的中断消息。
+  ///
+  /// 返回结构：`List<({String nodeId, String sessionPath})>`
+  ///
+  /// 调用时机：AppLifecycleState.resumed 触发一次 + App 冷启动后。
+  ///
+  /// 行为约定：
+  /// - 不复用 [FileWriteQueue]：扫描是只读操作，不应阻塞正在进行的写
+  /// - 并发读取所有 session.md（一次性 `Future.wait`）
+  /// - 单个文件 IO 错误被 swallow（best-effort 扫盘，不能因为一个坏文件阻塞整个流程）
+  /// - 兼容 legacy marker（`<!-- streaming -->\n`，无前置换行）
+  static Future<List<({String nodeId, String sessionPath})>> findInterrupted() async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final themesDir = Directory(p.join(docsDir.path, 'themes'));
+    if (!await themesDir.exists()) return const [];
+
+    final nodeDirs = <Directory>[];
+    await for (final themeEntry in themesDir.list(followLinks: false)) {
+      if (themeEntry is! Directory) continue;
+      await for (final nodeEntry in themeEntry.list(followLinks: false)) {
+        if (nodeEntry is Directory) nodeDirs.add(nodeEntry);
+      }
+    }
+
+    final results = await Future.wait(nodeDirs.map(_scanNodeDir));
+    return results.whereType<({String nodeId, String sessionPath})>().toList(growable: false);
+  }
+
+  static Future<({String nodeId, String sessionPath})?> _scanNodeDir(Directory nodeDir) async {
+    try {
+      final sessionPath = p.join(nodeDir.path, 'session.md');
+      final file = File(sessionPath);
+      if (!await file.exists()) return null;
+      final content = await file.readAsString();
+      if (content.contains(_streamingMarker) || content.contains(_legacyStreamingMarker)) {
+        return (nodeId: p.basename(nodeDir.path), sessionPath: sessionPath);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<SessionDocument> readSession(String nodeId) async {
     dev.log('[SessionStore.readSession] ===== START nodeId=$nodeId =====');
