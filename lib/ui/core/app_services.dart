@@ -45,7 +45,19 @@ final tempDirProvider = FutureProvider<Directory>((ref) async {
 
 final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
   final paths = await ref.watch(appPathsProvider.future);
-  return AppDatabase.open(path: paths.indexDbPath);
+  final db = await AppDatabase.open(path: paths.indexDbPath);
+
+  // Startup sync: reconcile disk vs DB (lightweight, runs once)
+  final themeStore = ThemeStore(paths: paths, db: db.db);
+  await themeStore.syncFromDisk();
+  final nodeStore = NodeStore(db: db.db, paths: paths);
+  final themes = await themeStore.listThemes();
+  for (final theme in themes) {
+    final themePath = p.join(paths.themesDir.path, theme.themeId);
+    await nodeStore.syncFromDisk(themePath: themePath);
+  }
+
+  return db;
 });
 
 final appLoggerProvider = FutureProvider<AppLogger>((ref) async {

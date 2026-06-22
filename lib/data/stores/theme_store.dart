@@ -193,6 +193,58 @@ class ThemeStore {
       }
     });
   }
+
+  /// Lightweight startup sync: compare disk vs DB, reconcile differences.
+  ///
+  /// Only scans directory names and reads meta.json (lightweight I/O).
+  /// No full reindex, no DELETE ALL + re-INSERT.
+  Future<void> syncFromDisk() async {
+    // 1. Scan disk for theme directories
+    await paths.ensureCreated();
+    final diskThemes = <String, ThemeMetaV1>{};
+    final themeDirs = await paths.themesDir.list(followLinks: false).toList();
+    for (final entity in themeDirs) {
+      if (entity is! Directory) continue;
+      final metaPath = p.join(entity.path, 'theme.meta.json');
+      if (!await File(metaPath).exists()) continue;
+      try {
+        final meta = await _readThemeMeta(metaPath);
+        diskThemes[meta.themeId] = meta;
+      } catch (_) {
+        // skip malformed meta
+      }
+    }
+
+    // 2. Query DB for existing themeIds
+    final dbRows = await db.query('themes', columns: ['themeId']);
+    final dbIds = dbRows.map((r) => r['themeId'] as String).toSet();
+
+    // 3. disk has, DB doesn't → INSERT
+    for (final entry in diskThemes.entries) {
+      if (!dbIds.contains(entry.key)) {
+        final meta = entry.value;
+        final themePath = p.join(paths.themesDir.path, meta.themeId);
+        await db.insert(
+          'themes',
+          {
+            'themeId': meta.themeId,
+            'title': meta.title,
+            'createdAt': meta.createdAtUtcIso8601,
+            'updatedAt': meta.updatedAtUtcIso8601,
+            'themePath': paths.toRootRelativePath(themePath),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    }
+
+    // 4. DB has, disk doesn't → DELETE
+    for (final id in dbIds) {
+      if (!diskThemes.containsKey(id)) {
+        await db.delete('themes', where: 'themeId = ?', whereArgs: [id]);
+      }
+    }
+  }
 }
 
 Future<ThemeMetaV1> _readThemeMeta(String metaPath) async {

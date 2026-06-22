@@ -292,8 +292,7 @@ class NodeStore {
       );
     });
 
-    await reindexNodesFromDisk(themePath: themePath);
-
+    // Startup sync handles consistency; no need for full reindex here.
     return ids.length;
   }
 
@@ -382,23 +381,20 @@ class NodeStore {
   }
 
   /// Update node title (used by rename feature).
+  ///
+  /// Write order: disk first, then DB. This ensures crash recovery is safe:
+  /// - crash after disk, before DB → startup sync补写 DB
+  /// - crash after DB → 不可能发生（DB 是最后写的）
   Future<void> updateNodeTitle({
     required String nodeId,
     required String newTitle,
   }) async {
-    // 1. Update SQLite
     final now = DateTime.now().toUtc().toIso8601String();
-    await db.update(
-      'nodes',
-      {'title': newTitle, 'updatedAt': now},
-      where: 'nodeId = ?',
-      whereArgs: [nodeId],
-    );
 
-    // 2. Update meta.json
+    // 1. Read paths from DB (read-only, no crash risk)
     final rows = await db.query(
       'nodes',
-      columns: ['nodePath'],
+      columns: ['nodePath', 'sessionPath'],
       where: 'nodeId = ?',
       whereArgs: [nodeId],
       limit: 1,
@@ -407,31 +403,31 @@ class NodeStore {
     final nodePath = rows.single['nodePath'] as String?;
     if (nodePath == null) return;
 
+    // 2. Update meta.json (disk first)
     final metaPath = p.join(paths.toAbsolutePath(nodePath), 'node.meta.json');
     final meta = await readNodeMeta(metaPath);
     final updated = meta.copyWith(title: newTitle, updatedAtUtcIso8601: now);
     await _atomicWriteString(metaPath, updated.toJsonString());
 
-    // 3. Update session.md frontmatter
-    final sessionRows = await db.query(
-      'nodes',
-      columns: ['sessionPath'],
-      where: 'nodeId = ?',
-      whereArgs: [nodeId],
-      limit: 1,
-    );
-    if (sessionRows.isNotEmpty) {
-      final sessionPath = sessionRows.single['sessionPath'] as String?;
-      if (sessionPath != null) {
-        final absPath = paths.toAbsolutePath(sessionPath);
-        final file = File(absPath);
-        if (await file.exists()) {
-          final sessionContent = await file.readAsString();
-          final updatedSession = updateSessionFrontmatter(sessionContent, {'title': newTitle});
-          await _atomicWriteString(absPath, updatedSession);
-        }
+    // 3. Update session.md frontmatter (disk)
+    final sessionPath = rows.single['sessionPath'] as String?;
+    if (sessionPath != null) {
+      final absPath = paths.toAbsolutePath(sessionPath);
+      final file = File(absPath);
+      if (await file.exists()) {
+        final sessionContent = await file.readAsString();
+        final updatedSession = updateSessionFrontmatter(sessionContent, {'title': newTitle});
+        await _atomicWriteString(absPath, updatedSession);
       }
     }
+
+    // 4. Update SQLite (last, after disk is updated)
+    await db.update(
+      'nodes',
+      {'title': newTitle, 'updatedAt': now},
+      where: 'nodeId = ?',
+      whereArgs: [nodeId],
+    );
   }
 
   Future<String> _getThemeIdByPath(String themePath) async {
@@ -518,6 +514,90 @@ class NodeStore {
       inflated['contextSummaryPath'] = paths.toAbsolutePath(contextSummaryPath);
     }
     return inflated;
+  }
+
+  /// Lightweight startup sync: compare disk vs DB for a single theme's nodes.
+  ///
+  /// Scans themePath/nodes/ directories, reads meta.json, and reconciles
+  /// with DB entries. Much cheaper than full reindexNodesFromDisk.
+  Future<void> syncFromDisk({required String themePath}) async {
+    final themeId = await _getThemeIdByPath(themePath);
+    final nodesDir = Directory(p.join(themePath, 'nodes'));
+
+    // 1. Scan disk for node directories
+    final diskNodes = <String, NodeMetaV1>{};
+    if (await nodesDir.exists()) {
+      await _collectNodeMeta(nodesDir, expectedThemeId: themeId, result: diskNodes);
+    }
+
+    // 2. Query DB for existing nodeIds in this theme
+    final dbRows = await db.query(
+      'nodes',
+      columns: ['nodeId'],
+      where: 'themeId = ?',
+      whereArgs: [themeId],
+    );
+    final dbIds = dbRows.map((r) => r['nodeId'] as String).toSet();
+
+    // 3. disk has, DB doesn't → INSERT
+    for (final entry in diskNodes.entries) {
+      if (!dbIds.contains(entry.key)) {
+        final meta = entry.value;
+        final nodeDir = Directory(p.join(nodesDir.path, meta.nodeId));
+        final sessionPath = p.join(nodeDir.path, 'session.md');
+        final nowMs = DateTime.tryParse(meta.createdAtUtcIso8601)?.millisecondsSinceEpoch
+            ?? DateTime.now().toUtc().millisecondsSinceEpoch;
+        await db.insert(
+          'nodes',
+          {
+            'nodeId': meta.nodeId,
+            'themeId': meta.themeId,
+            'parentId': meta.parentId,
+            'kind': meta.kind.value,
+            'title': meta.title,
+            'createdAt': meta.createdAtUtcIso8601,
+            'updatedAt': meta.updatedAtUtcIso8601,
+            'nodePath': paths.toRootRelativePath(nodeDir.path),
+            'sessionPath': paths.toRootRelativePath(sessionPath),
+            'contextSummaryPath': null,
+            'sortOrder': nowMs,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    }
+
+    // 4. DB has, disk doesn't → DELETE
+    for (final id in dbIds) {
+      if (!diskNodes.containsKey(id)) {
+        await db.delete('nodes', where: 'nodeId = ?', whereArgs: [id]);
+      }
+    }
+  }
+
+  /// Recursively collect node meta.json from disk directories.
+  Future<void> _collectNodeMeta(
+    Directory dir, {
+    required String expectedThemeId,
+    required Map<String, NodeMetaV1> result,
+  }) async {
+    final entities = await dir.list(followLinks: false).toList();
+    for (final entity in entities) {
+      if (entity is! Directory) continue;
+      final metaPath = p.join(entity.path, 'node.meta.json');
+      if (await File(metaPath).exists()) {
+        try {
+          final meta = await readNodeMeta(metaPath);
+          if (meta.themeId == expectedThemeId) {
+            result[meta.nodeId] = meta;
+          }
+        } catch (_) {
+          // skip malformed meta
+        }
+      }
+      // Recurse into subdirectories
+      await _collectNodeMeta(entity, expectedThemeId: expectedThemeId, result: result);
+    }
   }
 }
 

@@ -6,7 +6,6 @@ class ThemeListController extends AsyncNotifier<List<ThemeEntity>> {
   @override
   Future<List<ThemeEntity>> build() async {
     final store = await ref.watch(themeStoreProvider.future);
-    await store.reindexThemesFromDisk();
     final themes = await store.listThemes();
     return _loadPreviews(themes);
   }
@@ -52,7 +51,7 @@ class ThemeListController extends AsyncNotifier<List<ThemeEntity>> {
 
   Future<void> reindex() async {
     final store = await ref.read(themeStoreProvider.future);
-    await store.reindexThemesFromDisk();
+    await store.syncFromDisk();
     state = AsyncData(await _loadPreviews(await store.listThemes()));
   }
 

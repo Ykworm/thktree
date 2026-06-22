@@ -30,13 +30,10 @@ class ThemeDetailController extends AsyncNotifier<ThemeDetailState> {
   }
 
   Future<ThemeDetailState> _load() async {
-    final themeStore = await ref.read(themeStoreProvider.future);
     final nodeStore = await ref.read(nodeStoreProvider.future);
-    await themeStore.reindexThemesFromDisk();
     final themeRow = await nodeStore.getThemeRow(themeId: themeId);
     final themeTitle = themeRow['title']! as String;
     final themePath = themeRow['themePath']! as String;
-    await nodeStore.reindexNodesFromDisk(themePath: themePath);
     final rawNodes = await nodeStore.listNodes(themeId: themeId);
     final nodes = await _withLastMessagePreviews(rawNodes);
     return ThemeDetailState(
