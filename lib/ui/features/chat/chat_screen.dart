@@ -163,6 +163,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           child: const Icon(AppIcons.back),
         ),
         trailing: CupertinoButton(
+          key: const ValueKey('branch_button'),
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,
           onPressed: isStreaming ? null : () => _onCreateBranchFromMenu(context),

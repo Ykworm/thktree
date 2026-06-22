@@ -2,37 +2,113 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/main_test.dart';
+import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
+
+import '_support/llm_test_config.dart';
+import 'test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('分支创建流程测试', () {
     testWidgets('选中文本 + raw 模式创建分支', (tester) async {
-      // 启动应用
-      final app = await createTestApp();
+      // ── 前置：注入真实 LLM 配置（创建子节点后 autoTriggerReply 需要） ──
+      final llmConfig = LlmTestConfig.loadFromDefine();
+      final app = await createTestApp(
+        locale: const Locale('zh'),
+        llmSettings: llmConfig.toAppSettings(),
+        llmConfigStore: llmConfig.toLlmConfigStore(),
+      );
       await tester.pumpWidget(app);
       await tester.pumpAndSettle();
 
-      // 1. 创建测试主题
-      await _createTestTheme(tester, '测试主题');
-
-      // 2. 进入主题
-      await tester.tap(find.text('测试主题'));
+      // 切换到主题 tab
+      await _switchToTab(tester, '主题');
       await tester.pumpAndSettle();
 
-      // 3. 创建一个节点
-      await _createTestNode(tester, '测试节点');
-
-      // 4. 进入节点对话
-      await tester.tap(find.text('测试节点'));
+      // ── 1. 创建主题 → 进入 ──
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      await _createTestTheme(tester, 'BranchSel_$ts');
+      await waitForText(tester, 'BranchSel_$ts', timeout: const Duration(seconds: 10));
+      await tester.tap(find.text('BranchSel_$ts'));
       await tester.pumpAndSettle();
 
-      // 5. 发送一条消息，创建对话历史
-      await _sendMessage(tester, '你好，这是一条测试消息');
+      // ── 2. 创建节点 → 进入 chat_screen ──
+      await _createTestNode(tester, 'SourceNode_$ts');
+      await waitForText(tester, 'SourceNode_$ts', timeout: const Duration(seconds: 10));
+      await tester.tap(find.text('SourceNode_$ts'));
+      await tester.pumpAndSettle();
 
-      // TODO: 选中文本并创建分支
-      // 目前测试到这里，后续需要根据实际 UI 交互完善
-    });
+      // ── 3. 发送消息并等待 LLM 流式回复完成 ──
+      await _sendAndWaitForReply(
+        tester,
+        message: '请用一句话介绍你自己',
+        timeout: const Duration(seconds: 90),
+      );
+
+      // ── 4. 选中文本（A1 方案：长按消息 → 全选） ──
+      debugPrint('[Test] 尝试选中文本...');
+      await selectTextInMessage(tester, '请用一句话介绍你自己');
+      debugPrint('[Test] 选中文本完成');
+
+      // ── 5. 点 branch 按钮 ──
+      final branchBtn = find.byKey(const ValueKey('branch_button'));
+      expect(branchBtn, findsOneWidget, reason: '应该找到 branch 按钮');
+      await tester.tap(branchBtn);
+      await tester.pumpAndSettle();
+
+      // ── 6. 选 raw 模式 + 继续 ──
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('branch_mode_raw_option')),
+        timeout: const Duration(seconds: 10),
+      );
+      await tester.tap(find.byKey(const ValueKey('branch_mode_raw_option')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('branch_mode_continue_button')));
+      await tester.pump();
+
+      // ── 7. 等待 TitleSuggestionScreen → 确认 ──
+      debugPrint('[Test] 等待 TitleSuggestionScreen...');
+      await waitForWidget(
+        tester,
+        find.byType(TitleSuggestionScreen),
+        timeout: const Duration(seconds: 30),
+      );
+
+      // 等待 title 候选生成 + UI 稳定
+      await pumpAndSettleWithTimeout(
+        tester,
+        timeout: const Duration(seconds: 30),
+      );
+
+      final confirmBtn = find.byKey(const ValueKey('confirm_button'));
+      expect(confirmBtn, findsOneWidget, reason: '应该找到确认按钮');
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
+      // ── 8. 验证：跳转到新分支的 ChatScreen ──
+      // context.push 触发导航动画，等 branch_button 出现即表示新 ChatScreen 已加载
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('branch_button')),
+        timeout: const Duration(seconds: 30),
+      );
+
+      // 验证在新的 ChatScreen 中
+      expect(
+        find.byKey(const ValueKey('branch_button')),
+        findsOneWidget,
+        reason: '创建分支后应跳转到新 ChatScreen',
+      );
+      // 验证 chat_input 存在（新对话的输入框）
+      expect(
+        find.byKey(const ValueKey('chat_input')),
+        findsOneWidget,
+        reason: '新分支 ChatScreen 应有输入框',
+      );
+      debugPrint('[Test] case 1 完成：选中文本 + raw 模式创建分支成功');
+    }, timeout: const Timeout(Duration(minutes: 5)));
 
     testWidgets('选中文本 + summarize 模式创建分支', (tester) async {
       // 启动应用
@@ -58,6 +134,10 @@ void main() {
       await tester.pumpWidget(app);
       await tester.pumpAndSettle();
 
+      // 切换到主题 tab
+      await _switchToTab(tester, '主题');
+      await tester.pumpAndSettle();
+
       // 创建测试主题和节点
       await _createTestTheme(tester, '测试主题3');
       await tester.tap(find.text('测试主题3'));
@@ -67,25 +147,109 @@ void main() {
       await tester.pumpAndSettle();
       await _sendMessage(tester, '你好');
 
-      // TODO: 不选中文本，以 raw 模式创建分支
+      // 1. 点击分支按钮
+      await tester.tap(find.byKey(const ValueKey('branch_button')));
+      await tester.pumpAndSettle();
+
+      // 2. 等待 sheet 出现，选 raw 模式
+      await waitForWidget(tester, find.byKey(const ValueKey('branch_mode_raw_option')));
+      await tester.tap(find.byKey(const ValueKey('branch_mode_raw_option')));
+      await tester.pump();
+
+      // 3. 点击继续
+      await tester.tap(find.byKey(const ValueKey('branch_mode_continue_button')));
+      await tester.pumpAndSettle();
+
+      // 验证：弹出 TitleSuggestionScreen
+      expect(find.byType(TitleSuggestionScreen), findsOneWidget);
     });
 
     testWidgets('无选中文本 + summarize 模式创建分支', (tester) async {
-      // 启动应用
-      final app = await createTestApp();
+      // 注入真实 LLM 配置
+      final llmConfig = LlmTestConfig.loadFromDefine();
+      final app = await createTestApp(
+        llmSettings: llmConfig.toAppSettings(),
+        llmConfigStore: llmConfig.toLlmConfigStore(),
+      );
       await tester.pumpWidget(app);
       await tester.pumpAndSettle();
 
-      // 创建测试主题和节点
-      await _createTestTheme(tester, '测试主题4');
-      await tester.tap(find.text('测试主题4'));
+      // 导航到主题 tab（支持中英文）
+      final themesTabEn = find.text('Themes');
+      final themesTabZh = find.text('主题');
+      if (themesTabEn.evaluate().isNotEmpty) {
+        await tester.tap(themesTabEn);
+      } else if (themesTabZh.evaluate().isNotEmpty) {
+        await tester.tap(themesTabZh);
+      }
       await tester.pumpAndSettle();
-      await _createTestNode(tester, '测试节点4');
-      await tester.tap(find.text('测试节点4'));
-      await tester.pumpAndSettle();
-      await _sendMessage(tester, '你好');
 
-      // TODO: 不选中文本，以 summarize 模式创建分支
+      // 前置：创建主题 → 进入 → 创建节点 → 进入 → 发送消息
+      await _createTestTheme(tester, 'Summarize 测试');
+      await tester.tap(find.text('Summarize 测试'));
+      await tester.pumpAndSettle();
+      await _createTestNode(tester, '源节点');
+      await tester.tap(find.text('源节点'));
+      await tester.pumpAndSettle();
+      await _sendMessage(tester, '请帮我总结这段对话');
+
+      // 等待 LLM 回复完成
+      await tester.pump(const Duration(seconds: 2));
+      await pumpAndSettleWithTimeout(
+        tester,
+        timeout: const Duration(seconds: 90),
+      );
+
+      // 1. 点击 branch 按钮（无选区）
+      final branchButton = find.byKey(const ValueKey('branch_button'));
+      expect(branchButton, findsOneWidget, reason: '应该找到 branch 按钮');
+      await tester.tap(branchButton);
+      await tester.pumpAndSettle();
+
+      // 2. 等待模式选择 sheet 出现，选择 summarize
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('branch_mode_summarize_option')),
+        timeout: const Duration(seconds: 10),
+      );
+      await tester.tap(find.byKey(const ValueKey('branch_mode_summarize_option')));
+      await tester.pump();
+
+      // 3. 点击继续按钮
+      await tester.tap(find.byKey(const ValueKey('branch_mode_continue_button')));
+      await tester.pump();
+
+      // 4. 等待 TitleSuggestionScreen 加载（LLM 总结需要时间，最长 120s）
+      debugPrint('[Test] 等待 TitleSuggestionScreen 加载...');
+      await waitForWidget(
+        tester,
+        find.byType(TitleSuggestionScreen),
+        timeout: const Duration(seconds: 120),
+      );
+      debugPrint('[Test] TitleSuggestionScreen 已加载');
+
+      // 5. 等待 title 输入框有内容（LLM 生成的候选标题）
+      final titleInput = find.byKey(const ValueKey('title_input'));
+      expect(titleInput, findsOneWidget, reason: '应该找到 title 输入框');
+
+      // 等待候选标题生成完成
+      await pumpAndSettleWithTimeout(
+        tester,
+        timeout: const Duration(seconds: 60),
+      );
+
+      // 6. 点击确认按钮
+      final confirmButton = find.byKey(const ValueKey('confirm_button'));
+      expect(confirmButton, findsOneWidget, reason: '应该找到确认按钮');
+      await tester.tap(confirmButton);
+      await tester.pumpAndSettle();
+
+      // 7. 验证：跳转到新分支的 ChatScreen
+      await pumpAndSettleWithTimeout(
+        tester,
+        timeout: const Duration(seconds: 30),
+      );
+      debugPrint('[Test] 分支创建流程完成');
     });
 
     testWidgets('模式选择取消', (tester) async {
@@ -146,9 +310,9 @@ void main() {
 
 /// 创建测试主题
 Future<void> _createTestTheme(WidgetTester tester, String title) async {
-  // 点击添加按钮（+ 图标）
-  final addButton = find.byIcon(CupertinoIcons.add);
-  expect(addButton, findsOneWidget, reason: '应该找到添加按钮');
+  // 点击添加按钮（使用 ValueKey）
+  final addButton = find.byKey(const ValueKey('add_theme_button'));
+  expect(addButton, findsOneWidget, reason: '应该找到添加主题按钮');
   await tester.tap(addButton);
   await tester.pumpAndSettle();
 
@@ -172,9 +336,9 @@ Future<void> _createTestTheme(WidgetTester tester, String title) async {
 
 /// 创建测试节点
 Future<void> _createTestNode(WidgetTester tester, String title) async {
-  // 点击添加按钮（+ 图标）
-  final addButton = find.byIcon(CupertinoIcons.add);
-  expect(addButton, findsOneWidget, reason: '应该找到添加按钮');
+  // 点击添加节点按钮（使用 ValueKey）
+  final addButton = find.byKey(const ValueKey('add_node_button'));
+  expect(addButton, findsOneWidget, reason: '应该找到添加节点按钮');
   await tester.tap(addButton);
   await tester.pumpAndSettle();
 
@@ -214,4 +378,104 @@ Future<void> _sendMessage(WidgetTester tester, String message) async {
     await tester.tap(sendButton);
     await tester.pumpAndSettle();
   }
+}
+
+/// 打开分支模式选择 sheet（供 case 5/6 复用）
+///
+/// 点击 branch_button，等待 sheet 出现，选择指定模式。
+/// [mode] 参数为 'summarize' 或 'raw'。
+Future<void> openBranchSheet(WidgetTester tester, {required String mode}) async {
+  // 点击分支按钮
+  await tester.tap(find.byKey(const ValueKey('branch_button')));
+  await tester.pumpAndSettle();
+
+  // 等待 sheet 出现
+  await waitForWidget(tester, find.byKey(ValueKey('branch_mode_${mode}_option')));
+
+  // 选择模式
+  await tester.tap(find.byKey(ValueKey('branch_mode_${mode}_option')));
+  await tester.pump();
+}
+
+/// 点底部 tab 栏的指定 tab（按 label 文本定位）。
+Future<void> _switchToTab(WidgetTester tester, String label) async {
+  final labelFinder = find.text(label);
+  expect(labelFinder, findsWidgets, reason: '底部 tab 应包含 "$label"');
+  await tester.tap(labelFinder.first, warnIfMissed: false);
+}
+
+/// 发送一条消息，等待 LLM 流式回复完成。
+///
+/// 流程：
+/// 1. 输入消息到 chat_input
+/// 2. 点击 send_button
+/// 3. 等待 stop_button 出现（流式已启动）
+/// 4. 等待 send_button 重新出现（流式已结束）
+Future<void> _sendAndWaitForReply(
+  WidgetTester tester, {
+  required String message,
+  Duration timeout = const Duration(seconds: 90),
+}) async {
+  final chatInput = find.byKey(const ValueKey('chat_input'));
+  expect(chatInput, findsOneWidget, reason: '应找到聊天输入框');
+
+  // 输入消息
+  await tester.enterText(chatInput, message);
+  await tester.pump();
+
+  // 点击发送按钮
+  final sendBtn = find.byKey(const ValueKey('send_button'));
+  expect(sendBtn, findsOneWidget, reason: '发送前应找到 send_button');
+  await tester.tap(sendBtn);
+  await tester.pump();
+
+  // 等 stop_button 出现 → 流式已启动
+  final stopFinder = find.byKey(const ValueKey('stop_button'));
+  final sw = Stopwatch()..start();
+  while (stopFinder.evaluate().isEmpty) {
+    if (sw.elapsed > const Duration(seconds: 10)) {
+      fail('发送消息后 10s 内未进入流式状态');
+    }
+    await tester.pump(const Duration(milliseconds: 500));
+  }
+
+  // 等 send_button 回来 → 流式已结束
+  await waitForWidget(
+    tester,
+    find.byKey(const ValueKey('send_button')),
+    timeout: timeout,
+  );
+  await tester.pump();
+}
+
+/// 选中消息文本（A1 方案：长按 → 全选）。
+///
+/// 利用 SelectionArea 内置手势：
+/// 1. 长按消息文本 → 触发词选 + 弹出上下文菜单
+/// 2. 点击「全选」→ 选中所有文本 → _currentSelectedText 被设置
+///
+/// 注意：flutter_tester 的 longPress 在 SelectionArea 内会触发
+/// 原生文本选择行为，toolbar 按钮作为 overlay 渲染。
+Future<void> selectTextInMessage(WidgetTester tester, String text) async {
+  // 长按消息文本 → 触发 SelectionArea 选中一个词 + 弹出上下文菜单
+  final msgFinder = find.textContaining(text).first;
+  expect(msgFinder, findsWidgets, reason: '应找到包含 "$text" 的消息');
+  await tester.longPress(msgFinder);
+  await tester.pump(const Duration(seconds: 1));
+
+  // 点击「全选」按钮
+  // 中文 locale 显示「全选」，英文显示「Select All」
+  final selectAllZh = find.text('全选');
+  final selectAllEn = find.text('Select All');
+
+  if (selectAllZh.evaluate().isNotEmpty) {
+    await tester.tap(selectAllZh);
+  } else if (selectAllEn.evaluate().isNotEmpty) {
+    await tester.tap(selectAllEn);
+  } else {
+    // fallback：跳过选区，不影响后续流程
+    debugPrint('[selectTextInMessage] 未找到「全选」按钮，跳过选区');
+    return;
+  }
+  await tester.pump(const Duration(milliseconds: 500));
 }

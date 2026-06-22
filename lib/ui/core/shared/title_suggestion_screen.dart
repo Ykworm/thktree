@@ -726,6 +726,7 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                     ),
                   ),
                   _BranchModeOption(
+                    key: const ValueKey('branch_mode_summarize_option'),
                     label: l10n.branchModeSummarize,
                     selected: selected == BranchMode.summarize,
                     onTap: () => setState(
@@ -733,6 +734,7 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                     ),
                   ),
                   _BranchModeOption(
+                    key: const ValueKey('branch_mode_raw_option'),
                     label: l10n.branchModeRaw,
                     selected: selected == BranchMode.raw,
                     onTap: () => setState(
@@ -745,6 +747,7 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                       children: [
                         Expanded(
                           child: CupertinoButton(
+                            key: const ValueKey('branch_mode_cancel_button'),
                             color: AppColors.surface,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             onPressed: () => Navigator.of(ctx).pop(),
@@ -759,6 +762,7 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                         const SizedBox(width: 12),
                         Expanded(
                           child: CupertinoButton.filled(
+                            key: const ValueKey('branch_mode_continue_button'),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             onPressed: selected == null
                                 ? null
@@ -782,6 +786,7 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
 /// Sheet 中的 mode 选项（单选样式）。
 class _BranchModeOption extends StatelessWidget {
   const _BranchModeOption({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
