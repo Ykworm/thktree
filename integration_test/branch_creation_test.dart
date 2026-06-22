@@ -266,14 +266,13 @@ void main() {
       await _createTestNode(tester, '源节点');
       await tester.tap(find.text('源节点'));
       await tester.pumpAndSettle();
-      await _sendMessage(tester, '请帮我总结这段对话');
-
-      // 等待 LLM 回复完成
-      await tester.pump(const Duration(seconds: 2));
-      await pumpAndSettleWithTimeout(
+      await _sendAndWaitForReply(
         tester,
-        timeout: const Duration(seconds: 90),
+        message: '数字化品牌美学逻辑顾问，不是那种画LOGO的美工，而是定义数字化时代品牌动效逻辑和视觉规则的人。当一个大品牌想在元宇宙或全息投影里展示自己时，他们需要一套视觉物理规律，比如这个品牌的金属质感在不同光影下怎么反射，动效如何体现品牌逻辑。',
+        timeout: const Duration(seconds: 120),
       );
+      debugPrint('[Test] LLM 回复完成，停留 3 秒查看');
+      await tester.pump(const Duration(seconds: 3));
 
       // 1. 点击 branch 按钮（无选区）
       final branchButton = find.byKey(const ValueKey('branch_button'));
@@ -303,17 +302,36 @@ void main() {
       );
       debugPrint('[Test] TitleSuggestionScreen 已加载');
 
-      // 5. 等待 title 输入框有内容（LLM 生成的候选标题）
-      final titleInput = find.byKey(const ValueKey('title_input'));
-      expect(titleInput, findsOneWidget, reason: '应该找到 title 输入框');
+      // 5. 点击「生成标题」按钮触发 LLM 生成候选
+      final genBtn = find.text('生成标题');
+      if (genBtn.evaluate().isNotEmpty) {
+        debugPrint('[Test] 点击「生成标题」按钮...');
+        await tester.tap(genBtn);
+        await tester.pump();
+      }
 
-      // 等待候选标题生成完成
-      await pumpAndSettleWithTimeout(
-        tester,
-        timeout: const Duration(seconds: 60),
-      );
+      // 6. 等待 LLM 生成候选标题
+      debugPrint('[Test] 等待 LLM 生成候选标题（最多 60 秒）...');
+      bool titleGenerated = false;
+      for (var i = 0; i < 60; i++) {
+        await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+        await tester.pump();
+        // 检查是否有候选标题被选中（输入框有内容）
+        final thkField = tester.widget<ThkTextField>(
+          find.byKey(const ValueKey('title_input')),
+        );
+        final currentText = thkField.controller?.text ?? '';
+        if (currentText.isNotEmpty) {
+          titleGenerated = true;
+          debugPrint('[Test] LLM 已生成候选标题: $currentText');
+          break;
+        }
+        if (i % 10 == 0) debugPrint('[Test] 等待标题生成... ${i}s');
+      }
+      expect(titleGenerated, isTrue, reason: 'LLM 应生成候选标题');
 
-      // 6. 点击确认按钮
+      // 7. 点击确认按钮
+      debugPrint('[Test] 点击确认按钮');
       final confirmButton = find.byKey(const ValueKey('confirm_button'));
       expect(confirmButton, findsOneWidget, reason: '应该找到确认按钮');
       await tester.tap(confirmButton);
