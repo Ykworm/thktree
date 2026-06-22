@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:thk_tree/data/services/background_task_bridge.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
@@ -40,16 +41,27 @@ class ChatTask {
 }
 
 class ChatTaskService extends Notifier<Map<String, ChatTask>> {
-  ChatTaskService();
+  ChatTaskService({BackgroundTaskBridge? bridge})
+      : _bridge = bridge ?? BackgroundTaskBridge();
 
   SearchService? _searchService;
   NodeStore? _nodeStore;
 
-  /// iOS 后台 task 桥接（短回复 < 30s 时保活；详见 [BackgroundTaskBridge]）
-  final BackgroundTaskBridge _bridge = BackgroundTaskBridge();
+  /// iOS 后台 task 桥接（短回复 < 30s 时保活；详见 [BackgroundTaskBridge]）。
+  ///
+  /// 测试可通过构造参数注入 mock bridge 以计数 begin/end 调用。
+  final BackgroundTaskBridge _bridge;
 
   /// 待重发的 nodeId 队列（先进先出）。重复入队会被过滤。
   final List<String> _resumeQueue = <String>[];
+
+  /// 当前排队的 node 数（仅供测试观察内部状态用）。
+  @visibleForTesting
+  int get resumeQueueLength => _resumeQueue.length;
+
+  /// 当前是否正在执行 [_resumeLoop]。
+  @visibleForTesting
+  bool get isResuming => _isResuming;
 
   /// 是否正在串行执行 [_resumeLoop]
   bool _isResuming = false;

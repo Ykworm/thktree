@@ -31,6 +31,7 @@ Future<Widget> createTestApp({
   Locale? locale,
   AppSettings? llmSettings,
   LlmConfigStore? llmConfigStore,
+  List<dynamic> extraOverrides = const [],
 }) async {
   final paths = await AppPaths.load();
   await paths.ensureCreated();
@@ -49,6 +50,7 @@ Future<Widget> createTestApp({
       initialLocale: initialLocale,
       llmSettings: null,
       llmConfigStore: llmConfigStore,
+      extraOverrides: extraOverrides,
     );
   }
 
@@ -62,6 +64,7 @@ Future<Widget> createTestApp({
     initialLocale: initialLocale,
     llmSettings: llmSettings,
     llmConfigStore: llmConfigStore,
+    extraOverrides: extraOverrides,
   );
 }
 
@@ -70,6 +73,7 @@ Widget _buildProviderScope({
   required Locale? initialLocale,
   required AppSettings? llmSettings,
   required LlmConfigStore? llmConfigStore,
+  List<dynamic> extraOverrides = const [],
 }) {
   return ProviderScope(
     overrides: [
@@ -79,6 +83,7 @@ Widget _buildProviderScope({
         appSettingsProvider.overrideWith((ref) async => llmSettings),
       if (llmConfigStore != null)
         llmConfigStoreProvider.overrideWithValue(llmConfigStore),
+      ...extraOverrides,
     ],
     child: const ThkTreeApp(),
   );
