@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:alibabacloud_rum_flutter_plugin/alibabacloud_rum_flutter_plugin.dart';
@@ -79,7 +80,9 @@ Future<void> main() async {
       child: AlibabaCloudActionCapture(
         child: const AuthGate(
           child: ChatTaskServiceInitializer(
-            child: ThkTreeApp(),
+            child: AppLifecycleObserver(
+              child: ThkTreeApp(),
+            ),
           ),
         ),
       ),
@@ -116,6 +119,10 @@ class _ChatTaskServiceInitializerState
             searchService: searchService,
             nodeStore: nodeStore,
           );
+      // 冷启动后扫描一次磁盘中断（满足「杀进程 → 重启 APP」场景）
+      unawaited(
+        ref.read(chatTaskServiceProvider.notifier).resumeInterrupted(),
+      );
     } catch (e) {
       // 如果初始化失败，继续运行，搜索索引功能会在后续处理
     }
@@ -125,6 +132,48 @@ class _ChatTaskServiceInitializerState
   Widget build(BuildContext context) {
     return widget.child;
   }
+}
+
+/// 监听 AppLifecycleState，resumed 时触发 [ChatTaskService.resumeInterrupted] 扫盘重发。
+///
+/// 集成位置：[ChatTaskServiceInitializer] 之后包一层，确保
+/// [chatTaskServiceProvider] 已初始化。
+class AppLifecycleObserver extends ConsumerStatefulWidget {
+  const AppLifecycleObserver({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<AppLifecycleObserver> createState() =>
+      _AppLifecycleObserverState();
+}
+
+class _AppLifecycleObserverState extends ConsumerState<AppLifecycleObserver>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // 切回前台：触发重发扫描（fire-and-forget，不 await）
+      unawaited(
+        ref.read(chatTaskServiceProvider.notifier).resumeInterrupted(),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class ThkTreeApp extends ConsumerWidget {
