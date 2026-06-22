@@ -22,6 +22,7 @@
 - 国际化 → ADR-008（flutter_localizations + intl）
 - 本地搜索 → ADR-009（SQLite FTS5 + BM25）
 - 节点色与主题色解耦 → ADR-010
+- DB 一致性保障 → ADR-014（disk-first + 启动同步）
 
 > **决策变更流程**：新增 → DECISIONS.md 追加新 ADR；推翻旧决策 → 旧 ADR 加"已取代"段 + 新开 ADR，**不原地改**（详细理由见 ADR-011）。
 

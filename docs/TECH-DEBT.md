@@ -33,3 +33,5 @@
 | 折叠状态不持久化 | 低 | _collapsedIds 仅存 State，每次进入详情页重置为全部展开。后续可用 SharedPreferences 持久化 | 2026-06-11 |
 | 缺少 expand all / collapse all | 低 | 复杂树结构无批量折叠/展开操作。可在 NavBar trailing 加按钮或长按弹 action sheet | 2026-06-11 |
 | RepaintBoundary 隔离 | 低 | 每个 _TreeRowView 都是 DragTarget，hover 时 setState 触发整棵树重绘。4 层深度上限后 widget 数量可控，暂不处理 | 2026-06-11 |
+| `getSessionPathForNode` 全量 reindex 导致嵌套事务崩溃 | 统一 disk-first 写入顺序 + 启动轻量 syncFromDisk（见 [DECISIONS.md ADR-014](DECISIONS.md#adr-014-db-一致性保障统一-disk-first-写入顺序--启动轻量同步)） | 2026-06-22 |
+

@@ -79,6 +79,7 @@ lib/ui/features/themes/
 - **改交互逻辑**：**必须**同步更新 `visual/theme-detail-design.md` 对应章节（设计文档是 source of truth）。
 - **5 套配色变更**：在 `theme_detail_screen.dart` 改 `_nodePalettes` 常量，**同时**在 visual 文档更新色值表。
 - **AI 改代码时**：AI 识别到变动后应**主动**提醒用户检核 FEATURES.md 状态列是否需更新。
+- **DB 一致性**：启动时 `syncFromDisk()` 自动同步（见 [ADR-014](../../DECISIONS.md#adr-014-db-一致性保障统一-disk-first-写入顺序--启动轻量同步)）。`ThemeStore` 和 `NodeStore` 都提供 `syncFromDisk()` 方法；`reindexThemesFromDisk` / `reindexNodesFromDisk` 保留但不在热路径调用。
 
 ## 7. 相关历史
 
