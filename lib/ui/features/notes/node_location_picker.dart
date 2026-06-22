@@ -555,6 +555,16 @@ class _ThemePickerContentState extends ConsumerState<_ThemePickerContent> {
             padding: const EdgeInsets.all(32),
             child: Center(child: Text(_error.toString())),
           )
+        else if ((_themes ?? []).isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Center(
+              child: Text(
+                l10n.noThemesYet,
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          )
         else
           Flexible(
             child: CupertinoListSection.insetGrouped(

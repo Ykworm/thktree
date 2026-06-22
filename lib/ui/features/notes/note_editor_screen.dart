@@ -191,6 +191,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   children: [
                     // 标题输入（Notion 风格：大号字体，无边框）
                     CupertinoTextField(
+                      key: const ValueKey('note_title_input'),
                       controller: _titleController,
                       placeholder: l10n.noTitle,
                       placeholderStyle: TextStyle(
@@ -213,6 +214,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                     const SizedBox(height: 16),
                     // 内容编辑区
                     CupertinoTextField(
+                      key: const ValueKey('note_body_input'),
                       controller: _bodyController,
                       placeholder: l10n.startWriting,
                       placeholderStyle: TextStyle(

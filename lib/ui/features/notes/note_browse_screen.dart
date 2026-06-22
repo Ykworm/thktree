@@ -112,6 +112,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () => _createNoteInUncategorized(context, ref),
+              key: const ValueKey('add_note_button'),
               child: Icon(AppIcons.add),
             ),
           ),
