@@ -17,7 +17,7 @@
 | 决策点 | 选择 | 说明 |
 |--------|------|------|
 | 详情页操作密度 | 3 按钮（分支/编辑/...）+ overflow menu | 核心操作直接展示，低频操作收纳到网格底栏 |
-| 标题交互 | 重命名收纳到 overflow menu | 导航栏保持简洁，标题不显示 |
+| 标题交互 | 重命名收纳到 overflow menu，导航栏直接显示标题（点击进入 rename 弹窗） | 用户随时可见当前笔记名，职责分离（标题权威位置在 nav bar） |
 | 阅读态渲染 | GptMarkdown | 复用项目已有的 Markdown 渲染 |
 | 编辑模式切换 | 详情页内就地切换 vs 跳转独立编辑器 | 详情页内 edit 适合轻编辑，独立编辑器适合重写 |
 | 编辑器风格 | Notion 风格（28pt w600 标题 + 17pt 正文，无边框） | 简洁、可聚焦 |
@@ -36,7 +36,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  ←                     [🌿] [✏️] [...]                      │  ← ThkNavBar.inline（无标题）
+│  ←  [笔记标题]            [🌿] [✏️] [...]                      │  ← ThkNavBar.inline（显示 _title）
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  # 焦虑与防御机制          ← GptMarkdown h1 大号标题        │
@@ -110,7 +110,7 @@ CupertinoPageScaffold(
 | 元素 | 规范 |
 |------|------|
 | 背景 | `AppColors.pageBg` |
-| 标题 | 不显示（title: ''） |
+| 标题 | `_title`（点击触发 `_renameNote`） |
 | 分支按钮 | `AppIcons.branch` → `_createChatFromNote` |
 | 编辑按钮 | `AppIcons.edit` / `AppIcons.check` → `_toggleEditing` |
 | "..." 按钮 | `CupertinoIcons.ellipsis` → `ThkGridBottomSheet.show()` |

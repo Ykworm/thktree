@@ -269,3 +269,28 @@ final int contextWindow; // 0 表示未知
 
 ### 8.3 待实现
 - 图片插入功能（📋 待开发）
+
+
+## 9. 笔记详情页导航栏显示标题（2026-06-22）
+
+### 9.1 背景
+- § 8 决策过“导航栏不显示标题”，依赖内容区 `GptMarkdown h1` 渲染
+- 集成测试 `_renameNote` 出现验证点选位问题：从 `ThemeNoteListScreen` 验证依赖 `noteListVersionProvider` 异步刷新时机，测试不稳定
+
+### 9.2 决策反转
+- 导航栏 `title` 从 `''` 改为 `_title`（与 § 1.2 设计稿原描述一致）
+- 职责分离：标题的权威展示位置是 `ThkNavBar.inline`，不是内容区 h1
+- 理由：集成测试在 `NoteDetailScreen` 验证重命名后标题（nav bar），避免依赖列表页异步刷新
+
+### 9.3 代码变更
+- `lib/ui/features/notes/note_detail_screen.dart` — `ThkNavBar.inline(title: _title)`
+- `integration_test/note_crud_test.dart` — `_renameNote` 验证点从 `ThemeNoteListScreen` 前移到 `NoteDetailScreen`
+
+### 9.4 同步更新
+- `docs/modules/notes/visual/note-detail-design.md` — § 设计决策、§ 1.1 屏幕形态、§ 1.2 导航栏规范
+- `docs/modules/notes/design-tokens.yaml` — `NoteDetailScreen.navBar.title` 从 `''` 改为 `_title`
+- `docs/_shared/integration-testing/note-crud.md` — 场景表 § 2 步骤 3 + 新增 § 4.5 验证点选位决策
+
+### 9.5 验证
+- `flutter analyze` 无新增问题
+- `flutter test integration_test/note_crud_test.dart` 全部通过（00:17 +1）

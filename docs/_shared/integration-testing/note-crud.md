@@ -25,7 +25,7 @@
 | 准备 | 切到"主题" tab → 创建测试主题 | 主题出现在列表 | `add_theme_button` / `theme_title_input` / `theme_create_button` |
 | 1 | 切到"笔记" tab → 点 + → 选主题 → 填标题+内容 → 点 ✓ 保存 | 笔记出现在主题笔记列表 | `AppIcons.add` / `find.text(themeTitle)` / `AppIcons.check` |
 | 2 | 点笔记 → 进详情 → 点编辑 → 追加内容 → 点 ✓ 保存 | 详情页显示追加内容 | `AppIcons.edit` / `CupertinoTextField` / `AppIcons.check` |
-| 3 | 点更多操作 → 重命名 → 输入新标题 → 保存 | 列表标题更新，旧标题消失 | `CupertinoIcons.ellipsis` / `ThkTextField` |
+| 3 | 点更多操作 → 重命名 → 输入新标题 → 保存 | 详情页 nav bar 标题更新为新标题 | `CupertinoIcons.ellipsis` / `ThkTextField` |
 | 4 | 数据层验证（`runAsync`） | 主题、笔记标题、笔记内容均持久化到磁盘 | `AppPaths` / `NoteStore` |
 | 5 | 进详情 → 更多操作 → 删除 → 确认 | 笔记从列表消失 | `CupertinoAlertDialog` / `find.text('删除')` |
 
@@ -63,6 +63,16 @@ flutter test integration_test/note_crud_test.dart \
 ### 4.4 NoteBrowseScreen 分组结构
 
 `NoteBrowseScreen` 按主题分组显示（主题名 + 笔记数量），不直接显示单篇笔记标题。测试通过进入 `ThemeNoteListScreen`（点击主题）来验证单篇笔记的存在。
+
+### 4.5 重命名验证点选位（2026-06-22）
+
+重命名后的标题验证点选择在 `NoteDetailScreen`（nav bar）而不是 `ThemeNoteListScreen`（列表项）。原因：
+
+- `NoteDetailScreen` 导航栏直接绑定 `_title` state，rename 后立即同步刷新（source of truth）
+- `ThemeNoteListScreen` 依赖 `noteListVersionProvider` 异步触发重读，存在刷新时机不可靠的问题
+- 职责分离：标题的权威展示位置是 nav bar，不是列表项
+
+迁移记录：之前验证点位于 `ThemeNoteListScreen`，偶发稳定超时，改后稳定。
 
 ---
 
