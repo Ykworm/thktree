@@ -22,5 +22,9 @@ import AlibabaCloudRUM
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "TtsPlugin") {
       TtsPlugin.register(with: registrar)
     }
+    // 注册 BackgroundTaskHandler（UIApplication.beginBackgroundTask 桥接）
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "BackgroundTaskHandler") {
+      BackgroundTaskHandler.register(with: registrar)
+    }
   }
 }
