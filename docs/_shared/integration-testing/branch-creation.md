@@ -1,9 +1,9 @@
 # 集成测试 · 分支创建流程
 
 > **创建**：2026-06-18
-> **最近更新**：2026-06-18
+> **最近更新**：2026-06-23
 > **维护者**：AI + 用户审阅
-> **状态**：case 1/3/4 已实跑通过，case 2/5/6/7 待实现
+> **状态**：case 1/2/3/4 已实跑通过，case 5/6/7 待实现
 > **相关 spec**：[README.md](./README.md) · [chat-streaming.md](./chat-streaming.md) · [theme-chat-e2e.md](./theme-chat-e2e.md) · [llm-injection.md](./llm-injection.md) · [helpers.md](./helpers.md)
 
 ---
@@ -33,7 +33,7 @@
 | # | testWidgets | 前置步骤 | 核心 TODO | LLM 依赖 |
 |---|------------|---------|----------|---------|
 | 1 | `选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实现 | ❌ |
-| 2 | `选中文本 + summarize 模式创建分支` | ✅ 完整 | ❌ 选区 + branch | ❌ |
+| 2 | `选中文本 + summarize 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌（selectedText 优先） |
 | 3 | `无选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌ |
 | 4 | `无选中文本 + summarize 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ✅ LLM 总结 + 标题生成 |
 | 5 | `模式选择取消` | ✅ 完整 | ❌ 弹 sheet 后取消 | ❌ |
