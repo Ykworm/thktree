@@ -3,7 +3,7 @@
 > **创建**：2026-06-18
 > **最近更新**：2026-06-18
 > **维护者**：AI + 用户审阅
-> **状态**：⏸️ 测试前置完成 + 核心 TODO 空壳，7 个 testWidgets 中 4 个需要 LLM / 3 个不需要
+> **状态**：case 1/3/4 已实跑通过，case 2/5/6/7 待实现
 > **相关 spec**：[README.md](./README.md) · [chat-streaming.md](./chat-streaming.md) · [theme-chat-e2e.md](./theme-chat-e2e.md) · [llm-injection.md](./llm-injection.md) · [helpers.md](./helpers.md)
 
 ---
@@ -32,10 +32,10 @@
 
 | # | testWidgets | 前置步骤 | 核心 TODO | LLM 依赖 |
 |---|------------|---------|----------|---------|
-| 1 | `选中文本 + raw 模式创建分支` | ✅ 完整 | ❌ 选区 + branch | ❌ |
+| 1 | `选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实现 | ❌ |
 | 2 | `选中文本 + summarize 模式创建分支` | ✅ 完整 | ❌ 选区 + branch | ❌ |
-| 3 | `无选中文本 + raw 模式创建分支` | ✅ 完整 | ❌ branch | ❌ |
-| 4 | `无选中文本 + summarize 模式创建分支` | ✅ 完整 | ❌ branch | ✅ 调 LLM |
+| 3 | `无选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌ |
+| 4 | `无选中文本 + summarize 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ✅ LLM 总结 + 标题生成 |
 | 5 | `模式选择取消` | ✅ 完整 | ❌ 弹 sheet 后取消 | ❌ |
 | 6 | `标题选择取消` | ✅ 完整 | ❌ title 页取消 | ❌ |
 | 7 | `LLM 失败 fallback` | ✅ 完整 | ❌ mock LLM 失败 | ⚠️ 需 mock |
