@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
+import 'package:thk_tree/ui/core/widgets/thk_text_field.dart';
 
 import '_support/llm_test_config.dart';
 import 'test_helpers.dart';
@@ -12,11 +14,17 @@ void main() {
 
   group('分支创建流程测试', () {
     testWidgets('选中文本 + raw 模式创建分支', (tester) async {
-      // ── 前置：注入真实 LLM 配置（创建子节点后 autoTriggerReply 需要） ──
+      // ── 前置：注入真实 LLM 配置 ──
       final llmConfig = LlmTestConfig.loadFromDefine();
+      // 预配置 titleModelProviderId，跳过模型选择器直接生成候选标题
+      final baseSettings = llmConfig.toAppSettings();
+      final titleSettings = baseSettings.copyWith(
+        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
+        titleModelModelId: baseSettings.deepSeekModel,
+      );
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: llmConfig.toAppSettings(),
+        llmSettings: titleSettings,
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -86,19 +94,45 @@ void main() {
         find.byKey(const ValueKey('title_input')),
         timeout: const Duration(seconds: 30),
       );
-      debugPrint('[Test] 标题建议页已加载，停留 5 秒等 LLM 生成候选标题');
-      await tester.pump(const Duration(seconds: 5));
-
-      // 尝试等 LLM 生成标题候选（5s），如果没生成则手动输入
-      final titleInput = find.byKey(const ValueKey('title_input'));
-      // 检查 title_input 是否已有文本（LLM 候选已填充）
-      debugPrint('[Test] 检查标题是否已由 LLM 生成...');
-      await tester.pump(const Duration(seconds: 5));
-
-      // 无论 LLM 是否生成候选，手动输入确保测试稳定
-      debugPrint('[Test] 输入分支标题...');
-      await tester.enterText(titleInput, '分支测试标题');
+      debugPrint('[Test] 标题建议页已加载');
       await tester.pump(const Duration(seconds: 2));
+
+      // 点击「生成标题」按钮触发 LLM 生成候选
+      final genBtn = find.text('生成标题');
+      if (genBtn.evaluate().isNotEmpty) {
+        debugPrint('[Test] 点击「生成标题」按钮...');
+        await tester.tap(genBtn);
+        await tester.pump();
+      }
+
+      // 等待 LLM 生成候选标题（需要真实时间，用 tester.runAsync）
+      debugPrint('[Test] 等待 LLM 生成候选标题（最多 30 秒）...');
+      String? generatedTitle;
+      for (var i = 0; i < 30; i++) {
+        await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+        await tester.pump();
+        final thkField = tester.widget<ThkTextField>(
+          find.byKey(const ValueKey('title_input')),
+        );
+        final currentText = thkField.controller?.text ?? '';
+        if (currentText.isNotEmpty) {
+          generatedTitle = currentText;
+          debugPrint('[Test] LLM 已生成候选标题: $generatedTitle');
+          break;
+        }
+      }
+
+      if (generatedTitle != null) {
+        debugPrint('[Test] 使用 LLM 生成的标题，停留 3 秒查看');
+        await tester.pump(const Duration(seconds: 3));
+      } else {
+        debugPrint('[Test] LLM 未在 30 秒内生成标题，手动输入');
+        await tester.enterText(
+          find.byKey(const ValueKey('title_input')),
+          'Branch Title',
+        );
+        await tester.pump(const Duration(seconds: 2));
+      }
 
       // 确认按钮
       debugPrint('[Test] 点击确认按钮...');
@@ -264,7 +298,7 @@ void main() {
       debugPrint('[Test] 等待 TitleSuggestionScreen 加载...');
       await waitForWidget(
         tester,
-        find.byType(TitleSuggestionScreen),
+        find.byKey(const ValueKey('title_input')),
         timeout: const Duration(seconds: 120),
       );
       debugPrint('[Test] TitleSuggestionScreen 已加载');
@@ -519,4 +553,22 @@ Future<void> selectTextInMessage(WidgetTester tester, String text) async {
     return;
   }
   await tester.pump(const Duration(milliseconds: 500));
+}
+
+/// LlmProvider → preset ID 映射（与 LlmTestConfig._presetIdFor 一致）
+String _presetIdFor(LlmProvider provider) {
+  switch (provider) {
+    case LlmProvider.claude:
+      return 'preset_anthropic';
+    case LlmProvider.deepseek:
+      return 'preset_deepseek';
+    case LlmProvider.openai:
+      return 'preset_openai';
+    case LlmProvider.gemini:
+      return 'preset_gemini';
+    case LlmProvider.minimax:
+      return 'preset_minimax';
+    case LlmProvider.kimi:
+      return 'preset_kimi';
+  }
 }
