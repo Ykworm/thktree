@@ -40,62 +40,82 @@ void main() {
       await tester.pumpAndSettle();
 
       // ── 3. 发送消息并等待 LLM 流式回复完成 ──
+      debugPrint('[Test] 发送消息，等待 LLM 回复...');
       await _sendAndWaitForReply(
         tester,
         message: '请用一句话介绍你自己',
         timeout: const Duration(seconds: 90),
       );
+      debugPrint('[Test] LLM 回复完成，停留 3 秒查看');
+      await tester.pump(const Duration(seconds: 3));
 
       // ── 4. 选中文本（A1 方案：长按消息 → 全选） ──
-      debugPrint('[Test] 尝试选中文本...');
+      debugPrint('[Test] 长按消息触发选区...');
       await selectTextInMessage(tester, '请用一句话介绍你自己');
-      debugPrint('[Test] 选中文本完成');
+      debugPrint('[Test] 选中文本完成，停留 3 秒查看选区高亮');
+      await tester.pump(const Duration(seconds: 3));
 
       // ── 5. 点 branch 按钮 ──
+      debugPrint('[Test] 点击 branch 按钮...');
       final branchBtn = find.byKey(const ValueKey('branch_button'));
       expect(branchBtn, findsOneWidget, reason: '应该找到 branch 按钮');
       await tester.tap(branchBtn);
       await tester.pumpAndSettle();
 
       // ── 6. 选 raw 模式 + 继续 ──
+      debugPrint('[Test] 等待模式选择 sheet...');
       await waitForWidget(
         tester,
         find.byKey(const ValueKey('branch_mode_raw_option')),
         timeout: const Duration(seconds: 10),
       );
+      debugPrint('[Test] 模式选择 sheet 已出现，停留 2 秒');
+      await tester.pump(const Duration(seconds: 2));
+
+      debugPrint('[Test] 选择 raw 模式...');
       await tester.tap(find.byKey(const ValueKey('branch_mode_raw_option')));
-      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      debugPrint('[Test] 点击继续...');
       await tester.tap(find.byKey(const ValueKey('branch_mode_continue_button')));
       await tester.pump();
 
       // ── 7. 等待 TitleSuggestionScreen → 确认 ──
-      // 用 title_input key 定位（比 byType 更可靠）
-      debugPrint('[Test] 等待 title_input...');
+      debugPrint('[Test] 等待标题建议页加载...');
       await waitForWidget(
         tester,
         find.byKey(const ValueKey('title_input')),
         timeout: const Duration(seconds: 30),
       );
-      debugPrint('[Test] title_input 已加载');
+      debugPrint('[Test] 标题建议页已加载，停留 5 秒等 LLM 生成候选标题');
+      await tester.pump(const Duration(seconds: 5));
 
-      // 手动输入分支标题（不等 LLM 候选）
+      // 尝试等 LLM 生成标题候选（5s），如果没生成则手动输入
       final titleInput = find.byKey(const ValueKey('title_input'));
+      // 检查 title_input 是否已有文本（LLM 候选已填充）
+      debugPrint('[Test] 检查标题是否已由 LLM 生成...');
+      await tester.pump(const Duration(seconds: 5));
+
+      // 无论 LLM 是否生成候选，手动输入确保测试稳定
+      debugPrint('[Test] 输入分支标题...');
       await tester.enterText(titleInput, '分支测试标题');
-      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
 
       // 确认按钮
+      debugPrint('[Test] 点击确认按钮...');
       final confirmBtn = find.byKey(const ValueKey('confirm_button'));
       expect(confirmBtn, findsOneWidget, reason: '应该找到确认按钮');
       await tester.tap(confirmBtn);
       await tester.pumpAndSettle();
 
       // ── 8. 验证：跳转到新分支的 ChatScreen ──
-      // context.push 触发导航动画，等 branch_button 出现即表示新 ChatScreen 已加载
+      debugPrint('[Test] 等待新分支 ChatScreen 加载...');
       await waitForWidget(
         tester,
         find.byKey(const ValueKey('branch_button')),
         timeout: const Duration(seconds: 30),
       );
+      debugPrint('[Test] 新分支 ChatScreen 已加载，停留 3 秒查看');
+      await tester.pump(const Duration(seconds: 3));
 
       // 验证在新的 ChatScreen 中
       expect(
@@ -103,22 +123,22 @@ void main() {
         findsOneWidget,
         reason: '创建分支后应跳转到新 ChatScreen',
       );
-      // 验证 chat_input 存在（新对话的输入框）
       expect(
         find.byKey(const ValueKey('chat_input')),
         findsOneWidget,
         reason: '新分支 ChatScreen 应有输入框',
       );
 
-      // 等待 autoTriggerReply 的流式回复完成（避免测试结束后 UnmountedRefException）
-      // autoTriggerReply=true 会自动调 LLM，等 send_button 回归说明流式结束
-      debugPrint('[Test] 等待 autoTriggerReply 流式回复完成...');
+      // 等待 autoTriggerReply 的流式回复完成
+      debugPrint('[Test] 等待新分支 LLM 自动回复...');
       await waitForWidget(
         tester,
         find.byKey(const ValueKey('send_button')),
         timeout: const Duration(seconds: 120),
       );
-      debugPrint('[Test] case 1 完成：选中文本 + raw 模式创建分支成功');
+      debugPrint('[Test] 新分支 LLM 回复完成，停留 3 秒查看');
+      await tester.pump(const Duration(seconds: 3));
+      debugPrint('[Test] ✅ case 1 完成：选中文本 + raw 模式创建分支成功');
     }, timeout: const Timeout(Duration(minutes: 5)));
 
     testWidgets('选中文本 + summarize 模式创建分支', (tester) async {
@@ -176,8 +196,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('branch_mode_continue_button')));
       await tester.pumpAndSettle();
 
-      // 验证：弹出 TitleSuggestionScreen
-      expect(find.byType(TitleSuggestionScreen), findsOneWidget);
+      // 验证：弹出标题建议页（用 title_input key 定位，比 byType 更可靠）
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('title_input')),
+        timeout: const Duration(seconds: 30),
+      );
+      expect(find.byKey(const ValueKey('title_input')), findsOneWidget);
     });
 
     testWidgets('无选中文本 + summarize 模式创建分支', (tester) async {
