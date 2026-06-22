@@ -247,7 +247,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               return ref.read(chatControllerProvider(_args).notifier).sendUserMessage(text);
             },
             onStopStreaming: () async {
-              ref.read(chatControllerProvider(_args).notifier).stopStreaming();
+              await ref.read(chatControllerProvider(_args).notifier).stopStreaming();
             },
             onModelSelectorTap: () {
               if (isStreaming) return;

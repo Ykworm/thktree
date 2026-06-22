@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:developer' as dev;
 
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
-import 'package:thk_tree/data/stores/session_store.dart';
+import 'package:thk_tree/data/services/chat_task_service.dart';
 
 class ChatControllerParams {
   const ChatControllerParams({
@@ -34,11 +33,8 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   String get nodeId => params.nodeId;
   String get title => params.title;
 
-  StreamSubscription<String>? _streamSub;
-  AssistantStreamHandle? _handle;
-  bool _stopRequested = false;
-  CancelToken? _cancelToken;
-  int _streamGeneration = 0;
+  Timer? _pollTimer;
+  bool _isListeningToTaskService = false;
 
   // 缓存当前对话的模型信息
   String? _providerId;
@@ -64,28 +60,35 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     }();
   }
 
-  /// Fire-and-forget error log. Never blocks caller (unlike raw `await logger.error`).
-  ///
-  /// 关键设计：catch 块必须非阻塞，否则异常处理会卡住后续清理和 state 刷新。
-  /// 历史 onDone catch 路径 stop_button 卡死的根因之一就是 logger.await 阻塞了清理路径。
-  void _safeLogError(Object e, StackTrace st, String hint, {Map<String, Object?>? attrs}) {
-    () async {
-      try {
-        final logger = await ref.read(appLoggerProvider.future);
-        final fullAttrs = <String, Object?>{'nodeId': nodeId, 'title': title, ...?attrs};
-        await logger.error(e, st, hint: hint, attrs: fullAttrs);
-      } catch (_) {}
-    }();
-  }
-
   @override
   Future<List<SessionMessage>> build() async {
     _trace('chat_controller.build');
     ref.onDispose(() {
       _trace('chat_controller.dispose');
-      _streamSub?.cancel();
-      _cancelToken?.cancel('dispose');
+      _pollTimer?.cancel();
     });
+
+    // 监听任务服务状态变化
+    if (!_isListeningToTaskService) {
+      _isListeningToTaskService = true;
+      ref.listen<Map<String, ChatTask>>(
+        chatTaskServiceProvider,
+        (previous, next) async {
+          if (next.containsKey(nodeId) || (previous?.containsKey(nodeId) ?? false)) {
+            state = AsyncData(await _read());
+          }
+        },
+      );
+    }
+
+    // 启动轮询以更新 UI（在后台任务运行时）
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      final taskService = ref.read(chatTaskServiceProvider);
+      if (taskService.containsKey(nodeId)) {
+        state = AsyncData(await _read());
+      }
+    });
+
     final result = await _read();
     _trace('chat_controller.build_done', attrs: {'messages': result.length});
 
@@ -93,12 +96,14 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     await _loadSessionModel();
 
     // 自动续聊：若需要且最后一条是 user 消息 + status done，
-    // 调度一个微任务在 build() 返回后调一次 LLM。
+    // 且没有正在运行的任务，则调度一次 LLM 回复。
     if (params.autoTriggerReply) {
       final lastMsg = result.isEmpty ? null : result.last;
+      final hasActiveTask = ref.read(chatTaskServiceProvider).containsKey(nodeId);
       if (lastMsg != null &&
           lastMsg.role == SessionRole.user &&
-          lastMsg.status == SessionMessageStatus.done) {
+          lastMsg.status == SessionMessageStatus.done &&
+          !hasActiveTask) {
         Future.microtask(() async {
           try {
             await _triggerAssistantReply();
@@ -149,17 +154,10 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     state = AsyncData(await _read());
   }
 
-  /// 取消当前流：只做取消 + 乐观更新，不做磁盘 I/O。
-  /// 磁盘清理（删除 <!-- streaming -->）交给 onDone 回调自然完成。
-  void _cancelCurrentStream() {
-    _trace('chat_controller.cancel_current_stream', attrs: {'hasHandle': _handle != null});
-    _stopRequested = true;
-    _streamGeneration++;
-    _handle = null;
-
-    _cancelToken?.cancel('user_stop');
-    _cancelToken = null;
-
+  /// 取消当前流：委托给 ChatTaskService
+  Future<void> _cancelCurrentStream() async {
+    _trace('chat_controller.cancel_current_stream');
+    await ref.read(chatTaskServiceProvider.notifier).stopTask(nodeId);
     // 乐观更新：让 UI 快速响应
     final currentMessages = state.value ?? [];
     state = AsyncData(currentMessages.map((m) {
@@ -174,19 +172,10 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       }
       return m;
     }).toList());
-
-    // 取消订阅（不阻塞）
-    final sub = _streamSub;
-    _streamSub = null;
-    try {
-      sub?.cancel();
-    } catch (_) {}
-
-    _stopRequested = false;
   }
 
   /// 停止流式生成（供 UI 调用，如 Stop 按钮）
-  void stopStreaming() => _cancelCurrentStream();
+  Future<void> stopStreaming() => _cancelCurrentStream();
 
   Future<List<SessionMessage>> _read() async {
     try {
@@ -196,7 +185,8 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       // 自愈：如果没有活跃流，残留的 streaming 标记一定是过时的
       // 只修正返回值，不写磁盘，避免与其他读操作竞争
       final hasStreaming = doc.messages.any((m) => m.status == SessionMessageStatus.streaming);
-      if (hasStreaming && _handle == null) {
+      final hasActiveTask = ref.read(chatTaskServiceProvider).containsKey(nodeId);
+      if (hasStreaming && !hasActiveTask) {
         return doc.messages.map((m) {
           if (m.status == SessionMessageStatus.streaming) {
             return SessionMessage(
@@ -427,146 +417,27 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     required String model,
   }) async {
     final sessionStore = await ref.read(sessionStoreProvider.future);
+    final logger = await ref.read(appLoggerProvider.future);
+    final history = await _read();
 
-    _stopRequested = false;
-    _streamGeneration++;
-    final generation = _streamGeneration;
-    _cancelToken?.cancel('superseded');
-    _cancelToken = CancelToken();
-    _handle = await sessionStore.beginAssistantMessage(nodeId: nodeId);
-
+    // 更新 UI 状态（显示开始）
     state = AsyncData(await _read());
 
-    final history = await _read();
-    final messages = _buildMessages(history, _systemPrompt);
-
-    final stream = client.streamChatCompletion(
+    // 委托给 ChatTaskService 在后台运行
+    await ref.read(chatTaskServiceProvider.notifier).startTask(
+      nodeId: nodeId,
+      client: client,
       apiKey: apiKey,
       model: model,
-      messages: messages,
-      cancelToken: _cancelToken,
+      history: history,
+      systemPrompt: _systemPrompt,
+      sessionStore: sessionStore,
+      logger: logger,
     );
 
-    _streamSub?.cancel();
-    _streamSub = stream.listen(
-      (delta) async {
-        if (_stopRequested || generation != _streamGeneration) return;
-        final handle = _handle;
-        if (handle == null) return;
-        try {
-          if (_stopRequested || generation != _streamGeneration) return;
-          await sessionStore.appendAssistantDelta(handle: handle, delta: delta);
-          if (_stopRequested || generation != _streamGeneration) return;
-          final readResult = await _read();
-          if (_stopRequested || generation != _streamGeneration) return; // 读取完成后再检查一次
-          state = AsyncData(readResult);
-        } catch (e, st) {
-          final logger = await ref.read(appLoggerProvider.future);
-          await logger.error(e, st, hint: 'appendAssistantDelta', attrs: {'nodeId': nodeId, 'title': title});
-        }
-      },
-      onError: (e, st) async {
-        final handle = _handle;
-        if (handle == null) return;
-        if (_stopRequested) return;
-        if (e is DioException && e.type == DioExceptionType.cancel) {
-          return;
-        }
-        final logger = await ref.read(appLoggerProvider.future);
-        await logger.error(e, st, hint: 'LLM stream error', attrs: {'nodeId': nodeId, 'title': title});
-        if (_stopRequested) return;
-        await sessionStore.failAssistant(handle: handle, code: 'network');
-        if (_stopRequested) return;
-        _handle = null;
-        _cancelToken = null;
-        final readResult = await _read();
-        if (_stopRequested) return; // 读取完成后再检查一次
-        state = AsyncData(readResult);
-      },
-      onDone: () async {
-        final handle = _handle;
-        if (handle == null) return;
-
-        // 关键修复：立即清理 _handle，让 _read() 自愈逻辑（_read 内的
-        // `hasStreaming && _handle == null` 分支）生效。
-        // 即使 finishAssistant 抛错导致磁盘 streaming marker 残留，
-        // 下一次 _read() 也会把残留 streaming 状态修正为 done，让 stop_button 消失。
-        _handle = null;
-        _cancelToken = null;
-
-        try {
-          if (_stopRequested) return;
-          await sessionStore.finishAssistant(handle: handle);
-          if (_stopRequested) return;
-
-          // Update search index (fire-and-forget, failures don't block)
-          _updateSearchIndex(nodeId, handle);
-
-          final readResult = await _read();
-          if (_stopRequested) return; // 读取完成后再检查一次
-          state = AsyncData(readResult);
-        } catch (e, st) {
-          // 详细日志：暴露 catch 进入的根因（之前被 logger.await 默默吞掉）
-          dev.log('[ChatController.onDone] finishAssistant FAILED nodeId=$nodeId', name: 'ChatController');
-          dev.log('  error: $e', name: 'ChatController');
-          dev.log('  stack: $st', name: 'ChatController');
-
-          // Fire-and-forget logger（避免 logger await 阻塞清理路径）
-          _safeLogError(e, st, 'finishAssistant');
-
-          // 兜底刷新 UI：无论 finishAssistant 是否成功，必须让 stop_button 消失。
-          // _handle 已置 null → _read() 自愈逻辑生效
-          try {
-            final readResult = await _read();
-            if (_stopRequested) return;
-            state = AsyncData(readResult);
-          } catch (readError, readSt) {
-            dev.log('[ChatController.onDone] _read fallback FAILED: $readError', name: 'ChatController');
-            dev.log('  stack: $readSt', name: 'ChatController');
-            // 最后兜底：基于现有 state 触发刷新（让 UI 重新评估 stop_button）
-            final fallback = state.value ?? const <SessionMessage>[];
-            state = AsyncData(fallback);
-          }
-        }
-      },
-      cancelOnError: true,
-    );
-  }
-
-  /// Fire-and-forget: update search index after assistant reply completes.
-  /// Failures are logged but never block the main flow.
-  void _updateSearchIndex(String nodeId, AssistantStreamHandle handle) {
-    unawaited(() async {
-      try {
-        final searchIndex = await ref.read(searchServiceProvider.future);
-        final nodeStore = await ref.read(nodeStoreProvider.future);
-        final nodeRow = await nodeStore.getNodeRow(nodeId: nodeId);
-        final themeId = nodeRow['themeId'] as String;
-        final nodeTitle = nodeRow['title'] as String? ?? '';
-
-        // Get theme title
-        final themeRow = await nodeStore.getThemeRow(themeId: themeId);
-        final themeTitle = themeRow['title'] as String? ?? '';
-
-        // Read full session content for indexing
-        final sessionStore = await ref.read(sessionStoreProvider.future);
-        final doc = await sessionStore.readSession(nodeId);
-        final body = doc.messages
-            .where((m) => m.role == SessionRole.assistant)
-            .map((m) => m.body)
-            .join('\n');
-
-        await searchIndex.upsertMessage(
-          nodeId: nodeId,
-          themeId: themeId,
-          themeTitle: themeTitle,
-          nodeTitle: nodeTitle,
-          body: body,
-        );
-      } catch (e) {
-        dev.log('[ChatController._updateSearchIndex] FAILED nodeId=$nodeId: $e');
-      }
-    }());
+    // Update search index (fire-and-forget after task completes)
+    // 注意：这里搜索索引更新将由 ChatTaskService 的 onDone 处理
+    // 我们保持这个方法的签名不变，但实际执行在 ChatTaskService 中
   }
 }
 
@@ -574,21 +445,3 @@ final chatControllerProvider =
     AsyncNotifierProvider.autoDispose.family<ChatController, List<SessionMessage>, ChatControllerParams>(
   ChatController.new,
 );
-
-List<Map<String, Object?>> _buildMessages(List<SessionMessage> history, String systemPrompt) {
-  final messages = <Map<String, Object?>>[
-    {'role': 'system', 'content': systemPrompt},
-  ];
-
-  for (final msg in history) {
-    final role = switch (msg.role) {
-      SessionRole.user => 'user',
-      SessionRole.assistant => 'assistant',
-      SessionRole.system => 'system',
-    };
-    if (msg.body.trim().isEmpty) continue;
-    messages.add({'role': role, 'content': msg.body});
-  }
-
-  return messages;
-}

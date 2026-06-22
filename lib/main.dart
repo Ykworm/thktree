@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:alibabacloud_rum_flutter_plugin/alibabacloud_rum_flutter_plugin.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -16,6 +15,7 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
+import 'package:thk_tree/data/services/chat_task_service.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 
 Future<void> main() async {
@@ -78,11 +78,53 @@ Future<void> main() async {
       ],
       child: AlibabaCloudActionCapture(
         child: const AuthGate(
-          child: ThkTreeApp(),
+          child: ChatTaskServiceInitializer(
+            child: ThkTreeApp(),
+          ),
         ),
       ),
     ),
   );
+}
+
+class ChatTaskServiceInitializer extends ConsumerStatefulWidget {
+  const ChatTaskServiceInitializer({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<ChatTaskServiceInitializer> createState() =>
+      _ChatTaskServiceInitializerState();
+}
+
+class _ChatTaskServiceInitializerState
+    extends ConsumerState<ChatTaskServiceInitializer> {
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeChatTaskService();
+  }
+
+  Future<void> _initializeChatTaskService() async {
+    try {
+      final searchService = await ref.read(searchServiceProvider.future);
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      await ref
+          .read(chatTaskServiceProvider.notifier)
+          .initializeServices(
+            searchService: searchService,
+            nodeStore: nodeStore,
+          );
+    } catch (e) {
+      // 如果初始化失败，继续运行，搜索索引功能会在后续处理
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
 }
 
 class ThkTreeApp extends ConsumerWidget {
