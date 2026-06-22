@@ -69,19 +69,21 @@ void main() {
       await tester.pump();
 
       // ── 7. 等待 TitleSuggestionScreen → 确认 ──
-      debugPrint('[Test] 等待 TitleSuggestionScreen...');
+      // 用 title_input key 定位（比 byType 更可靠）
+      debugPrint('[Test] 等待 title_input...');
       await waitForWidget(
         tester,
-        find.byType(TitleSuggestionScreen),
+        find.byKey(const ValueKey('title_input')),
         timeout: const Duration(seconds: 30),
       );
+      debugPrint('[Test] title_input 已加载');
 
-      // 等待 title 候选生成 + UI 稳定
-      await pumpAndSettleWithTimeout(
-        tester,
-        timeout: const Duration(seconds: 30),
-      );
+      // 手动输入分支标题（不等 LLM 候选）
+      final titleInput = find.byKey(const ValueKey('title_input'));
+      await tester.enterText(titleInput, '分支测试标题');
+      await tester.pump();
 
+      // 确认按钮
       final confirmBtn = find.byKey(const ValueKey('confirm_button'));
       expect(confirmBtn, findsOneWidget, reason: '应该找到确认按钮');
       await tester.tap(confirmBtn);
@@ -107,6 +109,15 @@ void main() {
         findsOneWidget,
         reason: '新分支 ChatScreen 应有输入框',
       );
+
+      // 等待 autoTriggerReply 的流式回复完成（避免测试结束后 UnmountedRefException）
+      // autoTriggerReply=true 会自动调 LLM，等 send_button 回归说明流式结束
+      debugPrint('[Test] 等待 autoTriggerReply 流式回复完成...');
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('send_button')),
+        timeout: const Duration(seconds: 120),
+      );
       debugPrint('[Test] case 1 完成：选中文本 + raw 模式创建分支成功');
     }, timeout: const Timeout(Duration(minutes: 5)));
 
@@ -129,8 +140,13 @@ void main() {
     });
 
     testWidgets('无选中文本 + raw 模式创建分支', (tester) async {
-      // 启动应用
-      final app = await createTestApp();
+      // 注入 LLM 配置（新分支 ChatScreen autoTriggerReply 需要）
+      final llmConfig = LlmTestConfig.loadFromDefine();
+      final app = await createTestApp(
+        locale: const Locale('zh'),
+        llmSettings: llmConfig.toAppSettings(),
+        llmConfigStore: llmConfig.toLlmConfigStore(),
+      );
       await tester.pumpWidget(app);
       await tester.pumpAndSettle();
 
