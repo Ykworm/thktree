@@ -23,6 +23,7 @@
 - 本地搜索 → ADR-009（SQLite FTS5 + BM25）
 - 节点色与主题色解耦 → ADR-010
 - DB 一致性保障 → ADR-014（disk-first + 启动同步）
+- iOS 后台中断恢复 → ADR-015（disk-first + 自动重发 + 30s 边界）
 
 > **决策变更流程**：新增 → DECISIONS.md 追加新 ADR；推翻旧决策 → 旧 ADR 加"已取代"段 + 新开 ADR，**不原地改**（详细理由见 ADR-011）。
 
@@ -126,6 +127,8 @@ lib/
 | `AppDatabase` | 服务 | `lib/data/services/app_database.dart` | SQLite 数据库单例（关系/索引/FTS5 搜索） |
 | `FileWriteQueue` | 服务 | `lib/data/services/file_write_queue.dart` | 单写者队列（并发写盘安全、流式追加原子化） |
 | `ChatController` | 控制器 | `lib/ui/features/chat/chat_controller.dart` | 对话页 StateNotifier（消息列表/流式订阅/重试） |
+| `ChatTaskService` | 服务 | `lib/data/services/chat_task_service.dart` | 后台中断恢复调度器（串行重发 queue + generation token + bridge.begin/end 包裹） |
+| `BackgroundTaskBridge` | 服务 | `lib/data/services/background_task_bridge.dart` | iOS `beginBackgroundTask` MethodChannel 客户端（可注入，test 用 `_CountingBridge` 计数验证） |
 | `ThemeDetailController` | 控制器 | `lib/ui/features/themes/theme_detail_controller.dart` | 树视图 StateNotifier（节点展开/选中/拖拽） |
 
 > **代码级查询**：跨模块的符号/调用关系请用 codegraph 工具查询，本表只列"锚点"。

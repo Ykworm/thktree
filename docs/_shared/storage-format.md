@@ -183,6 +183,10 @@ updatedAt: "2026-05-25T12:01:00.000Z"
 - 流结束后必须删除该行，文件最终态不含该行
 - 若崩溃停留在 streaming：解析器视该块 `status=streaming`，UI 可提示“未完成，可重试”
 
+**作为后台恢复入口**：该标记同时承担“后台中断恢复”的角色。`SessionStore.findInterrupted()` 扫描磁盘 session.md 列表，以 `<!-- streaming -->` 标记为“未完成”判定依据。切回前台 / 冷启动 / App 从挂起恢复时调用，结果作为 `ChatTaskService.resumeInterrupted()` 的入参。具体策略见 [ADR-015](../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界)。
+
+**与错误态区分**：仅 `<!-- streaming -->` 是“未完成 / 可恢复”，`<!-- error: <code> -->` 属于“已结束 / 不可恢复”，不进入 `findInterrupted()` 扫描结果。
+
 ### 4.5 错误态（必须）
 
 当一次请求失败且该 assistant 消息无法完成时，将 streaming 标记替换为：
