@@ -126,7 +126,7 @@ screens:
       type: "CupertinoPageScaffold"
       backgroundColor: "AppColors.pageBg"
       navBar: "ThkNavBar.inline"
-      title: "''（不显示标题）"
+      title: "_title"
       trailing: ["branch", "edit", "ellipsis（ThkGridBottomSheet）"]
 
     trailingActions:
