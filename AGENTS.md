@@ -1,8 +1,8 @@
-## 功能开发工作流
+## 功能开发与 Bug 修复工作流
 
-收到新功能需求时，必须严格遵循以下阶段，**不可跳步**：
+收到新功能需求或 Bug 修复需求时，必须严格遵循以下阶段，**不可跳步**：
 
-1. **brainstorming** — 先讨论方案，不写代码。探索用户意图、需求、设计方案，达成共识。**同时确定任务类型**（普通功能 / 集成测试 / 其他），后续 setup 和收尾依赖此判断
+1. **brainstorming** — 先讨论方案，不写代码。探索用户意图、需求、设计方案，达成共识。**同时确定任务类型**（普通功能 / Bug 修复 / 集成测试 / 其他），后续 setup 和收尾依赖此判断
 2. **草稿归档** — 讨论结果写入 `docs/_tmp/<topic>.md`（版本迭代加 `-v2`、`-v3`）
 3. **用户确认** — 用户明确说"可以"后才进入下一步
 4. **writing-plans** — 输出书面实现计划
@@ -24,7 +24,7 @@ git worktree add ../ThkTree-worktrees/<topic> -b codex/<topic>
   - 主仓库已有生成产物 → symlink 复用
   - 首次或 Key 变更 → 重新生成：`dart run tools/gen_dart_define.dart ~/.thktree/test_llm_config.json build/dart_define.json`
   - 详见 [fixtures.md](docs/_shared/integration-testing/fixtures.md)
-- **普通功能 / 其他** → 无额外步骤
+- **普通功能 / Bug 修复 / 其他** → 无额外步骤
 
 ---
 
@@ -42,7 +42,7 @@ git worktree add ../ThkTree-worktrees/<topic> -b codex/<topic>
    ```
 3. **处理文档** — 按 brainstorming 确定的任务类型：
    - **集成测试** → 按 planning doc（`docs/_tmp/<topic>.md`）写/更新测试文档，commit 文档
-   - **普通功能** → 执行 context-sync，commit 文档
+   - **普通功能 / Bug 修复** → 执行 context-sync，commit 文档
    - **其他** → 提示用户自行处理
 4. **合并回 dev** — rebase + fast-forward merge
    ```bash
