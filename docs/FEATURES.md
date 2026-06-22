@@ -9,7 +9,7 @@
 |----|------|
 | **Feature** | 功能名（中文） |
 | **模块** | 归属模块（与 `lib/ui/features/` 对齐；跨模块标 `_shared`） |
-| **状态** | ✅ 完成 / 🔨 进行中 / 🔨 部分实现 / 📋 待开发 |
+| **状态** | ✅ 完成 / 🔨 进行中 / 🔨 部分实现 / 📋 待开发 / ❌ 取消 |
 | **最后更新** | YYYY-MM-DD（人类手动维护） |
 | **README** | 链接到 `docs/modules/<name>/README.md`（如有 visual 子目录） |
 | **Visual** | 链接到 `docs/modules/<name>/visual/<screen>-design.md`（无 visual 文档则 `—`） |
@@ -26,7 +26,7 @@
 | 树形 Session | themes | ✅ 完成 | 2026-06-06 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `lib/ui/features/themes/theme_detail_*` | 嵌套渲染, parentId, ThemeDetailScreen |
 | 树形节点卡片设计 | themes | 🔨 进行中 | 2026-06-07 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `lib/ui/features/themes/theme_detail_screen.dart` | 5 套配色方案，行高 56px，标题单行省略 |
 | 子孙视图过滤 | themes | 🔨 进行中 | — | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `lib/ui/features/themes/theme_detail_*` | ThemeDetailScreen 有基础树，过滤功能未完整 |
-| 汇总预览 | themes | 📋 待开发 | — | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | — | 未实现 |
+| 汇总预览 | themes | ❌ 取消 | 2026-06-22 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | — | 产品决策取消 |
 | 祖先上下文总结 | themes | 🔨 部分实现 | — | [README](modules/themes/README.md) | — | `lib/data/services/` | context-summary.md 写入存在，注入对话未完成 |
 
 ## 2. 笔记模块（notes）
@@ -48,7 +48,7 @@
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| 全文搜索 | search | 🔨 进行中 | 2026-06-07 | [README](modules/search/README.md) | — | `lib/ui/features/search/search_screen.dart` | SearchScreen UI + SearchService (SQLite FTS5) 已实现，索引修复流程已集成 |
+| 全文搜索 | search | ✅ 完成 | 2026-06-22 | [README](modules/search/README.md) | — | `lib/ui/features/search/search_screen.dart` | SearchScreen UI + SearchService (SQLite FTS5) 已实现，索引修复流程已集成 |
 | 搜索功能设计 | search | ✅ 完成 | 2026-06-05 | [README](modules/search/README.md) | — | `docs/modules/search/specs/2026-06-05-搜索功能-design.md` | 完整设计 spec |
 
 ## 5. LLM 模块（llm）
