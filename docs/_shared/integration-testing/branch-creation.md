@@ -3,7 +3,7 @@
 > **创建**：2026-06-18
 > **最近更新**：2026-06-23
 > **维护者**：AI + 用户审阅
-> **状态**：case 1/2/3/4 已实跑通过，case 5/6/7 待实现
+> **状态**：case 1/2/3/4 已实跑通过；case 5/6 scaffold 待实跑；case 7 scaffold + 待建 LLM mock 工具
 > **相关 spec**：[README.md](./README.md) · [chat-streaming.md](./chat-streaming.md) · [theme-chat-e2e.md](./theme-chat-e2e.md) · [llm-injection.md](./llm-injection.md) · [helpers.md](./helpers.md)
 
 ---
@@ -32,13 +32,13 @@
 
 | # | testWidgets | 前置步骤 | 核心 TODO | LLM 依赖 |
 |---|------------|---------|----------|---------|
-| 1 | `选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实现 | ❌ |
+| 1 | `选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌ |
 | 2 | `选中文本 + summarize 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌（selectedText 优先） |
 | 3 | `无选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌ |
 | 4 | `无选中文本 + summarize 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ✅ LLM 总结 + 标题生成 |
-| 5 | `模式选择取消` | ✅ 完整 | ❌ 弹 sheet 后取消 | ❌ |
-| 6 | `标题选择取消` | ✅ 完整 | ❌ title 页取消 | ❌ |
-| 7 | `LLM 失败 fallback` | ✅ 完整 | ❌ mock LLM 失败 | ⚠️ 需 mock |
+| 5 | `模式选择取消` | ✅ 完整 | ❌ scaffold，待实跑 | ❌ |
+| 6 | `标题选择取消` | ✅ 完整 | ❌ scaffold，待实跑 | ❌ |
+| 7 | `LLM 失败 fallback` | ✅ 完整 | ❌ scaffold，待建 mock 工具 | ⚠️ 需 mock |
 
 **前置步骤现状**（7 个测试都做到的）：
 
@@ -552,15 +552,15 @@ flutter test integration_test/branch_creation_test.dart \
 
 ### 代码层面（**不在本文档任务**）
 
-- [ ] 给 chat_screen 右上角加 `branch_button` ValueKey
-- [ ] 给 `_BranchModeOption` 加 `branch_mode_summarize_option` / `branch_mode_raw_option` ValueKey
-- [ ] 给 sheet 加 `branch_mode_continue_button` / `branch_mode_cancel_button` ValueKey
-- [ ] 给 chat_composer 加 `send_button` / `stop_button` ValueKey
-- [ ] 给 TitleSuggestionScreen 加 title 输入框 / 确认 / 返回 ValueKey
+- [x] 给 chat_screen 右上角加 `branch_button` ValueKey
+- [x] 给 `_BranchModeOption` 加 `branch_mode_summarize_option` / `branch_mode_raw_option` ValueKey
+- [x] 给 sheet 加 `branch_mode_continue_button` / `branch_mode_cancel_button` ValueKey
+- [ ] 给 chat_composer 加 `send_button` / `stop_button` ValueKey（`_sendMessage` 用 if 防御跳过，case 4 实跑不依赖）
+- [x] 给 TitleSuggestionScreen 加 title 输入框 / 确认 / 返回 ValueKey
 - [ ] 把 `_createTestTheme` / `_createTestNode` / `_sendMessage` 提取到 `_support/test_fixtures.dart`
-- [ ] 实现 § 5.1-5.7 七个 testWidgets 实际代码
-- [ ] 给 LLM HTTP channel 加 mock 工具（测试 7 用）
-- [ ] 跑通 + 截图验证
+- [x] 实现 § 5.1-5.4 四个 testWidgets 实际代码（实跑通过）；§ 5.5-5.7 scaffold 待补
+- [ ] 给 LLM HTTP channel 加 mock 工具（case 7 用）
+- [x] 跑通 + 截图验证（case 1-4）
 
 ---
 
