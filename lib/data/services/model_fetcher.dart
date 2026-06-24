@@ -3,8 +3,8 @@ import 'package:dio/dio.dart';
 import '../models/llm_model_config.dart';
 import '../models/llm_provider_config.dart';
 
-/// 默认上下文窗口大小（0 表示未知，需要用户手动设置）
-const int _defaultContextWindow = 0;
+/// 默认上下文窗口大小（默认 1M tokens）
+const int _defaultContextWindow = 1000000;
 
 /// 应过滤掉的非聊天模型关键词
 const List<String> _nonChatKeywords = [
