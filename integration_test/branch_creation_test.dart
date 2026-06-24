@@ -363,14 +363,27 @@ void main() {
       await _createTestNode(tester, '测试节点3');
       await tester.tap(find.text('测试节点3'));
       await tester.pumpAndSettle();
-      await _sendMessage(tester, '你好');
+      // ⚠️ 必须等 LLM 流式完成, 否则 chat_screen.dart:169 的
+      // `branch_button` 在 isStreaming=true 时 onPressed=null, tap 无效。
+      await _sendAndWaitForReply(
+        tester,
+        message: '你好',
+        timeout: const Duration(seconds: 90),
+      );
+      await tester.pump(const Duration(seconds: 2));
 
       // 1. 点击分支按钮
-      await tester.tap(find.byKey(const ValueKey('branch_button')));
+      final branchBtn = find.byKey(const ValueKey('branch_button'));
+      expect(branchBtn, findsOneWidget, reason: '应该找到 branch 按钮');
+      await tester.tap(branchBtn);
       await tester.pumpAndSettle();
 
       // 2. 等待 sheet 出现，选 raw 模式
-      await waitForWidget(tester, find.byKey(const ValueKey('branch_mode_raw_option')));
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('branch_mode_raw_option')),
+        timeout: const Duration(seconds: 10),
+      );
       await tester.tap(find.byKey(const ValueKey('branch_mode_raw_option')));
       await tester.pump();
 
