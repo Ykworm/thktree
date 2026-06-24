@@ -56,36 +56,33 @@ class ThkTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveBackground = backgroundColor ?? AppColors.surfaceMuted;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.translucent,
-      child: CupertinoTextField(
-        controller: controller,
-        placeholder: placeholder,
-        onChanged: onChanged,
-        onSubmitted: onSubmitted,
-        prefix: prefix,
-        suffix: suffix,
-        clearButtonMode: clearButtonMode,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        maxLines: maxLines,
-        minLines: minLines,
-        maxLength: maxLength,
-        enabled: enabled,
-        autofocus: autofocus,
-        focusNode: focusNode,
-        textAlign: textAlign,
-        style: style,
-        placeholderStyle: placeholderStyle ??
-            TextStyle(color: AppColors.textTertiary),
-        padding: padding,
-        decoration: BoxDecoration(
-          color: effectiveBackground,
-          borderRadius: borderRadius,
-          border: Border.all(color: AppColors.border),
-        ),
+    return CupertinoTextField(
+      controller: controller,
+      placeholder: placeholder,
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      prefix: prefix,
+      suffix: suffix,
+      clearButtonMode: clearButtonMode,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      maxLines: maxLines,
+      minLines: minLines,
+      maxLength: maxLength,
+      enabled: enabled,
+      autofocus: autofocus,
+      focusNode: focusNode,
+      textAlign: textAlign,
+      style: style,
+      placeholderStyle: placeholderStyle ??
+          TextStyle(color: AppColors.textTertiary),
+      padding: padding,
+      enableInteractiveSelection: true,
+      decoration: BoxDecoration(
+        color: effectiveBackground,
+        borderRadius: borderRadius,
+        border: Border.all(color: AppColors.border),
       ),
     );
   }

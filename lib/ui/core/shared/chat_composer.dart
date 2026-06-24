@@ -88,6 +88,7 @@ class _ChatComposerState extends State<ChatComposer> {
                 keyboardType: TextInputType.multiline,
                 autocorrect: false,
                 enableSuggestions: false,
+                enableInteractiveSelection: true,
                 textCapitalization: TextCapitalization.none,
                 smartDashesType: SmartDashesType.disabled,
                 smartQuotesType: SmartQuotesType.disabled,

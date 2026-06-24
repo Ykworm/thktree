@@ -465,6 +465,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
                   height: 1.6,
                   color: AppColors.textPrimary,
                 ),
+                enableInteractiveSelection: true,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                 ),

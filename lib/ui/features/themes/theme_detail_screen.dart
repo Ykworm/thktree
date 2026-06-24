@@ -162,6 +162,7 @@ void _showRenameDialog(BuildContext context, WidgetRef ref, NodeEntity node, Str
           controller: controller,
           autofocus: true,
           placeholder: l10n.enterNewTitle,
+          enableInteractiveSelection: true,
         ),
       ),
       actions: [

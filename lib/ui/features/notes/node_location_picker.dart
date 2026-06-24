@@ -219,6 +219,7 @@ class _NodeLocationPickerContentState
               controller: controller,
               placeholder: l10n.titleHint,
               autofocus: true,
+              enableInteractiveSelection: true,
             ),
           ),
           actions: [
@@ -471,6 +472,7 @@ class _ThemePickerContentState extends ConsumerState<_ThemePickerContent> {
               controller: controller,
               placeholder: l10n.titleHint,
               autofocus: true,
+              enableInteractiveSelection: true,
             ),
           ),
           actions: [
