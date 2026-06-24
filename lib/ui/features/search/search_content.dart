@@ -250,7 +250,7 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
             _loading = false;
           });
           if (e is DatabaseException) {
-            _runRepair();
+            showSearchRepairDialog(context, () => _runRepair());
           }
         }
       }
