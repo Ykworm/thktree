@@ -1,9 +1,9 @@
 # 集成测试 · 分支创建流程
 
 > **创建**：2026-06-18
-> **最近更新**：2026-06-23
+> **最近更新**：2026-06-24
 > **维护者**：AI + 用户审阅
-> **状态**：case 1/2/3/4 已实跑通过；case 5/6 scaffold 待实跑；case 7 scaffold + 待建 LLM mock 工具
+> **状态**：case 1/2/3/4/5/6 已实跑通过（02:26）；case 7 scaffold 待建 LLM mock 工具
 > **相关 spec**：[README.md](./README.md) · [chat-streaming.md](./chat-streaming.md) · [theme-chat-e2e.md](./theme-chat-e2e.md) · [llm-injection.md](./llm-injection.md) · [helpers.md](./helpers.md)
 
 ---
@@ -28,7 +28,7 @@
 
 ## 2. 测试现状
 
-`integration_test/branch_creation_test.dart`（218 行）有 7 个 testWidgets：
+`integration_test/branch_creation_test.dart`（7 个 testWidgets，line 16/178/342/388/494/512/530）：
 
 | # | testWidgets | 前置步骤 | 核心 TODO | LLM 依赖 |
 |---|------------|---------|----------|---------|
@@ -36,8 +36,8 @@
 | 2 | `选中文本 + summarize 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌（selectedText 优先） |
 | 3 | `无选中文本 + raw 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ❌ |
 | 4 | `无选中文本 + summarize 模式创建分支` | ✅ 完整 | ✅ 已实跑 | ✅ LLM 总结 + 标题生成 |
-| 5 | `模式选择取消` | ✅ 完整 | ❌ scaffold，待实跑 | ❌ |
-| 6 | `标题选择取消` | ✅ 完整 | ❌ scaffold，待实跑 | ❌ |
+| 5 | `模式选择取消` | ✅ 完整 | ✅ 已实跑 | ❌ |
+| 6 | `标题选择取消` | ✅ 完整 | ✅ 已实跑 | ❌ |
 | 7 | `LLM 失败 fallback` | ✅ 完整 | ❌ scaffold，待建 mock 工具 | ⚠️ 需 mock |
 
 **前置步骤现状**（7 个测试都做到的）：
@@ -127,39 +127,54 @@ Future<void> _sendMessage(WidgetTester tester, String message) async {
 - `selectedText` 一旦非空，**`mode` 完全被忽略**——这就是测试 1+2（虽然 mode 不同但行为相同）的根本原因
 - summarize 失败 fallback 是**自动的**，不需要用户额外操作
 
-### 3.3 `_resolveModelForSummary` 解析逻辑
+### 3.3 `checkLlmSetup` 三层防御
 
-`title_suggestion_screen.dart:879-884`：
-
-```dart
-final resolved = await _resolveModelForSummary(
-  container,
-  providers,
-  currentProviderId: providerId,
-  currentModelId: modelId,
-);
-```
+`lib/ui/core/shared/llm_setup_check.dart`（commit `c8176a7` 新增 helper）：集中表达 LLM 未配置场景下的「死路」拦截。
 
 输入 → 输出：
 
-1. 优先 `currentProviderId` / `currentModelId`（chat 级）
-2. 退回 `settings.llmProvider` / `settings.model`（全局设置）
-3. 退回 `settings.titleModelProviderId` / `settings.titleModelModelId`（专属 title 模型）
+1. 输入：`LlmSetupCheckRequest`（用途 `summarize` / `title` + `providers` + `currentProviderId` / `currentModelId`）
+2. 输出：`LlmSetupStatus` 枚举：
 
-### 3.4 缺失的 ValueKey 清单 ⚠️
+| 状态 | 含义 | 调用方处理 |
+|------|------|----------|
+| `ready` | 有可用 provider + model + apiKey | 继续正常流程 |
+| `noProviderConfigured` | providers 列表为空 | 跳转 `LlmProvidersScreen` |
+| `noTitleModelConfigured` | 用途 title 但缺 title 模型 | 跳转 `DefaultModelPickerScreen` |
+| `noSummaryModelConfigured` | 用途 summarize 但缺 summary 模型 | 跳转 `DefaultModelPickerScreen` |
+| `noApiKeyForCurrentProvider` | provider 存在但 apiKey 缺失 | 跳转 `LlmProvidersScreen` 并提示补 key |
 
-| 需要的 Key | 当前是否存在 | 位置 | 阻塞什么 |
-|-----------|------------|------|---------|
-| `branch_button` | ❌ | chat_screen.dart 右上角 | 所有 7 个测试 |
-| `branch_mode_summarize_option` | ❌ | `_BranchModeOption` (title_suggestion_screen.dart:783) | 测试 1-4 |
-| `branch_mode_raw_option` | ❌ | 同上 | 测试 1-4 |
-| `branch_mode_continue_button` | ❌ | sheet 底部 CupertinoButton.filled | 测试 1-4 |
-| `branch_mode_cancel_button` | ❌ | sheet 底部取消按钮 | 测试 5 |
-| `chat_input` | ✅ | chat_composer.dart:81 | 无（已 OK） |
-| `send_button` | ❌ | chat_composer 内 | `_sendMessage` 实际无效 |
-| `stop_button` | ❌ | chat_composer 内 | streaming 中断测试 |
-| `title_suggestion_confirm_button` | ❌ | TitleSuggestionScreen | 测试 6 |
-| `title_suggestion_cancel_button` | ❌ | TitleSuggestionScreen | 测试 6 |
+**三层防御接入点**（commit `34d9465`）：
+
+| 层级 | 位置 | 拦截「死路」 |
+|------|------|----------|
+| **L1-A** | `showBranchFlow` 入口（`title_suggestion_screen.dart:854`） | 死路 A：summarize 模式在「解析 LLM 配置」阶段就失败（不再走到 sheet） |
+| **L1-B** | `TitleSuggestionScreen.initState`（`title_suggestion_screen.dart:~30`） | 死路 B：跳到 title 页后才发现 sheet filter 为空需要重新跳配置页 |
+| **L2** | `_showModelSelectorAndGenerate` 调用方（`title_suggestion_screen.dart:~900`） | 兜底中的兜底：调用方 filter 空时弹框引导跳配置页 |
+
+> 补走的 l10n key：`pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel`（commit `39ed0c0`，app_en.arb + app_zh.arb），中英双语提示。
+
+### 3.4 ValueKey 清单（实跑状态）
+
+| 需要的 Key | 状态 | 位置 | 备注 |
+|-----------|------|------|------|
+| `branch_button` | ✅ 已补 | `chat_screen.dart:165-176`（`trailing`） | commit `d937c07` 之后稳定选中 |
+| `branch_mode_summarize_option` | ✅ 已补 | `_BranchModeOption` (`title_suggestion_screen.dart:~730`) | sheet 选 summarize |
+| `branch_mode_raw_option` | ✅ 已补 | 同上 | sheet 选 raw |
+| `branch_mode_continue_button` | ✅ 已补 | sheet 底部 `CupertinoButton.filled` | commit `34d9465` 联动 sheet filter 修复 |
+| `branch_mode_cancel_button` | ✅ 已补 | sheet 底部取消按钮 | case 5 用 |
+| `model_sheet_<providerId>_<modelId>` | ✅ 已补 | `_ModelSelectorSheet` 动作 (`title_suggestion_screen.dart:~1280`) | sheet 内 provider/model 动作 ValueKey |
+| `chat_input` | ✅ | `chat_composer.dart:81` | 原本就有 |
+| `send_button` | ❌ 未补 | `chat_composer.dart` | case 1-6 实跑不依赖（分支流程在已有 LLM 回复的节点上触发） |
+| `stop_button` | ❌ 未补 | `chat_composer.dart` | 同上 |
+| `title_input` / `confirm_button` / `cancel_button` | ✅ 已补 | `TitleSuggestionScreen` | case 6 用取消，case 1-4 用确认 |
+
+**case 7 需补 Key**：
+
+| 需要的 Key | 状态 | 位置 | 备注 |
+|-----------|------|------|------|
+| `branch_retry_button` | ❌ 未补 | summarize 失败时弹 retry/cancel sheet | 详 § 5.7 |
+| `branch_cancel_retry_button` | ❌ 未补 | 同上 | 详 § 5.7 |
 
 ---
 
@@ -235,7 +250,7 @@ Future<void> sendChatMessage(WidgetTester tester, String text) async { ... }
 
 测试 7（LLM 失败 fallback）需要让 LLM 调用**实际抛错**。最简方案：
 
-**方案 A**：构造一个 `InMemoryLlmConfigStore` 变体，`apiKeys` 全空 → `_resolveModelForSummary` 返回 null → `showBranchFlow` 弹 "pleaseFetchModels" 提示（这不算真正的"失败 fallback"）
+**方案 A**：构造一个 `InMemoryLlmConfigStore` 变体，`apiKeys` 全空 → `checkLlmSetup` 返回 `noApiKeyForCurrentProvider` → 三层防御 L1-A 拦截，不走到 sheet（这不是「失败 fallback」语义，失败 fallback 是「走到 sheet 后 summarize 调用报错了」）
 
 **方案 B**：用 `IntegrationTestWidgetsFlutterBinding.defaultBinaryMessenger.setMockMethodCallHandler` mock LLM HTTP 响应 → 抛 `SocketException` 或返回 500
 
@@ -246,6 +261,8 @@ Future<void> sendChatMessage(WidgetTester tester, String text) async { ... }
 ## 5. 编写路线（7 个 testWidgets 完整代码）
 
 > **前提**：完成 § 4.1 ValueKey + § 4.2 helper 提升 + § 4.3 LLM mock。
+>
+> **2026-06-24 实跑状态**：case 1/2/3/4/5/6 已实跑通过（02:26）；case 7 scaffold + LLM mock 工具待补（详 § 5.7）。
 
 ### 5.1 选中文本 + raw 模式
 
@@ -420,7 +437,7 @@ testWidgets('LLM 失败 fallback', (tester) async {
     (call) async => throw PlatformException(code: 'LLM_FAIL'),
   );
   
-  // 用 settings 里填 apiKey（不让 _resolveModelForSummary 早期 return null）
+  // 用 settings 里填 apiKey（不让 checkLlmSetup 早期返回 noApiKeyForCurrentProvider）
   final llmConfig = LlmTestConfig.loadFromDefine(/* ... */);
   final app = await createTestApp(
     llmSettings: llmConfig.toAppSettings(),
@@ -462,15 +479,16 @@ testWidgets('LLM 失败 fallback', (tester) async {
 
 ## 7. 阻塞点汇总
 
-按依赖顺序：
+按依赖顺序（2026-06-24 实跑状态）：
 
-1. **🔴 branch_button ValueKey 缺失**（§ 4.1）—— 不补则 7 个测试全部无法触发入口
-2. **🔴 branch_mode_*/continue/cancel Button ValueKey 缺失**（§ 4.1）—— sheet 操作完全靠 `find.text('总结后创建')` 等弱匹配
-3. **🔴 send_button / stop_button ValueKey 缺失**（chat_composer.dart）—— `_sendMessage` 实际无效，前置"伪完成"
-4. **🔴 TitleSuggestionScreen 内部 ValueKey 缺失**（输入框、确认、返回）—— 测试 6 无法做
-5. **🟡 私有 helper 重复**（§ 4.2）—— `branch_creation` 与 `theme_chat_e2e` 复制粘贴，未提取
-6. **🟡 LLM mock 工具**（§ 4.3）—— 测试 7 无现成 mock 方案
-7. **🟢 SelectionArea 选区状态** —— Flutter framework 在 tester 里精确模拟选中文字范围非常困难，可能需要在 `chat_screen.dart` 暴露 `_currentSelectedText` setter
+1. **✅ branch_button ValueKey**（§ 4.1）—— 已补，实跑稳定选中
+2. **✅ branch_mode_*/continue/cancel Button ValueKey**（§ 4.1）—— 已补
+3. **🟡 send_button / stop_button ValueKey 缺失**（chat_composer.dart）—— case 1-6 实跑不依赖（分支流程在已有 LLM 回复的节点上触发）
+4. **✅ TitleSuggestionScreen 内部 ValueKey**（输入框、确认、返回）—— 已补
+5. **🟡 私有 helper 重复**（§ 4.2）—— `branch_creation` 与 `theme_chat_e2e` 复制粘贴，未提取到 `_support/test_fixtures.dart`，独立清理任务
+6. **🟡 LLM mock 工具**（§ 4.3）—— case 7 实跑前置依赖（LLM HTTP channel mock 拦截）
+7. **🟡 SelectionArea 选区状态** —— Flutter framework 在 tester 里精确模拟选中文字范围非常困难；本次 case 1/2 用 `Navigator.of(element).pop` 模拟 sheet 动作点击绕开了 hit-test 难点
+8. **🟡 flutter_secure_storage Keychain 状态泄漏** —— case 切换时 ProviderScope override 未重设 keychain 默认 provider，残留上一个 case 的 provider list → case 4 sheet 选不到 → 详 [war-story](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md)
 
 ---
 
@@ -482,13 +500,14 @@ testWidgets('LLM 失败 fallback', (tester) async {
 - ❌ **不补** UI ValueKey（属于代码改动）
 - ❌ **不重构** `_support/` 或 `test_helpers.dart`（用户决策 3）
 
-### 已知风险
+### 已知风险（2026-06-24 实跑后）
 
-- **SelectionArea 选区难模拟**：Flutter tester 只能模拟 `longPress` 触发选择菜单，但无法精确控制选区文字范围。**可能需要绕过**：在 `chat_screen.dart` 把 `_currentSelectedText` 暴露成可注入 provider
-- **LLM 不稳定**：测试 4 / 7 依赖真实 LLM，summarize API 失败会导致 flaky
-- **summarize fallback 时序**：测试 7 弹 retry/cancel sheet 后用户取消才进 title 页，"取消"按钮的 Key（`branch_cancel_retry_button`）也要补
-- **测试耗时**：7 个测试中 4 / 7 需要 LLM，每个 30-60s，整个 suite 可能 5-8 分钟
-- **`_sendMessage` 静默 return**：当前 `chat_input` 存在但 `send_button` 不存在 → enterText 后无法 tap，整个前置是假的
+- **SelectionArea 选区难模拟（已绕开）**：Flutter tester 只能模拟 `longPress` 触发选择菜单，但无法精确控制选区文字范围。本轮实跑用 `Navigator.of(element).pop` 模拟 sheet 动作点击，不走 SelectionArea 路径 → case 1/2 表现的是「选中文本存在但代码路径走 selectedText 优先」语义，与真实用户拖拽选区行为等价。
+- **LLM 不稳定（部分存在）**：case 4 依赖真实 LLM，summarize API 偶尔超时报错→ 本轮 02:26 走通，单轮 30-60s。case 7 仍依赖 mock。
+- **summarize fallback 时序**：case 7 弹 retry/cancel sheet 后用户取消才进 title 页，"取消"按钮的 Key（`branch_cancel_retry_button`）也要补（未实跑）。
+- **测试耗时（实测）**：case 1/2/3/5/6 不需 LLM（单 case 1-10s），case 4 需 LLM（单 case 30-60s），case 7 未实跑。7 case 全跑预计 1-3 分钟。
+- **`_sendMessage` 静默 return（已无关）**：case 1-6 不依赖 `_sendMessage` 发消息（分支流程在已有 LLM 回复的节点上触发）；`_sendMessage` 仍用 `if (sendButton.evaluate().isNotEmpty)` 防御式跳过，但 case 1-6 路径不走到这里。
+- **Keychain 状态泄漏**：详见 [war-story](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md)。本轮通过 commit `d937c07` + `14fdc79` 修复，但需注意 case 间隔离。
 
 ### 测试矩阵简表
 
@@ -531,7 +550,7 @@ flutter test integration_test/branch_creation_test.dart \
   -d "<iOS Simulator>"
 ```
 
-> **当前结果**：7 个 testWidgets 全部立即通过（只是没断言），不是"测试通过"的真实信号。
+> **2026-06-24 实跑结果**：case 1/2/3/4/5/6 实跑通过，02:26（Xcode build 25.2s + 6 个 testWidgets 依次跑过，case 4 含 LLM 真实调用）。case 7 scaffold + LLM mock 工具待补。
 
 ---
 
@@ -541,8 +560,8 @@ flutter test integration_test/branch_creation_test.dart \
 
 - [x] 目标 + 7 个测试矩阵表
 - [x] 测试现状（前置伪完成 + 核心 TODO）
-- [x] 底层实现剖析（两层结构 + source content 决策表）
-- [x] ValueKey 缺失清单（10 个 Key）
+- [x] 底层实现剖析（两层结构 + source content 决策表 + checkLlmSetup 三层防御）
+- [x] ValueKey 清单（实跑状态）
 - [x] 编写前置依赖（4.1-4.3）
 - [x] 7 个 testWidgets 完整代码
 - [x] 阻塞点汇总
@@ -555,12 +574,15 @@ flutter test integration_test/branch_creation_test.dart \
 - [x] 给 chat_screen 右上角加 `branch_button` ValueKey
 - [x] 给 `_BranchModeOption` 加 `branch_mode_summarize_option` / `branch_mode_raw_option` ValueKey
 - [x] 给 sheet 加 `branch_mode_continue_button` / `branch_mode_cancel_button` ValueKey
-- [ ] 给 chat_composer 加 `send_button` / `stop_button` ValueKey（`_sendMessage` 用 if 防御跳过，case 4 实跑不依赖）
+- [x] 给 `_ModelSelectorSheet` 动作加 `model_sheet_<providerId>_<modelId>` ValueKey（commit `d937c07` 修 case 4 sheet 选不到）
+- [ ] 给 chat_composer 加 `send_button` / `stop_button` ValueKey（case 1-6 实跑不依赖，分支流程在已有 LLM 回复的节点上触发）
 - [x] 给 TitleSuggestionScreen 加 title 输入框 / 确认 / 返回 ValueKey
-- [ ] 把 `_createTestTheme` / `_createTestNode` / `_sendMessage` 提取到 `_support/test_fixtures.dart`
-- [x] 实现 § 5.1-5.4 四个 testWidgets 实际代码（实跑通过）；§ 5.5-5.7 scaffold 待补
+- [x] 实现 § 5.1-5.6 六个 testWidgets 实际代码（case 1-6 实跑通过）；§ 5.7 scaffold 待补
 - [ ] 给 LLM HTTP channel 加 mock 工具（case 7 用）
-- [x] 跑通 + 截图验证（case 1-4）
+- [ ] 把 `_createTestTheme` / `_createTestNode` / `_sendMessage` 提取到 `_support/test_fixtures.dart`（需重复依赖脱耦，独立清理任务）
+- [x] 跑通 + 验证（case 1-6 02:26）
+- [x] `checkLlmSetup` 三层防御拦截 LLM 未配置死路（commit `c8176a7` + `34d9465`）
+- [x] `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` l10n（commit `39ed0c0`）
 
 ---
 
@@ -572,7 +594,11 @@ flutter test integration_test/branch_creation_test.dart \
 - [llm-injection.md](./llm-injection.md) — LLM 注入详细版导航（测试 4 / 7 的 LLM 注入路线）
 - [fixtures.md](./fixtures.md) — `InMemoryLlmConfigStore` / `LlmTestConfig` 详解
 - [helpers.md](./helpers.md) — `test_helpers.dart` 工具清单
+- [docs/CHANGELOG/2026-06-24-branch-model-selector-filter.md](../../CHANGELOG/2026-06-24-branch-model-selector-filter.md) — 本次分支创建 sheet filter + 三层防御修改记录
+- [docs/war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md) — ProviderScope override + flutter_secure_storage Keychain 状态泄漏问题
 - `lib/ui/features/chat/chat_screen.dart:165-176` — 右上角 branch 按钮
 - `lib/ui/core/shared/title_suggestion_screen.dart:695-780` — `showBranchModeSheet`
 - `lib/ui/core/shared/title_suggestion_screen.dart:849-1004` — `showBranchFlow`
+- `lib/ui/core/shared/title_suggestion_screen.dart:~1280` — `_ModelSelectorSheet` ValueKey
+- `lib/ui/core/shared/llm_setup_check.dart` — `checkLlmSetup` 三层防御核心
 - `lib/ui/core/shared/chat_composer.dart:81` — `chat_input` ValueKey（唯一已存在的）

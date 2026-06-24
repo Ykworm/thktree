@@ -42,7 +42,7 @@
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 流式对话 | chat | ✅ 完成 | 2026-06-07 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart` | LlmClient + SSE, FileWriteQueue, ChatComposer 优化 |
-| 标题自动建议 | chat | ✅ 完成 | 2026-06-17 | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` | 分支创建时触发，支持选中文本/对话总结/笔记多种来源 |
+| 标题自动建议 | chat | ✅ 完成 | 2026-06-24 | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` + `lib/ui/core/shared/title_suggestion_screen.dart` | 分支创建时触发，支持选中文本/对话总结/笔记多种来源；三层防御拦截 LLM 未配置死路（`lib/ui/core/shared/llm_setup_check.dart`）：L1-A（`showBranchFlow` 入口）→ L1-B（`TitleSuggestionScreen.initState`）→ L2（sheet filter 空时弹窗引导） + `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` 跳转默认模型配置页 |
 | iOS 后台中断恢复 | chat | ✅ 完成（iOS only） | 2026-06-22 | [README](modules/chat/README.md) | — | `lib/data/services/chat_task_service.dart` 等 | App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队；详见 [ADR-015](DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) |
 
 ## 4. 搜索模块（search）
@@ -81,6 +81,7 @@
 
 > 倒序排列，最新在上。
 
+- **2026-06-24** — 分支创建 sheet filter 漏洞修复 + LLM 未配置死路防护：`_ModelSelectorSheet.build` 移除内嵌 `apiKey` 校验（与 SettingsStore 不一致会漏掉未配置 provider） + 三层防御拦截 LLM 未配置（`llm_setup_check.dart`）：L1-A（`showBranchFlow` 入口拦死路 A：summarize 解析失败）→ L1-B（`TitleSuggestionScreen.initState` 拦死路 B：sheet filter 空早期）→ L2（`_showModelSelectorAndGenerate` 调用方 filter 空时弹框引导） + line 891 升级为兜底中的兜底。跳转目标精细化：`noProviderConfigured` → `LlmProvidersScreen`；`noTitleModelConfigured` / `noSummaryModelConfigured` → `DefaultModelPickerScreen`。详见 [CHANGELOG](CHANGELOG/2026-06-24-branch-model-selector-filter.md)
 - **2026-06-22** — iOS LLM 流式中断恢复落地：`ChatTaskService`（服务层）+ `ChatController`（UI 同步层）分层重构 + iOS `BackgroundTaskHandler`（Swift MethodChannel + `beginBackgroundTask` 30s 续命）+ `BackgroundTaskBridge`（Dart 端桥接）+ `SessionStore.findInterrupted`（扫磁盘 `<!-- streaming -->` 标记）+ AppLifecycleObserver 冷启动恢复 + `chat_async_recovery_test.dart` 集成测试（4 个 testWidgets 全绿）。详见 [ADR-015](DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) + [集成测试 spec](_shared/integration-testing/chat-async-recovery.md)
 - **2026-06-20** — `ChatController.onDone` stop_button 卡死 bug 修复：fire-and-forget 错误日志（`_safeLogError`，`logger.await` 不再阻塞清理路径）+ 立即清 `_handle` / `_cancelToken` 让 `_read()` 自愈逻辑生效 + 兜底 `_read()` 三层防线
 - **2026-06-20** — LLM 测试 Key 注入方案:从 assets 迁移到 dart-define(Key 不进 release 包,新增 `tools/gen_dart_define.dart` 生成器压缩 JSON,集成测试命令加 `--dart-define-from-file=build/dart_define.json`,见 [CHANGELOG](CHANGELOG/2026-06-20-llm-test-config-redesign.md))

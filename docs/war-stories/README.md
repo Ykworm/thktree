@@ -84,6 +84,7 @@ YYYY-MM-DD-简短问题描述.md
 
 ### 2026-06
 
+- `flutter/2026-06-24-integration-test-keychain-state-leak.md` — ProviderScope override + flutter_secure_storage Keychain 状态泄漏（3 个根因叠加：ProviderScope override 残留 + Keychain 内存缓存 + ChatController.isStreaming 状态残留；用 Navigator.of(element).pop 模拟点击 + ValueKey 改 providerId_modelId 稳定 key）
 - `ui-ux/2026-06-22-sqlite-nested-transaction-crash.md` — SQLite 嵌套事务崩溃（getSessionPathForNode 全量 reindex 并发冲突，disk-first + 启动同步替代）
 - `ui-ux/2026-06-20-chat-controller-stop-button-stuck.md` — ChatController stop_button 卡死（fire-and-forget 错误日志 + `_handle` 时序自愈）
 - `ui-ux/2026-06-18-gptmarkdown-latex-renderline-overflow.md` — GptMarkdown LaTeX 公式 RenderLine 溢出（flutter_math_fork 0.7.4 宽度计算偏短，FittedBox 兜底）
