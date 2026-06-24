@@ -1,7 +1,7 @@
 # 集成测试：LLM 配置注入原理与实践
 
 > **创建**：2026-06-18
-> **最近更新**：2026-06-18
+> **最近更新**：2026-06-24
 > **维护者**：AI + 用户审阅
 > **状态**：详细版（208 行）
 > **简化导航版**：[docs/_shared/integration-testing/llm-injection.md](../../../_shared/integration-testing/llm-injection.md)
@@ -40,7 +40,7 @@ sendUserMessage(text)
         └─ 还没找到 → settings.apiKey（来自 _loadSettings → settingsStoreProvider）
 ```
 
-> **注意**：路径 C（`_loadSettings`）依赖 `settingsStoreProvider`，那是真的 Keychain 读 `SettingsStore`。如果测试只 override 了 `appSettingsProvider`，路径 B 先尝试 `loadAll`（返回空数组）就退出了，根本走不到路径 C。所以 **`appSettingsProvider.overrideWith` 是死注入**。
+> **注意**：路径 C（`_loadSettings`）依赖 `settingsStoreProvider`（默认读 Keychain）。如果测试只 override 了 `appSettingsProvider`，路径 C 依然会去读真实 `SettingsStore`，所以 **`appSettingsProvider.overrideWith` 对 LLM Key 来说是死注入**。要么注入 `llmConfigStoreProvider`（推荐，走路径 A/B），要么注入 `settingsStoreProvider`（用于 Mock LLM 或 fallback 场景）。
 
 ---
 
@@ -79,13 +79,14 @@ sendUserMessage(text)
 
 ### createTestApp 当前签名
 
-`lib/main_test.dart` 当前只接受 3 个参数（无通用 `extraOverrides` 入口）：
+`lib/main_test.dart` 支持通用 `extraOverrides` 入口，可注入任意 Provider：
 
 ```dart
 Future<Widget> createTestApp({
   Locale? locale,
   AppSettings? llmSettings,
   LlmConfigStore? llmConfigStore,
+  List<dynamic> extraOverrides = const [],
 }) async {
   // ...
   return ProviderScope(
@@ -96,13 +97,24 @@ Future<Widget> createTestApp({
         appSettingsProvider.overrideWith((ref) async => llmSettings),
       if (llmConfigStore != null)
         llmConfigStoreProvider.overrideWithValue(llmConfigStore),
+      ...extraOverrides,
     ],
     child: const ThkTreeApp(),
   );
 }
 ```
 
-> **未来扩展路线图**：如果需要注入其他 provider（如 Mock LLM 场景下的 `llmClientProvider`），需要给 `createTestApp` 增加 `List<Override> extraOverrides = const []` 参数并在 `overrides` 里 `...extraOverrides` 展开。当前未实现，因为 LLM 链路测试只需要 `llmConfigStoreProvider` 这一项注入。
+因此，Mock LLM（不需要真实 API）的注入写法可以是：
+
+```dart
+final app = await createTestApp(
+  locale: const Locale('zh'),
+  extraOverrides: [
+    llmClientProvider.overrideWith((ref) async => const FakeLlmClient()),
+    settingsStoreProvider.overrideWithValue(InMemorySettingsStore(fakeSettings)),
+  ],
+);
+```
 
 ---
 
