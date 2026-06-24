@@ -15,7 +15,6 @@ import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
-import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
@@ -965,16 +964,26 @@ Future<String?> showBranchFlow({
 
 /// 跑一个异步 action，期间显示 Cupertino loading dialog（不可关闭）。
 ///
-/// 返回 `({T? result, Object? error})`：
-/// - action 正常完成 → `result = action()` 返回值，`error = null`。
-/// - action 抛错 → `result = null`，`error = 抛出的对象`（供调用方分类）。
-///   完成后自动 pop dialog。
+/// 错误态：失败时不立刻 pop dialog，而是把 dialog 内容从 loading 切到
+/// [LlmErrorCard]，让用户选 retry / cancel。选 cancel 才 pop。
 Future<({T? result, Object? error})> _runWithLoadingAndError<T>({
   required BuildContext context,
   required String message,
   required Future<T> Function() action,
 }) async {
   final navigator = Navigator.of(context, rootNavigator: true);
+
+  // 调用 action
+  Future<({T? result, Object? error})> runOnce() async {
+    try {
+      final result = await action();
+      return (result: result, error: null);
+    } catch (e) {
+      return (result: null, error: e);
+    }
+  }
+
+  // 弹 loading dialog（不可关闭）
   unawaited(
     showCupertinoDialog<void>(
       context: context,
@@ -997,24 +1006,54 @@ Future<({T? result, Object? error})> _runWithLoadingAndError<T>({
       ),
     ).then((_) {}).catchError((_) {}),
   );
-  try {
-    final result = await action();
-    return (result: result, error: null);
-  } catch (e) {
-    return (result: null, error: e);
-  } finally {
-    if (navigator.canPop()) {
-      navigator.pop();
-    }
+
+  final first = await runOnce();
+  // 关闭 loading
+  if (navigator.canPop()) navigator.pop();
+
+  if (first.result != null) {
+    return first;
   }
+  if (!context.mounted) return first;
+
+  // 错误态：分类 + 弹 LlmErrorCard
+  final llmErr = LlmError.fromException(
+    first.error!,
+    null,
+    hint: 'summarizeAttempt',
+  );
+  if (llmErr.kind == LlmErrorKind.cancelled) {
+    return first;
+  }
+
+  final shouldRetry = await showCupertinoDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => CupertinoAlertDialog(
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: LlmErrorCard(
+          error: llmErr,
+          onRetry: () => Navigator.of(ctx).pop(true),
+          onCancel: () => Navigator.of(ctx).pop(false),
+        ),
+      ),
+    ),
+  );
+
+  if (shouldRetry != true || !context.mounted) {
+    return first;
+  }
+
+  // retry：再跑一次（不再弹 loading，用户已看过错误）
+  final second = await runOnce();
+  return second;
 }
 
 /// 调 LLM 总结 [transcript]，包装以下能力：
 /// 1. lifecycle 监听：app 进入 paused/inactive/hidden → 取消当前请求，让 streaming 提早结束。
-/// 2. 错误分类：识别 [DioException]（网络/超时）以便决定是否重试。
-/// 3. 重试策略：第一次失败 → 静默重试 1 次；仍失败 → 弹 [RetryCancelSheet] 让用户选
-///    retry / cancel；retry 后再失败 → 返回 null（调用方 fallback 到原始 transcript）。
-/// 4. 用户选 cancel → 返回 null（调用方 fallback）。
+/// 2. 错误分类 / 试错 / 重试：交给 [_runWithLoadingAndError] 内部完成（弹 LlmErrorCard 让用户选 retry / cancel）。
+/// 3. fallback：两次 attempt 都失败 → 告诉用户，返回 null（调用方 fallback 到原始 transcript）。
 Future<String?> _summarizeWithLifecycleAndRetry({
   required BuildContext context,
   required LlmProviderConfig provider,
@@ -1025,7 +1064,7 @@ Future<String?> _summarizeWithLifecycleAndRetry({
 }) async {
   final l10n = AppLocalizations.of(context)!;
 
-  Future<({String? result, Object? error})> attempt() async {
+  Future<String?> attempt() async {
     final cancelToken = CancelToken();
     final listener = AppLifecycleListener(
       onPause: () {
@@ -1045,7 +1084,7 @@ Future<String?> _summarizeWithLifecycleAndRetry({
       },
     );
     try {
-      return await _runWithLoadingAndError<String>(
+      final outcome = await _runWithLoadingAndError<String>(
         context: context,
         message: l10n.summarizing,
         action: () => TitleSuggestionService.summarizeContent(
@@ -1057,43 +1096,21 @@ Future<String?> _summarizeWithLifecycleAndRetry({
           cancelToken: cancelToken,
         ),
       );
+      return outcome.result;
     } finally {
       listener.dispose();
     }
   }
 
-  // 1st 尝试
-  final attempt1 = await attempt();
-  var result = attempt1.result;
-  var error = attempt1.error;
-  if (result != null && result.isNotEmpty) return result;
+  // 1st 尝试（lifecycle 取消的会自动让结果为空 → 走 retry）
+  final r1 = await attempt();
+  if (r1 != null && r1.isNotEmpty) return r1;
 
-  // 静默重试 1 次（常见于 lifecycle 刚取消 → 重新发包）
-  final attempt2 = await attempt();
-  result = attempt2.result;
-  error = attempt2.error;
-  if (result != null && result.isNotEmpty) return result;
+  // retry dialog（用户选 cancel 时 _runWithLoadingAndError 内部已 pop）
+  final r2 = await attempt();
+  if (r2 != null && r2.isNotEmpty) return r2;
 
-  // 两次都失败：如果是网络错误则弹 retry/cancel sheet；否则直接 fallback。
-  if (!context.mounted) return null;
-  if (!_isNetworkError(error)) {
-    // 非网络错误（API 鉴权 / 业务错 / 未知错）→ 告诉用户
-    ThkAlert.show(
-      context: context,
-      message: l10n.summarizeFailedFallback,
-    );
-    return null;
-  }
-
-  final choice = await _showRetryCancelSheet(context);
-  if (choice != _RetryChoice.retry) return null;
-  if (!context.mounted) return null;
-
-  // 手动 retry 最后一次
-  final attempt3 = await attempt();
-  result = attempt3.result;
-  error = attempt3.error;
-  if (result != null && result.isNotEmpty) return result;
+  // 二次都失败：fallback 到原始 transcript
   if (!context.mounted) return null;
   ThkAlert.show(
     context: context,
@@ -1102,55 +1119,9 @@ Future<String?> _summarizeWithLifecycleAndRetry({
   return null;
 }
 
-/// 判断 [error] 是否为可重试的网络 / 超时错误。
-bool _isNetworkError(Object? error) {
-  if (error is! DioException) return false;
-  return switch (error.type) {
-    DioExceptionType.connectionError ||
-    DioExceptionType.connectionTimeout ||
-    DioExceptionType.sendTimeout ||
-    DioExceptionType.receiveTimeout ||
-    DioExceptionType.badResponse =>
-      true,
-    DioExceptionType.cancel ||
-    DioExceptionType.badCertificate ||
-    DioExceptionType.unknown =>
-      false,
-  };
-}
-
-/// CupertinoActionSheet 选项：retry 重试 / cancel 取消重试。
-enum _RetryChoice { retry, cancel }
-
-/// 弹出 Cupertino action sheet 让用户选 retry / cancel。
-/// 返回 null 表示用户点击了取消按钮或点空白处 dismiss。
-Future<_RetryChoice?> _showRetryCancelSheet(BuildContext context) {
-  return showCupertinoModalPopup<_RetryChoice>(
-    context: context,
-    builder: (ctx) {
-      final l10n = AppLocalizations.of(ctx)!;
-      return CupertinoActionSheet(
-        title: Text(l10n.networkInterrupted),
-        actions: [
-          CupertinoActionSheetAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(ctx).pop(_RetryChoice.retry),
-            child: Text(l10n.branchRetry),
-          ),
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.of(ctx).pop(_RetryChoice.cancel),
-            child: Text(l10n.branchCancelRetry),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: Text(l10n.cancel),
-        ),
-      );
-    },
-  );
-}
+// _isNetworkError / _RetryChoice / _showRetryCancelSheet 由 llm-error-retry Task 7
+// 删除：网络错误分类由 LlmError.fromException 统一处理；retry/cancel UI 由
+// LlmErrorCard 统一取代。
 
 /// Model selector sheet for choosing which model to use for title generation
 class _ModelSelectorSheet extends StatelessWidget {
