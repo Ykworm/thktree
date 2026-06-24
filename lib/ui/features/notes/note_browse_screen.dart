@@ -14,6 +14,7 @@ import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
 import 'package:thk_tree/ui/features/notes/note_detail_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
+import 'package:thk_tree/ui/features/search/search_content.dart';
 
 /// Stable on-disk title used as identifier for the catch-all theme
 /// (notes created from the notes tab). Display name is localized via
@@ -49,7 +50,7 @@ class NoteBrowseScreen extends ConsumerStatefulWidget {
 }
 
 class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
-  final _searchController = TextEditingController();
+  final _queryNotifier = ValueNotifier<String>('');
   List<_ThemeNotes>? _themes;
   bool _loading = true;
   Object? _error;
@@ -57,7 +58,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _queryNotifier.dispose();
     super.dispose();
   }
 
@@ -119,20 +120,26 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: CupertinoSearchTextField(
-                controller: _searchController,
-                placeholder: l10n.searchHint,
-                onChanged: (_) => setState(() {}),
-              ),
+              child: SearchBox(queryNotifier: _queryNotifier),
             ),
           ),
-          _buildBody(l10n),
+          ValueListenableBuilder<String>(
+            valueListenable: _queryNotifier,
+            builder: (context, query, _) {
+              if (query.trim().isEmpty) {
+                return _buildGroupedBody(l10n);
+              }
+              return SliverToBoxAdapter(
+                child: SearchResults(queryNotifier: _queryNotifier),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBody(AppLocalizations l10n) {
+  Widget _buildGroupedBody(AppLocalizations l10n) {
     if (_loading) {
       return const SliverFillRemaining(
         child: Center(child: CupertinoActivityIndicator()),
@@ -151,12 +158,8 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
         ),
       );
     }
-    final query = _searchController.text.trim().toLowerCase();
     final allThemes = _themes ?? [];
-    final themes = query.isEmpty
-        ? allThemes
-        : allThemes.where((t) => t.title.toLowerCase().contains(query)).toList();
-    if (themes.isEmpty) {
+    if (allThemes.isEmpty) {
       return SliverFillRemaining(
         child: Center(
           child: Column(
@@ -169,7 +172,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                query.isEmpty ? l10n.noNotesYet : l10n.searchNoResults,
+                l10n.noNotesYet,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
@@ -180,7 +183,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          final tn = themes[index];
+          final tn = allThemes[index];
           return Column(
             children: [
               ThkListTile(
@@ -200,7 +203,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
                   );
                 },
               ),
-              if (index < themes.length - 1)
+              if (index < allThemes.length - 1)
                 Padding(
                   padding: const EdgeInsetsDirectional.only(start: 56),
                   child: Container(
@@ -211,7 +214,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
             ],
           );
         },
-        childCount: themes.length,
+        childCount: allThemes.length,
       ),
     );
   }
