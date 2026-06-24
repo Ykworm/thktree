@@ -168,6 +168,8 @@
   "copyDefaultUrl": "复制默认地址",
   "copiedToClipboard": "已复制到剪贴板",
   "pleaseFetchModels": "请先在设置中配置提供商并获取模型列表",
+  "pleaseConfigureTitleModel": "请在默认模型配置中设置生成标题的模型",
+  "pleaseConfigureSummaryModel": "请在默认模型配置中设置总结文本的模型",
   "createChatFromNote": "从笔记发起对话",
   "selectTheme": "选择主题",
   "selectLocation": "选择位置",

@@ -776,6 +776,18 @@ abstract class AppLocalizations {
   /// **'Please configure a provider and fetch models in settings first'**
   String get pleaseFetchModels;
 
+  /// Hint user to go to Default Model Config to set the title generation model
+  ///
+  /// In en, this message translates to:
+  /// **'Please configure the title generation model in Default Model Config'**
+  String get pleaseConfigureTitleModel;
+
+  /// Hint user to go to Default Model Config to set the summary model
+  ///
+  /// In en, this message translates to:
+  /// **'Please configure the summary model in Default Model Config'**
+  String get pleaseConfigureSummaryModel;
+
   /// Button or menu item to start a chat from a note
   ///
   /// In en, this message translates to:

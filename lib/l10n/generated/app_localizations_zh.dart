@@ -388,6 +388,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pleaseFetchModels => '请先在设置中配置提供商并获取模型列表';
 
   @override
+  String get pleaseConfigureTitleModel => '请在默认模型配置中设置生成标题的模型';
+
+  @override
+  String get pleaseConfigureSummaryModel => '请在默认模型配置中设置总结文本的模型';
+
+  @override
   String get createChatFromNote => '从笔记发起对话';
 
   @override

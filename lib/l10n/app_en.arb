@@ -518,6 +518,14 @@
   "@pleaseFetchModels": {
     "description": "Hint shown when no configured provider is available in model selector"
   },
+  "pleaseConfigureTitleModel": "Please configure the title generation model in Default Model Config",
+  "@pleaseConfigureTitleModel": {
+    "description": "Hint user to go to Default Model Config to set the title generation model"
+  },
+  "pleaseConfigureSummaryModel": "Please configure the summary model in Default Model Config",
+  "@pleaseConfigureSummaryModel": {
+    "description": "Hint user to go to Default Model Config to set the summary model"
+  },
   "createChatFromNote": "Start Chat from Note",
   "@createChatFromNote": {
     "description": "Button or menu item to start a chat from a note"

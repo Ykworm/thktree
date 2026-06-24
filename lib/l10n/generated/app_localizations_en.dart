@@ -406,6 +406,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please configure a provider and fetch models in settings first';
 
   @override
+  String get pleaseConfigureTitleModel =>
+      'Please configure the title generation model in Default Model Config';
+
+  @override
+  String get pleaseConfigureSummaryModel =>
+      'Please configure the summary model in Default Model Config';
+
+  @override
   String get createChatFromNote => 'Start Chat from Note';
 
   @override
