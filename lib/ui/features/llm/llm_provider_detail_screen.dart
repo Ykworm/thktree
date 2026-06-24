@@ -8,6 +8,7 @@ import 'package:ulid/ulid.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
+import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/services/model_fetcher.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -38,6 +39,7 @@ class _LlmProviderDetailScreenState
   bool _isLoadingApiKey = true;
   bool _isFetchingModels = false;
   List<LlmModelConfig> _fetchedModels = [];
+  LlmError? _fetchError;
 
   @override
   void initState() {
@@ -163,20 +165,35 @@ class _LlmProviderDetailScreenState
                       ],
                     ),
 
-                    // 获取模型列表按钮
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
+                    // 错误态（替换原 toast）
+                    if (_fetchError != null)
+                      LlmErrorCard(
+                        key: const ValueKey('llm_error_card_compact'),
+                        compact: true,
+                        error: _fetchError!,
+                        onRetry: () {
+                          setState(() => _fetchError = null);
+                          _fetchModels();
+                        },
+                        onCancel: () {
+                          // 取消：清除错误态（保留页面，用户可继续编辑其他字段）
+                          setState(() => _fetchError = null);
+                        },
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        child: _isFetchingModels
+                            ? const Center(child: CupertinoActivityIndicator())
+                            : ThkButton.filled(
+                                label: l10n.fetchModels,
+                                icon: Icon(AppIcons.download),
+                                onPressed: _fetchModels,
+                              ),
                       ),
-                      child: _isFetchingModels
-                          ? const Center(child: CupertinoActivityIndicator())
-                          : ThkButton.filled(
-                              label: l10n.fetchModels,
-                              icon: Icon(AppIcons.download),
-                              onPressed: _fetchModels,
-                            ),
-                    ),
 
                     // 模型列表
                     if (_fetchedModels.isNotEmpty)
@@ -256,13 +273,17 @@ class _LlmProviderDetailScreenState
         _fetchedModels = models;
         _isFetchingModels = false;
       });
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
-      setState(() => _isFetchingModels = false);
-      ThkAlert.show(
-        context: context,
-        title: l10n.fetchModelsFailed(e.toString()),
-      );
+      setState(() {
+        _isFetchingModels = false;
+        _fetchError = LlmError.fromException(
+          e,
+          st,
+          logger: ref.read(appLoggerProvider).asData?.value,
+          hint: 'LlmProviderDetail.fetchModels',
+        );
+      });
     }
   }
 
