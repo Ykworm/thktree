@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/data/services/llm_provider.dart';
+import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/core/widgets/thk_text_field.dart';
@@ -388,6 +390,18 @@ void main() {
     testWidgets('无选中文本 + summarize 模式创建分支', (tester) async {
       // 注入真实 LLM 配置
       final llmConfig = LlmTestConfig.loadFromDefine();
+      // ⚠️ case 4 fixture 未预设 titleModelProviderId, 但 _handleGenerateButton
+      // 走 SettingsController.build() → settingsStoreProvider.load() 读 Keychain,
+      // 不读 appSettingsProvider override。
+      // 跑全套时前面 case 走 _showModelSelectorAndGenerate 选中后会调
+      // saveTitleModel 写 Keychain, 残留后 case 4 启动读到旧 titleModelProviderId
+      // → 走 _generateWithModel 路径, 不弹 sheet, waitForWidget(CupertinoActionSheet)
+      // 10s timeout 失败。
+      // 启动前显式清空 Keychain 中残留的 titleModel settings。
+      final settingsStore = SettingsStore(
+        secureStorage: const FlutterSecureStorage(),
+      );
+      await settingsStore.saveTitleModel(providerId: null, modelId: null);
       final app = await createTestApp(
         llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
@@ -450,11 +464,68 @@ void main() {
 
       // 5. 点击「生成标题」按钮触发 LLM 生成候选
       final genBtn = find.text('生成标题');
-      if (genBtn.evaluate().isNotEmpty) {
-        debugPrint('[Test] 点击「生成标题」按钮...');
-        await tester.tap(genBtn);
-        await tester.pump();
-      }
+      expect(genBtn, findsOneWidget, reason: '应找到「生成标题」按钮');
+      debugPrint('[Test] 点击「生成标题」按钮...');
+      await tester.tap(genBtn);
+      await tester.pump();
+
+      // 5.1 等待 model selector sheet 弹出
+      // (case 4 fixture 未预设 titleModelProviderId, 所以 _handleGenerateButton
+      //  走 _showModelSelectorAndGenerate 路径弹 sheet, 测试需手动选中第一个 model)
+      debugPrint('[Test] 等待 model selector sheet 弹出...');
+      await waitForWidget(
+        tester,
+        find.byType(CupertinoActionSheet),
+        timeout: const Duration(seconds: 10),
+      );
+      debugPrint('[Test] sheet 已弹出');
+
+      // 5.2 模拟点击第一个 model action
+      // 模糊匹配所有 model_sheet_ 前缀的 key,
+      // 不依赖具体 provider.id / model.id (fixture 下 deepseek / deepseek-chat)。
+      //
+      // 为何不直接 tester.tap(sheetAction.first)？
+      //   iPhone 13 mini 测试 surface 402x874 装不下 CupertinoActionSheet,
+      //   action 中心 y 坐标 (~1068) 超出屏幕 (~194px),tap() 会失败
+      //   并警告 "Offset outside root of render tree"。
+      //   ensureVisible / dragUntilVisible / setSurfaceSize 全部试过均无效
+      //   (CupertinoActionSheet 内部 _ScrollableScope 用 Flexible 限高,
+      //    滚动约束与 surface size 解耦)。
+      //
+      // 方案:直接调 sheet action 的 onPressed 闭包等价操作
+      //   Navigator.of(context).pop<(String, String)>((provider.id, model.id))
+      //   拿 sheet 内部 Element 作为 context,pop 出相同参数即可。
+      final sheetAction = find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey<String> &&
+            (w.key as ValueKey<String>).value.startsWith('model_sheet_'),
+      );
+      expect(
+        sheetAction,
+        findsWidgets,
+        reason: 'sheet 应至少包含一个 model_sheet_ action',
+      );
+      // 从 ValueKey 拆出 (providerId, modelId)
+      // 'model_sheet_preset_deepseek_deepseek-chat' → 'preset_deepseek', 'deepseek-chat'
+      final firstActionKey =
+          (tester.widget(sheetAction.first).key as ValueKey<String>).value;
+      final stripped = firstActionKey.replaceFirst('model_sheet_', '');
+      final lastUnderscore = stripped.lastIndexOf('_');
+      final providerId = stripped.substring(0, lastUnderscore);
+      final modelId = stripped.substring(lastUnderscore + 1);
+      debugPrint(
+        '[Test] 模拟点击第一个 model action: '
+        'providerId=$providerId, modelId=$modelId',
+      );
+      // sheet action 的 Element 作为 context,pop 出 (providerId, modelId),
+      // 等价于真实点击触发的 Navigator.pop。
+      final sheetActionElement = tester.element(sheetAction.first);
+      Navigator.of(sheetActionElement).pop<(String, String)>((
+        providerId,
+        modelId,
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // 6. 等待 LLM 生成候选标题
       debugPrint('[Test] 等待 LLM 生成候选标题（最多 60 秒）...');
@@ -488,6 +559,14 @@ void main() {
         tester,
         timeout: const Duration(seconds: 30),
       );
+
+      // 8. L1 不弹断言：fixture 下 LLM 配置齐全，L1-A / L1-B / L2 都不应弹 alert
+      expect(
+        find.byType(CupertinoAlertDialog),
+        findsNothing,
+        reason: 'fixture 下所有 LLM 配置齐全，不应触发 LLM 未配置拦截',
+      );
+
       debugPrint('[Test] 分支创建流程完成');
     });
 
@@ -495,6 +574,10 @@ void main() {
       // 启动应用
       final app = await createTestApp();
       await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      // 切换到主题 tab
+      await _switchToTab(tester, '主题');
       await tester.pumpAndSettle();
 
       // 创建测试主题和节点
@@ -515,6 +598,10 @@ void main() {
       await tester.pumpWidget(app);
       await tester.pumpAndSettle();
 
+      // 切换到主题 tab
+      await _switchToTab(tester, '主题');
+      await tester.pumpAndSettle();
+
       // 创建测试主题和节点
       await _createTestTheme(tester, '测试主题6');
       await tester.tap(find.text('测试主题6'));
@@ -531,6 +618,10 @@ void main() {
       // 启动应用
       final app = await createTestApp();
       await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      // 切换到主题 tab
+      await _switchToTab(tester, '主题');
       await tester.pumpAndSettle();
 
       // 创建测试主题和节点
