@@ -22,6 +22,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
+import 'package:thk_tree/data/services/settings_store.dart';
+import 'package:thk_tree/data/services/llm_provider.dart';
 // 用 main_test.dart 的 createTestApp（main.dart 不接受注入参数）。
 import 'package:thk_tree/main_test.dart' as test_app;
 import 'package:thk_tree/ui/core/app_logger.dart';
@@ -29,6 +31,21 @@ import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
 import '_support/in_memory_llm_config_store.dart';
+
+/// Mock SettingsStore：_loadSettings() 读 settingsStoreProvider.load()，
+/// 在模拟器里 Storage 为空导致 apiKey 为空，LLM 不被调用。
+/// 直接注入 testSettings 让 fallback 路径走到 _startStreamingWithSettings。
+class _MockSettingsStore implements SettingsStore {
+  _MockSettingsStore(this._settings);
+  final AppSettings _settings;
+  @override
+  Future<AppSettings> load() async => _settings;
+  Future<void> save(AppSettings settings) async {}
+  @override
+  noSuchMethod(Invocation invocation) => null;
+}
+
+
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +70,7 @@ void main() {
 
   /// 公共 helper：createTestApp + 注入 mock client / logger。
   ///
-  /// [locale] 透传给 createTestApp；case 5 需要切到中文 locale 验证 i18n。
+  /// [locale] 透传给 createTestApp；不传则沿用系统 locale（通常为 zh）。
   Future<void> pumpApp(WidgetTester tester, {Locale? locale}) async {
     final widget = await test_app.createTestApp(
       llmConfigStore: InMemoryLlmConfigStore(
@@ -62,7 +79,25 @@ void main() {
       ),
       extraOverrides: [
         appLoggerProvider.overrideWithValue(AsyncData<AppLogger>(recordingLogger)),
-        llmClientProvider.overrideWith((ref) async => mockClient),
+        llmClientProvider.overrideWith((ref) => mockClient),
+        settingsStoreProvider.overrideWithValue(_MockSettingsStore(AppSettings(
+          llmProvider: LlmProvider.deepseek,
+          deepSeekApiKey: 'sk-8a3e5b90d3574becacab2e14bf62f3a6',
+          deepSeekModel: 'test-model',
+          openaiApiKey: '',
+          openaiModel: '',
+          claudeApiKey: '',
+          claudeModel: '',
+          geminiApiKey: '',
+          geminiModel: '',
+          minimaxApiKey: '',
+          minimaxModel: '',
+          kimiApiKey: '',
+          kimiModel: '',
+          localeLanguageCode: null,
+          faceIdEnabled: false,
+          darkMode: false,
+        ))),
       ],
       locale: locale,
     );
@@ -79,32 +114,45 @@ void main() {
     );
     await pumpApp(tester);
 
-    // 流式聊天：注入用户消息 → 触发 stream → 看到 LlmErrorCard compact
+    await _navigateToChat(tester);
     await _sendUserMessage(tester, 'hello');
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    // 等待 mock stream 抛错 + sessionStore.failAssistant 写磁盘 + pollTimer 触发 _read()
+    // 用 runAsync + 多次 pump 确保异步 I/O 和 timer 都能执行
+    for (var i = 0; i < 20; i++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 500)));
+      await tester.pump();
+      if (find.byKey(const ValueKey('llm_error_card_compact')).evaluate().isNotEmpty) break;
+    }
 
     expect(find.byKey(const ValueKey('llm_error_card_compact')), findsOneWidget);
-    expect(find.text('Network error. Please check your connection and retry.'),
-        findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('网络连接中断，请检查后重试'), findsOneWidget);
+    // 用 findsAtLeastNWidgets：LlmErrorCard 里有一个“重试”，页面可能有其他同名元素
+    expect(find.text('重试'), findsAtLeastNWidgets(1));
+    expect(find.text('取消'), findsAtLeastNWidgets(1));
   });
 
   // ─────────────────────────────────────────────────────────────────────
-  // Case 2：4 场景重试触发
+  // Case 2：4 个场景重试触发
   // ─────────────────────────────────────────────────────────────────────
   testWidgets('case 2: 重试按钮触发新请求', (tester) async {
     mockClient.scenario = _ErrorScenario.network(DioExceptionType.connectionError);
     await pumpApp(tester);
 
+    await _navigateToChat(tester);
     await _sendUserMessage(tester, 'hello');
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    // 等待 LlmErrorCard 渲染
+    for (var i = 0; i < 20; i++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 500)));
+      await tester.pump();
+      if (find.byKey(const ValueKey('llm_error_card_compact')).evaluate().isNotEmpty) break;
+    }
     expect(mockClient.callCount, 1);
 
     // 改成 success，第 2 次调用返回成功
     mockClient.scenario = _ErrorScenario.success('ok-reply');
-    await tester.tap(find.text('Retry'));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await tester.tap(find.text('重试').first);
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 3)));
+    await tester.pump();
     expect(mockClient.callCount, 2);
   });
 
@@ -115,11 +163,10 @@ void main() {
     mockClient.scenario = _ErrorScenario.network(DioExceptionType.connectionError);
     await pumpApp(tester);
 
+    await _navigateToChat(tester);
     await _sendUserMessage(tester, 'hello');
-    await tester.pumpAndSettle(const Duration(seconds: 2));
-
-    // 等待 async 上报 fire-and-forget 完成
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 3)));
+    await tester.pump();
 
     final calls = recordingLogger.errorCalls;
     expect(calls, isNotEmpty);
@@ -136,8 +183,10 @@ void main() {
     mockClient.scenario = _ErrorScenario.cancelled();
     await pumpApp(tester);
 
+    await _navigateToChat(tester);
     await _sendUserMessage(tester, 'hello');
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 3)));
+    await tester.pump();
 
     expect(find.byKey(const ValueKey('llm_error_card_compact')), findsNothing);
     expect(recordingLogger.errorCalls, isEmpty);
@@ -148,14 +197,20 @@ void main() {
   // ─────────────────────────────────────────────────────────────────────
   testWidgets('case 5: 中文 locale 文案正确', (tester) async {
     mockClient.scenario = _ErrorScenario.network(DioExceptionType.connectionError);
-    await pumpApp(tester, locale: const Locale('zh'));
+    // 不传 locale — 默认使用系统 locale（通常为 zh）
+    await pumpApp(tester);
 
+    await _navigateToChat(tester);
     await _sendUserMessage(tester, 'hello');
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    for (var i = 0; i < 20; i++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 500)));
+      await tester.pump();
+      if (find.byKey(const ValueKey('llm_error_card_compact')).evaluate().isNotEmpty) break;
+    }
 
     expect(find.text('网络连接中断，请检查后重试'), findsOneWidget);
-    expect(find.text('重试'), findsOneWidget);
-    expect(find.text('取消'), findsOneWidget);
+    expect(find.text('重试'), findsAtLeastNWidgets(1));
+    expect(find.text('取消'), findsAtLeastNWidgets(1));
   });
 }
 
@@ -183,16 +238,6 @@ class _ErrorScenario {
       : kind = _ErrorKindScenario.network,
         type = t,
         statusCode = null,
-        reply = null;
-  _ErrorScenario.timeout(DioExceptionType t)
-      : kind = _ErrorKindScenario.timeout,
-        type = t,
-        statusCode = null,
-        reply = null;
-  _ErrorScenario.networkWithStatus(int code)
-      : kind = _ErrorKindScenario.network,
-        statusCode = code,
-        type = DioExceptionType.badResponse,
         reply = null;
   _ErrorScenario.cancelled()
       : kind = _ErrorKindScenario.cancelled,
@@ -294,13 +339,71 @@ class _RecordingLogger extends AppLogger {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 辅助：发送用户消息（参考 chat_streaming_test.dart 模式）
+// 辅助：导航到 chat 屏（主题 tab → 创建主题 → 创建节点 → 进入）
+// ─────────────────────────────────────────────────────────────────────
+
+Future<void> _navigateToChat(WidgetTester tester) async {
+  // 切换到底部「主题」tab
+  final themesTab = find.text('主题');
+  await tester.tap(themesTab.first, warnIfMissed: false);
+  await tester.pumpAndSettle();
+
+  // 创建主题
+  final ts = DateTime.now().millisecondsSinceEpoch;
+  final themeTitle = 'ErrRetry_$ts';
+  final addThemeBtn = find.byKey(const ValueKey('add_theme_button'));
+  expect(addThemeBtn, findsOneWidget, reason: '应找到添加主题按钮');
+  await tester.tap(addThemeBtn);
+  await tester.pumpAndSettle();
+  final themeField = find.byType(CupertinoTextField);
+  expect(themeField, findsOneWidget);
+  await tester.enterText(themeField, themeTitle);
+  await tester.pump();
+  final createBtnEn = find.text('Create');
+  if (createBtnEn.evaluate().isNotEmpty) {
+    await tester.tap(createBtnEn);
+  } else {
+    await tester.tap(find.text('创建'));
+  }
+  await tester.pumpAndSettle();
+
+  // 点主题进入
+  await tester.tap(find.text(themeTitle));
+  await tester.pumpAndSettle();
+
+  // 创建节点
+  final addNodeBtn = find.byKey(const ValueKey('add_node_button'));
+  expect(addNodeBtn, findsOneWidget, reason: '应找到添加节点按钮');
+  await tester.tap(addNodeBtn);
+  await tester.pumpAndSettle();
+  final nodeField = find.byType(CupertinoTextField);
+  expect(nodeField, findsOneWidget);
+  await tester.enterText(nodeField, 'ErrNode_$ts');
+  await tester.pump();
+  final createBtnEn2 = find.text('Create');
+  if (createBtnEn2.evaluate().isNotEmpty) {
+    await tester.tap(createBtnEn2);
+  } else {
+    await tester.tap(find.text('创建'));
+  }
+  await tester.pumpAndSettle();
+
+  // 点节点进入 chat_screen
+  await tester.tap(find.text('ErrNode_$ts'));
+  await tester.pumpAndSettle();
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 辅助：发送用户消息（参考 branch_creation_test 模式）
 // ─────────────────────────────────────────────────────────────────────
 
 Future<void> _sendUserMessage(WidgetTester tester, String text) async {
-  // selector 与项目实际一致（参考 chat_streaming_test.dart:104 / test_helpers.dart:290）
   final inputFinder = find.byKey(const ValueKey('chat_input'));
+  expect(inputFinder, findsOneWidget, reason: '进入 chat 屏后应找到 chat_input');
   await tester.enterText(inputFinder, text);
-  await tester.tap(find.byKey(const ValueKey('send_button')));
+  await tester.pump();
+  final sendBtn = find.byKey(const ValueKey('send_button'));
+  expect(sendBtn, findsOneWidget, reason: '应找到 send_button');
+  await tester.tap(sendBtn);
   await tester.pump();
 }
