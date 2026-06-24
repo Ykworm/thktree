@@ -111,7 +111,6 @@
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
 | 🔴 | 笔记全选复制 | 笔记内容支持全选 + 复制，尚未实现 |
-| 🟡 | 笔记搜索/过滤 | 笔记列表页无搜索入口 |
 | 🟢 | `appPathsProvider` 未就绪时的加载态 | `_loadThemeNotes` 已改为 `await ref.read(appPathsProvider.future)`，但在未完成前页面会短暂显示空列表 |
 
 ---
@@ -294,3 +293,41 @@ final int contextWindow; // 0 表示未知
 ### 9.5 验证
 - `flutter analyze` 无新增问题
 - `flutter test integration_test/note_crud_test.dart` 全部通过（00:17 +1）
+
+---
+
+## 10. 笔记 tab 顶部搜索统一为全文搜索（2026-06-24）
+
+### 10.1 背景
+- 笔记 tab 顶部原来有自己的搜索框，按主题名本地内存过滤（`_searchController.text.trim().toLowerCase()` 模糊匹配 `t.title`）
+- 搜索 tab 已有 SQLite FTS5 全文搜索能力，覆盖笔记标题 / 笔记正文 / 对话消息 / 节点标题
+- 两套入口行为不一致：范围、结果排序、空态文案都不同
+
+### 10.2 决策
+- 选 B 方案：统一为搜索 tab 的全文搜索
+- 复用 `SearchScreen` 的所有实现细节（防抖 300ms、BM25 排序、高亮、跨模块跳转）
+- 明确放弃主题名搜索能力（接受 FTS5 schema `themeTitle UNINDEXED` 事实）
+- 同屏切换：空查询显示主题分组；非空查询显示搜索结果
+
+### 10.3 实现
+- 新增 `SearchContent` 组件（`lib/ui/features/search/search_content.dart`）——封装 `SearchBox` + `SearchResults`
+- `NoteBrowseScreen` 顶部用 `SearchContent` 替换原 `_SearchField`（`_buildBody` → `_buildGroupedBody`）
+- `SearchScreen` 改为 `SearchContent` 包装，统一两个入口的搜索能力
+- 详见 [`docs/_tmp/note-search-unify-plan.md`](../../../_tmp/note-search-unify-plan.md)
+
+### 10.4 测试
+- `integration_test/note_search_test.dart` 新增 4 个端到端 case：
+  - Case 1：建笔记 + 搜索 + 跳转 `NoteDetailScreen`
+  - Case 2：空查询态主题分组占位正常渲染
+  - Case 3：搜索无结果 → `searchNoResults` 文案
+  - Case 4：笔记 tab 与搜索 tab 同关键词结果数量一致（用 `xyz_consistent_check_7777`）
+
+### 10.5 文件变更
+- `lib/ui/features/search/search_content.dart` — 新建（SearchBox + SearchResults）
+- `lib/ui/features/search/search_screen.dart` — 改为 SearchContent 包装
+- `lib/ui/features/notes/note_browse_screen.dart` — 顶部搜索改 SearchContent（`_buildGroupedBody`）
+- `integration_test/note_search_test.dart` — 新建（4 个 case）
+
+### 10.6 已知能力边界
+- 全文搜索范围：笔记标题、笔记正文、对话消息、节点标题
+- **不搜**：主题名（`themeTitle UNINDEXED`）——这是已知的能力损失，已记录到设计决策

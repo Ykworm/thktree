@@ -24,8 +24,13 @@
 
 | 文件 | 角色 | 行数 |
 |------|------|------|
-| `lib/ui/features/search/search_screen.dart` | 搜索页（输入框 + 结果列表） | 330 |
+| `lib/ui/features/search/search_screen.dart` | 搜索 tab（包裹 `SearchContent`） | - |
+| `lib/ui/features/search/search_content.dart` | `SearchContent` 组件：顶部 `SearchBox` + 下方 `SearchResults`（被搜索 tab 与笔记 tab 复用） | - |
 | `lib/data/search/search_service.dart` | 搜索服务（封装 FTS5 查询） | - |
+
+> **嵌入说明**：`SearchContent` 是独立 widget，输入框 + 结果区一体，外部可自由嵌套。已用于：
+> - 搜索 tab（`SearchScreen` 顶层包一层）
+> - 笔记 tab 顶部（`NoteBrowseScreen._buildGroupedBody` 顶部嵌入）
 
 ## 子文档
 
@@ -51,3 +56,4 @@
 - 2026-05：搜索功能首次上线（FTS5 + BM25）
 - 2026-06：补 spec 设计书、性能压测、跨模块跳转
 - 2026-06：加入搜索历史 + 高亮
+- 2026-06-24：`SearchContent` 组件抽离，被笔记 tab 顶部复用——笔记 tab 顶部搜索统一为全文搜索；明确放弃主题名搜索能力（接受 FTS5 schema `themeTitle UNINDEXED` 事实）。详见 [CHANGELOG](../../modules/notes/CHANGELOG.md#10-笔记-tab-顶部搜索统一为全文搜索2026-06-24)

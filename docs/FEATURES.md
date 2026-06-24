@@ -34,6 +34,7 @@
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 笔记功能 | notes | ✅ 完成 | 2026-06-07 | [README](modules/notes/README.md) | [notes-list-design](modules/notes/visual/notes-list-design.md) | `lib/ui/features/notes/note_browse_screen.dart` 等 | NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteStore |
+| 笔记搜索 | notes | ✅ 完成 | 2026-06-24 | [README](modules/notes/README.md) | [notes-list-design](modules/notes/visual/notes-list-design.md) | `lib/ui/features/search/search_content.dart` + `lib/ui/features/notes/note_browse_screen.dart` | 笔记 tab 顶部复用 `SearchContent`（FTS5 全文搜索），空查询显示主题分组，非空查询显示搜索结果；详见 [notes/CHANGELOG § 10](modules/notes/CHANGELOG.md#10-笔记-tab-顶部搜索统一为全文搜索2026-06-24) |
 | Markdown 工具栏增强 | notes | ✅ 完成 | 2026-06-17 | [README](modules/notes/README.md) | — | `lib/ui/core/widgets/markdown_toolbar.dart` | 标题级别循环切换（h2→h3→h1→无）+ 表格插入按钮 |
 | 图片插入 | notes | 📋 待开发 | 2026-06-17 | [README](modules/notes/README.md) | — | — | 编辑器工具栏插入图片，支持相册/拍照 |
 
@@ -80,6 +81,8 @@
 ## 最近变更
 
 > 倒序排列，最新在上。
+
+- **2026-06-24** — 笔记 tab 顶部搜索统一为全文搜索：`SearchContent` 组件抽离（`lib/ui/features/search/search_content.dart`），`SearchScreen` + `NoteBrowseScreen` 共用同一搜索能力（FTS5 + BM25 + 防抖 300ms + 跨模块跳转）；空查询显示主题分组，非空查询显示全文搜索结果。明确放弃主题名搜索能力（接受 FTS5 schema `themeTitle UNINDEXED` 事实）。新增 `integration_test/note_search_test.dart`（4 个 case），详见 [CHANGELOG](modules/notes/CHANGELOG.md#10-笔记-tab-顶部搜索统一为全文搜索2026-06-24)
 
 - **2026-06-24** — 分支创建 sheet filter 漏洞修复 + LLM 未配置死路防护：`_ModelSelectorSheet.build` 移除内嵌 `apiKey` 校验（与 SettingsStore 不一致会漏掉未配置 provider） + 三层防御拦截 LLM 未配置（`llm_setup_check.dart`）：L1-A（`showBranchFlow` 入口拦死路 A：summarize 解析失败）→ L1-B（`TitleSuggestionScreen.initState` 拦死路 B：sheet filter 空早期）→ L2（`_showModelSelectorAndGenerate` 调用方 filter 空时弹框引导） + line 891 升级为兜底中的兜底。跳转目标精细化：`noProviderConfigured` → `LlmProvidersScreen`；`noTitleModelConfigured` / `noSummaryModelConfigured` → `DefaultModelPickerScreen`。详见 [CHANGELOG](CHANGELOG/2026-06-24-branch-model-selector-filter.md)
 - **2026-06-22** — iOS LLM 流式中断恢复落地：`ChatTaskService`（服务层）+ `ChatController`（UI 同步层）分层重构 + iOS `BackgroundTaskHandler`（Swift MethodChannel + `beginBackgroundTask` 30s 续命）+ `BackgroundTaskBridge`（Dart 端桥接）+ `SessionStore.findInterrupted`（扫磁盘 `<!-- streaming -->` 标记）+ AppLifecycleObserver 冷启动恢复 + `chat_async_recovery_test.dart` 集成测试（4 个 testWidgets 全绿）。详见 [ADR-015](DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) + [集成测试 spec](_shared/integration-testing/chat-async-recovery.md)

@@ -26,6 +26,7 @@
 | Feature | 状态 | 最后更新 | 备注 |
 |---------|------|----------|------|
 | 笔记功能 | ✅ 完成 | 2026-06-07 | NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteStore |
+| 笔记搜索 | ✅ 完成 | 2026-06-24 | NoteBrowseScreen 顶部复用 `SearchContent`（FTS5 全文搜索）；空查询显示主题分组，非空查询显示搜索结果。详见 [`../../_tmp/note-search-unify-plan.md`](../../_tmp/note-search-unify-plan.md) |
 | Markdown 工具栏增强 | ✅ 完成 | 2026-06-17 | 标题循环切换（h2→h3→h1→无）+ 表格插入 |
 | 网格底栏 Action Sheet | ✅ 完成 | 2026-06-17 | ThkGridBottomSheet（圆形图标 + 文字标签） |
 | 节点位置选择器 | ✅ 完成 | 2026-06-07 | node_location_picker |
