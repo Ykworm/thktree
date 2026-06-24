@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/services/background_task_bridge.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
@@ -120,12 +121,16 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
         }
       },
       onError: (e, st) async {
-        if (e is DioException && e.type == DioExceptionType.cancel) {
-          return;
-        }
-        logger?.error(e, st, hint: 'ChatTask.streamError', attrs: {'nodeId': nodeId});
+        final err = LlmError.fromException(
+          e,
+          st,
+          logger: logger,
+          hint: 'ChatTask.streamError',
+          attrs: {'nodeId': nodeId},
+        );
+        if (!err.isRetriable) return; // cancelled: 不显示错误态
         try {
-          await sessionStore.failAssistant(handle: handle, code: 'network');
+          await sessionStore.failAssistant(handle: handle, code: err.kind.codeName);
         } catch (_) {}
         unawaited(_bridge.end());
         _removeTask(nodeId);

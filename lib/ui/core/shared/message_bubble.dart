@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/ui/core/shared/markdown_builders.dart';
 import 'package:thk_tree/data/services/share_service.dart';
@@ -159,14 +160,29 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                GptMarkdown(
-                  body,
-                  style: baseStyle,
-                  tableBuilder: _buildTable,
-                  codeBuilder: _buildCodeBlock,
-                  latexBuilder: buildLatex,
-                  useDollarSignsForLatex: true,
-                ),
+                if (widget.message.status == SessionMessageStatus.error)
+                  LlmErrorCard(
+                    key: const ValueKey('llm_error_card_compact'),
+                    compact: true,
+                    error: LlmError(
+                      kind: llmErrorKindFromCodeName(
+                        widget.message.errorCode ?? '',
+                      ),
+                    ),
+                    onRetry: widget.onRetry ?? () {},
+                    onCancel: () {
+                      // 取消语义：什么都不做（用户可能在等上下文）
+                    },
+                  )
+                else
+                  GptMarkdown(
+                    body,
+                    style: baseStyle,
+                    tableBuilder: _buildTable,
+                    codeBuilder: _buildCodeBlock,
+                    latexBuilder: buildLatex,
+                    useDollarSignsForLatex: true,
+                  ),
                 if (widget.message.role == SessionRole.assistant &&
                     widget.message.status != SessionMessageStatus.streaming) ...[
                   const SizedBox(height: 6),
