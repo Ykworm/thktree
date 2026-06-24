@@ -8,7 +8,7 @@
 ## 1. 目标与边界
 
 ### 覆盖
-- 6 个 `integration_test/*.dart` 测试文件的用途、现状、阻塞点
+- 现有 `integration_test/*.dart` 测试文件的用途、现状、阻塞点
 - `_support/` 辅助代码（fixtures + helpers）的使用约定
 - LLM 配置注入原理（Riverpod Override 机制）
 - 跑测试 / 调试 / 新增测试的完整流程
@@ -24,11 +24,12 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ integration_test/*.dart                    （5 个测试文件）       │
+│ integration_test/*.dart                    （多个测试文件）       │
 │   ├── chat_streaming_test.dart                                    │
 │   ├── backup_restore_test.dart                                    │
 │   ├── branch_creation_test.dart                                   │
 │   ├── node_reorder_test.dart                                      │
+│   ├── offline_test.dart            ⭐ Mock LLM（不需要真实 API）   │
 │   ├── theme_chat_e2e_test.dart      ⭐ 完整可跑通                 │
 │   └── note_crud_test.dart          ⭐ 完整可跑通（纯 CRUD）       │
 │                                                                   │
@@ -45,6 +46,7 @@
 │        │   ├── locale: Locale('zh')                              │
 │        │   ├── llmSettings: AppSettings?                         │
 │        │   └── llmConfigStore: LlmConfigStore?                   │
+│        │   └── extraOverrides: List<Override>                    │
 │        └── ProviderScope(overrides: [...])                       │
 │                                                                   │
 │ 资产 ↓                                                           │
@@ -105,6 +107,8 @@ integration_test/
 ├── backup_restore_test.dart
 ├── branch_creation_test.dart
 ├── node_reorder_test.dart
+├── offline_test.dart                            # Mock LLM（断网/重试）
+├── llm_error_retry_test.dart            # LLM 错误态 + 重试（mock LLM）
 └── theme_chat_e2e_test.dart
 ```
 
@@ -189,12 +193,10 @@ void main() {
 
 ## 6. 真实 vs Mock LLM
 
-### 当前策略：真实 API
+### 当前策略：混合（真实 API + Mock）
 
-- 不 mock LLM，直接打真 API
-- API Key 来自 `--dart-define-from-file` 编译期注入（同步 `LlmTestConfig.loadFromDefine()` 读 `String.fromEnvironment`），配置文件放工程外（推荐 `~/.thktree/test_llm_config.json`），**不**打进 .app / .apk / .ipa bundle
-- 优点：测的就是真链路，能抓出 SSE 解析、超时、重连等真实问题
-- 缺点：CI 需要 key、依赖网络、可能 flake
+- **真实 API 测试**：如 `theme_chat_e2e_test.dart`、`branch_creation_test.dart`，验证真链路（SSE、超时、真实厂商兼容性）
+- **Mock 测试**：如 `offline_test.dart`，验证错误态/重试等 UI 与状态机，不依赖外部网络与真实 key
 
 ### 不验证回复内容
 
@@ -206,14 +208,24 @@ void main() {
 
 **不验证** LLM 回复的具体文字内容（避免 flake）。
 
-### 未来路线图：Mock LLM
+### Mock LLM（已落地）
 
-如果 CI 无法访问外部 API，可以：
-1. 写一个 `FakeLlmClient extends LlmClient` 返回预定义 SSE 流
-2. 扩展 `lib/main_test.dart` 的 `createTestApp()` 增加 `List<Override> extraOverrides` 参数（当前未实现，签名只有 `locale` / `llmSettings` / `llmConfigStore` 三个），在 `ProviderScope.overrides` 里追加 `llmClientProvider.overrideWithValue(...)`
-3. fixtures JSON 里加 `mock: true` 字段切换
+`lib/main_test.dart` 的 `createTestApp()` 已支持 `extraOverrides`，因此可以在单个 test 文件里按需注入 Mock：
 
-**当前未实现**，因为真实 API 链路测试价值更高。
+```dart
+final app = await createTestApp(
+  locale: const Locale('zh'),
+  extraOverrides: [
+    llmClientProvider.overrideWith((ref) async => const FakeLlmClient()),
+    settingsStoreProvider.overrideWithValue(InMemorySettingsStore(fakeSettings)),
+  ],
+);
+```
+
+推荐用 Mock LLM 覆盖：
+- 断网/超时等可重试错误（`DioExceptionType.connectionError` 等）
+- 重试按钮/错误文案/按钮状态恢复
+- 不希望 CI 依赖外网的场景
 
 ---
 
@@ -227,6 +239,9 @@ flutter devices
 ### 7.2 跑单个测试文件
 
 ```bash
+# 不依赖真实 API 的 mock 测试（例如 offline_test）不需要 --dart-define-from-file
+flutter test integration_test/offline_test.dart
+
 # 0. 先生成 build/dart_define.json（必须，把 ~/.thktree/test_llm_config.json 压缩为单行紧凑 JSON）
 dart run tools/gen_dart_define.dart \
   ~/.thktree/test_llm_config.json \
@@ -347,6 +362,7 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | 文件 | 行数 | testWidgets | 场景 | 实现状态 | 阻塞点 | Spec |
 |------|------|-------------|------|----------|--------|------|
 | `chat_streaming_test.dart` | 172 | 3 | 流式 / 空消息 / 快速连续 | ❌ TODO 占位 | 缺 `navigateToChat`、缺 ValueKey 验证 | [chat-streaming.md](./chat-streaming.md) |
+| `llm_error_retry_test.dart` | 411 | 5 | 错误态展示 / 重试触发 / 上报链路 / cancelled 不渲染 / i18n 文案 | ✅ **完整可跑通** | 无（mock LlmClient + mock SettingsStore） | — |
 | `backup_restore_test.dart` | 68 | 4 | 备份恢复往返 / 文件格式 / 冲突 / 覆盖 | ❌ 纯 TODO 空壳 | settings 页缺 ValueKey、缺文件 schema | [backup-restore.md](./backup-restore.md) |
 | `branch_creation_test.dart` | 217 | 7 | 4 种模式组合 + 2 取消 + 1 fallback | ⚠️ 部分（前置完成，核心 TODO） | 缺选中文本交互、缺模式 sheet ValueKey | [branch-creation.md](./branch-creation.md) |
 | `node_reorder_test.dart` | 153 | 3 | 同层重排 / 跨层禁止 / 刷新保持 | ⚠️ 部分（手写 Key，未跑通） | 拖拽把手 ValueKey 待核实 | [node-reorder.md](./node-reorder.md) |

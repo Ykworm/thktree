@@ -59,6 +59,7 @@
 |---------|------|------|----------|--------|--------|----------|------|
 | LLM Provider 管理 | llm | ✅ 完成 | 2026-06-20 | [README](modules/llm/README.md) | [README](modules/llm/visual/README.md) | `lib/ui/features/llm/llm_providers_screen.dart` 等 | 多 Provider + API Key 配置 + 模型数量列表 + pane 式子页 |
 | LLM 模型列表获取 | llm | 🔨 进行中 | — | [README](modules/llm/README.md) | — | `lib/data/services/model_fetcher.dart` | ModelFetcher 存在，模型列表刷新 UI 未完成 |
+| 统一 LLM 错误处理与重试 | llm / chat / _shared | ✅ 完成 | 2026-06-24 | [README](modules/llm/README.md) | — | `lib/data/models/llm_error.dart` + `lib/ui/core/widgets/llm_error_card.dart` | LlmError 模型（7 种分类 + fromException 工厂 + 异步上报）+ LlmErrorCard 组件（compact / 占位卡片）+ 4 场景接入（流式聊天 / summarize / 标题生成 / 模型列表）；5 个集成测试 case 全绿 |
 
 ## 6. 设置模块（settings）
 
@@ -81,6 +82,8 @@
 ## 最近变更
 
 > 倒序排列，最新在上。
+
+- **2026-06-24** — 统一 LLM 错误处理与重试：新增 `LlmError` 模型（7 种错误分类 + `fromException` 工厂 + 异步上报 AppLogger）+ `LlmErrorCard` 组件（compact 横条 + 占位卡片）+ 4 场景统一接入（流式聊天 `ChatTaskService` / 标题生成 `TitleSuggestionScreen` / summarize 模式 / 模型列表 `LlmProviderDetailScreen`）；新增 `integration_test/llm_error_retry_test.dart`（5 个 case 全绿）。详见 [CHANGELOG](CHANGELOG/2026-06-24-llm-error-retry.md)
 
 - **2026-06-24** — 笔记 tab 顶部搜索统一为全文搜索：`SearchContent` 组件抽离（`lib/ui/features/search/search_content.dart`），`SearchScreen` + `NoteBrowseScreen` 共用同一搜索能力（FTS5 + BM25 + 防抖 300ms + 跨模块跳转）；空查询显示主题分组，非空查询显示全文搜索结果。明确放弃主题名搜索能力（接受 FTS5 schema `themeTitle UNINDEXED` 事实）。新增 `integration_test/note_search_test.dart`（4 个 case），详见 [CHANGELOG](modules/notes/CHANGELOG.md#10-笔记-tab-顶部搜索统一为全文搜索2026-06-24)
 

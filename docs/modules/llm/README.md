@@ -26,6 +26,8 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 |------|------|------|
 | `lib/ui/features/llm/llm_providers_screen.dart` | Provider 列表页 | 128 |
 | `lib/ui/features/llm/llm_provider_detail_screen.dart` | Provider 详情/编辑页 | 493 |
+| `lib/data/models/llm_error.dart` | 错误模型层：LlmErrorKind（7 种）+ LlmError + fromException 工厂 | 150 |
+| `lib/ui/core/widgets/llm_error_card.dart` | 统一错误展示组件（compact 横条 + 占位卡片） | 175 |
 
 ## 子文档
 
@@ -39,6 +41,7 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - **Provider 与模型解耦**：1 个 Provider 可有 N 个模型；chat 模块按"Provider + model"粒度选择
 - **流式统一**：所有 Provider 走同一套 SSE 解析器，差异在请求协议层
 - **失败可观测**：连接测试失败时把 HTTP status + body 摘要展示给用户，便于排错
+- **错误统一**：所有 LLM 调用场景通过 `LlmError.fromException` 分类 + `LlmErrorCard` 展示，cancelled 不渲染不上报
 - **无可信 logo 时不硬上图标**：Provider 列表宁可保持纯文字 + 模型数量，也不要使用会误导用户的占位 icon
 
 ## 维护要点
@@ -57,3 +60,4 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - 2026-05：API key 改用 Keychain 加密
 - 2026-06：模型预置 + 默认参数功能
 - 2026-06-20：Provider 列表页改为填满 body 的 pane 式设置子页，subtitle 改为模型数量
+- 2026-06-24：统一 LLM 错误处理与重试（LlmError + LlmErrorCard + 4 场景接入 + 5 个集成测试）
