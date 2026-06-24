@@ -7,9 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/services/title_suggestion_service.dart';
+import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
@@ -68,16 +70,21 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
 
   bool _generating = false;
   List<String> _candidates = const <String>[];
-  String? _error;
+  LlmError? _error;
   ({String providerId, String modelId})? _currentModel;
   CancelToken? _cancelToken;
   bool _userEditedTitle = false;
+  AppLogger? _logger;
 
   @override
   void initState() {
     super.initState();
     _titleCtrl = TextEditingController();
     _titleCtrl.addListener(_onTitleChanged);
+    // 异步加载 logger：未就绪时 LlmError 工厂会跳过上报，仅分类
+    ref.read(appLoggerProvider.future).then((v) {
+      if (mounted) _logger = v;
+    }).catchError((_) {});
     // L1-B：title 生成需要 LLM，前置拦截
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkLlmSetup());
   }
@@ -206,11 +213,16 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
         direction: null,
         contextWindow: contextWindow,
       );
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
       setState(() {
         _generating = false;
-        _error = e.toString();
+        _error = LlmError.fromException(
+          e,
+          st,
+          logger: _logger,
+          hint: 'TitleSuggestion.generateWithModel',
+        );
       });
     }
   }
@@ -237,20 +249,23 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
       if (resolved == null) {
         setState(() {
           _generating = false;
-          _error = 'No available model';
+          _error = const LlmError(
+            kind: LlmErrorKind.unknown,
+            rawMessage: 'No available model',
+          );
         });
         return;
       }
       final (provider, modelId, apiKey) = resolved;
       _currentModel = (providerId: provider.id, modelId: modelId);
-      
+
       // Get context window for the selected model
       final model = provider.models.firstWhere(
         (m) => m.id == modelId,
         orElse: () => provider.models.isNotEmpty ? provider.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
       );
       final contextWindow = model.contextWindow;
-      
+
       await _runGenerate(
         provider: provider,
         modelId: modelId,
@@ -258,11 +273,16 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
         direction: null,
         contextWindow: contextWindow,
       );
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
       setState(() {
         _generating = false;
-        _error = e.toString();
+        _error = LlmError.fromException(
+          e,
+          st,
+          logger: _logger,
+          hint: 'TitleSuggestion.resolveAndGenerate',
+        );
       });
     }
   }
@@ -306,11 +326,16 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
           extentOffset: _titleCtrl.text.length,
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       if (cancelToken.isCancelled || !mounted) return;
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = LlmError.fromException(
+            e,
+            st,
+            logger: _logger,
+            hint: 'TitleSuggestion.runGenerate',
+          );
         });
       }
     } finally {
@@ -368,60 +393,6 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
       apiKey: apiKey,
       direction: null,
       contextWindow: contextWindow,
-    );
-  }
-
-  void _onSwitchModel() {
-    if (_generating) return;
-    final cm = _currentModel;
-    final currentProviderId = cm?.providerId ?? widget.request.currentProviderId;
-    final currentModelId = cm?.modelId ?? widget.request.currentModelId;
-
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.5,
-        color: CupertinoTheme.of(ctx).scaffoldBackgroundColor,
-        child: SafeArea(
-          top: false,
-          child: ModelSelectorPanel(
-            currentProviderId: currentProviderId,
-            currentModelId: currentModelId,
-            onModelSelected: (providerId, modelId) async {
-              Navigator.of(ctx).pop();
-              final providers = await ref.read(llmProvidersProvider.future);
-              LlmProviderConfig? provider;
-              for (final p in providers) {
-                if (p.id == providerId) {
-                  provider = p;
-                  break;
-                }
-              }
-              if (provider == null) return;
-              final configStore = ref.read(llmConfigStoreProvider);
-              final apiKey = await configStore.readApiKey(provider.id);
-              if (apiKey.isEmpty) return;
-              _currentModel = (providerId: providerId, modelId: modelId);
-              
-              // Get context window for the selected model
-              final model = provider.models.firstWhere(
-                (m) => m.id == modelId,
-                orElse: () => provider!.models.isNotEmpty ? provider!.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
-              );
-              final contextWindow = model.contextWindow;
-              
-              await _runGenerate(
-                provider: provider,
-                modelId: modelId,
-                apiKey: apiKey,
-                direction: null,
-                contextWindow: contextWindow,
-              );
-            },
-            onClose: () => Navigator.of(ctx).pop(),
-          ),
-        ),
-      ),
     );
   }
 
@@ -589,42 +560,24 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
   }
 
   Widget _buildErrorBar(AppLocalizations l10n) {
-    return Container(
-      width: double.infinity,
-      color: CupertinoColors.systemRed.withValues(alpha: 0.1),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          const Icon(
-            CupertinoIcons.exclamationmark_triangle,
-            size: 16,
-            color: CupertinoColors.systemRed,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '${l10n.titleAutoGenFailed}: $_error',
-              style: TextStyle(
-                color: CupertinoColors.systemRed,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            minimumSize: Size.zero,
-            onPressed: _onSwitchModel,
-            child: Text(
-              l10n.titleModelSwitch,
-              style: TextStyle(
-                color: AppColors.accent,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final err = _error;
+    if (err == null) return const SizedBox.shrink();
+    return LlmErrorCard(
+      key: const ValueKey('llm_error_card_compact'),
+      compact: true,
+      error: err,
+      onRetry: () {
+        setState(() => _error = null);
+        if (_currentModel != null) {
+          _onRegenerate();
+        } else {
+          _resolveAndGenerate();
+        }
+      },
+      onCancel: () {
+        // 取消 = 关闭标题选择屏，回到上一级（用户什么都不想做）
+        Navigator.of(context).pop();
+      },
     );
   }
 }
