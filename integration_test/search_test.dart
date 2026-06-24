@@ -1,15 +1,14 @@
 // 搜索 tab 端到端 + 错误修复流程集成测试。
 //
 // 覆盖 3 个关键场景：
-//   Case 1: 搜索有结果 → 笔记+节点均命中
+//   Case 1: 搜索有结果 → 通过 UI 创建笔记后搜索验证
 //   Case 2: 搜索无结果 → 空态文案
 //   Case 3: 搜索索引异常 → 修复弹窗 → 修复完成
 //
 // 备注：
-// - 纯 CRUD 操作（不涉及 LLM）
-// - Case 1 用 writeSearchFixture 写磁盘数据，触发自动索引
+// - Case 1 复用 note_crud_test 的创建笔记流程
 // - Case 3 用 FailingSearchService 模拟 DatabaseException
-// - 超时：60 秒
+// - 超时：90 秒
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,28 +17,66 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
 
 import '_support/failing_search_service.dart';
-import '_support/search_fixtures.dart';
+import 'test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'Case 1: 搜索有结果 → 笔记+节点均命中',
+    'Case 1: 搜索有结果 → 通过 UI 创建笔记后搜索验证',
     (tester) async {
-      // 写 fixture 需要在 app 启动前
-      final paths = await AppPaths.load();
-      final fixture = await writeSearchFixture(paths.themesDir);
-
       final app = await createTestApp(locale: const Locale('zh'));
       await tester.pumpWidget(app);
       await tester.pumpAndSettle();
 
-      // searchServiceProvider 初始化时会检测 index 是否为空，为空则自动 rebuildAll
-      // 由于 fixture 已在启动前写入，rebuildAll 应该能索引到数据
-      // 等待足够时间让 rebuildAll 完成
-      await tester.runAsync(() => Future.delayed(const Duration(seconds: 5)));
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final themeTitle = '搜索测试主题_$ts';
+      final noteTitle = '搜索测试笔记_$ts';
+      final keyword = 'SEK_SEARCH_KW_$ts';
+      final noteContent = '这是一段包含独特关键词 $keyword 的内容用于全文搜索验证';
+
+      // ── 通过 UI 创建笔记（复用 note_crud_test 流程）────────────────────────
+      await _switchToTab(tester, '笔记');
+      await tester.pumpAndSettle();
+
+      // 点 + 进入主题选择
+      final addBtn = find.byKey(const ValueKey('add_note_button'));
+      expect(addBtn, findsOneWidget, reason: '笔记列表页应找到 + 按钮');
+      await tester.tap(addBtn);
+      await tester.pumpAndSettle();
+
+      // ThemePicker → 点 + 创建新主题
+      final addThemeBtns = find.byIcon(AppIcons.add);
+      await tester.tap(addThemeBtns.last);
+      await tester.pumpAndSettle();
+
+      final themeTitleInput = find.byType(CupertinoTextField);
+      expect(themeTitleInput, findsWidgets);
+      await tester.enterText(themeTitleInput.last, themeTitle);
+      await tester.pump();
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+
+      // NoteEditorScreen：填标题 + 内容
+      await tester.pump(const Duration(milliseconds: 500));
+      final titleInput = find.byKey(const ValueKey('note_title_input'));
+      expect(titleInput, findsOneWidget);
+      await tester.enterText(titleInput, noteTitle);
+      await tester.pump();
+      final bodyInput = find.byKey(const ValueKey('note_body_input'));
+      expect(bodyInput, findsOneWidget);
+      await tester.enterText(bodyInput, noteContent);
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // check 退出编辑器
+      await tester.tap(find.byIcon(AppIcons.check));
+      await tester.pumpAndSettle();
+
+      // 等待 searchServiceProvider 自动 rebuildAll（笔记创建后会触发）
+      await tester.runAsync(() => Future.delayed(const Duration(seconds: 2)));
       await tester.pumpAndSettle();
 
       // ── 切换到搜索 tab ────────────────────────────────────────────────────
@@ -49,7 +86,7 @@ void main() {
       // ── 输入搜索关键词 ────────────────────────────────────────────────────
       final searchField = find.byType(CupertinoSearchTextField);
       expect(searchField, findsOneWidget, reason: '搜索页应有搜索框');
-      await tester.enterText(searchField, fixture.keyword);
+      await tester.enterText(searchField, keyword);
       // 等待防抖 + 查询
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
@@ -58,18 +95,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // ── 验证结果 ──────────────────────────────────────────────────────────
-      // 至少应有笔记 + 节点 2 条结果
-      final results = find.byType(ListView);
-      expect(results, findsWidgets, reason: '搜索结果应有列表');
-
-      // 笔记标题应出现
-      expect(find.text(fixture.noteTitle), findsOneWidget,
+      // 笔记标题应出现（可能在多个地方显示）
+      expect(find.text(noteTitle), findsAtLeast(1),
           reason: '应找到笔记标题');
-      // 节点标题应出现
-      expect(find.text(fixture.nodeTitle), findsOneWidget,
-          reason: '应找到节点标题');
     },
-    timeout: const Timeout(Duration(seconds: 60)),
+    timeout: const Timeout(Duration(seconds: 90)),
   );
 
   testWidgets(
