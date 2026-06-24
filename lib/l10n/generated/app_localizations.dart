@@ -1447,6 +1447,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not set'**
   String get notSet;
+
+  /// LLM error card body when DioException type is connectionError or connectionTimeout
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Please check your connection and retry.'**
+  String get llmErrorNetwork;
+
+  /// LLM error card body when DioException type is sendTimeout or receiveTimeout
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out. Please try again.'**
+  String get llmErrorTimeout;
+
+  /// LLM error card body when HTTP 429
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Please try again later.'**
+  String get llmErrorRateLimited;
+
+  /// LLM error card body when HTTP 401/403
+  ///
+  /// In en, this message translates to:
+  /// **'API key invalid or expired. Check settings.'**
+  String get llmErrorAuthFailed;
+
+  /// LLM error card body when HTTP 5xx
+  ///
+  /// In en, this message translates to:
+  /// **'Service temporarily unavailable. Please try again.'**
+  String get llmErrorServerError;
+
+  /// LLM error card body for unknown / non-Dio errors
+  ///
+  /// In en, this message translates to:
+  /// **'Generation failed. Please try again.'**
+  String get llmErrorUnknown;
+
+  /// Primary action button on LlmErrorCard
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get llmErrorRetry;
+
+  /// Secondary action button on LlmErrorCard
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get llmErrorCancel;
 }
 
 class _AppLocalizationsDelegate

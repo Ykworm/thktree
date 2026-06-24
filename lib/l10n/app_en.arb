@@ -1013,5 +1013,37 @@
   "notSet": "Not set",
   "@notSet": {
     "description": "Generic - not set state"
+  },
+  "llmErrorNetwork": "Network error. Please check your connection and retry.",
+  "@llmErrorNetwork": {
+    "description": "LLM error card body when DioException type is connectionError or connectionTimeout"
+  },
+  "llmErrorTimeout": "Request timed out. Please try again.",
+  "@llmErrorTimeout": {
+    "description": "LLM error card body when DioException type is sendTimeout or receiveTimeout"
+  },
+  "llmErrorRateLimited": "Too many requests. Please try again later.",
+  "@llmErrorRateLimited": {
+    "description": "LLM error card body when HTTP 429"
+  },
+  "llmErrorAuthFailed": "API key invalid or expired. Check settings.",
+  "@llmErrorAuthFailed": {
+    "description": "LLM error card body when HTTP 401/403"
+  },
+  "llmErrorServerError": "Service temporarily unavailable. Please try again.",
+  "@llmErrorServerError": {
+    "description": "LLM error card body when HTTP 5xx"
+  },
+  "llmErrorUnknown": "Generation failed. Please try again.",
+  "@llmErrorUnknown": {
+    "description": "LLM error card body for unknown / non-Dio errors"
+  },
+  "llmErrorRetry": "Retry",
+  "@llmErrorRetry": {
+    "description": "Primary action button on LlmErrorCard"
+  },
+  "llmErrorCancel": "Cancel",
+  "@llmErrorCancel": {
+    "description": "Secondary action button on LlmErrorCard"
   }
 }

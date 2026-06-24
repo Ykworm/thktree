@@ -767,4 +767,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notSet => 'Not set';
+
+  @override
+  String get llmErrorNetwork =>
+      'Network error. Please check your connection and retry.';
+
+  @override
+  String get llmErrorTimeout => 'Request timed out. Please try again.';
+
+  @override
+  String get llmErrorRateLimited =>
+      'Too many requests. Please try again later.';
+
+  @override
+  String get llmErrorAuthFailed =>
+      'API key invalid or expired. Check settings.';
+
+  @override
+  String get llmErrorServerError =>
+      'Service temporarily unavailable. Please try again.';
+
+  @override
+  String get llmErrorUnknown => 'Generation failed. Please try again.';
+
+  @override
+  String get llmErrorRetry => 'Retry';
+
+  @override
+  String get llmErrorCancel => 'Cancel';
 }

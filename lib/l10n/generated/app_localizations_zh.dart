@@ -742,4 +742,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notSet => '未设置';
+
+  @override
+  String get llmErrorNetwork => '网络连接中断，请检查后重试';
+
+  @override
+  String get llmErrorTimeout => '请求超时，请重试';
+
+  @override
+  String get llmErrorRateLimited => '请求过于频繁，请稍后再试';
+
+  @override
+  String get llmErrorAuthFailed => 'API Key 无效或已过期，请检查设置';
+
+  @override
+  String get llmErrorServerError => '服务暂不可用，请稍后再试';
+
+  @override
+  String get llmErrorUnknown => '生成失败，请重试';
+
+  @override
+  String get llmErrorRetry => '重试';
+
+  @override
+  String get llmErrorCancel => '取消';
 }
