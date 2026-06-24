@@ -9,9 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
-import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/title_suggestion_service.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
@@ -78,6 +78,28 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     super.initState();
     _titleCtrl = TextEditingController();
     _titleCtrl.addListener(_onTitleChanged);
+    // L1-B：title 生成需要 LLM，前置拦截
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkLlmSetup());
+  }
+
+  /// L1-B：检查 LLM 配置状态，未配置弹 alert 引导用户去设置。
+  ///
+  /// 用 [WidgetsBinding.instance.addPostFrameCallback] 在首帧后触发，
+  /// 避免在 build 期间同步弹 dialog 导致框架警告。
+  Future<void> _checkLlmSetup() async {
+    if (!mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final status = await checkLlmSetupForTitle(
+      container: container,
+      currentProviderId: widget.request.currentProviderId,
+      currentModelId: widget.request.currentModelId,
+    );
+    if (!mounted || status == LlmSetupStatus.ok) return;
+    await showLlmSetupAlert(
+      context: context,
+      status: status,
+      container: container,
+    );
   }
 
   @override
@@ -115,18 +137,27 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
   }
 
   Future<void> _showModelSelectorAndGenerate() async {
-    final providers = await ref.read(llmProvidersProvider.future);
+    final container = ProviderScope.containerOf(context, listen: false);
+    final configured = await configuredProviders(container);
     if (!mounted) return;
 
-    // Show model selector as action sheet
+    if (configured.isEmpty) {
+      // 兜底中的兜底：L1-B 没拦住（比如用户在进页面后才清空 LLM 配置）
+      await showLlmSetupAlert(
+        context: context,
+        status: LlmSetupStatus.noProviderConfigured,
+        container: container,
+      );
+      return;
+    }
+
     final selected = await showCupertinoModalPopup<(String, String)?>(
       context: context,
-      builder: (ctx) => _ModelSelectorSheet(providers: providers),
+      builder: (ctx) => _ModelSelectorSheet(providers: configured),
     );
 
     if (selected == null || !mounted) return;
 
-    // Save the selected model to settings for future use
     await ref.read(settingsControllerProvider.notifier).saveTitleModel(
       providerId: selected.$1,
       modelId: selected.$2,
@@ -194,8 +225,14 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
       });
     }
     try {
-      final providers = await ref.read(llmProvidersProvider.future);
-      final resolved = await _resolveModel(providers);
+      final container = ProviderScope.containerOf(context, listen: false);
+      final providers = await container.read(llmProvidersProvider.future);
+      final resolved = await resolveModelForTitle(
+        container,
+        providers,
+        currentProviderId: widget.request.currentProviderId,
+        currentModelId: widget.request.currentModelId,
+      );
       if (!mounted) return;
       if (resolved == null) {
         setState(() {
@@ -228,71 +265,6 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
         _error = e.toString();
       });
     }
-  }
-
-  Future<(LlmProviderConfig, String, String)?> _resolveModel(
-    List<LlmProviderConfig> providers,
-  ) async {
-    String? providerId = widget.request.currentProviderId;
-    String? modelId = widget.request.currentModelId;
-
-    if (providerId == null || modelId == null) {
-      final settings = ref.read(settingsControllerProvider).value;
-      if (settings != null) {
-        providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
-        modelId ??= settings.model;
-      }
-    }
-
-    LlmProviderConfig? provider;
-    if (providerId != null) {
-      for (final p in providers) {
-        if (p.id == providerId) {
-          provider = p;
-          break;
-        }
-      }
-    }
-
-    final configStore = ref.read(llmConfigStoreProvider);
-    if (provider == null) {
-      for (final p in providers) {
-        final apiKey = await configStore.readApiKey(p.id);
-        if (apiKey.isNotEmpty) {
-          provider = p;
-          providerId = p.id;
-          break;
-        }
-      }
-    }
-
-    if (provider == null) return null;
-
-    String? effectiveModelId = modelId;
-    if (effectiveModelId == null ||
-        !provider.models.any((m) => m.id == effectiveModelId)) {
-      effectiveModelId = provider.selectedModelId;
-      if (effectiveModelId == null && provider.models.isNotEmpty) {
-        effectiveModelId = provider.models.first.id;
-      }
-    }
-    if (effectiveModelId == null) return null;
-
-    final apiKey = await configStore.readApiKey(provider.id);
-    if (apiKey.isEmpty) return null;
-
-    return (provider, effectiveModelId, apiKey);
-  }
-
-  String _mapLegacyProviderToPresetId(LlmProvider provider) {
-    return switch (provider) {
-      LlmProvider.claude => 'preset_anthropic',
-      LlmProvider.deepseek => 'preset_deepseek',
-      LlmProvider.openai => 'preset_openai',
-      LlmProvider.gemini => 'preset_gemini',
-      LlmProvider.minimax => 'preset_minimax',
-      LlmProvider.kimi => 'preset_kimi',
-    };
   }
 
   // ---------- LLM 调用 ----------
@@ -862,6 +834,27 @@ Future<String?> showBranchFlow({
   required String? parentNodeId,
   String? sourceLabelOverride,
 }) async {
+  // L1-A：summarize 模式需要 LLM，前置拦截未配置情况
+  if ((selectedText == null || selectedText.isEmpty) &&
+      mode == BranchMode.summarize) {
+    if (!context.mounted) return null;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final status = await checkLlmSetupForSummarize(
+      container: container,
+      currentProviderId: providerId,
+      currentModelId: modelId,
+    );
+    if (!context.mounted) return null;
+    if (status != LlmSetupStatus.ok) {
+      await showLlmSetupAlert(
+        context: context,
+        status: status,
+        container: container,
+      );
+      return null;
+    }
+  }
+
   final l10n = AppLocalizations.of(context)!;
 
   // 1. 决定 source content + label
@@ -881,7 +874,7 @@ Future<String?> showBranchFlow({
     if (!context.mounted) return null;
     final container = ProviderScope.containerOf(context, listen: false);
     final providers = await container.read(llmProvidersProvider.future);
-    final resolved = await _resolveModelForSummary(
+    final resolved = await resolveModelForSummary(
       container,
       providers,
       currentProviderId: providerId,
@@ -889,7 +882,12 @@ Future<String?> showBranchFlow({
     );
     if (!context.mounted) return null;
     if (resolved == null) {
-      ThkAlert.show(context: context, message: l10n.pleaseFetchModels);
+      if (!context.mounted) return null;
+      await showLlmSetupAlert(
+        context: context,
+        status: LlmSetupStatus.noSummaryModelConfigured,
+        container: container,
+      );
       return null;
     }
     final (prov, mId, apiKey) = resolved;
@@ -1201,85 +1199,6 @@ Future<_RetryChoice?> _showRetryCancelSheet(BuildContext context) {
   );
 }
 
-/// 解析 (provider, modelId, apiKey) 用于 LLM 总结。
-///
-/// 优先级：currentProviderId / currentModelId → settings fallback → 第一个有 key 的 provider。
-Future<(LlmProviderConfig, String, String)?> _resolveModelForSummary(
-  ProviderContainer container,
-  List<LlmProviderConfig> providers, {
-  String? currentProviderId,
-  String? currentModelId,
-}) async {
-  // First check if there's a dedicated summary model configured in settings
-  final settings = container.read(settingsControllerProvider).value;
-  String? providerId = settings?.summaryModelProviderId;
-  String? modelId = settings?.summaryModelModelId;
-
-  // If not configured, fall back to the current chat model
-  if (providerId == null || modelId == null) {
-    providerId = currentProviderId;
-    modelId = currentModelId;
-  }
-
-  if (providerId == null || modelId == null) {
-    if (settings != null) {
-      providerId ??= _mapLegacyProviderToPresetIdStatic(settings.llmProvider);
-      modelId ??= settings.model;
-    }
-  }
-
-  LlmProviderConfig? provider;
-  if (providerId != null) {
-    for (final p in providers) {
-      if (p.id == providerId) {
-        provider = p;
-        break;
-      }
-    }
-  }
-
-  final configStore = container.read(llmConfigStoreProvider);
-  if (provider == null) {
-    for (final p in providers) {
-      final apiKey = await configStore.readApiKey(p.id);
-      if (apiKey.isNotEmpty) {
-        provider = p;
-        providerId = p.id;
-        break;
-      }
-    }
-  }
-
-  if (provider == null) return null;
-
-  String? effectiveModelId = modelId;
-  if (effectiveModelId == null ||
-      !provider.models.any((m) => m.id == effectiveModelId)) {
-    effectiveModelId = provider.selectedModelId;
-    if (effectiveModelId == null && provider.models.isNotEmpty) {
-      effectiveModelId = provider.models.first.id;
-    }
-  }
-  if (effectiveModelId == null) return null;
-
-  final apiKey = await configStore.readApiKey(provider.id);
-  if (apiKey.isEmpty) return null;
-
-  return (provider, effectiveModelId, apiKey);
-}
-
-String _mapLegacyProviderToPresetIdStatic(LlmProvider provider) {
-  return switch (provider) {
-    LlmProvider.claude => 'preset_anthropic',
-    LlmProvider.deepseek => 'preset_deepseek',
-    LlmProvider.openai => 'preset_openai',
-    LlmProvider.gemini => 'preset_gemini',
-    LlmProvider.minimax => 'preset_minimax',
-    LlmProvider.kimi => 'preset_kimi',
-  };
-}
-
-
 /// Model selector sheet for choosing which model to use for title generation
 class _ModelSelectorSheet extends StatelessWidget {
   const _ModelSelectorSheet({required this.providers});
@@ -1289,28 +1208,14 @@ class _ModelSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
-    // Filter providers that have models configured
-    final configuredProviders = providers
-        .where((p) => p.models.isNotEmpty || (p.selectedModelId != null && p.selectedModelId!.isNotEmpty))
-        .toList();
 
-    if (configuredProviders.isEmpty) {
-      return CupertinoActionSheet(
-        title: Text(l10n.selectModel),
-        message: Text(l10n.pleaseFetchModels),
-        cancelButton: CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.cancel),
-        ),
-      );
-    }
+    // L2：调用方已过滤，这里不再二次 filter
+    assert(providers.isNotEmpty, '调用方应保证 providers 非空');
 
     return CupertinoActionSheet(
       title: Text(l10n.selectModel),
       actions: [
-        for (final provider in configuredProviders)
+        for (final provider in providers)
           ..._buildProviderActions(context, provider),
       ],
       cancelButton: CupertinoActionSheetAction(
@@ -1323,12 +1228,13 @@ class _ModelSelectorSheet extends StatelessWidget {
 
   List<Widget> _buildProviderActions(BuildContext context, LlmProviderConfig provider) {
     final actions = <Widget>[];
-    
+
     // If provider has models, show each model as an action
     if (provider.models.isNotEmpty) {
       for (final model in provider.models) {
         actions.add(
           CupertinoActionSheetAction(
+            key: ValueKey('model_sheet_${provider.id}_${model.id}'),
             onPressed: () => Navigator.of(context).pop<(String, String)>((provider.id, model.id)),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1350,6 +1256,7 @@ class _ModelSelectorSheet extends StatelessWidget {
       // Provider has no models list but has a selected model
       actions.add(
         CupertinoActionSheetAction(
+          key: ValueKey('model_sheet_${provider.id}_${provider.selectedModelId!}'),
           onPressed: () => Navigator.of(context).pop<(String, String)>((provider.id, provider.selectedModelId!)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1367,7 +1274,7 @@ class _ModelSelectorSheet extends StatelessWidget {
         ),
       );
     }
-    
+
     return actions;
   }
 }
