@@ -1,0 +1,367 @@
+// LLM 配置状态检查 + 跳转引导 helper。
+//
+// 集中处理三类"死路防护"：
+//   - L1-A（showBranchFlow 开头）：summarize 模式解析失败 → 弹 alert 引导设置
+//   - L1-B（TitleSuggestionScreen.initState）：title 生成解析失败 → 弹 alert 引导设置
+//   - L2（_showModelSelectorAndGenerate 入口）：filter 后空 → 弹 alert 引导设置
+//
+// 同时把 `_resolveModel` 实例方法 + `_resolveModelForSummary` 顶层函数抽成
+// 顶层函数 resolveModelForTitle / resolveModelForSummary，让 helper 之间可互调
+// （避免循环引用 + 让 showBranchFlow / TitleSuggestionScreen 都能复用）。
+//
+// 抽离原则：行为与原实例方法 / 顶层函数保持一致（line 233-285 / 1207-1269），
+// 只把 `ref` 替换为 `container`，不修改解析优先级和兜底逻辑。
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:thk_tree/data/models/llm_provider_config.dart';
+import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/widgets/thk_alert.dart';
+import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
+import 'package:thk_tree/ui/features/settings/default_model_picker_screen.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+
+/// LLM 配置状态分类（用于 [showLlmSetupAlert] 决定跳转目标 + 文案）。
+enum LlmSetupStatus {
+  /// LLM 已配置齐全，可正常调 LLM。
+  ok,
+
+  /// 没有 provider 同时满足「有 apiKey + 有 model」——跳 [LlmProvidersScreen]。
+  noProviderConfigured,
+
+  /// 有 provider 配置好但没设置默认标题生成模型——跳 [DefaultModelPickerScreen] (title)。
+  noTitleModelConfigured,
+
+  /// 有 provider 配置好但没设置默认对话总结模型——跳 [DefaultModelPickerScreen] (summary)。
+  noSummaryModelConfigured,
+}
+
+/// 返回所有「apiKey 非空 + 至少有 model 或 selectedModelId」的 provider。
+///
+/// 这是 L1 拦截 / sheet filter 的唯一可信源。
+Future<List<LlmProviderConfig>> configuredProviders(
+  ProviderContainer container,
+) async {
+  final providers = await container.read(llmProvidersProvider.future);
+  final configStore = container.read(llmConfigStoreProvider);
+  final out = <LlmProviderConfig>[];
+  for (final p in providers) {
+    final apiKey = await configStore.readApiKey(p.id);
+    final hasModels =
+        p.models.isNotEmpty || (p.selectedModelId?.isNotEmpty ?? false);
+    if (apiKey.isNotEmpty && hasModels) {
+      out.add(p);
+    }
+  }
+  return out;
+}
+
+/// 解析 (provider, modelId, apiKey) 用于生成标题。
+///
+/// 优先级（与原 `_resolveModel` 实例方法一致，line 233-285）：
+///   1. settings.titleModelProviderId + settings.titleModelModelId
+///   2. currentProviderId + currentModelId（来自 chat screen / request）
+///   3. settings.llmProvider（legacy enum）+ settings.model
+///   4. 遍历 providers 找第一个有 apiKey 的
+///
+/// modelId 兜底：provider.selectedModelId → provider.models.first
+Future<(LlmProviderConfig, String, String)?> resolveModelForTitle(
+  ProviderContainer container,
+  List<LlmProviderConfig> providers, {
+  String? currentProviderId,
+  String? currentModelId,
+}) async {
+  final settings = container.read(settingsControllerProvider).value;
+  final configStore = container.read(llmConfigStoreProvider);
+
+  // 1. titleModelProviderId + titleModelModelId
+  String? providerId = settings?.titleModelProviderId;
+  String? modelId = settings?.titleModelModelId;
+
+  // 2. currentProviderId + currentModelId 兜底
+  if (providerId == null || modelId == null) {
+    providerId = currentProviderId;
+    modelId = currentModelId;
+  }
+
+  // 3. legacy：settings.llmProvider（通过 _mapLegacyProviderToPresetId 转换）
+  //    + settings.model
+  if (providerId == null || modelId == null) {
+    if (settings != null) {
+      providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
+      modelId ??= settings.model;
+    }
+  }
+
+  // 在 providers 里找匹配的
+  LlmProviderConfig? provider;
+  if (providerId != null) {
+    for (final p in providers) {
+      if (p.id == providerId) {
+        provider = p;
+        break;
+      }
+    }
+  }
+
+  // 4. 兜底：遍历 providers 找第一个有 apiKey 的
+  if (provider == null) {
+    for (final p in providers) {
+      final apiKey = await configStore.readApiKey(p.id);
+      if (apiKey.isNotEmpty) {
+        provider = p;
+        providerId = p.id;
+        break;
+      }
+    }
+  }
+
+  if (provider == null) return null;
+
+  // modelId 兜底：selectedModelId → models.first
+  String? effectiveModelId = modelId;
+  if (effectiveModelId == null ||
+      !provider.models.any((m) => m.id == effectiveModelId)) {
+    effectiveModelId = provider.selectedModelId;
+    if (effectiveModelId == null && provider.models.isNotEmpty) {
+      effectiveModelId = provider.models.first.id;
+    }
+  }
+  if (effectiveModelId == null) return null;
+
+  // 最后再查一次 apiKey（确保最终选中的 provider 有 key）
+  final apiKey = await configStore.readApiKey(provider.id);
+  if (apiKey.isEmpty) return null;
+
+  return (provider, effectiveModelId, apiKey);
+}
+
+/// 解析 (provider, modelId, apiKey) 用于 LLM 总结。
+///
+/// 优先级（与原 `_resolveModelForSummary` 顶层函数一致，line 1207-1269）：
+///   1. settings.summaryModelProviderId + settings.summaryModelModelId
+///   2. currentProviderId + currentModelId
+///   3. settings.llmProvider（legacy enum）+ settings.model
+///   4. 遍历 providers 找第一个有 apiKey 的
+Future<(LlmProviderConfig, String, String)?> resolveModelForSummary(
+  ProviderContainer container,
+  List<LlmProviderConfig> providers, {
+  String? currentProviderId,
+  String? currentModelId,
+}) async {
+  // 1. summaryModelProviderId + summaryModelModelId
+  final settings = container.read(settingsControllerProvider).value;
+  String? providerId = settings?.summaryModelProviderId;
+  String? modelId = settings?.summaryModelModelId;
+
+  // 2. currentProviderId + currentModelId 兜底
+  if (providerId == null || modelId == null) {
+    providerId = currentProviderId;
+    modelId = currentModelId;
+  }
+
+  // 3. legacy
+  if (providerId == null || modelId == null) {
+    if (settings != null) {
+      providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
+      modelId ??= settings.model;
+    }
+  }
+
+  LlmProviderConfig? provider;
+  if (providerId != null) {
+    for (final p in providers) {
+      if (p.id == providerId) {
+        provider = p;
+        break;
+      }
+    }
+  }
+
+  // 4. 兜底
+  final configStore = container.read(llmConfigStoreProvider);
+  if (provider == null) {
+    for (final p in providers) {
+      final apiKey = await configStore.readApiKey(p.id);
+      if (apiKey.isNotEmpty) {
+        provider = p;
+        providerId = p.id;
+        break;
+      }
+    }
+  }
+
+  if (provider == null) return null;
+
+  String? effectiveModelId = modelId;
+  if (effectiveModelId == null ||
+      !provider.models.any((m) => m.id == effectiveModelId)) {
+    effectiveModelId = provider.selectedModelId;
+    if (effectiveModelId == null && provider.models.isNotEmpty) {
+      effectiveModelId = provider.models.first.id;
+    }
+  }
+  if (effectiveModelId == null) return null;
+
+  final apiKey = await configStore.readApiKey(provider.id);
+  if (apiKey.isEmpty) return null;
+
+  return (provider, effectiveModelId, apiKey);
+}
+
+/// 旧版 [LlmProvider] enum → preset provider id 的映射（保留兼容路径）。
+///
+/// 行为与原 `_mapLegacyProviderToPresetId` 实例方法 +
+/// `_mapLegacyProviderToPresetIdStatic` 顶层函数完全一致。
+String _mapLegacyProviderToPresetId(LlmProvider provider) {
+  return switch (provider) {
+    LlmProvider.claude => 'preset_anthropic',
+    LlmProvider.deepseek => 'preset_deepseek',
+    LlmProvider.openai => 'preset_openai',
+    LlmProvider.gemini => 'preset_gemini',
+    LlmProvider.minimax => 'preset_minimax',
+    LlmProvider.kimi => 'preset_kimi',
+  };
+}
+
+/// 检查「用于对话总结」的 LLM 配置状态。
+///
+/// - [LlmSetupStatus.noProviderConfigured]：没有任何 provider 满足「有 apiKey + 有 model」
+/// - [LlmSetupStatus.noSummaryModelConfigured]：有 provider 配置好但解析不出 summary 模型
+/// - [LlmSetupStatus.ok]：解析成功
+Future<LlmSetupStatus> checkLlmSetupForSummarize({
+  required ProviderContainer container,
+  String? currentProviderId,
+  String? currentModelId,
+}) async {
+  final providers = await container.read(llmProvidersProvider.future);
+  if ((await configuredProviders(container)).isEmpty) {
+    return LlmSetupStatus.noProviderConfigured;
+  }
+  final resolved = await resolveModelForSummary(
+    container,
+    providers,
+    currentProviderId: currentProviderId,
+    currentModelId: currentModelId,
+  );
+  if (resolved == null) return LlmSetupStatus.noSummaryModelConfigured;
+  return LlmSetupStatus.ok;
+}
+
+/// 检查「用于生成标题」的 LLM 配置状态。
+///
+/// - [LlmSetupStatus.noProviderConfigured]：没有任何 provider 满足「有 apiKey + 有 model」
+/// - [LlmSetupStatus.noTitleModelConfigured]：有 provider 配置好但解析不出 title 模型
+/// - [LlmSetupStatus.ok]：解析成功
+Future<LlmSetupStatus> checkLlmSetupForTitle({
+  required ProviderContainer container,
+  String? currentProviderId,
+  String? currentModelId,
+}) async {
+  final providers = await container.read(llmProvidersProvider.future);
+  if ((await configuredProviders(container)).isEmpty) {
+    return LlmSetupStatus.noProviderConfigured;
+  }
+  final resolved = await resolveModelForTitle(
+    container,
+    providers,
+    currentProviderId: currentProviderId,
+    currentModelId: currentModelId,
+  );
+  if (resolved == null) return LlmSetupStatus.noTitleModelConfigured;
+  return LlmSetupStatus.ok;
+}
+
+/// 弹出 LLM 未配置 alert，根据 [status] 跳不同设置页。
+///
+/// status == ok 时不弹（无副作用）。
+///
+/// defaultAction 按钮文案即跳转目标 picker / 列表页的标题（用户决策：
+/// 复用 `llmProvidersTitle` / `titleModelTitle` / `summaryModelTitle`，
+/// alert 文案直接告诉用户要去哪个页面）。
+Future<void> showLlmSetupAlert({
+  required BuildContext context,
+  required LlmSetupStatus status,
+  required ProviderContainer container,
+}) async {
+  if (status == LlmSetupStatus.ok) return;
+  if (!context.mounted) return;
+  final l10n = AppLocalizations.of(context)!;
+
+  String message;
+  String defaultLabel;
+  VoidCallback onDefault;
+
+  switch (status) {
+    case LlmSetupStatus.noProviderConfigured:
+      message = l10n.pleaseFetchModels;
+      defaultLabel = l10n.llmProvidersTitle;
+      onDefault = () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(
+            builder: (_) => const LlmProvidersScreen(),
+          ),
+        );
+      };
+      break;
+    case LlmSetupStatus.noTitleModelConfigured:
+      message = l10n.pleaseConfigureTitleModel;
+      defaultLabel = l10n.titleModelTitle;
+      onDefault = () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(
+            builder: (_) => DefaultModelPickerScreen(
+              title: l10n.titleModelTitle,
+              currentProviderId: null,
+              currentModelId: null,
+              onSelected: (providerId, modelId) async {
+                await container
+                    .read(settingsControllerProvider.notifier)
+                    .saveTitleModel(
+                      providerId: providerId,
+                      modelId: modelId,
+                    );
+              },
+            ),
+          ),
+        );
+      };
+      break;
+    case LlmSetupStatus.noSummaryModelConfigured:
+      message = l10n.pleaseConfigureSummaryModel;
+      defaultLabel = l10n.summaryModelTitle;
+      onDefault = () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(
+            builder: (_) => DefaultModelPickerScreen(
+              title: l10n.summaryModelTitle,
+              currentProviderId: null,
+              currentModelId: null,
+              onSelected: (providerId, modelId) async {
+                await container
+                    .read(settingsControllerProvider.notifier)
+                    .saveSummaryModel(
+                      providerId: providerId,
+                      modelId: modelId,
+                    );
+              },
+            ),
+          ),
+        );
+      };
+      break;
+    case LlmSetupStatus.ok:
+      return;
+  }
+
+  await ThkAlert.show(
+    context: context,
+    message: message,
+    defaultAction: defaultLabel,
+    onDefault: onDefault,
+    cancelAction: l10n.cancel,
+  );
+}
