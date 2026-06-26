@@ -79,6 +79,8 @@ screens:
       file: "lib/ui/features/chat/widgets/model_selector_panel.dart"
       trigger: "点击模型选择入口"
       behavior: "抽屉弹出，列出所有可用 Provider + 模型"
+      dismiss: "点击 panel 外部关闭（消息列表 / context bar / 输入框 / 标题栏空白）；panel 内模型项点击由 _ModelItem 自身消化不触发外部 dismiss；panel 不提供关闭按钮"
+      dismissImpl: "Column 外层用 Stack 包装 + ChatComposer 外层 Listener(onPointerDown) + Positioned.fill 透明 GestureDetector(translucent)；ChatComposer 用 Listener 而非 GestureDetector 是为了避免与 TextField 的 TapGestureRecognizer 在 arena 中冲突"
 
     interactions:
       - trigger: "send message"

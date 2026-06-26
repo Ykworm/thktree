@@ -83,6 +83,8 @@
 
 > 倒序排列，最新在上。
 
+- **2026-06-26** — 对话页模型选择面板交互简化：移除面板内的关闭按钮（X 按钮及按钮所在行），改为点击 panel 外部（消息列表 / context bar / 输入框 / 标题栏空白）关闭 panel。`Stack + Listener + Positioned.fill` 透明遮罩方案；`ChatComposer` 用 `Listener(onPointerDown)` 避免与 `TextField` 的 `TapGestureRecognizer` 在 arena 中冲突。详见 [CHANGELOG](CHANGELOG/2026-06-26-chat-model-panel-dismiss.md)
+
 - **2026-06-24** — 统一 LLM 错误处理与重试：新增 `LlmError` 模型（7 种错误分类 + `fromException` 工厂 + 异步上报 AppLogger）+ `LlmErrorCard` 组件（compact 横条 + 占位卡片）+ 4 场景统一接入（流式聊天 `ChatTaskService` / 标题生成 `TitleSuggestionScreen` / summarize 模式 / 模型列表 `LlmProviderDetailScreen`）；新增 `integration_test/llm_error_retry_test.dart`（5 个 case 全绿）。详见 [CHANGELOG](CHANGELOG/2026-06-24-llm-error-retry.md)
 
 - **2026-06-24** — 笔记 tab 顶部搜索统一为全文搜索：`SearchContent` 组件抽离（`lib/ui/features/search/search_content.dart`），`SearchScreen` + `NoteBrowseScreen` 共用同一搜索能力（FTS5 + BM25 + 防抖 300ms + 跨模块跳转）；空查询显示主题分组，非空查询显示全文搜索结果。明确放弃主题名搜索能力（接受 FTS5 schema `themeTitle UNINDEXED` 事实）。新增 `integration_test/note_search_test.dart`（4 个 case），详见 [CHANGELOG](modules/notes/CHANGELOG.md#10-笔记-tab-顶部搜索统一为全文搜索2026-06-24)

@@ -155,6 +155,15 @@ CupertinoPageScaffold(
 | 内容 | Provider 分组，每组下列出模型列表 |
 | 选择 | 点击模型 → 更新当前对话的 providerId + modelId |
 | 显示 | 当前选中模型高亮 |
+| 关闭 | **点击 panel 外部关闭**（消息列表 / context bar / 输入框 / 标题栏空白），panel 内模型项点击由自身消化不触发 dismiss；panel 不再提供关闭按钮 |
+
+### 关闭行为约束（2026-06-26 更新）
+
+- 外部 tap：消息列表 / context bar / ChatComposer 区域 / 标题栏空白 → 关闭 panel
+- 内部 tap：模型项 → 选中并关闭 panel（已有逻辑）
+- 模型按钮再次点击：切换 panel 显隐（已有逻辑）
+- 输入框 tap：用 `Listener(onPointerDown)` 拦截，避免与 TextField 的 `TapGestureRecognizer` 在 arena 中冲突导致外层 GestureDetector 失效
+- 透明遮罩：`Positioned.fill(GestureDetector(behavior: translucent))`，子节点 `_ModelItem` 的 `GestureDetector(opaque)` 在 arena 中胜出
 
 ---
 
