@@ -7,19 +7,21 @@ import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 
 /// 模型选择面板，采用上推布局（面板出现时对话内容上推）。
+///
+/// 点击 panel 外部（消息列表 / context bar / 输入框 / 模型按钮 / panel 内
+/// 标题栏空白）会关闭 panel，panel 内部 tap 由 panel 自身消化，不会触发
+/// 外部 dismiss 行为。panel 不再提供关闭按钮，依靠外部点击完成 dismiss。
 class ModelSelectorPanel extends ConsumerWidget {
   const ModelSelectorPanel({
     super.key,
     required this.currentProviderId,
     required this.currentModelId,
     required this.onModelSelected,
-    required this.onClose,
   });
 
   final String? currentProviderId;
   final String? currentModelId;
   final void Function(String providerId, String modelId) onModelSelected;
-  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,26 +69,12 @@ class ModelSelectorPanel extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 标题栏
+                // 标题栏（无关闭按钮，依靠外部 tap 关闭）
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        l10n.selectModel,
-                        style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
-                      ),
-                      const Spacer(),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        onPressed: onClose,
-                        child: const Icon(
-                          CupertinoIcons.xmark,
-                          size: 20,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    l10n.selectModel,
+                    style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
                   ),
                 ),
                 Container(

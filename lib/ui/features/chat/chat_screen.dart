@@ -176,99 +176,122 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          // 消息列表 - 面板出现时它会被压缩变小
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => FocusScope.of(context).unfocus(),
-              child: messagesAsync.when(
-                data: (messages) => SelectionArea(
-                  onSelectionChanged: (value) {
-                    final text = value?.plainText;
-                    if (text != null && text.trim().isNotEmpty) {
-                      _currentSelectedText = text;
-                    } else {
-                      _currentSelectedText = null;
-                    }
-                  },
-                  child: ChatListView(
-                    messages: messages,
-                    messageBuilder: (context, message) {
-                      final isLastAssistant = message.role == SessionRole.assistant &&
-                          message.status != SessionMessageStatus.streaming &&
-                          message == messages.lastWhere(
-                            (m) => m.role == SessionRole.assistant,
-                            orElse: () => message,
-                          );
+          Column(
+            children: [
+              // 消息列表 - 面板出现时它会被压缩变小
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => FocusScope.of(context).unfocus(),
+                  child: messagesAsync.when(
+                    data: (messages) => SelectionArea(
+                      onSelectionChanged: (value) {
+                        final text = value?.plainText;
+                        if (text != null && text.trim().isNotEmpty) {
+                          _currentSelectedText = text;
+                        } else {
+                          _currentSelectedText = null;
+                        }
+                      },
+                      child: ChatListView(
+                        messages: messages,
+                        messageBuilder: (context, message) {
+                          final isLastAssistant = message.role == SessionRole.assistant &&
+                              message.status != SessionMessageStatus.streaming &&
+                              message == messages.lastWhere(
+                                (m) => m.role == SessionRole.assistant,
+                                orElse: () => message,
+                              );
 
-                      // 查找配对的用户提问
-                      String? userQuestion;
-                      if (message.role == SessionRole.assistant) {
-                        final idx = messages.indexOf(message);
-                        if (idx > 0) {
-                          for (var i = idx - 1; i >= 0; i--) {
-                            if (messages[i].role == SessionRole.user) {
-                              userQuestion = messages[i].body;
-                              break;
+                          // 查找配对的用户提问
+                          String? userQuestion;
+                          if (message.role == SessionRole.assistant) {
+                            final idx = messages.indexOf(message);
+                            if (idx > 0) {
+                              for (var i = idx - 1; i >= 0; i--) {
+                                if (messages[i].role == SessionRole.user) {
+                                  userQuestion = messages[i].body;
+                                  break;
+                                }
+                              }
                             }
                           }
-                        }
-                      }
 
-                      return MessageBubble(
-                        message: message,
-                        onRetry: isLastAssistant
-                            ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
-                            : null,
-                        userQuestion: userQuestion,
-                      );
+                          return MessageBubble(
+                            message: message,
+                            onRetry: isLastAssistant
+                                ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
+                                : null,
+                            userQuestion: userQuestion,
+                          );
+                        },
+                      ),
+                    ),
+                    error: (e, st) => Center(child: Text(e.toString())),
+                    loading: () => const Center(child: CupertinoActivityIndicator()),
+                  ),
+                ),
+              ),
+              // Context 使用条
+              messagesAsync.maybeWhen(
+                data: (messages) {
+                  final contextWindow = _resolveContextWindow(currentProviderId, currentModelId);
+                  return _ContextUsageBar(messages: messages, contextWindow: contextWindow);
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+              // 输入框
+              // Listener 用于在 panel 显示时拦截 ChatComposer 区域的 pointer down
+              // 事件关闭 panel。不拦截事件本身（不影响 TextField 聚焦、按钮点击）
+              // —— 仅为“先关 panel”这一动作提供了一个在 pointer down 阶段就能触发
+              // 的轻量级路径，避免 TextField 的 TapGestureRecognizer 在 arena 中赢
+              // 而导致外层 GestureDetector 无法关闭 panel 的问题。
+              Listener(
+                onPointerDown: (_) {
+                  if (_showModelPanel) {
+                    setState(() => _showModelPanel = false);
+                  }
+                },
+                child: ChatComposer(
+                  hintText: l10n.messageHint,
+                  isStreaming: isStreaming,
+                  onSend: (text) {
+                    return ref.read(chatControllerProvider(_args).notifier).sendUserMessage(text);
+                  },
+                  onStopStreaming: () async {
+                    await ref.read(chatControllerProvider(_args).notifier).stopStreaming();
+                  },
+                  onModelSelectorTap: () {
+                    if (isStreaming) return;
+                    FocusScope.of(context).unfocus();
+                    setState(() => _showModelPanel = !_showModelPanel);
+                  },
+                ),
+              ),
+              // 模型面板（出现在输入框下方，取代软键盘位置）
+              if (_showModelPanel && !isStreaming)
+                Flexible(
+                  child: ModelSelectorPanel(
+                    currentProviderId: currentProviderId,
+                    currentModelId: currentModelId,
+                    onModelSelected: (providerId, modelId) async {
+                      await ref.read(chatControllerProvider(_args).notifier).switchModel(providerId, modelId);
+                      if (mounted) setState(() => _showModelPanel = false);
                     },
                   ),
                 ),
-                error: (e, st) => Center(child: Text(e.toString())),
-                loading: () => const Center(child: CupertinoActivityIndicator()),
-              ),
-            ),
+            ],
           ),
-          // Context 使用条
-          messagesAsync.maybeWhen(
-            data: (messages) {
-              final contextWindow = _resolveContextWindow(currentProviderId, currentModelId);
-              return _ContextUsageBar(messages: messages, contextWindow: contextWindow);
-            },
-            orElse: () => const SizedBox.shrink(),
-          ),
-          // 输入框
-          ChatComposer(
-            hintText: l10n.messageHint,
-            isStreaming: isStreaming,
-            onSend: (text) {
-              return ref.read(chatControllerProvider(_args).notifier).sendUserMessage(text);
-            },
-            onStopStreaming: () async {
-              await ref.read(chatControllerProvider(_args).notifier).stopStreaming();
-            },
-            onModelSelectorTap: () {
-              if (isStreaming) return;
-              FocusScope.of(context).unfocus();
-              setState(() => _showModelPanel = !_showModelPanel);
-            },
-          ),
-          // 模型面板（出现在输入框下方，取代软键盘位置）
+          // 透明遮罩：panel 显示时点击 panel 外部区域（消息列表 / context bar /
+          // panel 内空白 / panel 标题栏）关闭 panel。panel 内部的模型项点击会被
+          // _ModelItem 的 GestureDetector 在 arena 中赢，不触发这里的 dismiss。
           if (_showModelPanel && !isStreaming)
-            Flexible(
-              child: ModelSelectorPanel(
-                currentProviderId: currentProviderId,
-                currentModelId: currentModelId,
-                onModelSelected: (providerId, modelId) async {
-                  await ref.read(chatControllerProvider(_args).notifier).switchModel(providerId, modelId);
-                  if (mounted) setState(() => _showModelPanel = false);
-                },
-                onClose: () {
-                  if (mounted) setState(() => _showModelPanel = false);
-                },
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () => setState(() => _showModelPanel = false),
               ),
             ),
         ],
