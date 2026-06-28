@@ -65,7 +65,7 @@
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| 设置页 | settings | ✅ 完成 | 2026-06-20 | [README](modules/settings/README.md) | [README](modules/settings/visual/README.md) | `lib/ui/features/settings/settings_screen.dart` 等 | 大模型入口 + 默认模型配置页 + 独立模型选择页 |
+| 设置页 | settings | ✅ 完成 | 2026-06-28 | [README](modules/settings/README.md) | [README](modules/settings/visual/README.md) | `lib/ui/features/settings/settings_screen.dart` 等 | 大模型入口 + 默认模型配置页 + 独立模型选择页；**2026-06-28 起入口从底部 tab 移至搜索页顶栏右上角齿轮按钮**（详见 [CHANGELOG](CHANGELOG/2026-06-28-settings-out-of-tabbar.md)） |
 | 生物认证（Face ID） | settings | ✅ 完成 | 2026-06-17 | [README](modules/settings/README.md) | — | `lib/data/services/biometric_service.dart` | BiometricService + AuthGate + WidgetsBindingObserver，进前台弹验证 |
 | 分享功能 | settings | 🔨 部分实现 | — | [README](modules/settings/README.md) | — | `lib/data/services/share_service.dart` | ShareService + ShareCardWidget 存在，分享流程未闭环 |
 | 语音播放 | settings | ✅ 完成（iOS only） | 2026-06-17 | [README](modules/settings/README.md) | [语音播放设计](modules/settings/specs/2026-06-05-语音播放功能-design.md) | `lib/ui/features/settings/tts_player_screen.dart` 等 | v1.1 上线：iOS 原生 AVSpeechSynthesizer，5 层架构（Plugin→Service→Controller→UI），单条消息互斥，语速不持久化、声音持久化；3 层背景（base + radial ambient + per-message tint）+ 4 类动效（波形/脉冲环/glow shift/文字渐入）；scroll 浮按钮解决长文本回顶；Android 平台用 NoOpTtsService 静默桩。v2+ 路线图见设计 doc §11 |
@@ -82,6 +82,8 @@
 ## 最近变更
 
 > 倒序排列，最新在上。
+
+- **2026-06-28** — 设置入口从底部 tab 移出：底部 tab 由 4 个（搜索 / 主题 / 笔记 / 设置）变为 3 个（搜索 / 主题 / 笔记）；设置入口迁至搜索页顶栏右上角齿轮按钮（`SFIcons.sf_gearshape` = `AppIcons.settings`），点击 `context.push('/settings')` 进入设置页。`/settings` 由 StatefulShellBranch 提升为外层 `GoRoute`（`parentNavigatorKey: _rootNavigatorKey`），与 `/llm-providers` 同层（共享返回栈语义）。复用 `l10n.settingsTabLabel`（虽然其字面含义是「设置 tab」但作为「设置入口」文案继续可用，不新增 key）。新增 `integration_test/search_settings_button_test.dart`（1 个 case）。详见 [CHANGELOG](CHANGELOG/2026-06-28-settings-out-of-tabbar.md)
 
 - **2026-06-26** — 对话页模型选择面板交互简化：移除面板内的关闭按钮（X 按钮及按钮所在行），改为点击 panel 外部（消息列表 / context bar / 输入框 / 标题栏空白）关闭 panel。`Stack + Listener + Positioned.fill` 透明遮罩方案；`ChatComposer` 用 `Listener(onPointerDown)` 避免与 `TextField` 的 `TapGestureRecognizer` 在 arena 中冲突。详见 [CHANGELOG](CHANGELOG/2026-06-26-chat-model-panel-dismiss.md)
 
