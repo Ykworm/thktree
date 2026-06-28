@@ -652,6 +652,14 @@
   "@branchModeRaw": {
     "description": "Action sheet option: create a branch from the raw (un-summarized) source context"
   },
+  "branchModeBlank": "Blank Branch",
+  "@branchModeBlank": {
+    "description": "Action sheet option: create an empty branch without LLM summary or title suggestion; auto-generated title comes after the first chat turn"
+  },
+  "branchBlankInitialTitle": "Temporary Chat",
+  "@branchBlankInitialTitle": {
+    "description": "Initial placeholder title for a blank-mode branch node; replaced when post-chat auto title generation succeeds"
+  },
   "branchModeContinue": "Continue",
   "@branchModeContinue": {
     "description": "Action sheet submit button: must be enabled only after the user picks one of the two modes"
@@ -712,6 +720,10 @@
   "sourceTypeNote": "Note",
   "@sourceTypeNote": {
     "description": "Source type label: branch created from a note"
+  },
+  "sourceTypeUserIdea": "User Idea",
+  "@sourceTypeUserIdea": {
+    "description": "Source type label: blank branch created with no source excerpt, filled in by the user"
   },
   "swipeDelete": "Delete",
   "@swipeDelete": {

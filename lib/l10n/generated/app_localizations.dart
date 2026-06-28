@@ -962,6 +962,18 @@ abstract class AppLocalizations {
   /// **'Use the original context'**
   String get branchModeRaw;
 
+  /// Action sheet option: create an empty branch without LLM summary or title suggestion; auto-generated title comes after the first chat turn
+  ///
+  /// In en, this message translates to:
+  /// **'Blank Branch'**
+  String get branchModeBlank;
+
+  /// Initial placeholder title for a blank-mode branch node; replaced when post-chat auto title generation succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary Chat'**
+  String get branchBlankInitialTitle;
+
   /// Action sheet submit button: must be enabled only after the user picks one of the two modes
   ///
   /// In en, this message translates to:
@@ -1045,6 +1057,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note'**
   String get sourceTypeNote;
+
+  /// Source type label: blank branch created with no source excerpt, filled in by the user
+  ///
+  /// In en, this message translates to:
+  /// **'User Idea'**
+  String get sourceTypeUserIdea;
 
   /// Swipe action label for delete
   ///

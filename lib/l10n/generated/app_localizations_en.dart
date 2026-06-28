@@ -508,6 +508,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchModeRaw => 'Use the original context';
 
   @override
+  String get branchModeBlank => 'Blank Branch';
+
+  @override
+  String get branchBlankInitialTitle => 'Temporary Chat';
+
+  @override
   String get branchModeContinue => 'Continue';
 
   @override
@@ -550,6 +556,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sourceTypeNote => 'Note';
+
+  @override
+  String get sourceTypeUserIdea => 'User Idea';
 
   @override
   String get swipeDelete => 'Delete';

@@ -41,15 +41,18 @@ class TitleSuggestionRequest {
   final String? currentModelId;
 }
 
-/// 分支创建的两种模式（mode）。
+/// 分支创建的 mode。
 ///
-/// 用户在 sheet 中二选一，sheet 提交后此值传入 [showBranchFlow]。
+/// 用户在 sheet 中三选一，sheet 提交后此值传入 [showBranchFlow]。
 ///
 /// - [BranchMode.summarize]：调 LLM 总结 source content（耗时长但首条消息是摘要）。
 /// - [BranchMode.raw]：直接用 source content 原始文本作为首条 user 消息（无需调 LLM）。
+/// - [BranchMode.blank]：用户自发创建空白分支，跳过 LLM summary 与 title suggestion sheet，
+///   直接创建 child node（title="临时会话"），进入 chat 后由 chat_screen 后置自动生成 title。
 enum BranchMode {
   summarize,
   raw,
+  blank, // 用户自发创建，空白起点（不调 LLM summary / 不显示 title sheet）
 }
 
 /// 全屏 Cupertino 页面：让用户从 LLM 候选 / 手动输入选择新分支的 title。
@@ -665,6 +668,14 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                       () => selected = BranchMode.raw,
                     ),
                   ),
+                  _BranchModeOption(
+                    key: const ValueKey('branch_mode_blank_option'),
+                    label: l10n.branchModeBlank,
+                    selected: selected == BranchMode.blank,
+                    onTap: () => setState(
+                      () => selected = BranchMode.blank,
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     child: Row(
@@ -759,7 +770,9 @@ class _BranchModeOption extends StatelessWidget {
 /// 选中文字菜单项 / 笔记创建对话 共同调用）。
 ///
 /// 流程：
-/// 1. 决定 source content + label：
+/// 1. [BranchMode.blank] 走独立路径 [_createBlankBranch]（不调 LLM / 不弹 title sheet），
+///    本函数早期返回后即终止。
+/// 2. 决定 source content + label：
 ///    - [selectedText] 非空：source = selectedText，label = "选中文本"，忽略 [mode]。
 ///    - 否则按 [mode] 决定：
 ///      - [BranchMode.summarize]：调 LLM 总结 [parentTranscript]；成功 → summary + "对话总结"；
@@ -786,6 +799,15 @@ Future<String?> showBranchFlow({
   required String? parentNodeId,
   String? sourceLabelOverride,
 }) async {
+  // A 模式：走独立路径 _createBlankBranch（不调 LLM / 不弹 title sheet）。
+  if (mode == BranchMode.blank) {
+    return _createBlankBranch(
+      context: context,
+      themeId: themeId,
+      parentNodeId: parentNodeId,
+    );
+  }
+
   // L1-A：summarize 模式需要 LLM，前置拦截未配置情况
   if ((selectedText == null || selectedText.isEmpty) &&
       mode == BranchMode.summarize) {
@@ -948,6 +970,77 @@ Future<String?> showBranchFlow({
       ),
     );
     return title;
+  } catch (e) {
+    if (!context.mounted) return null;
+    ThkAlert.show(
+      context: context,
+      message: l10n.branchFailed(e.toString()),
+    );
+    return null;
+  }
+}
+
+/// 空白分支创建（不走 LLM summary / 不显示 title sheet）。
+///
+/// 行为：
+/// - 创建 child node（title=占位 "临时会话"）。
+/// - 写 sourceExcerpt=null, sourceType='userIdea'。
+/// - 刷新 theme controller（与现有 showBranchFlow 末尾一致）。
+/// - push chat_screen（autoTriggerReply=false —— 用户手动发首条消息）。
+///
+/// 返回 childNode.nodeId；任意步骤异常 → null。
+Future<String?> _createBlankBranch({
+  required BuildContext context,
+  required String themeId,
+  required String? parentNodeId,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+
+  try {
+    if (!context.mounted) return null;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final nodeStore = await container.read(nodeStoreProvider.future);
+    // sessionStore 预加载以与现有 showBranchFlow 行为保持一致（保持初始化顺序）。
+    await container.read(sessionStoreProvider.future);
+
+    final themeRow = await nodeStore.getThemeRow(themeId: themeId);
+    final themePath = themeRow['themePath']! as String;
+
+    // 1. 创建空分支（占位 title = l10n.branchBlankInitialTitle）。
+    final childNode = await nodeStore.createChatNode(
+      themeId: themeId,
+      themePath: themePath,
+      parentId: parentNodeId,
+      title: l10n.branchBlankInitialTitle,
+    );
+
+    // 2. 写 source info：sourceExcerpt=null, sourceType='userIdea'。
+    await nodeStore.updateNodeSourceInfo(
+      nodeId: childNode.nodeId,
+      sourceExcerpt: null,
+      sourceType: 'userIdea',
+    );
+
+    // 3. 刷新 theme controller（与现有 showBranchFlow 末尾一致）。
+    if (!context.mounted) return null;
+    unawaited(
+      container
+          .read(themeDetailControllerProvider(themeId).notifier)
+          .refresh()
+          .catchError((_) {}),
+    );
+
+    // 4. push chat_screen（autoTriggerReply=false —— A 模式不自动发起对话）。
+    if (!context.mounted) return null;
+    context.push(
+      '/themes/$themeId/nodes/${childNode.nodeId}',
+      extra: ChatScreenLaunchParams(
+        title: l10n.branchBlankInitialTitle,
+        autoTriggerReply: false,
+      ),
+    );
+
+    return childNode.nodeId;
   } catch (e) {
     if (!context.mounted) return null;
     ThkAlert.show(

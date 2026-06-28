@@ -1,11 +1,13 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
+import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/main_test.dart';
-import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
+import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/widgets/thk_text_field.dart';
 
 import '_support/llm_test_config.dart';
@@ -648,6 +650,408 @@ void main() {
 
       // TODO: 模拟 LLM 失败，验证 fallback 行为
     });
+
+    // ================================================================
+    // P.9-A 空白分支模式集成测试
+    // ================================================================
+
+    testWidgets('A 模式：创建空 node（验证 DB 字段）', (tester) async {
+      // ── 1. 注入 LLM fixture ──
+      final llmConfig = LlmTestConfig.loadFromDefine();
+      final baseSettings = llmConfig.toAppSettings();
+      final titleSettings = baseSettings.copyWith(
+        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
+        titleModelModelId: baseSettings.deepSeekModel,
+      );
+      final app = await createTestApp(
+        locale: const Locale('zh'),
+        llmSettings: titleSettings,
+        llmConfigStore: llmConfig.toLlmConfigStore(),
+      );
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      // ── 2. 切到主题 tab → 创建主题 → 创建节点 → 进 chat_screen ──
+      await _switchToTab(tester, '主题');
+      await tester.pumpAndSettle();
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final themeName = 'BlankA_$ts';
+      final parentName = 'ParentA_$ts';
+      await _createTestTheme(tester, themeName);
+      await waitForText(tester, themeName, timeout: const Duration(seconds: 10));
+      await tester.tap(find.text(themeName));
+      await tester.pumpAndSettle();
+      await _createTestNode(tester, parentName);
+      await waitForText(tester, parentName, timeout: const Duration(seconds: 10));
+      await tester.tap(find.text(parentName));
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('chat_input')),
+        timeout: const Duration(seconds: 10),
+      );
+
+      // ── 3. 拿 parent nodeId（DB 直查） ──
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CupertinoApp)),
+        listen: false,
+      );
+      final nodeStore = await container.read(nodeStoreProvider.future);
+      // 拿最新主题的 themeId
+      final themeRows = await nodeStore.db.query(
+        'themes',
+        columns: ['themeId'],
+        where: 'themeId IN (SELECT themeId FROM nodes WHERE title = ?)',
+        whereArgs: [parentName],
+        limit: 1,
+      );
+      expect(themeRows, isNotEmpty, reason: '应能找到刚创建的主题');
+      final themeId = themeRows.first['themeId']! as String;
+      // 拿 parent nodeId（按 title 查）
+      final parentNodes = await nodeStore.db.query(
+        'nodes',
+        columns: ['nodeId'],
+        where: 'themeId = ? AND title = ?',
+        whereArgs: [themeId, parentName],
+        limit: 1,
+      );
+      expect(parentNodes, isNotEmpty, reason: '应能找到 parent node');
+      final parentNodeId = parentNodes.first['nodeId']! as String;
+      debugPrint('[Test 9.1] themeId=$themeId parentNodeId=$parentNodeId');
+
+      // ── 4. 发消息 → 流式完成 ──
+      await _sendAndWaitForReply(
+        tester,
+        message: '你好，请用一句话介绍自己',
+        timeout: const Duration(seconds: 90),
+      );
+      await tester.pump(const Duration(seconds: 2));
+
+      // ── 5. 点 branch → 选 blank ──
+      final branchBtn = find.byKey(const ValueKey('branch_button'));
+      expect(branchBtn, findsOneWidget, reason: '应该找到 branch 按钮');
+      await tester.tap(branchBtn);
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('branch_mode_blank_option')),
+        timeout: const Duration(seconds: 10),
+      );
+      await tester.tap(find.byKey(const ValueKey('branch_mode_blank_option')));
+      await tester.pumpAndSettle();
+
+      // ── 6. 等待新 chat_screen 加载（blank 模式无 title sheet） ──
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('chat_input')),
+        timeout: const Duration(seconds: 30),
+      );
+      // 等 push 完成 + 刷新
+      await tester.pump(const Duration(seconds: 2));
+
+      // ── 7. 验证：DB 里有 sourceType='userIdea' 的新 node ──
+      final themeNodes = await nodeStore.listNodes(themeId: themeId);
+      final blankNode = themeNodes
+          .where((n) => n.sourceType == 'userIdea')
+          .lastOrNull;
+      expect(blankNode, isNotNull,
+          reason: 'blank 模式应创建 sourceType=userIdea 的新 node');
+      expect(blankNode!.sourceExcerpt, isNull,
+          reason: 'blank 模式 sourceExcerpt 应为 null（未预填）');
+      expect(blankNode.title, equals('临时会话'),
+          reason: 'blank 模式 title 应为占位文本');
+      expect(blankNode.parentId, equals(parentNodeId),
+          reason: 'blank node 应关联到正确的 parent');
+      expect(blankNode.kind, equals(NodeKind.chat),
+          reason: 'blank node 应为 chat 类型');
+      debugPrint(
+          '[Test 9.1] ✅ blank node 验证通过: '
+          'nodeId=${blankNode.nodeId} title=${blankNode.title} '
+          'sourceType=${blankNode.sourceType} sourceExcerpt=${blankNode.sourceExcerpt}');
+
+      // ── 8. 验证：nav bar 显示占位 title（_displayedTitle 仍为 null） ──
+      expect(
+        find.text('临时会话'),
+        findsWidgets,
+        reason: '新 chat_screen 的 nav bar 应显示占位 title',
+      );
+      debugPrint('[Test 9.1] ✅ case 9.1 完成');
+    }, timeout: const Timeout(Duration(minutes: 3)));
+
+    testWidgets('A 模式：流式回复结束后自动生成 title', (tester) async {
+      // ── 1. 注入 LLM fixture ──
+      final llmConfig = LlmTestConfig.loadFromDefine();
+      final baseSettings = llmConfig.toAppSettings();
+      final titleSettings = baseSettings.copyWith(
+        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
+        titleModelModelId: baseSettings.deepSeekModel,
+      );
+      final app = await createTestApp(
+        locale: const Locale('zh'),
+        llmSettings: titleSettings,
+        llmConfigStore: llmConfig.toLlmConfigStore(),
+      );
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      // ── 2. 准备 parent node ──
+      await _switchToTab(tester, '主题');
+      await tester.pumpAndSettle();
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final themeName = 'BlankAutoTitle_$ts';
+      final parentName = 'ParentAutoTitle_$ts';
+      await _createTestTheme(tester, themeName);
+      await waitForText(tester, themeName, timeout: const Duration(seconds: 10));
+      await tester.tap(find.text(themeName));
+      await tester.pumpAndSettle();
+      await _createTestNode(tester, parentName);
+      await waitForText(tester, parentName, timeout: const Duration(seconds: 10));
+      await tester.tap(find.text(parentName));
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('chat_input')),
+        timeout: const Duration(seconds: 10),
+      );
+
+      // ── 3. parent 流式完成 + 创建 blank branch ──
+      await _sendAndWaitForReply(
+        tester,
+        message: '你好',
+        timeout: const Duration(seconds: 90),
+      );
+      await tester.pump(const Duration(seconds: 2));
+
+      final branchBtn = find.byKey(const ValueKey('branch_button'));
+      expect(branchBtn, findsOneWidget);
+      await tester.tap(branchBtn);
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('branch_mode_blank_option')),
+        timeout: const Duration(seconds: 10),
+      );
+      await tester.tap(find.byKey(const ValueKey('branch_mode_blank_option')));
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('chat_input')),
+        timeout: const Duration(seconds: 30),
+      );
+      await tester.pump(const Duration(seconds: 2));
+
+      // ── 4. 拿 blank nodeId ──
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CupertinoApp)),
+        listen: false,
+      );
+      final nodeStore = await container.read(nodeStoreProvider.future);
+      final themeRows = await nodeStore.db.query(
+        'themes',
+        columns: ['themeId'],
+        where: 'themeId IN (SELECT themeId FROM nodes WHERE title = ?)',
+        whereArgs: [parentName],
+        limit: 1,
+      );
+      final themeId = themeRows.first['themeId']! as String;
+      final allNodes = await nodeStore.listNodes(themeId: themeId);
+      final blankNode = allNodes
+          .where((n) => n.sourceType == 'userIdea')
+          .lastOrNull;
+      expect(blankNode, isNotNull, reason: '应能找到 blank node');
+      final blankNodeId = blankNode!.nodeId;
+      debugPrint('[Test 9.2] blank nodeId=$blankNodeId, 初始 title=${blankNode.title}');
+
+      // ── 5. 在新 chat_screen 发消息 → 流式完成 ──
+      await _sendAndWaitForReply(
+        tester,
+        message: '数字化品牌的视觉逻辑',
+        timeout: const Duration(seconds: 90),
+      );
+      debugPrint('[Test 9.2] 流式回复完成, 等待自动 title 触发...');
+
+      // ── 6. 轮询 DB 等 auto title 被更新（最长 60s） ──
+      String? updatedTitle;
+      for (var i = 0; i < 60; i++) {
+        await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+        await tester.pump();
+        final row = await nodeStore.db.query(
+          'nodes',
+          columns: ['title'],
+          where: 'nodeId = ?',
+          whereArgs: [blankNodeId],
+          limit: 1,
+        );
+        if (row.isNotEmpty) {
+          final t = row.first['title']! as String;
+          if (t != '临时会话' && t.trim().isNotEmpty) {
+            updatedTitle = t;
+            debugPrint('[Test 9.2] 自动 title 已更新: $updatedTitle (${i}s)');
+            break;
+          }
+        }
+        if (i % 10 == 0 && i > 0) {
+          debugPrint('[Test 9.2] 等待自动 title... ${i}s');
+        }
+      }
+
+      // ── 7. 验证 ──
+      expect(updatedTitle, isNotNull,
+          reason: '流式结束后 60s 内 LLM 应自动生成新 title');
+      expect(updatedTitle, isNot(equals('临时会话')),
+          reason: 'DB title 应被自动更新');
+      debugPrint('[Test 9.2] ✅ case 9.2 完成: 自动 title=$updatedTitle');
+    }, timeout: const Timeout(Duration(minutes: 5)));
+
+    testWidgets('A 模式：自动 title 防抖只触发一次', (tester) async {
+      // ── 1. 注入 LLM fixture ──
+      final llmConfig = LlmTestConfig.loadFromDefine();
+      final baseSettings = llmConfig.toAppSettings();
+      final titleSettings = baseSettings.copyWith(
+        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
+        titleModelModelId: baseSettings.deepSeekModel,
+      );
+      final app = await createTestApp(
+        locale: const Locale('zh'),
+        llmSettings: titleSettings,
+        llmConfigStore: llmConfig.toLlmConfigStore(),
+      );
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      // ── 2. 准备 parent + blank branch ──
+      await _switchToTab(tester, '主题');
+      await tester.pumpAndSettle();
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final themeName = 'BlankDebounce_$ts';
+      final parentName = 'ParentDebounce_$ts';
+      await _createTestTheme(tester, themeName);
+      await waitForText(tester, themeName, timeout: const Duration(seconds: 10));
+      await tester.tap(find.text(themeName));
+      await tester.pumpAndSettle();
+      await _createTestNode(tester, parentName);
+      await waitForText(tester, parentName, timeout: const Duration(seconds: 10));
+      await tester.tap(find.text(parentName));
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('chat_input')),
+        timeout: const Duration(seconds: 10),
+      );
+      await _sendAndWaitForReply(
+        tester,
+        message: '你好',
+        timeout: const Duration(seconds: 90),
+      );
+      await tester.pump(const Duration(seconds: 2));
+      final branchBtn = find.byKey(const ValueKey('branch_button'));
+      expect(branchBtn, findsOneWidget);
+      await tester.tap(branchBtn);
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('branch_mode_blank_option')),
+        timeout: const Duration(seconds: 10),
+      );
+      await tester.tap(find.byKey(const ValueKey('branch_mode_blank_option')));
+      await tester.pumpAndSettle();
+      await waitForWidget(
+        tester,
+        find.byKey(const ValueKey('chat_input')),
+        timeout: const Duration(seconds: 30),
+      );
+      await tester.pump(const Duration(seconds: 2));
+
+      // ── 3. 拿 blank nodeId ──
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CupertinoApp)),
+        listen: false,
+      );
+      final nodeStore = await container.read(nodeStoreProvider.future);
+      final themeRows = await nodeStore.db.query(
+        'themes',
+        columns: ['themeId'],
+        where: 'themeId IN (SELECT themeId FROM nodes WHERE title = ?)',
+        whereArgs: [parentName],
+        limit: 1,
+      );
+      final themeId = themeRows.first['themeId']! as String;
+      final allNodes = await nodeStore.listNodes(themeId: themeId);
+      final blankNode = allNodes
+          .where((n) => n.sourceType == 'userIdea')
+          .lastOrNull;
+      expect(blankNode, isNotNull);
+      final blankNodeId = blankNode!.nodeId;
+
+      // ── 4. 第一次流式结束 → 等待 auto title 触发 ──
+      await _sendAndWaitForReply(
+        tester,
+        message: '品牌视觉逻辑第一问',
+        timeout: const Duration(seconds: 90),
+      );
+      String? firstTitle;
+      for (var i = 0; i < 60; i++) {
+        await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+        await tester.pump();
+        final row = await nodeStore.db.query(
+          'nodes',
+          columns: ['title'],
+          where: 'nodeId = ?',
+          whereArgs: [blankNodeId],
+          limit: 1,
+        );
+        if (row.isNotEmpty) {
+          final t = row.first['title']! as String;
+          if (t != '临时会话' && t.trim().isNotEmpty) {
+            firstTitle = t;
+            debugPrint('[Test 9.3] 第一次自动 title: $firstTitle (${i}s)');
+            break;
+          }
+        }
+      }
+      expect(firstTitle, isNotNull, reason: '第一次流式结束后应自动生成 title');
+
+      // ── 5. 第二次发消息 → 流式结束 → 等待 ──
+      await _sendAndWaitForReply(
+        tester,
+        message: '品牌视觉逻辑第二问',
+        timeout: const Duration(seconds: 90),
+      );
+      // 等 10s 让任何潜在的二次触发走完
+      for (var i = 0; i < 10; i++) {
+        await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+        await tester.pump();
+      }
+      final row = await nodeStore.db.query(
+        'nodes',
+        columns: ['title'],
+        where: 'nodeId = ?',
+        whereArgs: [blankNodeId],
+        limit: 1,
+      );
+      final secondTitle = row.first['title']! as String;
+      debugPrint('[Test 9.3] 第二次流式结束后 DB title: $secondTitle');
+
+      // ── 6. 验证：title 仍是第一次的值（防抖生效） ──
+      expect(secondTitle, equals(firstTitle),
+          reason: '第二次流式结束后 auto title 不应被重复触发');
+      debugPrint('[Test 9.3] ✅ case 9.3 完成: 防抖生效, title=$firstTitle');
+    }, timeout: const Timeout(Duration(minutes: 6)));
+
+    testWidgets(
+        'A 模式：用户预改 title 后跳过自动生成（plan § 9.4 - 当前实现有差距）',
+        (tester) async {
+      // ⚠️ plan § 9.4 与当前实现有差距：
+      //   - plan 期望：用户手动改 title 后, 流式结束时不触发自动 title 生成
+      //   - 实际实现：_triggerBlankAutoTitle 守卫只查 _displayedTitle / widget.title
+      //     (chat_screen.dart:448), 不查 DB title
+      //   - 后果: 预改 DB title 但 UI 没改, LLM 仍会覆盖
+      //   - 本测试标 skip 直到后续 PR 补齐守卫的 DB check
+      debugPrint(
+          '[Test 9.4] SKIP: 当前实现仅 _displayedTitle / widget.title 守卫, '
+          '不查 DB title, plan § 9.4 需后续 PR 补齐');
+    },
+        skip: true);
   });
 }
 

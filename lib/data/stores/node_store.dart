@@ -364,9 +364,12 @@ class NodeStore {
   }
 
   /// Update sourceExcerpt and sourceType for a node (called after branch creation).
+  ///
+  /// [sourceExcerpt] 可空：空白分支模式（userIdea）不预填，存 NULL；
+  /// 其他模式（summarize / raw / selectedText / note）传截断后的 excerpt。
   Future<void> updateNodeSourceInfo({
     required String nodeId,
-    required String sourceExcerpt,
+    required String? sourceExcerpt,
     required String sourceType,
   }) async {
     await db.update(

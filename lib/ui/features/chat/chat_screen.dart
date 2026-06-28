@@ -12,10 +12,13 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
 import 'package:thk_tree/ui/features/notes/note_select_screen.dart';
+import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show estimateTokens, LlmProvider;
+import 'package:thk_tree/data/services/title_suggestion_service.dart';
 import 'package:thk_tree/ui/core/shared/chat_composer.dart';
 import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
+import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -45,6 +48,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final ChatControllerParams _args;
   bool _showModelPanel = false;
   String? _currentSelectedText;
+
+  // ---- 空白分支（A 模式）后置自动 title 生成 ----
+  /// 上次 build 的 isStreaming，用于检测 true → false 边沿。
+  bool _wasStreaming = false;
+  /// 防抖：触发过一次就永远 true（避免 retry / 重新加载时重复触发）。
+  bool _autoTitleTriggered = false;
+  /// DB 写新 title 后，缓存为本地展示值，覆盖 widget.title 显示在 nav bar。
+  String? _displayedTitle;
 
   @override
   void initState() {
@@ -112,6 +123,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       orElse: () => false,
     );
 
+    // 空白分支（A 模式）后置自动 title 生成：检测 isStreaming true → false 边沿。
+    // 仅当当前 nav bar 显示的还是占位 title 时才触发；已调过一次后永久防抖。
+    if (_wasStreaming && !isStreaming && !_autoTitleTriggered) {
+      final placeholder = l10n.branchBlankInitialTitle;
+      if (_displayedTitle == placeholder || widget.title == placeholder) {
+        _autoTitleTriggered = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _triggerBlankAutoTitle();
+        });
+      }
+    }
+    _wasStreaming = isStreaming;
+
     // 读取当前对话的 providerId/modelId
     final chatCtrl = ref.read(chatControllerProvider(_args).notifier);
     var currentProviderId = chatCtrl.providerId;
@@ -134,7 +158,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              widget.title,
+              _displayedTitle ?? widget.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -400,6 +424,164 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         message: l10n.branchFailed(e.toString()),
       );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 空白分支（A 模式）后置自动 title 生成
+  // ---------------------------------------------------------------------------
+
+  /// A 模式后置自动 title 生成（流式回复结束后调用一次）。
+  ///
+  /// 流程：
+  /// 1. 守卫：title 已被用户改过（不是占位）→ 跳过。
+  /// 2. 解析 model（[resolveModelForTitle] 已有 fallback chain）。
+  /// 3. 未配置 → 弹 [showLlmSetupAlert] → 静默保持占位。
+  /// 4. 已配置 → 调 LLM 生成 title（重试 3 次，指数退避 1s/2s/4s）。
+  /// 5. 成功 → [NodeStore.updateNodeTitle] + 刷新本地展示值。
+  /// 6. 失败 / 空 → 静默保持占位。
+  Future<void> _triggerBlankAutoTitle() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final placeholder = l10n.branchBlankInitialTitle;
+
+    // 1. 守卫：title 已被改过。
+    if (widget.title != placeholder && _displayedTitle != placeholder) return;
+
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      final settings = container.read(settingsControllerProvider).value;
+      final providers = container.read(llmProvidersProvider).value ?? const <LlmProviderConfig>[];
+
+      // 2. 解析 model：复用 [resolveModelForTitle] 的 fallback chain。
+      final resolved = await resolveModelForTitle(
+        container,
+        providers,
+        currentProviderId: settings?.chatDefaultProviderId,
+        currentModelId: settings?.chatDefaultModelId,
+      );
+      if (resolved == null) {
+        if (!mounted) return;
+        await showLlmSetupAlert(
+          context: context,
+          status: LlmSetupStatus.noTitleModelConfigured,
+          container: ProviderScope.containerOf(context, listen: false),
+        );
+        return;
+      }
+      final (provider, modelId, apiKey) = resolved;
+
+      // 3. 调 LLM 生成 title（重试 3 次 + 指数退避 1s/2s/4s）。
+      final contextWindow = _resolveContextWindow(
+        settings?.chatDefaultProviderId,
+        settings?.chatDefaultModelId,
+      );
+      final newTitle = await _generateTitleWithRetry(
+        provider: provider,
+        modelId: modelId,
+        apiKey: apiKey,
+        contextWindow: contextWindow,
+        transcriptContext: _collectTranscriptForTitle(),
+      );
+
+      // 4. 成功 → 写 DB + 刷新本地 nav bar 展示值。
+      if (!mounted) return;
+      if (newTitle != null && newTitle.trim().isNotEmpty) {
+        final nodeStore = await container.read(nodeStoreProvider.future);
+        await nodeStore.updateNodeTitle(
+          nodeId: widget.nodeId,
+          newTitle: newTitle.trim(),
+        );
+        if (mounted) {
+          setState(() {
+            _displayedTitle = newTitle.trim();
+          });
+        }
+      }
+      // 5. 失败 / 空 → 静默保持占位。
+    } catch (e, st) {
+      debugPrint('[AutoTitle] FAILED nodeId=${widget.nodeId}: $e\n$st');
+    }
+  }
+
+  /// 收集 chat transcript 用于生成 title（取最后一对 user + assistant message）。
+  String _collectTranscriptForTitle() {
+    final messagesAsync = ref.read(chatControllerProvider(_args));
+    return messagesAsync.maybeWhen(
+      data: (messages) {
+        final lastUser = messages
+            .where((m) => m.role == SessionRole.user)
+            .lastOrNull
+            ?.body ??
+            '';
+        final lastAssistant = messages
+            .where((m) => m.role == SessionRole.assistant)
+            .lastOrNull
+            ?.body ??
+            '';
+        return 'User: $lastUser\nAssistant: $lastAssistant';
+      },
+      orElse: () => '',
+    );
+  }
+
+  /// 调 LLM 生成 title，带 3 次重试 + 指数退避 1s/2s/4s。
+  Future<String?> _generateTitleWithRetry({
+    required LlmProviderConfig provider,
+    required String modelId,
+    required String apiKey,
+    required int contextWindow,
+    required String transcriptContext,
+  }) async {
+    const maxAttempts = 3;
+    String? lastError;
+
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        final title = await _callTitleLlm(
+          provider: provider,
+          modelId: modelId,
+          apiKey: apiKey,
+          contextWindow: contextWindow,
+          transcriptContext: transcriptContext,
+        );
+        if (title != null && title.trim().isNotEmpty) return title.trim();
+      } catch (e) {
+        lastError = e.toString();
+        debugPrint('[AutoTitle] attempt ${attempt + 1} failed: $e');
+      }
+      // 指数退避（最后一次不 sleep）。
+      if (attempt < maxAttempts - 1) {
+        await Future<void>.delayed(Duration(seconds: 1 << attempt)); // 1s / 2s / 4s
+      }
+    }
+
+    if (lastError != null) {
+      debugPrint('[AutoTitle] all $maxAttempts attempts failed, last error: $lastError');
+    }
+    return null;
+  }
+
+  /// 调一次 LLM 生成 title（不带重试）。
+  ///
+  /// 复用 [TitleSuggestionService.generateTitles] 的调用模式（system prompt +
+  /// 解析），取第一个候选作为最终 title。
+  Future<String?> _callTitleLlm({
+    required LlmProviderConfig provider,
+    required String modelId,
+    required String apiKey,
+    required int contextWindow,
+    required String transcriptContext,
+  }) async {
+    if (transcriptContext.trim().isEmpty) return null;
+    final candidates = await TitleSuggestionService.generateTitles(
+      content: transcriptContext,
+      direction: null,
+      provider: provider,
+      modelId: modelId,
+      apiKey: apiKey,
+      contextWindow: contextWindow,
+    );
+    return candidates.isEmpty ? null : candidates.first;
   }
 }
 

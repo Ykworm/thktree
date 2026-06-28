@@ -485,6 +485,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get branchModeRaw => '使用原始上下文创建';
 
   @override
+  String get branchModeBlank => '空白分支';
+
+  @override
+  String get branchBlankInitialTitle => '临时会话';
+
+  @override
   String get branchModeContinue => '继续';
 
   @override
@@ -527,6 +533,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sourceTypeNote => '笔记';
+
+  @override
+  String get sourceTypeUserIdea => '用户补充';
 
   @override
   String get swipeDelete => '删除';
