@@ -185,6 +185,8 @@
   "chatTitle": "对话标题",
   "chatCreated": "对话创建成功",
   "themesTabLabel": "主题",
+  "labTabLabel": "实验室",
+  "labEmptyHint": "实验功能筹备中",
   "settingsTabLabel": "设置",
   "createBranchRawFromSelection": "用所选文字直接创建",
   "createBranchSummarizeFromSelection": "总结所选文字后创建",

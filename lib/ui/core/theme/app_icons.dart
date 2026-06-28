@@ -132,6 +132,10 @@ class AppIcons {
   /// AI / 模型选择（iOS 18+ AI 风格闪光图标）
   static const IconData sparkles = SFIcons.sf_sparkles;
 
+  /// 实验室 tab 占位 icon（flask，iOS 14+）
+  /// 后续迭代可换为 SVG（参考主题 tab 的 theme_unselect.svg 模式）
+  static const IconData lab = SFIcons.sf_flask;
+
   // ── TTS（语音播放） ──
 
   /// 滚动到顶部（用于 player 页浮按钮）

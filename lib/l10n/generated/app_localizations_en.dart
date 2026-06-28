@@ -440,6 +440,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themesTabLabel => 'Themes';
 
   @override
+  String get labTabLabel => 'Lab';
+
+  @override
+  String get labEmptyHint => 'Experimental features are coming soon';
+
+  @override
   String get settingsTabLabel => 'Settings';
 
   @override

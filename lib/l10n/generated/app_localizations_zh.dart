@@ -420,6 +420,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themesTabLabel => '主题';
 
   @override
+  String get labTabLabel => '实验室';
+
+  @override
+  String get labEmptyHint => '实验功能筹备中';
+
+  @override
   String get settingsTabLabel => '设置';
 
   @override

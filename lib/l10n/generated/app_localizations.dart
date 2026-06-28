@@ -836,6 +836,18 @@ abstract class AppLocalizations {
   /// **'Themes'**
   String get themesTabLabel;
 
+  /// Tab bar label for the experimental lab tab
+  ///
+  /// In en, this message translates to:
+  /// **'Lab'**
+  String get labTabLabel;
+
+  /// Hint shown on the placeholder lab tab while features are still under development
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental features are coming soon'**
+  String get labEmptyHint;
+
   /// Tab bar label for the settings tab
   ///
   /// In en, this message translates to:

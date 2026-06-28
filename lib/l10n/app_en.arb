@@ -563,6 +563,14 @@
   "@themesTabLabel": {
     "description": "Tab bar label for the themes/tree tab"
   },
+  "labTabLabel": "Lab",
+  "@labTabLabel": {
+    "description": "Tab bar label for the experimental lab tab"
+  },
+  "labEmptyHint": "Experimental features are coming soon",
+  "@labEmptyHint": {
+    "description": "Hint shown on the placeholder lab tab while features are still under development"
+  },
   "settingsTabLabel": "Settings",
   "@settingsTabLabel": {
     "description": "Tab bar label for the settings tab"
