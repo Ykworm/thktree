@@ -8,8 +8,10 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
+import 'package:thk_tree/ui/features/lab/lab_placeholder_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_screen.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
@@ -21,6 +23,7 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _themesNavigatorKey = GlobalKey<NavigatorState>();
 final _notesNavigatorKey = GlobalKey<NavigatorState>();
 final _searchNavigatorKey = GlobalKey<NavigatorState>();
+final _labNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
@@ -95,6 +98,17 @@ final appRouter = GoRouter(
             ),
           ],
         ),
+        StatefulShellBranch(
+          navigatorKey: _labNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/lab',
+              pageBuilder: (context, state) => CupertinoPage(
+                child: const LabPlaceholderScreen(),
+              ),
+            ),
+          ],
+        ),
       ],
     ),
     GoRoute(
@@ -158,10 +172,46 @@ class _MainShell extends ConsumerWidget {
   }
 
   Widget _buildTabBar(BuildContext context, AppLocalizations l10n) {
-    final items = <({IconData icon, String label})>[
-      (icon: CupertinoIcons.search, label: l10n.searchTabLabel),
-      (icon: AppIcons.accountTree, label: l10n.themesTabLabel),
-      (icon: AppIcons.note, label: l10n.notes),
+    final items = <({
+      IconData icon,
+      Widget? unselectedIcon,
+      Widget? selectedIcon,
+      String label,
+    })>[
+      (
+        icon: CupertinoIcons.search,
+        unselectedIcon: null,
+        selectedIcon: null,
+        label: l10n.searchTabLabel,
+      ),
+      (
+        icon: AppIcons.accountTree,
+        unselectedIcon: SvgPicture.asset(
+          'assets/icons/theme_unselect.svg',
+          width: 25,
+          height: 25,
+          fit: BoxFit.contain,
+        ),
+        selectedIcon: null,
+        label: l10n.themesTabLabel,
+      ),
+      (
+        icon: AppIcons.note,
+        unselectedIcon: null,
+        selectedIcon: null,
+        label: l10n.notes,
+      ),
+      (
+        icon: AppIcons.lab,
+        unselectedIcon: null,
+        selectedIcon: Image.asset(
+          'assets/icons/lab_selected.png',
+          width: 25,
+          height: 25,
+          fit: BoxFit.contain,
+        ),
+        label: l10n.labTabLabel,
+      ),
     ];
     final selectedIndex = navigationShell.currentIndex;
     const activeColor = AppColors.accent;
@@ -169,7 +219,7 @@ class _MainShell extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.destructive,
         border: Border(
           top: BorderSide(color: AppColors.border, width: 0.5),
         ),
@@ -187,6 +237,8 @@ class _MainShell extends ConsumerWidget {
                 for (int i = 0; i < items.length; i++)
                   _TabItem(
                     icon: items[i].icon,
+                    unselectedIcon: items[i].unselectedIcon,
+                    selectedIcon: items[i].selectedIcon,
                     label: items[i].label,
                     selected: i == selectedIndex,
                     activeColor: activeColor,
@@ -216,9 +268,13 @@ class _TabItem extends StatelessWidget {
     required this.activeColor,
     required this.inactiveColor,
     required this.onTap,
+    this.unselectedIcon,
+    this.selectedIcon,
   });
 
   final IconData icon;
+  final Widget? unselectedIcon;
+  final Widget? selectedIcon;
   final String label;
   final bool selected;
   final Color activeColor;
@@ -237,7 +293,12 @@ class _TabItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            SFIcon(icon, fontSize: 25, color: color),
+            if (selected && selectedIcon != null)
+              selectedIcon!
+            else if (!selected && unselectedIcon != null)
+              unselectedIcon!
+            else
+              SFIcon(icon, fontSize: 25, color: color),
             const SizedBox(height: 1),
             Text(
               label,
