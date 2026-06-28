@@ -21,7 +21,6 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _themesNavigatorKey = GlobalKey<NavigatorState>();
 final _notesNavigatorKey = GlobalKey<NavigatorState>();
 final _searchNavigatorKey = GlobalKey<NavigatorState>();
-final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
@@ -96,18 +95,14 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        StatefulShellBranch(
-          navigatorKey: _settingsNavigatorKey,
-          routes: [
-            GoRoute(
-              path: '/settings',
-              pageBuilder: (context, state) => CupertinoPage(
-                child: SettingsScreen(),
-              ),
-            ),
-          ],
-        ),
       ],
+    ),
+    GoRoute(
+      path: '/settings',
+      parentNavigatorKey: _rootNavigatorKey,
+      pageBuilder: (context, state) => CupertinoPage(
+        child: const SettingsScreen(),
+      ),
     ),
     GoRoute(
       path: '/llm-providers',
@@ -167,7 +162,6 @@ class _MainShell extends ConsumerWidget {
       (icon: CupertinoIcons.search, label: l10n.searchTabLabel),
       (icon: AppIcons.accountTree, label: l10n.themesTabLabel),
       (icon: AppIcons.note, label: l10n.notes),
-      (icon: AppIcons.settings, label: l10n.settingsTabLabel),
     ];
     final selectedIndex = navigationShell.currentIndex;
     const activeColor = AppColors.accent;
