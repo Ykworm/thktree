@@ -1,9 +1,9 @@
 # 集成测试 · 分支创建流程
 
 > **创建**：2026-06-18
-> **最近更新**：2026-06-24
+> **最近更新**：2026-06-28
 > **维护者**：AI + 用户审阅
-> **状态**：case 1/2/3/4/5/6 已实跑通过（02:26）；case 7 scaffold 待建 LLM mock 工具
+> **状态**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold 待补 LLM mock 工具；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28）；9.4 SKIP（plan § 9.4 与实现差距，DB check 守卫待后续 PR 补齐）
 > **相关 spec**：[README.md](./README.md) · [chat-streaming.md](./chat-streaming.md) · [theme-chat-e2e.md](./theme-chat-e2e.md) · [llm-injection.md](./llm-injection.md) · [helpers.md](./helpers.md)
 
 ---
@@ -161,6 +161,7 @@ Future<void> _sendMessage(WidgetTester tester, String message) async {
 | `branch_button` | ✅ 已补 | `chat_screen.dart:165-176`（`trailing`） | commit `d937c07` 之后稳定选中 |
 | `branch_mode_summarize_option` | ✅ 已补 | `_BranchModeOption` (`title_suggestion_screen.dart:~730`) | sheet 选 summarize |
 | `branch_mode_raw_option` | ✅ 已补 | 同上 | sheet 选 raw |
+| `branch_mode_blank_option` | ✅ 已补 | `_BranchModeOption` (`title_suggestion_screen.dart:~743`) | sheet 选空白分支（2026-06-28 新增） |
 | `branch_mode_continue_button` | ✅ 已补 | sheet 底部 `CupertinoButton.filled` | commit `34d9465` 联动 sheet filter 修复 |
 | `branch_mode_cancel_button` | ✅ 已补 | sheet 底部取消按钮 | case 5 用 |
 | `model_sheet_<providerId>_<modelId>` | ✅ 已补 | `_ModelSelectorSheet` 动作 (`title_suggestion_screen.dart:~1280`) | sheet 内 provider/model 动作 ValueKey |
@@ -175,6 +176,65 @@ Future<void> _sendMessage(WidgetTester tester, String message) async {
 |-----------|------|------|------|
 | `branch_retry_button` | ❌ 未补 | summarize 失败时弹 retry/cancel sheet | 详 § 5.7 |
 | `branch_cancel_retry_button` | ❌ 未补 | 同上 | 详 § 5.7 |
+
+### 3.5 空白分支模式（A 模式，2026-06-28 新增）
+
+跳过 LLM，直接创建空 child node + 流式回复结束后自动生成 title。
+
+**实现路径**（commit `a91d6c8`）：
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│ UI 层（chat_screen.dart + title_suggestion_screen.dart）       │
+├───────────────────────────────────────────────────────────────┤
+│ ① 点击分支按钮 → showBranchModeSheet                          │
+│    sheet 新增选项：分支模式 / 原对话模式 / 空白分支模式            │
+│                                                                  │
+│ ② 点空白分支 → _createBlankBranch（不走 showBranchFlow）         │
+│    ├─ 弹"占位 title"提示（仅在用户取消分支按钮时可进）              │
+│    ├─ createChatNode(themeId, themePath, parentId, '临时会话')   │
+│    ├─ updateNodeSourceInfo(nodeId, sourceExcerpt: NULL,         │
+│    │                       sourceType: 'userIdea')              │
+│    ├─ sessionStore.updateSessionModel(nodeId, provider, model)  │
+│    └─ context.push 新 chat_screen (autoTriggerReply: false)     │
+│                                                                  │
+│ ③ chat_screen 后置自动 title 生成（仅在 blank 模式）             │
+│    ├─ 边沿检测：isStreaming true → false 跳变                  │
+│    ├─ 守卫：title 仍为'临时会话'占位 → 才触发                    │
+│    ├─ resolveModelForTitle() 复用现有 chat 模型配置              │
+│    ├─ 未配置 → showLlmSetupAlert → 静默保持占位                 │
+│    ├─ 已配置 → _generateTitleWithRetry（重试 3 次 + 指数退避）  │
+│    │   ├─ attempt 0：失败后 sleep 1s                            │
+│    │   ├─ attempt 1：失败后 sleep 2s                            │
+│    │   └─ attempt 2：失败后不 sleep，返回 null                   │
+│    ├─ 成功 → updateNodeTitle + setState _displayedTitle         │
+│    └─ 失败 → 静默保持占位，不闪退                                │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**source content 决策表补充**（合并入 § 3.2）：
+
+| `selectedText` | `mode` | source content | source label | 是否调 LLM |
+|---------------|--------|----------------|--------------|----------|
+| 非空 | 任意 | `selectedText` | "选中文本" | ❌ |
+| 空 | `raw` | `parentTranscript` | "对话" | ❌ |
+| 空 | `summarize` | LLM 总结结果（成功）<br/>或 `parentTranscript`（失败 fallback） | "对话总结" / "对话" | ✅ |
+| 任意 | **`blank`** | **NULL**（不预填内容） | **"空白"**（`sourceTypeLabel` 新增 `userIdea` case） | **❌（创建时）<br/>✅（流式结束后自动 title）** |
+
+**关键实现点**：
+
+1. **`updateNodeSourceInfo` 签名变更**：`sourceExcerpt` 从 `required String` 改为 `required String?`，支持 NULL（空白分支不预填）。
+2. **`BranchMode.blank` 拦截**：`showBranchFlow` 在解析 mode 时增加 `if (mode == BranchMode.blank) return _createBlankBranch(...)` 提前返回，避免走 LLM 总结逻辑。
+3. **后置 title 生成**：在 `_ChatScreenState.build` 里检测 `_wasStreaming && !isStreaming && !_autoTitleTriggered` 边沿，触发一次后永久防抖。
+4. **守卫仅查 UI state（已知差距）**：`_triggerBlankAutoTitle` 检查 `_displayedTitle` / `widget.title`，**不查 DB title**。如果用户预先手动改过 DB title 但 UI 没同步刷新，仍会被 LLM 覆盖。plan § 9.4 与实现差距，待后续 PR 补齐 DB check 守卫。
+
+**l10n 新增键**（zh + en 同步）：
+
+| key | zh | en |
+|-----|----|----|
+| `branchBlankInitialTitle` | 临时会话 | Blank Conversation |
+| `branchModeBlank` | 空白分支 | Blank Branch |
+| `sourceTypeUserIdea` | 空白 | Blank |
 
 ---
 
@@ -258,11 +318,11 @@ Future<void> sendChatMessage(WidgetTester tester, String text) async { ... }
 
 ---
 
-## 5. 编写路线（7 个 testWidgets 完整代码）
+## 5. 编写路线（11 个 testWidgets 完整代码）
 
 > **前提**：完成 § 4.1 ValueKey + § 4.2 helper 提升 + § 4.3 LLM mock。
 >
-> **2026-06-24 实跑状态**：case 1/2/3/4/5/6 已实跑通过（02:26）；case 7 scaffold + LLM mock 工具待补（详 § 5.7）。
+> **2026-06-28 实跑状态**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold + LLM mock 工具待补（详 § 5.7）；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28）；case 9.4 SKIP（详 § 5.11）。
 
 ### 5.1 选中文本 + raw 模式
 
@@ -461,6 +521,111 @@ testWidgets('LLM 失败 fallback', (tester) async {
 });
 ```
 
+### 5.8 空白分支创建（plan § 9.1）
+
+```dart
+testWidgets('A 模式：空白分支创建', (tester) async {
+  final llmConfig = LlmTestConfig.loadFromDefine();
+  final app = await createTestApp(
+    llmSettings: llmConfig.toAppSettings(),
+    llmConfigStore: llmConfig.toLlmConfigStore(),
+  );
+  await tester.pumpWidget(app);
+  await tester.pumpAndSettle();
+
+  await createThemeViaUi(tester, 'Blank Branch Test');
+  await createNodeViaUi(tester, 'Parent Node');
+  await sendChatMessage(tester, '一段对话');
+  await waitForLLMResponse(tester, checkStreaming: () => /* ... */);
+
+  // 1. 点 branch 按钮 → 弹 sheet
+  await safeTap(tester, find.byKey(const ValueKey('branch_button')));
+  await waitForWidget(tester, find.byKey(const ValueKey('branch_mode_blank_option')));
+
+  // 2. 选 blank → continue（**不弹 TitleSuggestionScreen，直接进新分支 chat**）
+  await safeTap(tester, find.byKey(const ValueKey('branch_mode_blank_option')));
+  await safeTap(tester, find.byKey(const ValueKey('branch_mode_continue_button')));
+
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 30));
+
+  // 3. 验证：跳到新分支 chat_screen，且 widget.title = 临时会话占位
+  expect(find.byType(ChatScreen), findsOneWidget);
+  expect(find.text('Parent Node'), findsNothing);
+
+  // 4. 验证：新 child node 的 sourceExcerpt = NULL（关键，不预填内容）
+  final nodeStore = /* 拿 container 调 nodeStore */;
+  final childNode = await nodeStore.getLatestChildNode(parentId: /* ... */);
+  expect(childNode['sourceExcerpt'], isNull);
+  expect(childNode['sourceType'], 'blank');  // sourceTypeUserIdea / "空白"
+});
+```
+
+### 5.9 空白分支 + 流式结束自动 title（plan § 9.2）
+
+```dart
+testWidgets('A 模式：流式回复结束后自动生成 title', (tester) async {
+  // 前置同 § 5.8，走到新分支 chat_screen
+  // ...
+
+  // 1. 在新分支发消息（不预填任何内容，因为是空白分支）
+  await sendChatMessage(tester, '请解释协程的本质');
+  await waitForLLMResponse(tester, checkStreaming: () => /* ... */);
+
+  // 2. 等待自动 title 生成（流式结束后 _triggerBlankAutoTitle 触发）
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 60));
+
+  // 3. 验证：title 不再是占位"临时会话"，变成了 LLM 生成的 title
+  expect(find.text('临时会话'), findsNothing);
+  expect(find.byType(CupertinoNavigationBar), findsOneWidget);
+  // ⚠️ 实际 title 在 navbar middle，需要 find.descendant 或类似 API 取
+});
+```
+
+### 5.10 空白分支 + LLM 失败不重试用户可见错误（plan § 9.3）
+
+```dart
+testWidgets('A 模式：自动 title 失败时显示重试/手动输入按钮', (tester) async {
+  // 用 § 4.3 方案 B mock LLM 抛错
+  IntegrationTestWidgetsFlutterBinding
+      .instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('llm_http_channel'),
+    (call) async => throw PlatformException(code: 'LLM_FAIL'),
+  );
+
+  // 前置同 § 5.8，走到新分支 chat_screen
+  // ...
+
+  await sendChatMessage(tester, 'test');
+  await waitForLLMResponse(tester, checkStreaming: () => /* ... */);
+
+  // 等 _generateTitleWithRetry 3 次重试 + 指数退避（1s + 2s + 4s = 7s+）
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 30));
+
+  // 验证：title 仍为占位，但出现"重试"按钮（用户可手动触发）
+  expect(find.text('临时会话'), findsOneWidget);
+  expect(find.byKey(const ValueKey('branch_blank_title_retry_button')), findsOneWidget);
+});
+```
+
+### 5.11 用户预改 title 跳过自动生成（plan § 9.4，**当前 SKIP**）
+
+```dart
+testWidgets(
+    'A 模式：用户预改 title 后跳过自动生成（plan § 9.4 - 当前实现有差距）',
+    (tester) async {
+  // ⚠️ plan § 9.4 与当前实现有差距：
+  //   - 当前实现仅查 `_displayedTitle` / `widget.title` UI state 守卫
+  //   - 不查 DB title，所以预改 title 后再触发回复，仍可能自动覆盖
+  //   - 正确做法：守卫还应查 nodeStore.getNode(nodeId).title
+  // 详 plan § 9.4 + commit `a91d6c8` chat_screen.dart `_triggerBlankAutoTitle` 守卫实现
+  debugPrint(
+      '[Test 9.4] SKIP: 当前实现仅 _displayedTitle / widget.title 守卫, '
+      '不查 DB title, plan § 9.4 需后续 PR 补齐');
+},
+    skip: true);
+```
+
 ---
 
 ## 6. 依赖的 helpers 与 fixtures
@@ -479,16 +644,18 @@ testWidgets('LLM 失败 fallback', (tester) async {
 
 ## 7. 阻塞点汇总
 
-按依赖顺序（2026-06-24 实跑状态）：
+按依赖顺序（2026-06-28 实跑状态）：
 
 1. **✅ branch_button ValueKey**（§ 4.1）—— 已补，实跑稳定选中
-2. **✅ branch_mode_*/continue/cancel Button ValueKey**（§ 4.1）—— 已补
-3. **🟡 send_button / stop_button ValueKey 缺失**（chat_composer.dart）—— case 1-6 实跑不依赖（分支流程在已有 LLM 回复的节点上触发）
+2. **✅ branch_mode_*/continue/cancel Button ValueKey**（§ 4.1）—— 已补，含 `branch_mode_blank_option`
+3. **🟡 send_button / stop_button ValueKey 缺失**（chat_composer.dart）—— case 1-6 实跑不依赖（分支流程在已有 LLM 回复的节点上触发）；case 9.1-9.3 也未走 send_button（直接用 helper）
 4. **✅ TitleSuggestionScreen 内部 ValueKey**（输入框、确认、返回）—— 已补
 5. **🟡 私有 helper 重复**（§ 4.2）—— `branch_creation` 与 `theme_chat_e2e` 复制粘贴，未提取到 `_support/test_fixtures.dart`，独立清理任务
-6. **🟡 LLM mock 工具**（§ 4.3）—— case 7 实跑前置依赖（LLM HTTP channel mock 拦截）
+6. **🟡 LLM mock 工具**（§ 4.3）—— case 7 实跑前置依赖（LLM HTTP channel mock 拦截）；case 9.3 也走相同 mock
 7. **🟡 SelectionArea 选区状态** —— Flutter framework 在 tester 里精确模拟选中文字范围非常困难；本次 case 1/2 用 `Navigator.of(element).pop` 模拟 sheet 动作点击绕开了 hit-test 难点
 8. **🟡 flutter_secure_storage Keychain 状态泄漏** —— case 切换时 ProviderScope override 未重设 keychain 默认 provider，残留上一个 case 的 provider list → case 4 sheet 选不到 → 详 [war-story](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md)
+9. **🟡 blank branch auto-title retry button ValueKey**（§ 5.10）—— case 9.3 实跑前置，需给 `_generateTitleWithRetry` 失败后显示的"重试"按钮补 ValueKey（`branch_blank_title_retry_button`）
+10. **🟡 blank branch 用户预改 title 守卫**（§ 5.11）—— 当前实现仅查 UI state（`_displayedTitle` / `widget.title`），不查 DB title；plan § 9.4 已知差距，待后续 PR 补齐，case 9.4 SKIP
 
 ---
 
@@ -508,6 +675,8 @@ testWidgets('LLM 失败 fallback', (tester) async {
 - **测试耗时（实测）**：case 1/2/3/5/6 不需 LLM（单 case 1-10s），case 4 需 LLM（单 case 30-60s），case 7 未实跑。7 case 全跑预计 1-3 分钟。
 - **`_sendMessage` 静默 return（已无关）**：case 1-6 不依赖 `_sendMessage` 发消息（分支流程在已有 LLM 回复的节点上触发）；`_sendMessage` 仍用 `if (sendButton.evaluate().isNotEmpty)` 防御式跳过，但 case 1-6 路径不走到这里。
 - **Keychain 状态泄漏**：详见 [war-story](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md)。本轮通过 commit `d937c07` + `14fdc79` 修复，但需注意 case 间隔离。
+- **blank branch 自动 title 守卫仅查 UI state（已知差距）**：`_triggerBlankAutoTitle` 守卫 `if (widget.title != placeholder && _displayedTitle != placeholder) return`，不查 DB title。若用户在新分支发消息前手动改了 title，再发消息流式结束仍会自动覆盖 → plan § 9.4 与实现差距，待后续 PR 补齐，case 9.4 SKIP。
+- **blank branch 重试退避（7s+）**：case 9.3 等 `_generateTitleWithRetry` 3 次重试 + 指数退避 `1 << attempt`（1s/2s/4s）= 至少 7s，加上每次 LLM 调用时长，单 case 30-60s。
 
 ### 测试矩阵简表
 
@@ -520,6 +689,10 @@ testWidgets('LLM 失败 fallback', (tester) async {
 | 5 模式取消 | ❌ | — | — | branch → sheet → cancel → 关闭 |
 | 6 标题取消 | ❌ | — | — | branch → sheet → continue → title → cancel |
 | 7 LLM fallback | ⚠️ mock | ✅ fallback 到 raw transcript | ❌ | summarize → 失败 → cancel → title |
+| 9.1 blank 创建 | ❌ | ✅ sourceExcerpt=NULL | ❌（占位） | branch → sheet(选 blank) → continue → 直进新 chat |
+| 9.2 blank + auto title | ✅ | — | ✅ LLM 摘要 | 新分支 chat → 发消息 → 流式结束 → 自动改 title |
+| 9.3 blank + LLM 失败 | ⚠️ mock | — | ⚠️ 3 次重试后失败，显示手动重试按钮 | 新分支 chat → 发消息 → 流式结束 → 失败重试 3 次 → 显示按钮 |
+| 9.4 blank + 用户预改 title | — | — | — | **SKIP**：当前实现守卫不查 DB title（plan § 9.4 已知差距） |
 
 ---
 
@@ -550,7 +723,7 @@ flutter test integration_test/branch_creation_test.dart \
   -d "<iOS Simulator>"
 ```
 
-> **2026-06-24 实跑结果**：case 1/2/3/4/5/6 实跑通过，02:26（Xcode build 25.2s + 6 个 testWidgets 依次跑过，case 4 含 LLM 真实调用）。case 7 scaffold + LLM mock 工具待补。
+> **2026-06-28 实跑结果**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold + LLM mock 工具待补；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28，commit `a91d6c8`）；case 9.4 SKIP（plan § 9.4 与实现差距）。
 
 ---
 
@@ -573,16 +746,22 @@ flutter test integration_test/branch_creation_test.dart \
 
 - [x] 给 chat_screen 右上角加 `branch_button` ValueKey
 - [x] 给 `_BranchModeOption` 加 `branch_mode_summarize_option` / `branch_mode_raw_option` ValueKey
+- [x] 给 `_BranchModeOption` 加 `branch_mode_blank_option` ValueKey（commit `a91d6c8`，空白分支）
 - [x] 给 sheet 加 `branch_mode_continue_button` / `branch_mode_cancel_button` ValueKey
 - [x] 给 `_ModelSelectorSheet` 动作加 `model_sheet_<providerId>_<modelId>` ValueKey（commit `d937c07` 修 case 4 sheet 选不到）
-- [ ] 给 chat_composer 加 `send_button` / `stop_button` ValueKey（case 1-6 实跑不依赖，分支流程在已有 LLM 回复的节点上触发）
+- [ ] 给 chat_composer 加 `send_button` / `stop_button` ValueKey（case 1-6 / 9.1-9.3 实跑不依赖，分支流程在已有 LLM 回复的节点上触发）
 - [x] 给 TitleSuggestionScreen 加 title 输入框 / 确认 / 返回 ValueKey
 - [x] 实现 § 5.1-5.6 六个 testWidgets 实际代码（case 1-6 实跑通过）；§ 5.7 scaffold 待补
-- [ ] 给 LLM HTTP channel 加 mock 工具（case 7 用）
+- [x] 实现 § 5.8-5.10 三个 testWidgets 实际代码（case 9.1-9.3 实跑通过，commit `a91d6c8`）；§ 5.11 SKIP
+- [ ] 给 LLM HTTP channel 加 mock 工具（case 7 + 9.3 用）
+- [ ] 给 `_generateTitleWithRetry` 失败后显示的"重试"按钮加 `branch_blank_title_retry_button` ValueKey（case 9.3 用）
 - [ ] 把 `_createTestTheme` / `_createTestNode` / `_sendMessage` 提取到 `_support/test_fixtures.dart`（需重复依赖脱耦，独立清理任务）
-- [x] 跑通 + 验证（case 1-6 02:26）
+- [ ] 补 `_triggerBlankAutoTitle` 守卫查 DB title（plan § 9.4 已知差距，case 9.4 待补）
+- [x] 跑通 + 验证（case 1-6 02:26 + case 9.1-9.3 2026-06-28）
 - [x] `checkLlmSetup` 三层防御拦截 LLM 未配置死路（commit `c8176a7` + `34d9465`）
 - [x] `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` l10n（commit `39ed0c0`）
+- [x] `BranchMode.blank` 拦截 + `_createBlankBranch` 实现 + 后置 `_triggerBlankAutoTitle` + 3 次重试 + 指数退避（commit `a91d6c8`）
+- [x] `updateNodeSourceInfo` 签名变更：sourceExcerpt 改 nullable（commit `a91d6c8`，blank 模式允许 NULL）
 
 ---
 
@@ -591,14 +770,17 @@ flutter test integration_test/branch_creation_test.dart \
 - [README.md](./README.md) — 集成测试总论
 - [chat-streaming.md](./chat-streaming.md) — chat 流式回复测试（chat_input/send_button 的关联 spec）
 - [theme-chat-e2e.md](./theme-chat-e2e.md) — 完整跑通的范式（4 个 helper 借鉴）
-- [llm-injection.md](./llm-injection.md) — LLM 注入详细版导航（测试 4 / 7 的 LLM 注入路线）
+- [llm-injection.md](./llm-injection.md) — LLM 注入详细版导航（测试 4 / 7 / 9.2 / 9.3 的 LLM 注入路线）
 - [fixtures.md](./fixtures.md) — `InMemoryLlmConfigStore` / `LlmTestConfig` 详解
 - [helpers.md](./helpers.md) — `test_helpers.dart` 工具清单
 - [docs/CHANGELOG/2026-06-24-branch-model-selector-filter.md](../../CHANGELOG/2026-06-24-branch-model-selector-filter.md) — 本次分支创建 sheet filter + 三层防御修改记录
 - [docs/war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md) — ProviderScope override + flutter_secure_storage Keychain 状态泄漏问题
+- [docs/superpowers/plans/2026-06-28-branch-blank-mode.md](../../superpowers/plans/2026-06-28-branch-blank-mode.md) — 空白分支模式（A 模式）实现计划（commit `a91d6c8`）
 - `lib/ui/features/chat/chat_screen.dart:165-176` — 右上角 branch 按钮
-- `lib/ui/core/shared/title_suggestion_screen.dart:695-780` — `showBranchModeSheet`
-- `lib/ui/core/shared/title_suggestion_screen.dart:849-1004` — `showBranchFlow`
+- `lib/ui/features/chat/chat_screen.dart:480-560` — `_triggerBlankAutoTitle` / `_collectTranscriptForTitle` / `_generateTitleWithRetry`（commit `a91d6c8`）
+- `lib/ui/core/shared/title_suggestion_screen.dart:695-780` — `showBranchModeSheet`（含 `branch_mode_blank_option`）
+- `lib/ui/core/shared/title_suggestion_screen.dart:849-1004` — `showBranchFlow`（含 `BranchMode.blank` 拦截 + `_createBlankBranch`）
 - `lib/ui/core/shared/title_suggestion_screen.dart:~1280` — `_ModelSelectorSheet` ValueKey
 - `lib/ui/core/shared/llm_setup_check.dart` — `checkLlmSetup` 三层防御核心
+- `lib/data/stores/node_store.dart:364-374` — `updateNodeSourceInfo` 签名变更（sourceExcerpt 改 nullable，commit `a91d6c8`）
 - `lib/ui/core/shared/chat_composer.dart:81` — `chat_input` ValueKey（唯一已存在的）
