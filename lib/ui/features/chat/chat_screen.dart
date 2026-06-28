@@ -148,6 +148,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       currentModelId ??= settings.model;
     }
 
+    // 如果还是没有，使用第一个有 apiKey 的 provider 的第一个 model
+    if (currentProviderId == null || currentModelId == null) {
+      final providers = ref.watch(llmProvidersProvider).value;
+      if (providers != null) {
+        for (final p in providers) {
+          if (p.models.isNotEmpty) {
+            currentProviderId ??= p.id;
+            currentModelId ??= p.models.first.id;
+            break;
+          }
+        }
+      }
+    }
+
     final modelSubtitle = _resolveModelSubtitle(currentProviderId, currentModelId);
 
     return CupertinoPageScaffold(
@@ -290,6 +304,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   onModelSelectorTap: () {
                     if (isStreaming) return;
                     FocusScope.of(context).unfocus();
+                    // 如果 chatDefaultProviderId 未配置，自动保存第一个模型
+                    if (currentProviderId == null || currentModelId == null) {
+                      final providers = ref.read(llmProvidersProvider).value;
+                      if (providers != null) {
+                        for (final p in providers) {
+                          if (p.models.isNotEmpty) {
+                            ref.read(settingsControllerProvider.notifier).saveChatDefaultModel(
+                              providerId: p.id,
+                              modelId: p.models.first.id,
+                            );
+                            currentProviderId = p.id;
+                            currentModelId = p.models.first.id;
+                            break;
+                          }
+                        }
+                      }
+                    }
                     setState(() => _showModelPanel = !_showModelPanel);
                   },
                 ),

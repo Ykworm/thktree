@@ -775,4 +775,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get llmErrorCancel => '取消';
+
+  @override
+  String get clearAllDefaultModels => '清除所有默认模型';
 }

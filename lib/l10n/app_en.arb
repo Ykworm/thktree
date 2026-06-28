@@ -1057,5 +1057,6 @@
   "llmErrorCancel": "Cancel",
   "@llmErrorCancel": {
     "description": "Secondary action button on LlmErrorCard"
-  }
+  },
+  "clearAllDefaultModels": "Clear All Default Models"
 }

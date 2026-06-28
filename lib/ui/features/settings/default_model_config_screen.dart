@@ -21,6 +21,26 @@ class DefaultModelConfigScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final settingsAsync = ref.watch(settingsControllerProvider);
 
+    // 如果 chatDefaultProviderId 未配置，自动保存第一个模型
+    settingsAsync.whenData((settings) {
+      if (settings.chatDefaultProviderId == null) {
+        final providers = ref.read(llmProvidersProvider).value;
+        if (providers != null) {
+          for (final p in providers) {
+            if (p.models.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ref.read(settingsControllerProvider.notifier).saveChatDefaultModel(
+                  providerId: p.id,
+                  modelId: p.models.first.id,
+                );
+              });
+              break;
+            }
+          }
+        }
+      }
+    });
+
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       navigationBar: CupertinoNavigationBar(
@@ -29,58 +49,74 @@ class DefaultModelConfigScreen extends ConsumerWidget {
       child: SafeArea(
         child: settingsAsync.when(
           data: (_) => ThkFillCardPageBody(
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              itemCount: 3,
-              separatorBuilder: (context, index) => Container(
-                height: 0.5,
-                margin: const EdgeInsetsDirectional.only(start: 16),
-                color: CupertinoColors.separator.resolveFrom(context),
-              ),
-              itemBuilder: (context, index) {
-                switch (index) {
-                  case 0:
-                    return _buildModelTile(
-                      context: context,
-                      ref: ref,
-                      title: l10n.chatDefaultModel,
-                      settingsAsync: settingsAsync,
-                      getProviderId: (s) => s.chatDefaultProviderId,
-                      getModelId: (s) => s.chatDefaultModelId,
-                      onSave: (providerId, modelId) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .saveChatDefaultModel(
-                              providerId: providerId, modelId: modelId),
-                    );
-                  case 1:
-                    return _buildModelTile(
-                      context: context,
-                      ref: ref,
-                      title: l10n.titleModelTitle,
-                      settingsAsync: settingsAsync,
-                      getProviderId: (s) => s.titleModelProviderId,
-                      getModelId: (s) => s.titleModelModelId,
-                      onSave: (providerId, modelId) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .saveTitleModel(
-                              providerId: providerId, modelId: modelId),
-                    );
-                  case 2:
-                    return _buildModelTile(
-                      context: context,
-                      ref: ref,
-                      title: l10n.summaryModelTitle,
-                      settingsAsync: settingsAsync,
-                      getProviderId: (s) => s.summaryModelProviderId,
-                      getModelId: (s) => s.summaryModelModelId,
-                      onSave: (providerId, modelId) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .saveSummaryModel(
-                              providerId: providerId, modelId: modelId),
-                    );
-                }
-                return const SizedBox.shrink();
-              },
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: 3,
+                    separatorBuilder: (context, index) => Container(
+                      height: 0.5,
+                      margin: const EdgeInsetsDirectional.only(start: 16),
+                      color: CupertinoColors.separator.resolveFrom(context),
+                    ),
+                    itemBuilder: (context, index) {
+                      switch (index) {
+                        case 0:
+                          return _buildModelTile(
+                            context: context,
+                            ref: ref,
+                            title: l10n.chatDefaultModel,
+                            settingsAsync: settingsAsync,
+                            getProviderId: (s) => s.chatDefaultProviderId,
+                            getModelId: (s) => s.chatDefaultModelId,
+                            onSave: (providerId, modelId) => ref
+                                .read(settingsControllerProvider.notifier)
+                                .saveChatDefaultModel(
+                                    providerId: providerId, modelId: modelId),
+                          );
+                        case 1:
+                          return _buildModelTile(
+                            context: context,
+                            ref: ref,
+                            title: l10n.titleModelTitle,
+                            settingsAsync: settingsAsync,
+                            getProviderId: (s) => s.titleModelProviderId,
+                            getModelId: (s) => s.titleModelModelId,
+                            onSave: (providerId, modelId) => ref
+                                .read(settingsControllerProvider.notifier)
+                                .saveTitleModel(
+                                    providerId: providerId, modelId: modelId),
+                          );
+                        case 2:
+                          return _buildModelTile(
+                            context: context,
+                            ref: ref,
+                            title: l10n.summaryModelTitle,
+                            settingsAsync: settingsAsync,
+                            getProviderId: (s) => s.summaryModelProviderId,
+                            getModelId: (s) => s.summaryModelModelId,
+                            onSave: (providerId, modelId) => ref
+                                .read(settingsControllerProvider.notifier)
+                                .saveSummaryModel(
+                                    providerId: providerId, modelId: modelId),
+                          );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: CupertinoButton(
+                    onPressed: () => _confirmClearAll(context, ref, l10n),
+                    child: Text(
+                      l10n.clearAllDefaultModels,
+                      style: const TextStyle(color: CupertinoColors.destructiveRed),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           loading: () => const ThkFillCardPageBody(
@@ -146,13 +182,13 @@ class DefaultModelConfigScreen extends ConsumerWidget {
     if (providerId == null || modelId == null) return l10n.notSet;
 
     final providers = providersAsync.value;
-    if (providers == null) return modelId;
+    if (providers == null) return l10n.notSet;
 
     final provider = providers.where((item) => item.id == providerId).firstOrNull;
-    if (provider == null) return modelId;
+    if (provider == null) return l10n.notSet;
 
     final model = provider.models.where((item) => item.id == modelId).firstOrNull;
-    if (model == null) return '${provider.name} · $modelId';
+    if (model == null) return l10n.notSet;
 
     return '${provider.name} · ${model.name}';
   }
@@ -174,6 +210,29 @@ class DefaultModelConfigScreen extends ConsumerWidget {
             onSave(nextProviderId, nextModelId);
           },
         ),
+      ),
+    );
+  }
+
+  void _confirmClearAll(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.clearAllDefaultModels),
+        actions: [
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              ref.read(settingsControllerProvider.notifier).clearAllDefaultModels();
+            },
+            child: Text(l10n.clearAllDefaultModels),
+          ),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancel),
+          ),
+        ],
       ),
     );
   }

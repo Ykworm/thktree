@@ -457,5 +457,6 @@
   "llmErrorServerError": "服务暂不可用，请稍后再试",
   "llmErrorUnknown": "生成失败，请重试",
   "llmErrorRetry": "重试",
-  "llmErrorCancel": "取消"
+  "llmErrorCancel": "取消",
+  "clearAllDefaultModels": "清除所有默认模型"
 }

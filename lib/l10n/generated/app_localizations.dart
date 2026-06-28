@@ -1513,6 +1513,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get llmErrorCancel;
+
+  /// No description provided for @clearAllDefaultModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All Default Models'**
+  String get clearAllDefaultModels;
 }
 
 class _AppLocalizationsDelegate

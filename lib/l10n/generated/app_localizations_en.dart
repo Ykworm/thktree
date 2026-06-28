@@ -804,4 +804,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get llmErrorCancel => 'Cancel';
+
+  @override
+  String get clearAllDefaultModels => 'Clear All Default Models';
 }

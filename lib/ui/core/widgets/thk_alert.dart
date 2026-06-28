@@ -36,7 +36,7 @@ class ThkAlert {
     VoidCallback? onDestructive,
     String? defaultAction,
     VoidCallback? onDefault,
-    String cancelAction = '取消',
+    String? cancelAction = '取消',
     VoidCallback? onCancel,
     bool barrierDismissible = true,
   }) async {
@@ -65,13 +65,14 @@ class ThkAlert {
               },
               child: Text(defaultAction),
             ),
-          CupertinoDialogAction(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              onCancel?.call();
-            },
-            child: Text(cancelAction),
-          ),
+          if (cancelAction != null)
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onCancel?.call();
+              },
+              child: Text(cancelAction),
+            ),
         ],
       ),
     );

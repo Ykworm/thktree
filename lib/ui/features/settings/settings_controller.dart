@@ -67,6 +67,14 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     await store.saveChatDefaultModel(providerId: providerId, modelId: modelId);
     state = AsyncData(await store.load());
   }
+
+  Future<void> clearAllDefaultModels() async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveTitleModel(providerId: null, modelId: null);
+    await store.saveSummaryModel(providerId: null, modelId: null);
+    await store.saveChatDefaultModel(providerId: null, modelId: null);
+    state = AsyncData(await store.load());
+  }
 }
 
 final settingsControllerProvider =

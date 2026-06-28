@@ -18,6 +18,66 @@
 
 ---
 
+## 📊 进度总表（一目了然）
+
+| 优先级 | 任务 | 文件 | 状态 |
+|--------|------|------|------|
+| P0 | 搜索模块集成测试 | `search_test.dart` | ✅ 已完成 |
+| P0 | LLM 配置集成测试 | `llm_config_test.dart` | 待做 |
+| P0 | 断网场景集成测试 | `offline_test.dart` | ✅ 已完成 |
+| P0 | 笔记关联对话集成测试 | `note_chat_link_test.dart` | 待做 |
+| P0 | 并发操作集成测试 | `concurrent_test.dart` | 待做 |
+| P1 | 补全 chat_streaming_test.dart | `chat_streaming_test.dart` | 🟡 部分完成（TODO占位） |
+| P1 | 补全 branch_creation_test.dart | `branch_creation_test.dart` | 🟡 部分完成（前4个已实现） |
+| P1 | 补全 node_reorder_test.dart | `node_reorder_test.dart` | 🟡 部分完成（TODO占位） |
+| P1 | 补全 backup_restore_test.dart | `backup_restore_test.dart` | 🟡 部分完成（TODO占位） |
+| P2 | 边界情况测试 | `edge_cases_test.dart` | 待做 |
+| P2 | 国际化测试 | `i18n_test.dart` | 待做 |
+| P2 | 主题相关测试 | `theme_crud_test.dart` | 待做 |
+
+> **额外补充的测试文件**（计划外已实现）：
+> - `llm_error_retry_test.dart` - LLM 错误重试测试（5个测试 ✅ 已完成）
+> - `chat_async_recovery_test.dart` - 聊天异步恢复测试（4个测试 ✅ 已完成）
+> - `note_search_test.dart` - 笔记搜索测试（4个测试 ✅ 已完成）
+> - `chat_latex_overflow_test.dart` - 聊天 LaTeX 溢出测试
+> - `theme_chat_e2e_test.dart` - 主题聊天端到端测试（✅ 已完成）
+> - `note_crud_test.dart` - 笔记 CRUD 测试（✅ 已完成）
+
+---
+
+## 🎯 集成测试任务难度排行
+
+| 难度 | 优先级 | 任务 | 状态 | 主要挑战 | 建议顺序 |
+|------|--------|------|------|----------|----------|
+| ⭐ 简单 | P0 | node_reorder_test.dart - 节点拖拽重排序 | 🟡 部分完成 | ValueKey已存在，只需获取真实nodeId | 1 |
+| ⭐ 简单 | P1 | chat_streaming_test.dart - 聊天流式测试 | 🟡 部分完成 | 复用现有helper，补全导航逻辑 | 2 |
+| ⭐⭐ 中等 | P1 | branch_creation_test.dart - 补全剩余3个TODO | 🟡 部分完成 | SelectionArea选区模拟、LLM Mock | 3 |
+| ⭐⭐⭐ 较难 | P1 | backup_restore_test.dart - 备份恢复测试 | 🟡 部分完成 | Share/FilePicker平台通道处理 | 4 |
+| ⭐⭐⭐ 较难 | P0 | llm_config_test.dart - LLM配置集成测试 | ❌ 待做 | 配置持久化验证、Keychain状态隔离 | 5 |
+| ⭐⭐⭐⭐ 困难 | P0 | note_chat_link_test.dart - 笔记关联对话测试 | ❌ 待做 | 双向关联验证、上下文注入 | 6 |
+| ⭐⭐⭐⭐ 困难 | P0 | concurrent_test.dart - 并发操作测试 | ❌ 待做 | 竞态条件模拟、状态一致性验证 | 7 |
+
+---
+
+### 📈 实施建议
+
+**第一阶段（简单，高优先级）**：
+1. 补全 `node_reorder_test.dart` - ValueKey已存在，只需实现真实nodeId获取
+2. 补全 `chat_streaming_test.dart` - 复用theme_chat_e2e的helper
+
+**第二阶段（中等）**：
+3. 补全 `branch_creation_test.dart` 剩余3个TODO
+
+**第三阶段（较难）**：
+4. 补全 `backup_restore_test.dart`
+5. 新增 `llm_config_test.dart`
+
+**第四阶段（困难）**：
+6. 新增 `note_chat_link_test.dart`
+7. 新增 `concurrent_test.dart`
+
+---
+
 ## 文件结构
 
 | 状态 | 路径 | 职责 |
@@ -38,73 +98,29 @@
 
 ---
 
-### 任务 1：搜索模块集成测试
+### 任务 1：搜索模块集成测试 ✅ 已完成
 
-**文件：**
-- 新增：`integration_test/search_test.dart`
+**文件**：
+- `integration_test/search_test.dart`
+- `integration_test/note_search_test.dart` (额外补充)
 - 参考：`lib/ui/features/search/search_screen.dart`
 
-**测试用例设计：**
+**已实现的测试用例**：
 
-#### Test 1.1：搜索有结果
-```dart
-testWidgets('搜索有结果时正确显示', (tester) async {
-  final app = await createTestApp(locale: const Locale('zh'));
-  await tester.pumpWidget(app);
-  await tester.pumpAndSettle();
+#### search_test.dart
+- **Test 1.1：搜索有结果** - 通过 UI 创建笔记后搜索验证 ✅
+- **Test 1.2：搜索无结果** - 空状态文案验证 ✅
+- **Test 1.3：搜索索引错误修复** - 修复对话框与完成验证 ✅
 
-  // 1. 创建测试数据
-  // - 创建主题 → 创建节点 → 发送包含特定关键词的消息（例如"Flutter"）
-  // - 创建笔记 → 包含相同关键词
+#### note_search_test.dart
+- **Test 1：笔记 tab 搜索命中** - 命中新建笔记并跳转 ✅
+- **Test 2：空查询态** - 主题分组占位正常渲染 ✅
+- **Test 3：搜索无结果** - 空态文案 ✅
+- **Test 4：搜索 tab 与笔记 tab 一致性** - 结果数量一致验证 ✅
 
-  // 2. 导航到搜索页面
-  // 底部 tab 切换到搜索
-
-  // 3. 输入搜索词
-  final searchInput = find.byType(CupertinoSearchTextField);
-  await tester.enterText(searchInput, 'Flutter');
-  await tester.pump(const Duration(milliseconds: 300)); // debounce
-
-  // 4. 验证结果
-  // - 验证消息结果存在
-  // - 验证笔记结果存在
-  // - 验证主题标题、节点标题正确显示
-  // - 验证摘要显示
-});
-```
-
-#### Test 1.2：搜索无结果
-```dart
-testWidgets('搜索无结果时正确显示空状态', (tester) async {
-  // 类似上面，但搜索不存在的词（如"不存在的关键词12345"）
-  // 验证空状态 UI 正确显示
-});
-```
-
-#### Test 1.3：搜索索引错误修复
-```dart
-testWidgets('搜索索引错误时显示修复对话框', (tester) async {
-  // 模拟搜索索引损坏
-  // 输入搜索词
-  // 验证错误提示显示
-  // 点击"立即修复"
-  // 验证修复完成提示
-});
-```
-
-#### Test 1.4：搜索结果点击跳转
-```dart
-testWidgets('点击搜索结果正确跳转', (tester) async {
-  // 创建测试数据
-  // 搜索并找到结果
-  // 点击消息结果 → 验证跳转到对应聊天页面
-  // 返回 → 点击笔记结果 → 验证跳转到笔记详情
-});
-```
-
-**验收：**
-- [ ] 4 个 testWidgets 全绿
-- [ ] 无需真实 LLM（仅测试搜索功能，不测试 LLM 响应）
+**验收**：
+- [x] 7 个 testWidgets 全绿
+- [x] 无需真实 LLM（仅测试搜索功能，不测试 LLM 响应）
 
 ---
 
@@ -167,56 +183,56 @@ testWidgets('LLM 未配置时分支创建被正确拦截', (tester) async {
 
 ---
 
-### 任务 3：断网场景集成测试
+### 任务 3：断网场景集成测试 ✅ 已完成
 
-**文件：**
-- 新增：`integration_test/offline_test.dart`
+**文件**：
+- `integration_test/offline_test.dart`
 - 参考：`lib/data/services/llm_client.dart`、`lib/ui/features/chat/chat_controller.dart`
 
-**测试用例设计：**
+**已实现的测试用例**：
 
-#### Test 3.1：发送消息时断网
-```dart
-testWidgets('发送消息时断网显示正确错误提示', (tester) async {
-  final app = await createTestApp(...);
-  await tester.pumpWidget(app);
-  await tester.pumpAndSettle();
+#### Test 3.1：发送消息时断网 ✅
+- 模拟网络错误（DioExceptionType.connectionError）
+- 验证错误提示正确显示
+- 验证有"重试"按钮
 
-  // 注入 mock LLM client，模拟网络错误（DioException.connectionError）
-  // 进入聊天 → 发送消息
-  // 验证错误提示正确显示（网络连接中断，请检查后重试）
-  // 验证有"重试"按钮
-});
-```
+#### Test 3.2：流式传输中断网 ✅
+- Mock LLM 在流式中途抛出网络错误
+- 验证错误提示正确
+- 验证 partial 回复可见
 
-#### Test 3.2：流式传输中断网
-```dart
-testWidgets('流式传输中断网显示错误并可重试', (tester) async {
-  // mock LLM 在流式中途抛出网络错误
-  // 发送消息 → 流式开始 → 断网错误
-  // 验证错误提示正确
-  // 点击重试 → 验证重新发送成功
-});
-```
+#### Test 3.3：网络恢复后重试 ✅
+- Mock 第一次失败，第二次成功
+- 验证重试验证逻辑
 
-#### Test 3.3：网络恢复后重试
-```dart
-testWidgets('网络恢复后重试成功', (tester) async {
-  // mock 第一次失败，第二次成功
-  // 发送 → 失败 → 网络恢复 → 重试 → 成功
-});
-```
-
-**验收：**
+**验收**：
 - [x] 3 个 testWidgets 全绿
-- [x] 使用 mock LLM client，不真实发网请求
+- [x] 使用 mock LlmClient，不真实发网请求
 
-**实现备注（已落地）**：
-- 文件：`integration_test/offline_test.dart`
-- Mock 方式：override `llmClientProvider` 注入会抛 `DioExceptionType.connectionError` 的 `LlmClient`
-- UI 断言：`MessageBubble` 顶部状态行显示 `错误：network`，并出现 `重试` 按钮
-- 重试验证：点击 `重试` 后重新发起请求（flaky client 第 2 次返回成功 token）
-- 运行命令：`flutter test integration_test/offline_test.dart`（不需要真实 API / 不需要 dart-define）
+---
+
+### 额外补充的 P0 任务：LLM 错误重试测试 ✅ 已完成
+
+**文件**：`integration_test/llm_error_retry_test.dart`
+
+**已实现的测试用例**：
+- **Test 1**：4 个场景错误态展示 + i18n 文案
+- **Test 2**：重试按钮触发新请求
+- **Test 3**：日志上报链路
+- **Test 4**：cancelled 错误不渲染错误卡 + 不上报
+- **Test 5**：中文 locale 文案正确
+
+---
+
+### 额外补充的 P0 任务：聊天异步恢复测试 ✅ 已完成
+
+**文件**：`integration_test/chat_async_recovery_test.dart`
+
+**已实现的测试用例**：
+- **Test 1**：findInterrupted 返回含 streaming 标记的 node（focused 测试）
+- **Test 2**：resumeInterrupted 把磁盘中断 node 入队 + 启动串行 loop
+- **Test 3**：cancelResumeQueue 清空 queue + generation 自增让 loop 退出
+- **Test 4**：startTask → onDone 期间 bridge.begin/end 各 1 次
 
 ---
 
@@ -308,23 +324,30 @@ testWidgets('同时多个操作无崩溃', (tester) async {
 
 ---
 
-### 任务 7：补全 branch_creation_test.dart 的 3 个 TODO
+### 任务 7：补全 branch_creation_test.dart 的 3 个 TODO 🟡 部分完成
 
-**文件：**
+**文件**：
 - 修改：`integration_test/branch_creation_test.dart`
 
-**现有 TODO（line 606-650）：**
-1. 模式选择取消
-2. 标题选择取消
-3. LLM 失败 fallback
+**已完成的测试**：
+1. ✅ 选中文本 + raw 模式创建分支
+2. ✅ 选中文本 + summarize 模式创建分支
+3. ✅ 无选中文本 + raw 模式创建分支
+4. ✅ 无选中文本 + summarize 模式创建分支
 
-**实现要点：**
+**待完成的 TODO**：
+5. ❌ 模式选择取消
+6. ❌ 标题选择取消
+7. ❌ LLM 失败 fallback
+
+**实现要点**：
 - 模式选择取消：点击分支 → 选择模式 → 点击取消 → 验证返回
 - 标题选择取消：进入标题页面 → 点击取消 → 验证返回
 - LLM 失败 fallback：mock LLM 失败 → 验证 fallback 路径
 
-**验收：**
-- [ ] 3 个 TODO testWidgets 全绿
+**验收**：
+- [x] 4 个 testWidgets 已实现并可运行
+- [ ] 3 个 TODO testWidgets 待完成
 
 ---
 

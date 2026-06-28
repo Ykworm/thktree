@@ -241,13 +241,23 @@ Future<LlmSetupStatus> checkLlmSetupForSummarize({
   if ((await configuredProviders(container)).isEmpty) {
     return LlmSetupStatus.noProviderConfigured;
   }
-  final resolved = await resolveModelForSummary(
-    container,
-    providers,
-    currentProviderId: currentProviderId,
-    currentModelId: currentModelId,
-  );
-  if (resolved == null) return LlmSetupStatus.noSummaryModelConfigured;
+  // 只检查显式配置的 summary model，不回退到 currentProviderId/modelId 或 legacy
+  final settings = container.read(settingsControllerProvider).value;
+  if (settings?.summaryModelProviderId == null || settings?.summaryModelModelId == null) {
+    return LlmSetupStatus.noSummaryModelConfigured;
+  }
+  // 验证配置的 provider/model 仍然存在且有 apiKey
+  final configStore = container.read(llmConfigStoreProvider);
+  LlmProviderConfig? provider;
+  for (final p in providers) {
+    if (p.id == settings!.summaryModelProviderId) {
+      provider = p;
+      break;
+    }
+  }
+  if (provider == null) return LlmSetupStatus.noSummaryModelConfigured;
+  final apiKey = await configStore.readApiKey(provider.id);
+  if (apiKey.isEmpty) return LlmSetupStatus.noSummaryModelConfigured;
   return LlmSetupStatus.ok;
 }
 
@@ -265,13 +275,23 @@ Future<LlmSetupStatus> checkLlmSetupForTitle({
   if ((await configuredProviders(container)).isEmpty) {
     return LlmSetupStatus.noProviderConfigured;
   }
-  final resolved = await resolveModelForTitle(
-    container,
-    providers,
-    currentProviderId: currentProviderId,
-    currentModelId: currentModelId,
-  );
-  if (resolved == null) return LlmSetupStatus.noTitleModelConfigured;
+  // 只检查显式配置的 title model，不回退到 currentProviderId/modelId 或 legacy
+  final settings = container.read(settingsControllerProvider).value;
+  if (settings?.titleModelProviderId == null || settings?.titleModelModelId == null) {
+    return LlmSetupStatus.noTitleModelConfigured;
+  }
+  // 验证配置的 provider/model 仍然存在且有 apiKey
+  final configStore = container.read(llmConfigStoreProvider);
+  LlmProviderConfig? provider;
+  for (final p in providers) {
+    if (p.id == settings!.titleModelProviderId) {
+      provider = p;
+      break;
+    }
+  }
+  if (provider == null) return LlmSetupStatus.noTitleModelConfigured;
+  final apiKey = await configStore.readApiKey(provider.id);
+  if (apiKey.isEmpty) return LlmSetupStatus.noTitleModelConfigured;
   return LlmSetupStatus.ok;
 }
 
@@ -357,11 +377,15 @@ Future<void> showLlmSetupAlert({
       return;
   }
 
+  // 总结功能：不能取消，只有一个按钮（跳转设置页）
+  // 标题生成：可以取消（用户可以在标题页右上角按钮进入设置页）
+  final bool isSummary = status == LlmSetupStatus.noSummaryModelConfigured;
   await ThkAlert.show(
     context: context,
     message: message,
     defaultAction: defaultLabel,
     onDefault: onDefault,
-    cancelAction: l10n.cancel,
+    cancelAction: isSummary ? null : l10n.cancel,
+    barrierDismissible: !isSummary,
   );
 }

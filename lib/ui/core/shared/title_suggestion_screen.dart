@@ -15,6 +15,7 @@ import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
+import 'package:thk_tree/ui/features/settings/default_model_picker_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
@@ -140,43 +141,20 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
         modelId: settings.titleModelModelId!,
       );
     } else {
-      // Show model selector
-      await _showModelSelectorAndGenerate();
+      // Use current chat model (from request) if available
+      if (widget.request.currentProviderId != null && widget.request.currentModelId != null) {
+        await _generateWithModel(
+          providerId: widget.request.currentProviderId!,
+          modelId: widget.request.currentModelId!,
+        );
+      } else {
+        // Fallback: resolve model via fallback chain
+        await _resolveAndGenerate();
+      }
     }
   }
 
-  Future<void> _showModelSelectorAndGenerate() async {
-    final container = ProviderScope.containerOf(context, listen: false);
-    final configured = await configuredProviders(container);
-    if (!mounted) return;
 
-    if (configured.isEmpty) {
-      // 兜底中的兜底：L1-B 没拦住（比如用户在进页面后才清空 LLM 配置）
-      await showLlmSetupAlert(
-        context: context,
-        status: LlmSetupStatus.noProviderConfigured,
-        container: container,
-      );
-      return;
-    }
-
-    final selected = await showCupertinoModalPopup<(String, String)?>(
-      context: context,
-      builder: (ctx) => _ModelSelectorSheet(providers: configured),
-    );
-
-    if (selected == null || !mounted) return;
-
-    await ref.read(settingsControllerProvider.notifier).saveTitleModel(
-      providerId: selected.$1,
-      modelId: selected.$2,
-    );
-
-    await _generateWithModel(
-      providerId: selected.$1,
-      modelId: selected.$2,
-    );
-  }
 
   Future<void> _generateWithModel({
     required String providerId,
@@ -383,9 +361,10 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     if (apiKey.isEmpty) return;
     
     // Get context window for the selected model
-    final model = provider.models.firstWhere(
+    final p = provider;  // Local variable for type promotion in lambda
+    final model = p.models.firstWhere(
       (m) => m.id == cm.modelId,
-      orElse: () => provider!.models.isNotEmpty ? provider!.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
+      orElse: () => p.models.isNotEmpty ? p.models.first : const LlmModelConfig(id: '', name: '', contextWindow: 0),
     );
     final contextWindow = model.contextWindow;
     
@@ -402,6 +381,28 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
     final value = _titleCtrl.text.trim();
     if (value.isEmpty) return;
     Navigator.of(context).pop(value);
+  }
+
+  void _openTitleModelSettings() {
+    final l10n = AppLocalizations.of(context)!;
+    final container = ProviderScope.containerOf(context, listen: false);
+    Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => DefaultModelPickerScreen(
+          title: l10n.titleModelTitle,
+          currentProviderId: null,
+          currentModelId: null,
+          onSelected: (providerId, modelId) async {
+            await container
+                .read(settingsControllerProvider.notifier)
+                .saveTitleModel(
+                  providerId: providerId,
+                  modelId: modelId,
+                );
+          },
+        ),
+      ),
+    );
   }
 
   // ---------- Build ----------
@@ -531,9 +532,22 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    CupertinoButton.filled(
-                      onPressed: _handleGenerateButton,
-                      child: Text(l10n.generateTitles),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CupertinoButton.filled(
+                          onPressed: _handleGenerateButton,
+                          child: Text(l10n.generateTitles),
+                        ),
+                        const SizedBox(width: 12),
+                        CupertinoButton(
+                          onPressed: _openTitleModelSettings,
+                          child: Icon(
+                            CupertinoIcons.settings,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1217,81 +1231,4 @@ Future<String?> _summarizeWithLifecycleAndRetry({
 // LlmErrorCard 统一取代。
 
 /// Model selector sheet for choosing which model to use for title generation
-class _ModelSelectorSheet extends StatelessWidget {
-  const _ModelSelectorSheet({required this.providers});
 
-  final List<LlmProviderConfig> providers;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    // L2：调用方已过滤，这里不再二次 filter
-    assert(providers.isNotEmpty, '调用方应保证 providers 非空');
-
-    return CupertinoActionSheet(
-      title: Text(l10n.selectModel),
-      actions: [
-        for (final provider in providers)
-          ..._buildProviderActions(context, provider),
-      ],
-      cancelButton: CupertinoActionSheetAction(
-        isDestructiveAction: true,
-        onPressed: () => Navigator.of(context).pop(),
-        child: Text(l10n.cancel),
-      ),
-    );
-  }
-
-  List<Widget> _buildProviderActions(BuildContext context, LlmProviderConfig provider) {
-    final actions = <Widget>[];
-
-    // If provider has models, show each model as an action
-    if (provider.models.isNotEmpty) {
-      for (final model in provider.models) {
-        actions.add(
-          CupertinoActionSheetAction(
-            key: ValueKey('model_sheet_${provider.id}_${model.id}'),
-            onPressed: () => Navigator.of(context).pop<(String, String)>((provider.id, model.id)),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  provider.name,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                Text(model.name),
-              ],
-            ),
-          ),
-        );
-      }
-    } else if (provider.selectedModelId != null && provider.selectedModelId!.isNotEmpty) {
-      // Provider has no models list but has a selected model
-      actions.add(
-        CupertinoActionSheetAction(
-          key: ValueKey('model_sheet_${provider.id}_${provider.selectedModelId!}'),
-          onPressed: () => Navigator.of(context).pop<(String, String)>((provider.id, provider.selectedModelId!)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                provider.name,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              Text(provider.selectedModelId!),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return actions;
-  }
-}
