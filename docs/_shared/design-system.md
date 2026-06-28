@@ -334,6 +334,7 @@ ThkTree 是一个 AI-native 知识管理应用，核心理念是通过"知识树
 | Search | 放大镜 | Light Gray | Riviera Blue + 底部下划线 |
 | Topics | 简化的树形节点结构 | Light Gray | Riviera Blue + 底部下划线 |
 | Notes | 记事本 | Light Gray | Riviera Blue + 底部下划线 |
+| Lab | 烧瓶 | Light Gray | Riviera Blue + 底部下划线 |
 | Settings | 齿轮 | Light Gray | Riviera Blue + 底部下划线 |
 
 **选中状态**
