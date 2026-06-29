@@ -58,6 +58,17 @@ class SearchService {
     if (sanitized.isEmpty) return [];
 
     try {
+      // Flat query — FTS5 helper functions (snippet/bm25) cannot be invoked
+      // inside a subquery that is wrapped by GROUP BY at the outer level;
+      // the engine rejects them with "unable to use function X in the
+      // requested context". Keep snippet/bm25 directly on the base SELECT.
+      //
+      // Column number 5 = `content` (entityType=0, entityId=1, themeId=2,
+      // themeTitle=3 UNINDEXED, entityTitle=4, content=5, updatedAt=6).
+      //
+      // Upsert path (upsertNote / upsertMessage) uses transactional
+      // DELETE + INSERT to prevent duplicate rows caused by FTS5's lack of
+      // PRIMARY KEY semantics; see war-story packages/2026-06-29.
       final rows = await db.rawQuery('''
         SELECT
           entityType,
@@ -65,23 +76,12 @@ class SearchService {
           themeId,
           themeTitle,
           entityTitle,
-          snippet,
-          updatedAt
-        FROM (
-          SELECT
-            entityType,
-            entityId,
-            themeId,
-            themeTitle,
-            entityTitle,
-            snippet(search_index, 1, '<b>', '</b>', '...', 40) AS snippet,
-            updatedAt,
-            bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
-          FROM search_index
-          WHERE search_index MATCH ?
-        )
-        GROUP BY entityType, entityId
-        ORDER BY MIN(rank) ASC, MAX(updatedAt) DESC
+          snippet(search_index, 5, '<b>', '</b>', '...', 40) AS snippet,
+          updatedAt,
+          bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
+        FROM search_index
+        WHERE search_index MATCH ?
+        ORDER BY rank ASC, updatedAt DESC
         LIMIT ?
       ''', [sanitized, limit]);
 
@@ -141,6 +141,11 @@ class SearchService {
   ///
   /// Call after [SessionStore.finishAssistant] completes successfully.
   /// Failures are silently logged and never block the caller.
+  ///
+  /// Uses transactional DELETE + INSERT because FTS5 virtual tables have no
+  /// PRIMARY KEY / UNIQUE constraint, so `ConflictAlgorithm.replace` is a
+  /// silent no-op there (extra row inserted, no error). See war-story
+  /// packages/2026-06-29-fts5-conflict-replace-silent.md.
   Future<void> upsertMessage({
     required String nodeId,
     required String themeId,
@@ -149,15 +154,22 @@ class SearchService {
     required String body,
   }) async {
     try {
-      await db.insert('search_index', {
-        'entityType': 'message',
-        'entityId': nodeId,
-        'themeId': themeId,
-        'themeTitle': themeTitle,
-        'entityTitle': nodeTitle,
-        'content': body,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.transaction((txn) async {
+        await txn.delete(
+          'search_index',
+          where: 'entityType = ? AND entityId = ?',
+          whereArgs: ['message', nodeId],
+        );
+        await txn.insert('search_index', {
+          'entityType': 'message',
+          'entityId': nodeId,
+          'themeId': themeId,
+          'themeTitle': themeTitle,
+          'entityTitle': nodeTitle,
+          'content': body,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        });
+      });
     } catch (e, st) {
       dev.log('[SearchService.upsertMessage] FAILED nodeId=$nodeId: $e\n$st');
     }

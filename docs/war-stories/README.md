@@ -86,6 +86,7 @@ YYYY-MM-DD-简短问题描述.md
 ### 2026-06
 
 - `packages/2026-06-29-fts5-conflict-replace-silent.md` — FTS5 虚拟表上 `ConflictAlgorithm.replace` 静默失效（不抛错不替换只多一行；用 `db.transaction` 包裹 DELETE+INSERT + 子查询 GROUP BY 组合方案 A+B）
+- `flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md` — AsyncNotifier autoDispose 在 widget unmount 时取消 in-flight Future（ref.keepAlive() 修复，空白分支 title 持久化场景；详见 ADR-018 + war-story）
 - `flutter/2026-06-24-integration-test-keychain-state-leak.md` — ProviderScope override + flutter_secure_storage Keychain 状态泄漏（3 个根因叠加：ProviderScope override 残留 + Keychain 内存缓存 + ChatController.isStreaming 状态残留；用 Navigator.of(element).pop 模拟点击 + ValueKey 改 providerId_modelId 稳定 key）
 - `ui-ux/2026-06-22-sqlite-nested-transaction-crash.md` — SQLite 嵌套事务崩溃（getSessionPathForNode 全量 reindex 并发冲突，disk-first + 启动同步替代）
 - `ui-ux/2026-06-20-chat-controller-stop-button-stuck.md` — ChatController stop_button 卡死（fire-and-forget 错误日志 + `_handle` 时序自愈）
