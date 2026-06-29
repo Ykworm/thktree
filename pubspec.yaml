@@ -82,6 +82,7 @@ flutter:
   generate: true
 
   assets:
+    - assets/background/
     - assets/fonts/
     - assets/icons/
 
