@@ -65,12 +65,23 @@ class SearchService {
           themeId,
           themeTitle,
           entityTitle,
-          snippet(search_index, 1, '<b>', '</b>', '...', 40) AS snippet,
+          snippet,
           updatedAt
-        FROM search_index
-        WHERE search_index MATCH ?
-        ORDER BY bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) ASC,
-                 updatedAt DESC
+        FROM (
+          SELECT
+            entityType,
+            entityId,
+            themeId,
+            themeTitle,
+            entityTitle,
+            snippet(search_index, 1, '<b>', '</b>', '...', 40) AS snippet,
+            updatedAt,
+            bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
+          FROM search_index
+          WHERE search_index MATCH ?
+        )
+        GROUP BY entityType, entityId
+        ORDER BY MIN(rank) ASC, MAX(updatedAt) DESC
         LIMIT ?
       ''', [sanitized, limit]);
 
@@ -105,15 +116,22 @@ class SearchService {
     required String body,
   }) async {
     try {
-      await db.insert('search_index', {
-        'entityType': 'note',
-        'entityId': noteId,
-        'themeId': themeId,
-        'themeTitle': themeTitle,
-        'entityTitle': noteTitle,
-        'content': body,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.transaction((txn) async {
+        await txn.delete(
+          'search_index',
+          where: 'entityType = ? AND entityId = ?',
+          whereArgs: ['note', noteId],
+        );
+        await txn.insert('search_index', {
+          'entityType': 'note',
+          'entityId': noteId,
+          'themeId': themeId,
+          'themeTitle': themeTitle,
+          'entityTitle': noteTitle,
+          'content': body,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        });
+      });
     } catch (e, st) {
       dev.log('[SearchService.upsertNote] FAILED noteId=$noteId: $e\n$st');
     }

@@ -200,6 +200,73 @@ void main() {
     },
     timeout: const Timeout(Duration(seconds: 60)),
   );
+
+  testWidgets(
+    'Case 5: 新建笔记后多次保存 → 搜索结果去重（EC-043 回归）',
+    (tester) async {
+      final app = await createTestApp(locale: const Locale('zh'));
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final themeTitle = 'Dedupe主题_$ts';
+      final noteTitle = 'Dedupe笔记_$ts';
+      // 唯一关键词 — 只能命中本笔记
+      final uniqueKeyword = 'DEDUPE_UNIQUE_KW_$ts';
+
+      // ── 准备：在主题内建一条笔记 ──────────────────────────────────────
+      await _switchToTab(tester, '笔记');
+      await tester.pumpAndSettle();
+
+      // 点 + 进入主题选择
+      await tester.tap(find.byKey(const ValueKey('add_note_button')));
+      await tester.pumpAndSettle();
+
+      // ThemePicker → 点 + 创建新主题
+      await tester.tap(find.byIcon(AppIcons.add).last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(CupertinoTextField).last, themeTitle);
+      await tester.pump();
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+
+      // 等待编辑器进入稳态
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // 填标题 + 正文（含唯一关键词）
+      await tester.enterText(
+        find.byKey(const ValueKey('note_title_input')),
+        noteTitle,
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const ValueKey('note_body_input')),
+        '正文包含唯一关键词 $uniqueKeyword 用于复现 EC-043',
+      );
+
+      // 触发 500ms 防抖（第 1 次 _saveNow）
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // 显式再点 √（触发第 2 次 _saveNow）—— 这是 EC-043 的关键触发条件
+      await tester.tap(find.byIcon(AppIcons.check));
+      await tester.pumpAndSettle();
+
+      // 等所有 fire-and-forget 的 _updateSearchIndex 全部跑完
+      await tester.pump(const Duration(seconds: 2));
+
+      // ── 验证：搜索唯一关键词，结果应只 1 条 ──────────────────────────
+      final searchField = find.byType(CupertinoSearchTextField).first;
+      await tester.enterText(searchField, uniqueKeyword);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+      // 该关键词只能命中本笔记；Case 5 强断言"恰好 1 条"
+      expect(_countSearchResultEntities(), 1,
+          reason:
+              '用唯一关键词 "$uniqueKeyword" 搜应恰好返回 1 条结果（EC-043: 多次 upsertNote 在 search_index 累加多行）');
+    },
+    timeout: const Timeout(Duration(seconds: 60)),
+  );
 }
 
 // ---------------------------------------------------------------------------
