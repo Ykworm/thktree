@@ -8,7 +8,6 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/lab/lab_placeholder_screen.dart';
@@ -186,12 +185,7 @@ class _MainShell extends ConsumerWidget {
       ),
       (
         icon: AppIcons.accountTree,
-        unselectedIcon: SvgPicture.asset(
-          'assets/icons/theme_unselect.svg',
-          width: 25,
-          height: 25,
-          fit: BoxFit.contain,
-        ),
+        unselectedIcon: null,
         selectedIcon: null,
         label: l10n.themesTabLabel,
       ),
@@ -204,12 +198,7 @@ class _MainShell extends ConsumerWidget {
       (
         icon: AppIcons.lab,
         unselectedIcon: null,
-        selectedIcon: Image.asset(
-          'assets/icons/lab_selected.png',
-          width: 25,
-          height: 25,
-          fit: BoxFit.contain,
-        ),
+        selectedIcon: null,
         label: l10n.labTabLabel,
       ),
     ];
@@ -219,7 +208,7 @@ class _MainShell extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.destructive,
+        color: AppColors.surface,
         border: Border(
           top: BorderSide(color: AppColors.border, width: 0.5),
         ),
