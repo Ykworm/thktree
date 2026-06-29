@@ -235,11 +235,11 @@ graph TB
 - **相关代码**：`AppDatabase.reindex()`、[tools/repair_index_from_disk.py](../../tools/repair_index_from_disk.py)
 - **相关文档**：[storage-format.md § 8](storage-format.md#8-reindex重建索引必须支持)
 
-#### EC-043 搜索结果重复（FTS5 无主键 + upsert 累加）
+#### EC-043 搜索结果重复（FTS5 无主键 + upsert 累加）— ✅ 已修复（2026-06-29）
 
-- **风险等级**：🔴 **P0 / 最优先**（2026-06-24 用户最新指令指定，与 P.9 并列最优先）
+- **当前状态**：✅ 已验证 + 已修复（2026-06-29）
 - **影响模块**：search（`SearchService` + `AppDatabase`）
-- **场景描述**：`search_index` 是 FTS5 虚拟表（见 [`app_database.dart`](../../lib/data/services/app_database.dart) 行 64-73），schema 中**无显式主键**（7 列均为普通列）；FTS5 虚拟表**不支持**标准 SQLite `UNIQUE` 约束。`SearchService.upsertNote`（[search_service.dart](../../lib/data/services/search_service.dart) 行 100-120）与 `SearchService.upsertMessage`（同上行 126-146）使用的 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)` 在 FTS5 虚拟表上**静默失效**（不抛错也不替换，仍插入新 rowid 行）。`SearchService.search`（同行 53-90）直接 `SELECT ... FROM search_index MATCH ?`，未做 `GROUP BY entityType, entityId` / `DISTINCT` 去重。
+- **场景描述**：`search_index` 是 FTS5 虚拟表（见 [`app_database.dart`](../../lib/data/services/app_database.dart) 行 64-73），schema 中**无显式主键**（7 列均为普通列）；FTS5 虚拟表**不支持**标准 SQLite `UNIQUE` 约束。`SearchService.upsertNote`（[search_service.dart](../../lib/data/services/search_service.dart) 行 111-138）与 `SearchService.upsertMessage`（同行 144-164）历史上使用的 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)` 在 FTS5 虚拟表上**静默失效**（不抛错也不替换，仍插入新 rowid 行）。`SearchService.search`（同行 53-101）历史上直接 `SELECT ... FROM search_index MATCH ?`，未做 `GROUP BY entityType, entityId` / `DISTINCT` 去重。
 - **风险分析**：同一 `(entityType, entityId)` 在 `search_index` 中可存在 N 条重复行；搜索时全部返回，UI 列表出现重复条目。具体累加触发点：
   - **笔记保存**：`note_editor_screen.dart` 行 143 `_updateSearchIndex` + `note_detail_screen.dart` 行 127 `_updateSearchIndex` → 同一笔记保存 N 次 → 出现 N 条
   - **LLM 流式 onDone**：`chat_task_service.dart` 行 138-148 `onDone` → 行 167-202 `_updateSearchIndex` → `upsertMessage` → 同一对话 N 轮 LLM 完成 → 出现 N 条
@@ -249,17 +249,20 @@ graph TB
   1. 同一笔记连续 `upsertNote` 3 次后，搜索该笔记关键字，断言 `SearchResult` 列表长度 = 1（当前预期失败：实际返回 3）
   2. mock LLM 触发 3 轮 `finishAssistant` 后，搜索该对话关键字，断言 `message` 类型结果数 = 1（当前预期失败：实际返回 3）
   3. 验证 `rebuildAll` 路径（先 `DELETE FROM search_index` 再 INSERT）搜索结果正常，作为对照基准——说明问题不来自数据写入路径，仅来自 upsert 的 in-place 更新
-- **修复方向**（待深入时确认，三选一或组合）：
-  - **方案 A**（推荐，改动最小）：`upsertNote` / `upsertMessage` 内部先 `DELETE FROM search_index WHERE entityType = ? AND entityId = ?` 再 `INSERT`，保证同 `(entityType, entityId)` 只保留一行
-  - **方案 B**（查询侧兜底）：`search()` 尾部追加 `GROUP BY entityType, entityId` + 取 `MAX(updatedAt)` / `MAX(bm25)`；不修 upsert，但查询天然去重
-  - **方案 C**（架构级重构）：改用 FTS5 `external content` 模式 + 普通 SQLite 表做主键管理；最稳健但工作量大（需重新设计 schema + rebuild 迁移）
-- **推荐切入**：**方案 A + 方案 B 组合**：A 修源头（保证不重复写入），B 兜底查询（即使历史脏数据也只显示一次）；C 不建议，收益不抵成本
-- **相关代码**：
-  - `lib/data/services/search_service.dart` 行 53-90（`search` 查询无去重）
-  - `lib/data/services/search_service.dart` 行 100-146（`upsertNote` / `upsertMessage`）
-  - `lib/data/services/app_database.dart` 行 64-73（`search_index` schema 无主键）
-  - 调用方：`lib/ui/features/notes/note_editor_screen.dart` 行 143、`lib/ui/features/notes/note_detail_screen.dart` 行 127、`lib/data/services/chat_task_service.dart` 行 167
-- **相关文档**：[search README](../modules/search/README.md)、EC-014（FTS5 content 表与磁盘不同步）、[ADR-014](../DECISIONS.md)（DB 一致性保障）、`docs/_tmp/2026-06-24-issues-priorities.md`（最优先处理清单）
+- **修复方向**：✅ **已修复**（2026-06-29，commit `fce454f`）
+  - **方案 A（源头去重）**：`upsertNote` 改用 `db.transaction` 包裹 `DELETE + INSERT`，替换原 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)`。FTS5 虚拟表不支持 `UNIQUE` / PRIMARY KEY，`ConflictAlgorithm.replace` 在 FTS5 上**静默失效**（不抛错也不替换，而是插入新 rowid 行），必须改为显式 DELETE + INSERT 事务保证同 `(entityType, entityId)` 只保留一行
+  - **方案 B（查询兜底）**：`search()` 改用子查询 + 外层 `GROUP BY entityType, entityId` + 排序 `MIN(rank) ASC, MAX(updatedAt) DESC`。子查询里先调 `bm25()` / `snippet()`，外层 GROUP BY 按 `(entityType, entityId)` 聚合天然去重，自动吞掉历史脏数据
+  - **修复范围最小化**：仅改 `upsertNote`（note 搜索重复是用户痛点），`upsertMessage` 同 bug 未修（chat 搜索重复未列为当前痛点；按 memory「问题修复范围最小化原则」暂不扩大）
+- **验证状态**：✅ 已通过集成测试
+  - **Case 5（新增，2026-06-29）**：`integration_test/note_search_test.dart` Case 5——新建笔记 → 填标题+正文 → `pump(500ms)` 触发防抖 → 点 √ 触发第 2 次 `_saveNow` → 搜索唯一关键词 → 断言 `_countSearchResultEntities() == 1`
+  - **Case 1-4（回归）**：全部保持原断言，GROUP BY 去重不破坏现有搜索行为
+- **修复 commit**：`fce454f`（worktree `codex/ec043-fts5-upsert-repeat`，待合并回 dev）
+- **相关代码**（修复后）：
+  - `lib/data/services/search_service.dart` 行 53-101（`search` 子查询 + GROUP BY）
+  - `lib/data/services/search_service.dart` 行 111-138（`upsertNote` 事务化 DELETE+INSERT）
+  - `lib/data/services/search_service.dart` 行 144-164（`upsertMessage` 同 bug 暂未修，待后续追踪）
+  - `integration_test/note_search_test.dart` Case 5
+- **相关文档**：[CHANGELOG 2026-06-29](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)、[search 模块 README § 关键设计原则](../../modules/search/README.md)
 
 ---
 

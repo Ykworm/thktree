@@ -79,11 +79,13 @@ YYYY-MM-DD-简短问题描述.md
 - **AI 维护时机**：当 AI 协助排查并解决一个需要排查才能定位、且有复盘价值的技术问题时，主动询问用户是否需要登记为 war story。
 - **ctsync 候选机制**：当 `ctsync` 识别到"已解决、需要排查才能定位、且有复盘价值的技术问题"时，应先将对应 war-story 列入影响清单，待用户确认后再新增或更新文档。
 - **不写 diff 块**：具体代码改动用 git diff 查看，文档里只写关键片段和思路。
+- **FTS5 反模式警示**：⚠️ 禁止在 SQLite FTS5 虚拟表上使用 `ConflictAlgorithm.replace` 进行 upsert——FTS5 不支持主键/UNIQUE，该调用会**静默失效**（不抛错不替换只多一行），导致搜索结果累加重复。正确做法：`db.transaction` 包裹 `DELETE + INSERT`，或查询侧用 `GROUP BY entityType, entityId` 聚合去重。详见 [packages/2026-06-29-fts5-conflict-replace-silent.md](packages/2026-06-29-fts5-conflict-replace-silent.md)、[`../_shared/edge-cases-backlog.md` § EC-043](../_shared/edge-cases-backlog.md#ec-043-搜索结果重复fts5-无主键--upsert-累加--已修复2026-06-29)。
 
 ## 索引（按时间倒序）
 
 ### 2026-06
 
+- `packages/2026-06-29-fts5-conflict-replace-silent.md` — FTS5 虚拟表上 `ConflictAlgorithm.replace` 静默失效（不抛错不替换只多一行；用 `db.transaction` 包裹 DELETE+INSERT + 子查询 GROUP BY 组合方案 A+B）
 - `flutter/2026-06-24-integration-test-keychain-state-leak.md` — ProviderScope override + flutter_secure_storage Keychain 状态泄漏（3 个根因叠加：ProviderScope override 残留 + Keychain 内存缓存 + ChatController.isStreaming 状态残留；用 Navigator.of(element).pop 模拟点击 + ValueKey 改 providerId_modelId 稳定 key）
 - `ui-ux/2026-06-22-sqlite-nested-transaction-crash.md` — SQLite 嵌套事务崩溃（getSessionPathForNode 全量 reindex 并发冲突，disk-first + 启动同步替代）
 - `ui-ux/2026-06-20-chat-controller-stop-button-stuck.md` — ChatController stop_button 卡死（fire-and-forget 错误日志 + `_handle` 时序自愈）
