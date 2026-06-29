@@ -41,6 +41,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get titleHint => 'Title';
 
   @override
+  String get titleCannotBeEmpty =>
+      'Title cannot be empty, please enter a title before saving';
+
+  @override
   String get cancel => 'Cancel';
 
   @override

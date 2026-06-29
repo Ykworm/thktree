@@ -17,6 +17,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
+import 'package:thk_tree/data/services/settings_store.dart' show AppSettings;
+import 'package:thk_tree/data/stores/llm_config_store.dart' show LlmConfigStore;
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/widgets/thk_alert.dart';
@@ -59,7 +61,9 @@ Future<List<LlmProviderConfig>> configuredProviders(
   return out;
 }
 
-/// 解析 (provider, modelId, apiKey) 用于生成标题。
+/// 解析 (provider, modelId, apiKey) 用于生成标题（widget 端 wrapper，从 container 读 settings / configStore 后调核心函数）。
+///
+/// 核心实现见 [resolveModelForTitleCore]，可在没有 ProviderContainer 的上下文（如 Riverpod Notifier）使用。
 ///
 /// 优先级（与原 `_resolveModel` 实例方法一致，line 233-285）：
 ///   1. settings.titleModelProviderId + settings.titleModelModelId
@@ -73,10 +77,36 @@ Future<(LlmProviderConfig, String, String)?> resolveModelForTitle(
   List<LlmProviderConfig> providers, {
   String? currentProviderId,
   String? currentModelId,
-}) async {
-  final settings = container.read(settingsControllerProvider).value;
-  final configStore = container.read(llmConfigStoreProvider);
+}) {
+  return resolveModelForTitleCore(
+    settings: container.read(settingsControllerProvider).value,
+    providers: providers,
+    configStore: container.read(llmConfigStoreProvider),
+    currentProviderId: currentProviderId,
+    currentModelId: currentModelId,
+  );
+}
 
+/// 解析 (provider, modelId, apiKey) 用于生成标题（核心纯函数，接受裸数据）。
+///
+/// 设计点：这个函数不接 container / ref / widgetRef，让 Riverpod Notifier 内可以调用
+/// （Notifier 自己的 ref 调 `ref.read(settingsControllerProvider).value` / `ref.read(llmConfigStoreProvider)`
+/// 后传入），同时 widget 端有 [resolveModelForTitle] 作为便捷 wrapper。
+///
+/// 优先级（与原 `_resolveModel` 实例方法一致，line 233-285）：
+///   1. settings.titleModelProviderId + settings.titleModelModelId
+///   2. currentProviderId + currentModelId（来自 chat screen / request）
+///   3. settings.llmProvider（legacy enum）+ settings.model
+///   4. 遍历 providers 找第一个有 apiKey 的
+///
+/// modelId 兜底：provider.selectedModelId → provider.models.first
+Future<(LlmProviderConfig, String, String)?> resolveModelForTitleCore({
+  required AppSettings? settings,
+  required List<LlmProviderConfig> providers,
+  required LlmConfigStore configStore,
+  String? currentProviderId,
+  String? currentModelId,
+}) async {
   // 1. titleModelProviderId + titleModelModelId
   String? providerId = settings?.titleModelProviderId;
   String? modelId = settings?.titleModelModelId;

@@ -49,7 +49,8 @@ class SearchService {
   /// Run a full-text search query.
   ///
   /// Returns up to [limit] results sorted by BM25 relevance then updatedAt
-  /// descending.
+  /// descending. Falls back to LIKE query for CJK substring matching when
+  /// FTS5 returns no results.
   Future<List<SearchResult>> search(String query, {int limit = 50}) async {
     if (query.trim().isEmpty) return [];
 
@@ -85,7 +86,7 @@ class SearchService {
         LIMIT ?
       ''', [sanitized, limit]);
 
-      return rows.map((row) => SearchResult(
+      final results = rows.map((row) => SearchResult(
         entityType: row['entityType']! as String,
         entityId: row['entityId']! as String,
         themeId: row['themeId']! as String,
@@ -94,6 +95,19 @@ class SearchService {
         snippet: row['snippet'] as String? ?? '',
         updatedAt: row['updatedAt'] as String? ?? '',
       )).toList();
+
+      // If FTS5 returned results, return them.
+      if (results.isNotEmpty) return results;
+
+      // Fallback: LIKE query for CJK substring matching.
+      // FTS5 unicode61 tokenizer treats consecutive CJK characters as a
+      // single token, so partial matches (e.g., "思维" in "思维导图") fail.
+      // LIKE provides substring matching as a fallback.
+      if (_containsCjk(query)) {
+        return await _searchWithLike(query, limit);
+      }
+
+      return results;
     } on DatabaseException catch (e, st) {
       dev.log('[SearchService.search] FTS5 query failed: $e\n$st');
       rethrow;
@@ -449,6 +463,85 @@ class SearchService {
         .where((t) => t.isNotEmpty)
         .toList();
     return tokens.join(' ');
+  }
+
+  /// Check if string contains CJK characters.
+  bool _containsCjk(String text) {
+    return RegExp(r'[\u4e00-\u9fff]').hasMatch(text);
+  }
+
+  /// Fallback LIKE query for CJK substring matching.
+  ///
+  /// When FTS5 returns no results and the query contains CJK characters,
+  /// use LIKE for substring matching. This handles cases where FTS5's
+  /// unicode61 tokenizer treats consecutive CJK as a single token.
+  Future<List<SearchResult>> _searchWithLike(String query, int limit) async {
+    try {
+      final rows = await db.rawQuery('''
+        SELECT
+          entityType,
+          entityId,
+          themeId,
+          themeTitle,
+          entityTitle,
+          content,
+          updatedAt
+        FROM search_index
+        WHERE content LIKE ?
+        ORDER BY updatedAt DESC
+        LIMIT ?
+      ''', ['%$query%', limit]);
+
+      return rows.map((row) {
+        final content = row['content'] as String? ?? '';
+        final snippet = _extractSnippet(content, query);
+        return SearchResult(
+          entityType: row['entityType']! as String,
+          entityId: row['entityId']! as String,
+          themeId: row['themeId']! as String,
+          themeTitle: row['themeTitle'] as String? ?? '',
+          entityTitle: row['entityTitle'] as String? ?? '',
+          snippet: snippet,
+          updatedAt: row['updatedAt'] as String? ?? '',
+        );
+      }).toList();
+    } catch (e, st) {
+      dev.log('[SearchService._searchWithLike] FAILED: $e\n$st');
+      return [];
+    }
+  }
+
+  /// Extract snippet around the matched query in content.
+  String _extractSnippet(String content, String query, {int contextLength = 40}) {
+    if (content.isEmpty) return '';
+
+    final lowerContent = content.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    final index = lowerContent.indexOf(lowerQuery);
+
+    if (index == -1) {
+      // Query not found (shouldn't happen if LIKE matched)
+      return content.length > contextLength * 2
+          ? '${content.substring(0, contextLength * 2)}...'
+          : content;
+    }
+
+    // Extract context around match
+    final start = index > contextLength ? index - contextLength : 0;
+    final end = index + query.length + contextLength;
+    final snippet = content.substring(start, end.clamp(0, content.length));
+
+    // Add ellipsis
+    final prefix = start > 0 ? '...' : '';
+    final suffix = end < content.length ? '...' : '';
+
+    // Highlight the match (case-insensitive)
+    final highlighted = snippet.replaceAllMapped(
+      RegExp(RegExp.escape(query), caseSensitive: false),
+      (match) => '<b>${match.group(0)}</b>',
+    );
+
+    return '$prefix$highlighted$suffix';
   }
 }
 

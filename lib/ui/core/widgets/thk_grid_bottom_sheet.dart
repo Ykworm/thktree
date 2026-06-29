@@ -27,14 +27,17 @@ class ThkGridBottomSheet {
     required List<GridAction> actions,
     List<GridAction>? destructiveActions,
     String cancelLabel = '取消',
+    bool showCancel = true,
   }) {
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      useSafeArea: false,
       builder: (context) => _SheetContent(
         actions: actions,
         destructiveActions: destructiveActions,
         cancelLabel: cancelLabel,
+        showCancel: showCancel,
       ),
     );
   }
@@ -45,64 +48,69 @@ class _SheetContent extends StatelessWidget {
     required this.actions,
     this.destructiveActions,
     required this.cancelLabel,
+    required this.showCancel,
   });
 
   final List<GridAction> actions;
   final List<GridAction>? destructiveActions;
   final String cancelLabel;
+  final bool showCancel;
 
   @override
   Widget build(BuildContext context) {
+    // 覆盖 showModalBottomSheet 的默认 SafeArea，手动用缩小间距替代
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final bottomSafeGap = bottomInset > 0 ? 8.0 : 4.0;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // 主操作区
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: _ActionGrid(actions: actions),
             ),
             // destructive 操作区
             if (destructiveActions != null && destructiveActions!.isNotEmpty) ...[
               Container(
-                height: 8,
+                height: 6,
                 color: AppColors.surfaceMuted,
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: EdgeInsets.fromLTRB(16, 6, 16, showCancel ? 4 : 0),
                 child: _ActionGrid(actions: destructiveActions!),
               ),
             ],
-            // 分隔线
-            Container(
-              height: 0.5,
-              color: AppColors.border,
-            ),
-            // 取消按钮
-            GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                height: 56,
-                alignment: Alignment.center,
-                child: Text(
-                  cancelLabel,
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: AppColors.textPrimary,
+            // 分隔线 + 取消按钮
+            if (showCancel) ...[
+              Container(
+                height: 0.5,
+                color: AppColors.border,
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  height: 56,
+                  alignment: Alignment.center,
+                  child: Text(
+                    cancelLabel,
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
+            // 底部缩小的安全距离（替代默认 SafeArea 的全量 bottomInset）
+            SizedBox(height: bottomSafeGap),
           ],
         ),
-      ),
     );
   }
 }
@@ -114,14 +122,26 @@ class _ActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.0,
-      children: actions.map((action) => _ActionItem(action: action)).toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxFourColumnWidth =
+            (constraints.maxWidth - 12 * (4 - 1)) / 4; // spacing=12
+        final itemWidth = maxFourColumnWidth.clamp(80.0, 84.0);
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              for (final action in actions)
+                SizedBox(
+                  width: itemWidth,
+                  child: _ActionItem(action: action),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -144,6 +164,8 @@ class _ActionItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 44,
@@ -161,8 +183,10 @@ class _ActionItem extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             action.label,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 11,
+              height: 1.15,
               color: AppColors.textPrimary,
             ),
             maxLines: 1,

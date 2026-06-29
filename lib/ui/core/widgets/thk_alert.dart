@@ -36,7 +36,7 @@ class ThkAlert {
     VoidCallback? onDestructive,
     String? defaultAction,
     VoidCallback? onDefault,
-    String? cancelAction = '取消',
+    String? cancelAction,
     VoidCallback? onCancel,
     bool barrierDismissible = true,
   }) async {

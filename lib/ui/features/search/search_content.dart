@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:thk_tree/data/services/search_service.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/notes/note_detail_screen.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -101,7 +102,10 @@ Future<void> navigateToSearchResult(
     );
   } else {
     if (!context.mounted) return;
-    context.push('/themes/${result.themeId}/nodes/${result.entityId}');
+    context.push(
+      '/themes/${result.themeId}/nodes/${result.entityId}',
+      extra: ChatScreenLaunchParams(title: result.entityTitle),
+    );
   }
 }
 

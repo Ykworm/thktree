@@ -44,6 +44,10 @@
   "@titleHint": {
     "description": "Hint text for title input field"
   },
+  "titleCannotBeEmpty": "Title cannot be empty, please enter a title before saving",
+  "@titleCannotBeEmpty": {
+    "description": "Alert message shown when saving a note with an empty title"
+  },
   "cancel": "Cancel",
   "@cancel": {
     "description": "Cancel button label"

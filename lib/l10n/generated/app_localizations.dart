@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// **'Title'**
   String get titleHint;
 
+  /// Alert message shown when saving a note with an empty title
+  ///
+  /// In en, this message translates to:
+  /// **'Title cannot be empty, please enter a title before saving'**
+  String get titleCannotBeEmpty;
+
   /// Cancel button label
   ///
   /// In en, this message translates to:

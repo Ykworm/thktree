@@ -4,6 +4,7 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show SelectionArea;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -153,8 +154,9 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
   /// 复制全部笔记内容到剪贴板。
   Future<void> _copyAll() async {
-    if (_body.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: _body));
+    final textToCopy = _editing ? _controller.text : _body;
+    if (textToCopy.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: textToCopy));
     if (!mounted) return;
     setState(() => _copied = true);
     await Future<void>.delayed(const Duration(seconds: 2));
@@ -252,10 +254,12 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
   void _showMoreActions() {
     final l10n = AppLocalizations.of(context)!;
+    final canCopy = (_editing ? _controller.text : _body).isNotEmpty;
     ThkGridBottomSheet.show(
       context: context,
+      showCancel: false,
       actions: [
-        if (!_editing && _body.isNotEmpty)
+        if (canCopy)
           GridAction(
             label: _copied ? l10n.copied : l10n.copy,
             icon: _copied ? AppIcons.checkCircle : AppIcons.copy,
@@ -509,9 +513,13 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
           ),
           child: SizedBox(
             width: double.infinity,
-            child: GptMarkdown(
-              _body,
-              style: TextStyle(fontSize: 17, height: 1.6),
+            // SelectionArea 让 GptMarkdown 渲染的笔记正文支持长按选中/复制部分文字
+            // （与 chat_screen 中消息列表用法保持一致；iOS 上工具栏为 Cupertino 风格）。
+            child: SelectionArea(
+              child: GptMarkdown(
+                _body,
+                style: TextStyle(fontSize: 17, height: 1.6),
+              ),
             ),
           ),
         ),
@@ -598,6 +606,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
   }
 
   Future<void> _createNote(BuildContext context, WidgetRef ref) async {
+    final navigator = Navigator.of(context);
     // 1. 选择主题
     final themeResult = await showThemePicker(
       context,
@@ -611,7 +620,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
 
     // 2. 跳转到编辑器
     if (!mounted) return;
-    Navigator.of(context).push(
+    navigator.push(
       CupertinoPageRoute(
         builder: (_) => NoteEditorScreen(
           themeId: themeResult.themeId,

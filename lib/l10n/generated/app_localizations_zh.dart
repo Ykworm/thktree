@@ -41,6 +41,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get titleHint => '标题';
 
   @override
+  String get titleCannotBeEmpty => '标题不能为空，请输入后再保存';
+
+  @override
   String get cancel => '取消';
 
   @override

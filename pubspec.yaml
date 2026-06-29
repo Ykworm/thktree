@@ -72,6 +72,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -128,3 +129,13 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# iOS App Icon 生成配置
+# - 源图：assets/icons/ThkTree_AppIcon.png（1024x1024）
+# - 改 logo 流程：替换源图 → 跑 `dart run flutter_launcher_icons` 即可重新生成全套 iOS 图标
+# - 仅生成 iOS（Android 端 mipmap 不在此处维护，符合项目仅 iOS 平台偏好）
+flutter_launcher_icons:
+  image_path: "assets/icons/ThkTree_AppIcon.png"
+  ios: true
+  android: false
+  remove_alpha_ios: true

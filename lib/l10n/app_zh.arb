@@ -16,6 +16,13 @@
   "noThemesYet": "开始你的第一个知识主题",
   "newTheme": "新建主题",
   "titleHint": "标题",
+  "@titleHint": {
+    "description": "标题输入框占位提示"
+  },
+  "titleCannotBeEmpty": "标题不能为空，请输入后再保存",
+  "@titleCannotBeEmpty": {
+    "description": "笔记编辑器保存时，标题为空的提示文案"
+  },
   "cancel": "取消",
   "create": "创建",
   "back": "返回",

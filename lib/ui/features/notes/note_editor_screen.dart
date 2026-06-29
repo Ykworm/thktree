@@ -172,6 +172,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () async {
+            if (_titleController.text.trim().isEmpty) {
+              ThkAlert.show(
+                context: context,
+                message: l10n.titleCannotBeEmpty,
+                defaultAction: l10n.ok,
+              );
+              return;
+            }
             await _saveNow();
             if (mounted) {
               Navigator.of(context).pop();
