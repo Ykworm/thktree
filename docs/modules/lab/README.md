@@ -1,4 +1,4 @@
-# 实验室模块（lab）
+# Lab 模块（lab）
 
 > 实验室是 ThkTree 的"实验场"——承载新功能 / 高级用户工具 / 第三方集成的试用入口。**当前为占位实现**，子功能候选方案待下一轮单独讨论。
 > 维护者：人类 + AI 共同维护。子功能上线时同步更新本 README。
@@ -13,7 +13,7 @@
 
 | 屏幕 | 职责 |
 |------|------|
-| **LabPlaceholderScreen** | 实验室 tab 的占位屏，显示静态文案 |
+| **LabPlaceholderScreen** | Lab tab 的占位屏，白底（`AppColors.surface` 兜底） + 顶部 hint 文字 + 下方 `lab_bg_32pt.png` 装饰图（`BoxFit.contain` 保持比例） |
 
 ## 2. 功能列表
 
@@ -21,14 +21,14 @@
 
 | Feature | 状态 | 最后更新 | 备注 |
 |---------|------|----------|------|
-| 实验室 tab 入口 | ✅ 完成 | 2026-06-28 | `LabPlaceholderScreen` 占位页 + `AppIcons.lab`（sf_flask）+ 中英 l10n |
+| Lab tab 入口 | ✅ 完成 | 2026-06-29 | `LabPlaceholderScreen` 占位页 + `AppIcons.lab`（sf_flask）+ 中英 l10n（统一 "Lab"）+ 白底 + 顶部 hint + 下方装饰图 |
 | 子功能候选 | 📋 待开发 | — | 5 个候选方向见 [brainstorm 草稿](../../_tmp/2026-06-24-lab-tab-brainstorm.md)，需另起 `codex/lab-*` 分支推进 |
 
 ## 3. 代码文件
 
 ```
 lib/ui/features/lab/
-└── lab_placeholder_screen.dart   # 32 行：占位页（ThkNavBar + Center Text）
+└── lab_placeholder_screen.dart   # 51 行：占位页（AppColors.surface 兜底 + Column 顶部 hint + 下方装饰图）
 ```
 
 依赖：
@@ -44,7 +44,7 @@ lib/ui/features/lab/
 |------|------|------|
 | 子功能 brainstorm 草稿 | [_tmp/2026-06-24-lab-tab-brainstorm.md](../../_tmp/2026-06-24-lab-tab-brainstorm.md) | 5 个子功能候选 + 方案 A 锁定 + 暂缓原因 |
 | 本期 changelog | [CHANGELOG/2026-06-28-lab-tab-and-bar-red.md](../../CHANGELOG/2026-06-28-lab-tab-and-bar-red.md) | 入口层落地详情 + 已知风险（顶栏改红 / flutter_svg 依赖体量） |
-| Tab bar 决策 | [DECISIONS.md ADR-017](../../DECISIONS.md#adr-017-实验室-tab-上线--tab-bar-结构调整--flutter_svg-引入) | 实验室 tab 上线 + tab bar 4→5 + flutter_svg 引入 |
+| Tab bar 决策 | [DECISIONS.md ADR-017](../../DECISIONS.md#adr-017-实验室-tab-上线--tab-bar-结构调整--flutter_svg-引入) | Lab tab 上线 + tab bar 4→5 + flutter_svg 引入（2026-06-29 修订见 ADR 末尾） |
 
 ## 5. 关键设计原则
 
@@ -67,5 +67,6 @@ lib/ui/features/lab/
 
 ## 7. 相关历史
 
-- **2026-06-28** — 实验室 tab 入口层落地（占位页 + 资产 + l10n），承接 2026-06-24 brainstorming 暂缓卡的"明日入口"决策
+- **2026-06-29** — Lab tab 视觉规范化：tab label 中英文统一为 "Lab"，`LabPlaceholderScreen` 改为白底（`AppColors.surface`）兜底 + 顶部 hint 文字 + 下方 `assets/background/lab_bg_32pt.png` 装饰图（`BoxFit.contain` 保持比例，不撑满）。详见 [CHANGELOG/2026-06-29-lab-tab-white-bg.md](../../CHANGELOG/2026-06-29-lab-tab-white-bg.md)
+- **2026-06-28** — Lab tab 入口层落地（占位页 + 资产 + l10n），承接 2026-06-24 brainstorming 暂缓卡的"明日入口"决策
 - **2026-06-24** — brainstorming 草稿归档（[_tmp/2026-06-24-lab-tab-brainstorm.md](../../_tmp/2026-06-24-lab-tab-brainstorm.md)），方案 A 锁定（功能市集）+ `flutter_genui` v0.9.2 高度实验性 + 5 个子功能候选 + 暂缓原因

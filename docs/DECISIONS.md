@@ -126,3 +126,15 @@ iOS-first 项目的硬性决定。ThkTree 是为 iPhone 设计的笔记/聊天 a
 影响范围：`lib/ui/core/router.dart`（StatefulShellRoute 加 lab branch） + `lib/ui/core/theme/app_icons.dart`（新增 `AppIcons.lab` = `SFIcons.sf_flask`） + `lib/ui/features/lab/lab_placeholder_screen.dart`（新增占位页） + `lib/l10n/app_en.arb` + `lib/l10n/app_zh.arb`（新增 `labTabTitle` / `labTabTitleZh` key） + `assets/icons/lab_selected.png` + `assets/icons/lab_unselect.png`（Figma 导出） + `assets/icons/theme_unselect.svg`（Figma 导出） + `pubspec.yaml`（新增 `flutter_svg: ^2.0.10`） + `integration_test/lab_tab_test.dart`（新增，4 case：tab 显示 / 切换 / 占位页内容 / 选中态图标）+ `integration_test/theme_tab_icon_test.dart`（新增，4 case：未选 svg 渲染 / 选中 SF Symbol / 切换保持 / 渲染性能）。
 
 实施要点：tab 接入走 `StatefulShellRoute.indexedStack` + `StatefulShellBranch` + `parentNavigatorKey: rootNavigatorKey`（与 settings 一致），`pageBuilder` 用 `CupertinoPage` 而非 `NoTransitionPage`（保持 push 动画）。l10n key 命名遵循 `labTabTitle`（英文显示用，枚举风）+ `labTabTitleZh`（中文显示用，备注）——`ThemeStore` / 主题相关本地化历史遗留，实际仅 1 个 key 双语。占位页用 `ThkNavBar` + `Center(Text(...))`，不引入新组件。集成测试遵循 `createTestApp(locale: Locale('zh'))` + `pumpAndSettle` + `find.byType(SvgPicture)` + `find.byWidgetPredicate(...)` 模式（与既有 `theme_chat_e2e_test.dart` 一致）。
+
+### ADR-017 修订（2026-06-29）：tab label 统一 + 占位屏视觉规范化
+
+2026-06-29 决定。两项细节修订，不改变 ADR-017 的三项主决策。
+
+**tab label 统一**——中英文均使用 "Lab"。`app_zh.arb::labTabLabel` 由 "实验室" 改为 "Lab"（与 `app_en.arb` 对齐）。原因：英文原生就是 "Lab"，中文 "实验室" 在 30pt tab 横向约束下字宽过大、视觉失衡；统一 "Lab" 后 5 个 tab 字宽更接近。
+
+**占位屏视觉规范化**——`LabPlaceholderScreen` 用 `AppColors.surface` 兜底（light #FFFFFF / dark #0F172A），顶部展示 `l10n.labEmptyHint` 占位文案，下方居中展示 `assets/background/lab_bg_32pt.png` 装饰图（`BoxFit.contain` 保持比例，不撑满）。原因：原 `ThkNavBar + Center Text` 视觉单薄；借助 ADR-017 引入的 `lab_bg_32pt.png` 资产做装饰，同时 `AppColors.surface` dark #0F172A 让暗色模式继承一致。放弃之前的 "`Image.asset + Positioned.fill` 当整页 background" 方案——窄屏拉伸变形，违背装饰图设计意图。
+
+影响范围：`lib/l10n/app_zh.arb` + `lib/l10n/generated/app_localizations_zh.dart` + `lib/ui/features/lab/lab_placeholder_screen.dart`（重写 build 为 `Column` 布局）+ `integration_test/lab_tab_test.dart`（断言同步 `find.text('Lab')`）。
+
+实施要点：构建走 `CupertinoPageScaffold(backgroundColor: AppColors.surface)` + `SafeArea(Column([顶部 hint Padding + 下方 Expanded(Align.topCenter, Image.asset)]))`；`BoxFit.contain` 保持原比例，居顶对齐让图片从导航栏下方自然过渡。详见 [CHANGELOG/2026-06-29-lab-tab-white-bg.md](CHANGELOG/2026-06-29-lab-tab-white-bg.md)。

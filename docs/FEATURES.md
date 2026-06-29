@@ -77,11 +77,11 @@
 | 本地持久化 | _shared | ✅ 完成 | 2026-06-06 | — | — | `lib/data/services/file_write_queue.dart` + `lib/data/services/app_database.dart` | Markdown 正文 + SQLite 元数据/关系 |
 | 国际化 | _shared | ✅ 完成 | 2026-06-07 | — | — | `lib/l10n/` | flutter_localizations，中英双语，持续更新中 |
 
-## 8. 实验室模块（lab）
+## 8. Lab 模块（lab）
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| 实验室 tab 入口 | lab | ✅ 完成 | 2026-06-28 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/lab_placeholder_screen.dart` + `lib/ui/core/router.dart` | tab bar 4→5（搜索/主题/笔记/**实验室**/设置）+ `LabPlaceholderScreen` 占位页 + `AppIcons.lab`（sf_flask）+ 中英 l10n；当前为占位实现，子功能候选见 [brainstorm 草稿](_tmp/2026-06-24-lab-tab-brainstorm.md)，详见 [CHANGELOG](CHANGELOG/2026-06-28-lab-tab-and-bar-red.md) |
+| Lab tab 入口 | lab | ✅ 完成 | 2026-06-29 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/lab_placeholder_screen.dart` + `lib/ui/core/router.dart` | tab bar 4→5（搜索/主题/笔记/**Lab**/设置）+ `LabPlaceholderScreen` 占位页（白底 `AppColors.surface` 兜底 + 顶部 hint + 下方 `assets/background/lab_bg_32pt.png` 装饰图）+ `AppIcons.lab`（sf_flask）+ 中英 l10n（统一 "Lab"）；当前为占位实现，子功能候选见 [brainstorm 草稿](_tmp/2026-06-24-lab-tab-brainstorm.md)，详见 [CHANGELOG](CHANGELOG/2026-06-29-lab-tab-white-bg.md) |
 
 ---
 
@@ -89,7 +89,8 @@
 
 > 倒序排列，最新在上。
 
-- **2026-06-28** — 实验室 tab 上线 + tab bar 改红：`lib/ui/features/lab/lab_placeholder_screen.dart`（占位页）+ `AppIcons.lab`（sf_flask）+ `assets/icons/lab_selected.png` / `lab_unselect.png` + tab bar 4→5（搜索/主题/笔记/**实验室**/设置）+ 主题 tab 未选图标换 svg（`assets/icons/theme_unselect.svg`）+ 顶栏背景色临时用 `AppColors.destructive`（#DC2626）。新增 `integration_test/lab_tab_test.dart` + `theme_tab_icon_test.dart`；新增依赖 `flutter_svg: ^2.0.10`。详见 [CHANGELOG](CHANGELOG/2026-06-28-lab-tab-and-bar-red.md) + [ADR-017](DECISIONS.md#adr-017-实验室-tab-上线--tab-bar-结构调整--flutter_svg-引入)
+- **2026-06-29** — Lab tab 视觉规范化：tab label 中英文统一为 "Lab"（`app_zh.arb::labTabLabel` "实验室" → "Lab"），`LabPlaceholderScreen` 改为白底（`AppColors.surface`）兜底 + 顶部 hint 文字 + 下方 `assets/background/lab_bg_32pt.png` 装饰图（`BoxFit.contain` 保持比例，不撑满）。集成测试 `integration_test/lab_tab_test.dart` 断言同步。详见 [CHANGELOG](CHANGELOG/2026-06-29-lab-tab-white-bg.md)
+- **2026-06-28** — Lab tab 上线 + tab bar 改红：`lib/ui/features/lab/lab_placeholder_screen.dart`（占位页）+ `AppIcons.lab`（sf_flask）+ `assets/icons/lab_selected.png` / `lab_unselect.png` + tab bar 4→5（搜索/主题/笔记/**实验室**/设置）+ 主题 tab 未选图标换 svg（`assets/icons/theme_unselect.svg`）+ 顶栏背景色临时用 `AppColors.destructive`（#DC2626）。新增 `integration_test/lab_tab_test.dart` + `theme_tab_icon_test.dart`；新增依赖 `flutter_svg: ^2.0.10`。详见 [CHANGELOG](CHANGELOG/2026-06-28-lab-tab-and-bar-red.md) + [ADR-017](DECISIONS.md#adr-017-实验室-tab-上线--tab-bar-结构调整--flutter_svg-引入)
 - **2026-06-28** — 设置入口从底部 tab 移出：底部 tab 由 4 个（搜索 / 主题 / 笔记 / 设置）变为 3 个（搜索 / 主题 / 笔记）；设置入口迁至搜索页顶栏右上角齿轮按钮（`SFIcons.sf_gearshape` = `AppIcons.settings`），点击 `context.push('/settings')` 进入设置页。`/settings` 由 StatefulShellBranch 提升为外层 `GoRoute`（`parentNavigatorKey: _rootNavigatorKey`），与 `/llm-providers` 同层（共享返回栈语义）。复用 `l10n.settingsTabLabel`（虽然其字面含义是「设置 tab」但作为「设置入口」文案继续可用，不新增 key）。新增 `integration_test/search_settings_button_test.dart`（1 个 case）。详见 [CHANGELOG](CHANGELOG/2026-06-28-settings-out-of-tabbar.md)
 
 - **2026-06-26** — 对话页模型选择面板交互简化：移除面板内的关闭按钮（X 按钮及按钮所在行），改为点击 panel 外部（消息列表 / context bar / 输入框 / 标题栏空白）关闭 panel。`Stack + Listener + Positioned.fill` 透明遮罩方案；`ChatComposer` 用 `Listener(onPointerDown)` 避免与 `TextField` 的 `TapGestureRecognizer` 在 arena 中冲突。详见 [CHANGELOG](CHANGELOG/2026-06-26-chat-model-panel-dismiss.md)

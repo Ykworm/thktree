@@ -465,13 +465,13 @@ icons:
     sfSymbol: "sf_sparkles"
     usage: "AI/模型选择"
 
-  # ── 实验/实验室（SF Symbol 走 AppIcons） ──
+  # ── 实验/Lab（SF Symbol 走 AppIcons） ──
   lab:
     dartRef: "AppIcons.lab"
     sfSymbol: "sf_flask"
-    usage: "实验室 tab"
+    usage: "Lab tab"
 
-  # ── 实验/实验室（svg 资源，走 SvgPicture.asset） ──
+  # ── 实验/Lab（svg 资源，走 SvgPicture.asset） ──
   themeUnselectSvg:
     file: "assets/icons/theme_unselect.svg"
     usage: "主题 tab 未选 svg 图标（不走 AppIcons，flutter_svg 直接渲染）"
