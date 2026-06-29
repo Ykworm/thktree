@@ -31,6 +31,7 @@
 | 网格底栏 Action Sheet | ✅ 完成 | 2026-06-17 | ThkGridBottomSheet（圆形图标 + 文字标签） |
 | 节点位置选择器 | ✅ 完成 | 2026-06-07 | node_location_picker |
 | 笔记选择器 | ✅ 完成 | 2026-06-07 | note_select_screen（主题创建对话入口） |
+| **标题必填校验** | ✅ 完成 | 2026-06-29 | NoteEditorScreen ✓ 按钮加 `trim().isEmpty` 拦截 → 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮），不调 `_saveNow` 不 pop；详见 [CHANGELOG § 11](CHANGELOG.md#11-笔记标题必填校验2026-06-29) |
 | 图片插入 | 📋 待开发 | 2026-06-17 | 编辑器工具栏插入图片 |
 
 ## 3. 代码文件
@@ -88,6 +89,7 @@ lib/ui/features/notes/
 
 ## 7. 相关历史
 
+- **2026-06-29** — NoteEditorScreen ✓ 按钮加空标题校验（`titleCannotBeEmpty` alert），新增 `integration_test/note_title_required_test.dart`（5 个 case）
 - **2026-06-07** — 笔记列表页改为 ThkLargeTitlePage + slivers 布局
 - **2026-06-07** — 新增 node_location_picker（节点位置选择器）
 - **2026-06-07** — 新增 note_select_screen（笔记选择器）

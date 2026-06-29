@@ -36,6 +36,7 @@
 | 笔记功能 | notes | ✅ 完成 | 2026-06-07 | [README](modules/notes/README.md) | [notes-list-design](modules/notes/visual/notes-list-design.md) | `lib/ui/features/notes/note_browse_screen.dart` 等 | NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteStore |
 | 笔记搜索 | notes | ✅ 完成 | 2026-06-24 | [README](modules/notes/README.md) | [notes-list-design](modules/notes/visual/notes-list-design.md) | `lib/ui/features/search/search_content.dart` + `lib/ui/features/notes/note_browse_screen.dart` | 笔记 tab 顶部复用 `SearchContent`（FTS5 全文搜索），空查询显示主题分组，非空查询显示搜索结果；详见 [notes/CHANGELOG § 10](modules/notes/CHANGELOG.md#10-笔记-tab-顶部搜索统一为全文搜索2026-06-24) |
 | Markdown 工具栏增强 | notes | ✅ 完成 | 2026-06-17 | [README](modules/notes/README.md) | — | `lib/ui/core/widgets/markdown_toolbar.dart` | 标题级别循环切换（h2→h3→h1→无）+ 表格插入按钮 |
+| 标题必填校验 | notes | ✅ 完成 | 2026-06-29 | [README](modules/notes/README.md) | — | `lib/ui/features/notes/note_editor_screen.dart` | NoteEditorScreen ✓ 按钮加 `trim().isEmpty` 拦截 → 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮），不调 `_saveNow` 不 pop；l10n 新增 `titleCannotBeEmpty`（zh + en）；详见 [notes/CHANGELOG § 11](modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29) + [CHANGELOG](CHANGELOG/2026-06-29-note-title-required.md) |
 | 图片插入 | notes | 📋 待开发 | 2026-06-17 | [README](modules/notes/README.md) | — | — | 编辑器工具栏插入图片，支持相册/拍照 |
 
 ## 3. 对话模块（chat）
@@ -43,7 +44,8 @@
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 流式对话 | chat | ✅ 完成 | 2026-06-07 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart` | LlmClient + SSE, FileWriteQueue, ChatComposer 优化 |
-| 标题自动建议 | chat | ✅ 完成 | 2026-06-24 | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` + `lib/ui/core/shared/title_suggestion_screen.dart` | 分支创建时触发，支持选中文本/对话总结/笔记多种来源；三层防御拦截 LLM 未配置死路（`lib/ui/core/shared/llm_setup_check.dart`）：L1-A（`showBranchFlow` 入口）→ L1-B（`TitleSuggestionScreen.initState`）→ L2（sheet filter 空时弹窗引导） + `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` 跳转默认模型配置页 |
+| 标题自动建议 | chat | ✅ 完成 | 2026-06-29 | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` + `lib/ui/core/shared/title_suggestion_screen.dart` + `lib/ui/features/chat/auto_title_controller.dart`（2026-06-29 新增） | 分支创建时触发，支持选中文本/对话总结/笔记多种来源；**2026-06-29 新增** 空白分支 chat 流式结束后由 `AutoTitleController` 自动 LLM 补 title 并写入 DB（3 层守卫 + `ref.keepAlive()`保活，详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式)；三层防御拦截 LLM 未配置死路（`lib/ui/core/shared/llm_setup_check.dart`）：L1-A（`showBranchFlow` 入口）→ L1-B（`TitleSuggestionScreen.initState`）→ L2（sheet filter 空时弹窗引导） + `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` 跳转默认模型配置页 |
+| 空白分支自动 title 持久化 | chat | ✅ 完成 | 2026-06-29 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支（A 模式）chat 流式结束后自动调 LLM 生成 title 并写入 DB + refresh tree；与 widget 生命周期解耦（`ref.keepAlive()`），提前 back 回 tree 也能后台完成；详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [war-story](war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) + [CHANGELOG](CHANGELOG/2026-06-29-auto-title-persistence.md) |
 | iOS 后台中断恢复 | chat | ✅ 完成（iOS only） | 2026-06-22 | [README](modules/chat/README.md) | — | `lib/data/services/chat_task_service.dart` 等 | App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队；详见 [ADR-015](DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) |
 
 ## 4. 搜索模块（search）
@@ -89,6 +91,8 @@
 
 > 倒序排列，最新在上。
 
+- **2026-06-29** — 笔记编辑器标题必填校验：`NoteEditorScreen` ✓ 按钮加 `trim().isEmpty` 拦截（`_titleController.text.trim().isEmpty`）→ 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮）→ `return;`（不调 `_saveNow` 不 `pop`）。l10n 新增 `titleCannotBeEmpty`（zh: 标题不能为空，请输入后再保存 / en: Title cannot be empty, please enter a title before saving）。覆盖笔记 Tab `+` 新建和详情页编辑入口（单点修复）；已有空标题笔记的历史数据不动。新增 `integration_test/note_title_required_test.dart`（5 个 case）。详见 [CHANGELOG](CHANGELOG/2026-06-29-note-title-required.md) + [notes/CHANGELOG § 11](modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29)
+- **2026-06-29** — 空白分支 chat 流式结束后自动生成 title 并持久化：`AutoTitleController`（`lib/ui/features/chat/auto_title_controller.dart`，按 `nodeId` family）从 widget 抽离生成任务，3 层守卫（state 去重 / currentTitle 改过跳过 / DB title 兜底）+ `ref.keepAlive()` 保活（提前 pop 回 tree 也能后台完成）+ 写 DB + refresh `themeDetailControllerProvider(themeId)` 树。`chat_screen` 增加 `ref.listen<AsyncValue<AutoTitleState>>` 同步 `_displayedTitle`，监听 `failed + error=='noModel'` 弹 `showLlmSetupAlert`。集成测试 `integration_test/branch_creation_test.dart` 加 case 9.5（空白分支 E2E 自动 title）+ 激活 case 9.4（DB check 守卫），新增 case 9.6（提前 pop 后台完成）。详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [CHANGELOG](CHANGELOG/2026-06-29-auto-title-persistence.md) + [war-story](war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md)
 - **2026-06-29** — Lab tab 视觉规范化：tab label 中英文统一为 "Lab"（`app_zh.arb::labTabLabel` "实验室" → "Lab"），`LabPlaceholderScreen` 改为白底（`AppColors.surface`）兜底 + 顶部 hint 文字 + 下方 `assets/background/lab_bg_32pt.png` 装饰图（`BoxFit.contain` 保持比例，不撑满）。集成测试 `integration_test/lab_tab_test.dart` 断言同步。详见 [CHANGELOG](CHANGELOG/2026-06-29-lab-tab-white-bg.md)
 - **2026-06-28** — Lab tab 上线 + tab bar 改红：`lib/ui/features/lab/lab_placeholder_screen.dart`（占位页）+ `AppIcons.lab`（sf_flask）+ `assets/icons/lab_selected.png` / `lab_unselect.png` + tab bar 4→5（搜索/主题/笔记/**实验室**/设置）+ 主题 tab 未选图标换 svg（`assets/icons/theme_unselect.svg`）+ 顶栏背景色临时用 `AppColors.destructive`（#DC2626）。新增 `integration_test/lab_tab_test.dart` + `theme_tab_icon_test.dart`；新增依赖 `flutter_svg: ^2.0.10`。详见 [CHANGELOG](CHANGELOG/2026-06-28-lab-tab-and-bar-red.md) + [ADR-017](DECISIONS.md#adr-017-实验室-tab-上线--tab-bar-结构调整--flutter_svg-引入)
 - **2026-06-28** — 设置入口从底部 tab 移出：底部 tab 由 4 个（搜索 / 主题 / 笔记 / 设置）变为 3 个（搜索 / 主题 / 笔记）；设置入口迁至搜索页顶栏右上角齿轮按钮（`SFIcons.sf_gearshape` = `AppIcons.settings`），点击 `context.push('/settings')` 进入设置页。`/settings` 由 StatefulShellBranch 提升为外层 `GoRoute`（`parentNavigatorKey: _rootNavigatorKey`），与 `/llm-providers` 同层（共享返回栈语义）。复用 `l10n.settingsTabLabel`（虽然其字面含义是「设置 tab」但作为「设置入口」文案继续可用，不新增 key）。新增 `integration_test/search_settings_button_test.dart`（1 个 case）。详见 [CHANGELOG](CHANGELOG/2026-06-28-settings-out-of-tabbar.md)
@@ -118,7 +122,7 @@
 
 ## 活跃开发区域
 
-- `lib/ui/features/chat/` — `ChatController.onDone` stop_button 自愈 + `MessageBubble` LaTeX 在表格展开视图注入收敛
+- `lib/ui/features/chat/` — `ChatController.onDone` stop_button 自愈 + `MessageBubble` LaTeX 在表格展开视图注入收敛 + `AutoTitleController` 空白分支自动 title 持久化（2026-06-29）
 - `lib/data/stores/llm_config_store.dart` — `tmp+rename` 原子写（POSIX `rename` 原子性）+ 防共享引用（`List.from` 复制）
 - `lib/ui/features/notes/` — 笔记列表布局优化（Large Title 滚动）
 - `lib/ui/features/search/` — 全文搜索功能

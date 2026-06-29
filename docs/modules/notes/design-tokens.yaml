@@ -190,7 +190,16 @@ screens:
       title: "widget.themeTitle（主题名）"
       trailing:
         - icon: "AppIcons.check"
-          action: "_saveNow() + pop()"
+          action: "空标题校验 + _saveNow() + pop()"
+          validation:
+            trigger: "用户点 ✓ 按钮"
+            rule: "_titleController.text.trim().isEmpty"
+            guard: "弹 ThkAlert.show(context, message: l10n.titleCannotBeEmpty, defaultAction: l10n.ok) → return;（不调 _saveNow，不 pop）"
+            l10n: "l10n.titleCannotBeEmpty（中文: 标题不能为空，请输入后再保存 / 英文: Title cannot be empty, please enter a title before saving）"
+            purpose: "避免纯空格蒙混过关 + 覆盖所有进入编辑器的入口（笔记 Tab + / 详情页编辑入口）"
+          passThrough:
+            action: "_saveNow() + Navigator.pop()"
+            notes: "原有路径不变，标题非空时与以前一致"
 
     inputArea:
       titleField:

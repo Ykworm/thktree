@@ -331,3 +331,73 @@ final int contextWindow; // 0 表示未知
 ### 10.6 已知能力边界
 - 全文搜索范围：笔记标题、笔记正文、对话消息、节点标题
 - **不搜**：主题名（`themeTitle UNINDEXED`）——这是已知的能力损失，已记录到设计决策
+
+---
+
+## 11. 笔记标题必填校验（2026-06-29）
+
+### 11.1 背景
+
+从**笔记 Tab 顶部 nav bar 右上角 `+` 按钮**新建笔记时，如果用户没输入标题就点 ✓ 关闭，原有流程没有任何拦截——空标题笔记会落盘，列表展示一串空白项。
+
+**入口链路**：[note_browse_screen.dart `_createNoteInUncategorized`](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_browse_screen.dart#L263-L295) → `NoteEditorScreen(createMode: true)` → ✓ `_saveNow()` 把空标题也存下来。
+
+### 11.2 方案
+
+单点修复——在 `NoteEditorScreen` 顶部 **✓ 按钮** `onPressed` 内做空标题校验：
+
+- 校验逻辑：`_titleController.text.trim().isEmpty`（用 `trim()`，避免纯空格蒙混过关）
+- 拦截路径：弹 `ThkAlert.show(context, message: l10n.titleCannotBeEmpty, defaultAction: l10n.ok)` → `return;`（**不**调 `_saveNow`，**不** `Navigator.pop`）
+- 放行路径：走原有 `_saveNow` + `pop()` 流程
+
+**覆盖所有入口**：笔记 Tab `+` 入口最终都跳到同一个 `NoteEditorScreen`，编辑器 ✓ 按钮的拦截能保证空标题永远无法通过这个路径落盘。
+
+### 11.3 l10n 新增
+
+`lib/l10n/app_zh.arb` + `app_en.arb` 新增 `titleCannotBeEmpty`：
+
+| 语言 | 文案 |
+|------|------|
+| 中文 | 标题不能为空，请输入后再保存 |
+| 英文 | Title cannot be empty, please enter a title before saving |
+
+### 11.4 实现要点
+
+- `lib/ui/features/notes/note_editor_screen.dart` L172-189 ✓ 按钮 `onPressed` 加 if/return 守卫
+- 用 `ThkAlert.show`（项目统一 alert 组件，单"确定"按钮）
+- 已有空标题笔记的历史数据不动（用 `noteId` 占位显示）
+
+### 11.5 测试
+
+`integration_test/note_title_required_test.dart` —— 5 个 case：
+
+| Case | 场景 | 期望 |
+|------|------|------|
+| 1 | 完全空标题 + ✓ | 弹 alert + 编辑器仍在 |
+| 2 | 关闭 alert | 编辑器还在 + 输入框还在 |
+| 3 | 纯空格标题 + ✓（body 填了内容） | 弹 alert（trim 兜底生效）|
+| 4 | 有效标题 + ✓ | 正常退出（对照组）|
+| 5 | 编辑已有笔记 → 清空标题 + ✓ | 弹 alert + 编辑器仍在（重复触发稳定性）|
+
+测试状态：⚠️ 留给用户跑（用户反馈：测试案例太多，自己测）。
+
+### 11.6 文件变更
+
+**修改（1 个）：**
+- `lib/ui/features/notes/note_editor_screen.dart` — ✓ 按钮 `onPressed` 加空标题校验 + ThkAlert
+
+**修改（2 个 l10n）：**
+- `lib/l10n/app_zh.arb` + `lib/l10n/app_en.arb` — 新增 `titleCannotBeEmpty`
+
+**自动生成（3 个）：**
+- `lib/l10n/generated/app_localizations*.dart` — `flutter gen-l10n` 重新生成
+
+**新增（1 个集成测试）：**
+- `integration_test/note_title_required_test.dart` — 5 个 case
+
+### 11.7 不在本次 scope
+
+- `note_detail_screen.dart:_renameNote` 重命名时清空标题的处理——按问题修复范围最小化原则不动
+- `note_select_screen.dart:_createAndAppend` 的 `_promptTitle`——已有自己的空标题处理
+- 自动标题生成机制
+- 历史空标题笔记的展示兜底（已用 `noteId` 占位）

@@ -6,7 +6,7 @@
 | 范围 | `lib/data/services/search_service.dart` `upsertNote` + `search` 改造 + `integration_test/note_search_test.dart` Case 5 新增 + EC-043 backlog 状态更新 + war-story 新建 |
 | 设计文档 | [`docs/_tmp/2026-06-29-fts5-upsert-repeat-v1.md`](../_tmp/2026-06-29-fts5-upsert-repeat-v1.md)（已被吸收，合并后清理） |
 | 配套文档 | [edge-cases-backlog § EC-043](../_shared/edge-cases-backlog.md)（已标记 ✅ 已修复） · [war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md) |
-| 状态 | 🟢 完成（代码改动 commit `fce454f`，本 CHANGELOG 由 doc commit 提交） |
+| 状态 | 🟢 完成（代码改动 commit `9205baa`，本 CHANGELOG 由 doc commit 提交） |
 
 ## 背景
 
@@ -119,7 +119,7 @@ LIMIT ?
 
 | Commit | 说明 |
 |--------|------|
-| `fce454f` | fix(search): A+B 组合修复 EC-043 搜索结果重复 — `upsertNote` 事务化 DELETE+INSERT + `search` 子查询 + GROUP BY 去重 + `note_search_test.dart` Case 5 新增 |
+| `9205baa` | fix(search): A+B 组合修复 EC-043 搜索结果重复 — `upsertNote` 事务化 DELETE+INSERT + `search` 子查询 + GROUP BY 去重 + `note_search_test.dart` Case 5 新增 |
 
 > **commit 拆分决策**：原 writing-plans 阶段计划拆 2 个 commit（A 改 upsertNote / B 改 search），实际合并为 1 个 commit。理由：A 和 B 是逻辑上的同一修复单元（EC-043 修复），拆分 commit 反而需要中途 stash + 切分支，复杂度大于收益。commit message 内明确区分两层改动。
 
@@ -151,8 +151,8 @@ LIMIT ?
 | Case 5（新建 + 多次保存去重）实跑 | ⏳ 用户在主仓库 dev 验证中（合并后切换目录跑 `flutter test integration_test/note_search_test.dart -d <device_id> --reporter=expanded`） |
 | Case 1-4（回归） | 集成测试代码未改；待用户验证 Case 1-4 不被新 GROUP BY 影响 |
 | `flutter analyze` | ✅ 无新增 error / warning |
-| 方案 A（事务 DELETE+INSERT） | ✅ commit `fce454f` 已落地 |
-| 方案 B（GROUP BY 查询兜底） | ✅ commit `fce454f` 已落地 |
+| 方案 A（事务 DELETE+INSERT） | ✅ commit `9205baa` 已落地 |
+| 方案 B（GROUP BY 查询兜底） | ✅ commit `9205baa` 已落地 |
 | 历史脏数据兜底 | 集成测试覆盖不到；依赖方案 B 自动吞掉（不主动清理，按草稿 § 6） |
 
 ### 手工验证清单（用户在主仓库 dev 跑）
@@ -176,8 +176,8 @@ LIMIT ?
 |------|------|------|
 | `upsertMessage` 同 bug 未修（chat 搜索重复） | 中 | 按 memory「问题修复范围最小化原则」暂不扩大；如用户后续反馈 chat 搜索重复，立新 issue 单独处理 |
 | 历史脏数据未主动清理 | 极低 | 方案 B 自动兜底，无需额外清理 |
-| `db.transaction` + sqflite + FTS5 行为 | 已验证 | commit `fce454f` 已落地；无新增 analyze error |
-| `GROUP BY` 子查询里 `bm25()` / `snippet()` SQLite 兼容性 | 已验证 | commit `fce454f` 已落地；无 query 错误 |
+| `db.transaction` + sqflite + FTS5 行为 | 已验证 | commit `9205baa` 已落地；无新增 analyze error |
+| `GROUP BY` 子查询里 `bm25()` / `snippet()` SQLite 兼容性 | 已验证 | commit `9205baa` 已落地；无 query 错误 |
 | Case 1-4 因 GROUP BY 排序改变而失败 | 低 | Case 1-4 断言"至少含 1 条"，不依赖严格排序 |
 
 ## 关联

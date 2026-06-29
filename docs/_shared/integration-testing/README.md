@@ -364,7 +364,7 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | `chat_streaming_test.dart` | 172 | 3 | 流式 / 空消息 / 快速连续 | ❌ TODO 占位 | 缺 `navigateToChat`、缺 ValueKey 验证 | [chat-streaming.md](./chat-streaming.md) |
 | `llm_error_retry_test.dart` | 411 | 5 | 错误态展示 / 重试触发 / 上报链路 / cancelled 不渲染 / i18n 文案 | ✅ **完整可跑通** | 无（mock LlmClient + mock SettingsStore） | — |
 | `backup_restore_test.dart` | 68 | 4 | 备份恢复往返 / 文件格式 / 冲突 / 覆盖 | ❌ 纯 TODO 空壳 | settings 页缺 ValueKey、缺文件 schema | [backup-restore.md](./backup-restore.md) |
-| `branch_creation_test.dart` | 217 | 7 | 4 种模式组合 + 2 取消 + 1 fallback | ⚠️ 部分（前置完成，核心 TODO） | 缺选中文本交互、缺模式 sheet ValueKey | [branch-creation.md](./branch-creation.md) |
+| `branch_creation_test.dart` | 217+ | 7 + 3 待补 | 4 种模式组合 + 2 取消 + 1 fallback + 空白分支 6 case（含 9.4 实跑通过 + 9.5/9.6 待用户测） | ⚠️ 部分（前置完成，核心 TODO） | 缺选中文本交互、缺模式 sheet ValueKey、case 9.5/9.6 待实跑 | [branch-creation.md](./branch-creation.md) |
 | `node_reorder_test.dart` | 153 | 3 | 同层重排 / 跨层禁止 / 刷新保持 | ⚠️ 部分（手写 Key，未跑通） | 拖拽把手 ValueKey 待核实 | [node-reorder.md](./node-reorder.md) |
 | `chat_async_recovery_test.dart` | 442 | 4 | 后台中断恢复：findInterrupted / resumeInterrupted / cancelResumeQueue / bridge.begin-end 配对 | ✅ **完整可跑通** | 无 | [chat-async-recovery.md](./chat-async-recovery.md) |
 | [note-crud.md](./note-crud.md) | 笔记 CRUD 集成测试 spec |

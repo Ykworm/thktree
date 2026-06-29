@@ -237,7 +237,7 @@ graph TB
 
 #### EC-043 搜索结果重复（FTS5 无主键 + upsert 累加）— ✅ 已修复（2026-06-29）
 
-- **当前状态**：✅ 已验证 + 已修复（2026-06-29）
+- **当前状态**：✅ 已完整修复（2026-06-29）
 - **影响模块**：search（`SearchService` + `AppDatabase`）
 - **场景描述**：`search_index` 是 FTS5 虚拟表（见 [`app_database.dart`](../../lib/data/services/app_database.dart) 行 64-73），schema 中**无显式主键**（7 列均为普通列）；FTS5 虚拟表**不支持**标准 SQLite `UNIQUE` 约束。`SearchService.upsertNote`（[search_service.dart](../../lib/data/services/search_service.dart) 行 111-138）与 `SearchService.upsertMessage`（同行 144-164）历史上使用的 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)` 在 FTS5 虚拟表上**静默失效**（不抛错也不替换，仍插入新 rowid 行）。`SearchService.search`（同行 53-101）历史上直接 `SELECT ... FROM search_index MATCH ?`，未做 `GROUP BY entityType, entityId` / `DISTINCT` 去重。
 - **风险分析**：同一 `(entityType, entityId)` 在 `search_index` 中可存在 N 条重复行；搜索时全部返回，UI 列表出现重复条目。具体累加触发点：
@@ -249,18 +249,18 @@ graph TB
   1. 同一笔记连续 `upsertNote` 3 次后，搜索该笔记关键字，断言 `SearchResult` 列表长度 = 1（当前预期失败：实际返回 3）
   2. mock LLM 触发 3 轮 `finishAssistant` 后，搜索该对话关键字，断言 `message` 类型结果数 = 1（当前预期失败：实际返回 3）
   3. 验证 `rebuildAll` 路径（先 `DELETE FROM search_index` 再 INSERT）搜索结果正常，作为对照基准——说明问题不来自数据写入路径，仅来自 upsert 的 in-place 更新
-- **修复方向**：✅ **已修复**（2026-06-29，commit `fce454f`）
+- **修复方向**：✅ **已完整修复**（2026-06-29，commit `9205baa` + `cb9891f`）
   - **方案 A（源头去重）**：`upsertNote` 改用 `db.transaction` 包裹 `DELETE + INSERT`，替换原 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)`。FTS5 虚拟表不支持 `UNIQUE` / PRIMARY KEY，`ConflictAlgorithm.replace` 在 FTS5 上**静默失效**（不抛错也不替换，而是插入新 rowid 行），必须改为显式 DELETE + INSERT 事务保证同 `(entityType, entityId)` 只保留一行
-  - **方案 B（查询兜底）**：`search()` 改用子查询 + 外层 `GROUP BY entityType, entityId` + 排序 `MIN(rank) ASC, MAX(updatedAt) DESC`。子查询里先调 `bm25()` / `snippet()`，外层 GROUP BY 按 `(entityType, entityId)` 聚合天然去重，自动吞掉历史脏数据
-  - **修复范围最小化**：仅改 `upsertNote`（note 搜索重复是用户痛点），`upsertMessage` 同 bug 未修（chat 搜索重复未列为当前痛点；按 memory「问题修复范围最小化原则」暂不扩大）
-- **验证状态**：✅ 已通过集成测试
+  - **方案 B（查询兜底）**：⚠️ 上游 commit `9205baa` 的子查询 + GROUP BY 方案在 iOS SQLite 实测失败（`unable to use function snippet/bm25 in the requested context`）。下游 commit `cb9891f` **重写为扁平查询**：`search()` 直接 `SELECT ... FROM search_index MATCH ?`，`snippet(search_index, 5, '<b>', '</b>', '...', 40)` 取 col=5（content 列），`ORDER BY bm25(...) ASC, updatedAt DESC`。代价：放弃 GROUP BY 兜底历史脏数据，改为依靠方案 A 的事务 DELETE+INSERT 在每个新 upsert 时自动清理。
+  - **修复范围扩大到 message 端**：下游 commit `cb9891f` 同步修复 `upsertMessage` 同款 bug（`ConflictAlgorithm.replace` 同样静默失效）；此前按 memory「问题修复范围最小化原则」暂未扩大，但本次用户实测发现 chat 搜索完全不可用，触发扩大修复。
+- **验证状态**：✅ 已通过集成测试 + 用户实测
   - **Case 5（新增，2026-06-29）**：`integration_test/note_search_test.dart` Case 5——新建笔记 → 填标题+正文 → `pump(500ms)` 触发防抖 → 点 √ 触发第 2 次 `_saveNow` → 搜索唯一关键词 → 断言 `_countSearchResultEntities() == 1`
   - **Case 1-4（回归）**：全部保持原断言，GROUP BY 去重不破坏现有搜索行为
-- **修复 commit**：`fce454f`（worktree `codex/ec043-fts5-upsert-repeat`，待合并回 dev）
+- **修复 commits**：`9205baa`（note 端 + 上游方案 B）+ `cb9891f`（message 端同步 + 方案 B 重写为扁平查询）
 - **相关代码**（修复后）：
-  - `lib/data/services/search_service.dart` 行 53-101（`search` 子查询 + GROUP BY）
-  - `lib/data/services/search_service.dart` 行 111-138（`upsertNote` 事务化 DELETE+INSERT）
-  - `lib/data/services/search_service.dart` 行 144-164（`upsertMessage` 同 bug 暂未修，待后续追踪）
+  - `lib/data/services/search_service.dart` 行 53-101（`search` 扁平查询 + col=5，下游 commit `cb9891f` 重写）
+  - `lib/data/services/search_service.dart` 行 111-138（`upsertNote` 事务化 DELETE+INSERT，上游 commit `9205baa`）
+  - `lib/data/services/search_service.dart` 行 154-180（`upsertMessage` 事务化 DELETE+INSERT，下游 commit `cb9891f` 同步修复）
   - `integration_test/note_search_test.dart` Case 5
 - **相关文档**：[CHANGELOG 2026-06-29](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)、[search 模块 README § 关键设计原则](../../modules/search/README.md)
 

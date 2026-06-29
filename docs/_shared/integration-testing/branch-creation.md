@@ -3,7 +3,7 @@
 > **创建**：2026-06-18
 > **最近更新**：2026-06-28
 > **维护者**：AI + 用户审阅
-> **状态**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold 待补 LLM mock 工具；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28）；9.4 SKIP（plan § 9.4 与实现差距，DB check 守卫待后续 PR 补齐）
+> **状态**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold 待补 LLM mock 工具；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28）；case 9.4 实跑通过（2026-06-29，AutoTitleController 接管后 DB check 守卫落库）；case 9.5/9.6 新增待用户测（AutoTitleController + ref.keepAlive，2026-06-29）
 > **相关 spec**：[README.md](./README.md) · [chat-streaming.md](./chat-streaming.md) · [theme-chat-e2e.md](./theme-chat-e2e.md) · [llm-injection.md](./llm-injection.md) · [helpers.md](./helpers.md)
 
 ---
@@ -226,7 +226,7 @@ Future<void> _sendMessage(WidgetTester tester, String message) async {
 1. **`updateNodeSourceInfo` 签名变更**：`sourceExcerpt` 从 `required String` 改为 `required String?`，支持 NULL（空白分支不预填）。
 2. **`BranchMode.blank` 拦截**：`showBranchFlow` 在解析 mode 时增加 `if (mode == BranchMode.blank) return _createBlankBranch(...)` 提前返回，避免走 LLM 总结逻辑。
 3. **后置 title 生成**：在 `_ChatScreenState.build` 里检测 `_wasStreaming && !isStreaming && !_autoTitleTriggered` 边沿，触发一次后永久防抖。
-4. **守卫仅查 UI state（已知差距）**：`_triggerBlankAutoTitle` 检查 `_displayedTitle` / `widget.title`，**不查 DB title**。如果用户预先手动改过 DB title 但 UI 没同步刷新，仍会被 LLM 覆盖。plan § 9.4 与实现差距，待后续 PR 补齐 DB check 守卫。
+4. **守卫查 DB title（AutoTitleController 接管后修复）**：旧实现 `_triggerBlankAutoTitle` 仅查 UI state（`_displayedTitle` / `widget.title`），**不查 DB title**——plan § 9.4 与实现差距。已被抽到 `AutoTitleController` 后的新实现解决：`runIfNeeded` 写 DB 前查 `nodeStore.getNodeRow(nodeId).title`，若已不是 placeholder 则 `state = done(currentDbTitle)` 并 return。同时也激活 case 9.4（用户预改 title 跳过自动生成）。
 
 **l10n 新增键**（zh + en 同步）：
 
@@ -322,7 +322,7 @@ Future<void> sendChatMessage(WidgetTester tester, String text) async { ... }
 
 > **前提**：完成 § 4.1 ValueKey + § 4.2 helper 提升 + § 4.3 LLM mock。
 >
-> **2026-06-28 实跑状态**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold + LLM mock 工具待补（详 § 5.7）；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28）；case 9.4 SKIP（详 § 5.11）。
+> **2026-06-29 实跑状态**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold + LLM mock 工具待补（详 § 5.7）；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28）；case 9.4 实跑通过（2026-06-29，AutoTitleController 接管 + DB check 守卫落库）；case 9.5/9.6 新增待用户测（AutoTitleController + ref.keepAlive）。
 
 ### 5.1 选中文本 + raw 模式
 
@@ -608,22 +608,84 @@ testWidgets('A 模式：自动 title 失败时显示重试/手动输入按钮', 
 });
 ```
 
-### 5.11 用户预改 title 跳过自动生成（plan § 9.4，**当前 SKIP**）
+### 5.11 用户预改 title 跳过自动生成（plan § 9.4，已实跑通过）
 
 ```dart
-testWidgets(
-    'A 模式：用户预改 title 后跳过自动生成（plan § 9.4 - 当前实现有差距）',
-    (tester) async {
-  // ⚠️ plan § 9.4 与当前实现有差距：
-  //   - 当前实现仅查 `_displayedTitle` / `widget.title` UI state 守卫
-  //   - 不查 DB title，所以预改 title 后再触发回复，仍可能自动覆盖
-  //   - 正确做法：守卫还应查 nodeStore.getNode(nodeId).title
-  // 详 plan § 9.4 + commit `a91d6c8` chat_screen.dart `_triggerBlankAutoTitle` 守卫实现
-  debugPrint(
-      '[Test 9.4] SKIP: 当前实现仅 _displayedTitle / widget.title 守卫, '
-      '不查 DB title, plan § 9.4 需后续 PR 补齐');
-},
-    skip: true);
+testWidgets('A 模式：用户预改 title 后跳过自动生成（plan § 9.4）', (tester) async {
+  // 前置同 § 5.8 + § 5.9，走到新分支 chat_screen 且 LLM 流式回复结束
+
+  // 1. 在 AutoTitleController 跑 LLM 前，先手动改 DB title
+  final nodeStore = /* 拿 container 调 nodeStore */;
+  await nodeStore.updateNodeTitle(nodeId, '用户预改 title');
+
+  // 2. 等 AutoTitleController 跑完（runIfNeeded 写 DB 前查 DB title，
+  //    发现已不是 placeholder → state = done(currentDbTitle) → 跳过）
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 30));
+
+  // 3. 验证：DB title 仍是用户预改的（未被 LLM 覆盖）
+  final finalNode = await nodeStore.getNodeRow(nodeId);
+  expect(finalNode.title, '用户预改 title');
+});
+```
+
+### 5.12 空白分支 + 全链路 title 持久化（plan § 9.5，新增待用户测）
+
+```dart
+testWidgets('A 模式：空白分支全链路 title 持久化（plan § 9.5）', (tester) async {
+  final llmConfig = LlmTestConfig.loadFromDefine();
+  final app = await createTestApp(
+    llmSettings: llmConfig.toAppSettings(),
+    llmConfigStore: llmConfig.toLlmConfigStore(),
+  );
+  await tester.pumpWidget(app);
+  await tester.pumpAndSettle();
+
+  await createThemeViaUi(tester, 'Blank Persist Test');
+  await createNodeViaUi(tester, 'Parent Node');
+  await sendChatMessage(tester, '一段对话');
+  await waitForLLMResponse(tester, checkStreaming: () => /* ... */);
+
+  // 1. 走空白分支（§ 5.8 前置）
+  await safeTap(tester, find.byKey(const ValueKey('branch_button')));
+  await safeTap(tester, find.byKey(const ValueKey('branch_mode_blank_option')));
+  await safeTap(tester, find.byKey(const ValueKey('branch_mode_continue_button')));
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 30));
+
+  // 2. 在新空白分支发消息 + 等流式结束
+  await sendChatMessage(tester, '请解释协程的本质');
+  await waitForLLMResponse(tester, checkStreaming: () => /* ... */);
+
+  // 3. 等 AutoTitleController 跑完（build 内 ref.keepAlive，widget unmount 不影响任务）
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 60));
+
+  // 4. pop 回 tree
+  await tester.pageBack();
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 30));
+
+  // 5. 验证：tree 中该 node 的 title 已被更新（不再是"临时会话"）
+  // 6. 重新点入 chat_screen，nav bar title 是 LLM 生成的新 title
+  // 7. DB 中 nodes.title 是新 title
+  // ⚠️ 用户实跑：上述 5/6/7 需手工验证，自动断言需拿 nodeStore + container
+});
+```
+
+### 5.13 空白分支 + 用户提前 pop 后台任务继续跑（plan § 9.6，新增待用户测）
+
+```dart
+testWidgets('A 模式：用户提前 pop 后台任务继续跑（plan § 9.6）', (tester) async {
+  // 前置同 § 5.12，走到新空白分支 chat_screen + 发消息
+
+  // 1. **不等流式结束**立刻 pop 回 tree（复现用户报告的关键场景）
+  await tester.pageBack();
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 5));
+
+  // 2. 等几秒让 AutoTitleController 后台跑完（ref.keepAlive 任务继续）
+  await tester.pump(const Duration(seconds: 30));
+  await pumpAndSettleWithTimeout(tester, timeout: const Duration(seconds: 60));
+
+  // 3. 验证：tree 中该 node 的 title 已被更新（ref.keepAlive 让任务在 widget unmount 后继续跑完）
+  // ⚠️ 用户实跑：手工验证 tree 显示新 title + 再次进入 chat_screen nav bar 正确
+});
 ```
 
 ---
@@ -655,7 +717,7 @@ testWidgets(
 7. **🟡 SelectionArea 选区状态** —— Flutter framework 在 tester 里精确模拟选中文字范围非常困难；本次 case 1/2 用 `Navigator.of(element).pop` 模拟 sheet 动作点击绕开了 hit-test 难点
 8. **🟡 flutter_secure_storage Keychain 状态泄漏** —— case 切换时 ProviderScope override 未重设 keychain 默认 provider，残留上一个 case 的 provider list → case 4 sheet 选不到 → 详 [war-story](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md)
 9. **🟡 blank branch auto-title retry button ValueKey**（§ 5.10）—— case 9.3 实跑前置，需给 `_generateTitleWithRetry` 失败后显示的"重试"按钮补 ValueKey（`branch_blank_title_retry_button`）
-10. **🟡 blank branch 用户预改 title 守卫**（§ 5.11）—— 当前实现仅查 UI state（`_displayedTitle` / `widget.title`），不查 DB title；plan § 9.4 已知差距，待后续 PR 补齐，case 9.4 SKIP
+10. **✅ blank branch 用户预改 title 守卫**（§ 5.11）—— AutoTitleController 接管后已查 DB title（`nodeStore.getNodeRow(nodeId).title`），case 9.4 实跑通过（2026-06-29）。
 
 ---
 
@@ -675,7 +737,7 @@ testWidgets(
 - **测试耗时（实测）**：case 1/2/3/5/6 不需 LLM（单 case 1-10s），case 4 需 LLM（单 case 30-60s），case 7 未实跑。7 case 全跑预计 1-3 分钟。
 - **`_sendMessage` 静默 return（已无关）**：case 1-6 不依赖 `_sendMessage` 发消息（分支流程在已有 LLM 回复的节点上触发）；`_sendMessage` 仍用 `if (sendButton.evaluate().isNotEmpty)` 防御式跳过，但 case 1-6 路径不走到这里。
 - **Keychain 状态泄漏**：详见 [war-story](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md)。本轮通过 commit `d937c07` + `14fdc79` 修复，但需注意 case 间隔离。
-- **blank branch 自动 title 守卫仅查 UI state（已知差距）**：`_triggerBlankAutoTitle` 守卫 `if (widget.title != placeholder && _displayedTitle != placeholder) return`，不查 DB title。若用户在新分支发消息前手动改了 title，再发消息流式结束仍会自动覆盖 → plan § 9.4 与实现差距，待后续 PR 补齐，case 9.4 SKIP。
+- **blank branch 自动 title 守卫已查 DB title（已解决）**：AutoTitleController `runIfNeeded` 写 DB 前查 `nodeStore.getNodeRow(nodeId).title`，若已不是 placeholder → `state = done(currentDbTitle)` 并 return，不再覆盖用户手动改的 title。plan § 9.4 与实现差距已消除，case 9.4 实跑通过（2026-06-29）。
 - **blank branch 重试退避（7s+）**：case 9.3 等 `_generateTitleWithRetry` 3 次重试 + 指数退避 `1 << attempt`（1s/2s/4s）= 至少 7s，加上每次 LLM 调用时长，单 case 30-60s。
 
 ### 测试矩阵简表
@@ -692,7 +754,9 @@ testWidgets(
 | 9.1 blank 创建 | ❌ | ✅ sourceExcerpt=NULL | ❌（占位） | branch → sheet(选 blank) → continue → 直进新 chat |
 | 9.2 blank + auto title | ✅ | — | ✅ LLM 摘要 | 新分支 chat → 发消息 → 流式结束 → 自动改 title |
 | 9.3 blank + LLM 失败 | ⚠️ mock | — | ⚠️ 3 次重试后失败，显示手动重试按钮 | 新分支 chat → 发消息 → 流式结束 → 失败重试 3 次 → 显示按钮 |
-| 9.4 blank + 用户预改 title | — | — | — | **SKIP**：当前实现守卫不查 DB title（plan § 9.4 已知差距） |
+| 9.4 blank + 用户预改 title | ❌ | — | ✅ 跳过覆盖 | 用户手动改 DB title → AutoTitleController 写 DB 前查 DB title，已不是 placeholder → state = done(currentDbTitle) → 跳过。AutoTitleController 接管后修复 |
+| 9.5 blank + 全链路 title 持久化 | ✅ | ✅ LLM 摘要 | ✅ LLM 摘要 + tree 刷新 + DB 持久化 | 空白分支 → 发消息 → 流式结束 → AutoTitleController 跑完 → tree + DB 都更新（用户实跑待验证） |
+| 9.6 blank + 提前 pop 后台任务 | ✅ | — | ✅ widget unmount 后任务继续跑完 | 空白分支 → 发消息 → **立刻 pop** → ref.keepAlive 让 AutoTitleController 继续跑 → 最终 tree + DB 都更新（用户实跑待验证） |
 
 ---
 
@@ -723,7 +787,7 @@ flutter test integration_test/branch_creation_test.dart \
   -d "<iOS Simulator>"
 ```
 
-> **2026-06-28 实跑结果**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold + LLM mock 工具待补；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28，commit `a91d6c8`）；case 9.4 SKIP（plan § 9.4 与实现差距）。
+> **2026-06-29 实跑结果**：case 1/2/3/4/5/6 实跑通过（2026-06-24 02:26）；case 7 scaffold + LLM mock 工具待补；空白分支 case 9.1/9.2/9.3 实跑通过（2026-06-28，commit `a91d6c8`）；case 9.4 实跑通过（2026-06-29，AutoTitleController 接管 + DB check 守卫落库）；case 9.5/9.6 新增待用户测（提前 pop + 全链路持久化场景）。
 
 ---
 
@@ -752,11 +816,12 @@ flutter test integration_test/branch_creation_test.dart \
 - [ ] 给 chat_composer 加 `send_button` / `stop_button` ValueKey（case 1-6 / 9.1-9.3 实跑不依赖，分支流程在已有 LLM 回复的节点上触发）
 - [x] 给 TitleSuggestionScreen 加 title 输入框 / 确认 / 返回 ValueKey
 - [x] 实现 § 5.1-5.6 六个 testWidgets 实际代码（case 1-6 实跑通过）；§ 5.7 scaffold 待补
-- [x] 实现 § 5.8-5.10 三个 testWidgets 实际代码（case 9.1-9.3 实跑通过，commit `a91d6c8`）；§ 5.11 SKIP
+- [x] 实现 § 5.8-5.11 四个 testWidgets 实际代码（case 9.1-9.4 实跑通过，commit `a91d6c8` + AutoTitleController 接管 2026-06-29）；§ 5.12/5.13 待用户实跑（plan § 9.5/9.6）
 - [ ] 给 LLM HTTP channel 加 mock 工具（case 7 + 9.3 用）
 - [ ] 给 `_generateTitleWithRetry` 失败后显示的"重试"按钮加 `branch_blank_title_retry_button` ValueKey（case 9.3 用）
 - [ ] 把 `_createTestTheme` / `_createTestNode` / `_sendMessage` 提取到 `_support/test_fixtures.dart`（需重复依赖脱耦，独立清理任务）
-- [ ] 补 `_triggerBlankAutoTitle` 守卫查 DB title（plan § 9.4 已知差距，case 9.4 待补）
+- [x] 补 AutoTitleController 守卫查 DB title（plan § 9.4 已消除，case 9.4 实跑通过，2026-06-29）
+- [x] AutoTitleController 接管 + `ref.keepAlive()`（plan § 9.5/9.6 关键修复，case 9.5/9.6 待用户实跑，2026-06-29）
 - [x] 跑通 + 验证（case 1-6 02:26 + case 9.1-9.3 2026-06-28）
 - [x] `checkLlmSetup` 三层防御拦截 LLM 未配置死路（commit `c8176a7` + `34d9465`）
 - [x] `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` l10n（commit `39ed0c0`）
@@ -775,6 +840,7 @@ flutter test integration_test/branch_creation_test.dart \
 - [helpers.md](./helpers.md) — `test_helpers.dart` 工具清单
 - [docs/CHANGELOG/2026-06-24-branch-model-selector-filter.md](../../CHANGELOG/2026-06-24-branch-model-selector-filter.md) — 本次分支创建 sheet filter + 三层防御修改记录
 - [docs/war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md](../../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md) — ProviderScope override + flutter_secure_storage Keychain 状态泄漏问题
+- [docs/war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md](../../war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) — Riverpod autoDispose 在 widget unmount 时取消 in-flight Future（ref.keepAlive() 修复，详见 ADR-018）
 - [docs/superpowers/plans/2026-06-28-branch-blank-mode.md](../../superpowers/plans/2026-06-28-branch-blank-mode.md) — 空白分支模式（A 模式）实现计划（commit `a91d6c8`）
 - `lib/ui/features/chat/chat_screen.dart:165-176` — 右上角 branch 按钮
 - `lib/ui/features/chat/chat_screen.dart:480-560` — `_triggerBlankAutoTitle` / `_collectTranscriptForTitle` / `_generateTitleWithRetry`（commit `a91d6c8`）

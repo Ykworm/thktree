@@ -1,3 +1,21 @@
+## ⚡ freemode（自由模式：跳过 Worktree 流程）
+
+当用户消息中明确出现 `freemode` / `自由模式` / `不走 worktree` / `跳过 worktree` 等关键词时，进入 freemode：
+
+- ❌ **不创建 worktree**（跳过 `git worktree add`）
+- ❌ **不走 rebase + fast-forward merge 收尾流程**
+- ❌ **不强制 `git worktree remove`**
+- ✅ 用户的 commit / push / 切分支 / 合并完全自由
+- ✅ 其他流程（brainstorming、草稿归档、writing-plans、测试验收、context-sync）按需保留，由用户决定
+
+**适用场景**：在主仓库直接改、轻量改动、不需要隔离工作区的场景。
+
+**与其他任务类型的关系**：freemode 跟"普通功能 / Bug 修复 / 集成测试 / 其他"是平行维度。freemode 只决定 worktree 流程是否启用，不替代任务类型的判断。
+
+**默认行为**：未出现关键词时按正常"功能开发与 Bug 修复工作流"执行，不做隐式 freemode 推断。
+
+---
+
 ## 功能开发与 Bug 修复工作流
 
 收到新功能需求或 Bug 修复需求时，必须严格遵循以下阶段，**不可跳步**：

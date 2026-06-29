@@ -5,7 +5,7 @@
 > 2. **跨模块跳转靠 `routeName + args`**——命中后跳到 `notes/detail` / `chat` / `themes` 等页面；**不要**在 search 模块里 `import 'lib/ui/features/notes/...'` 直接调 widget。
 > 3. **BM25 排序不手写**——交给 `notes_fts MATCH ? ORDER BY bm25(...)`；UI 别加 score 字段。
 > 4. **防抖 300ms**——别改这个值，与设计系统绑定。
-> 5. **FTS5 虚拟表禁用 `ConflictAlgorithm.replace`**——FTS5 不支持主键/UNIQUE，`ConflictAlgorithm.replace` 会**静默失效**（不抛错不替换只多一行）。upsert 必须用 `db.transaction` 包裹 `DELETE + INSERT`，查询侧用 `GROUP BY entityType, entityId` 兜底。详见 EC-043、[war-story packages/2026-06-29-fts5-conflict-replace-silent.md](../packages/2026-06-29-fts5-conflict-replace-silent.md)。
+> 5. **FTS5 虚拟表禁用 `ConflictAlgorithm.replace`**——FTS5 不支持主键/UNIQUE，`ConflictAlgorithm.replace` 会**静默失效**（不抛错不替换只多一行）。upsert 必须用 `db.transaction` 包裹 `DELETE + INSERT`。⚠️ FTS5 helper function（`snippet`/`bm25`）不能在 GROUP BY 子查询里调用（iOS SQLite 报 `unable to use function X`），查询侧也不能用 GROUP BY 兜底——改成扁平查询 + 正确 `col=5`（content 列）。详见 EC-043、[war-story packages/2026-06-29-fts5-conflict-replace-silent.md](../packages/2026-06-29-fts5-conflict-replace-silent.md)。
 
 ## 职责
 
@@ -41,7 +41,7 @@
 
 - **FTS5 + BM25 本地索引**：避免在线调用，全离线可用；查询速度 < 50ms（10 万条语料）
 - **双写索引**：写入 notes/chat 持久化时同步更新 FTS5 虚表（事务保证一致性）
-- **search_index 去重（2026-06-29 修复 EC-043）**：`upsertNote` 用 `db.transaction` 包裹 `DELETE + INSERT` 替代 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)`（FTS5 不支持主键），`search()` 用子查询 + 外层 `GROUP BY entityType, entityId` 聚合兜底同 `(entityType, entityId)` 重复行
+- **search_index 去重（2026-06-29 修复 EC-043）**：`upsertNote` / `upsertMessage` 全部用 `db.transaction` 包裹 `DELETE + INSERT` 替代 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)`（FTS5 不支持主键，replace 静默失效）。`search()` 用**扁平查询**（`SELECT ... FROM search_index MATCH ?`）+ `snippet(search_index, 5, ...)`（col=5 = `content` 列）+ `ORDER BY bm25(...) ASC, updatedAt DESC`。⚠️ 不可用 GROUP BY 兜底——FTS5 helper function 在 GROUP BY 子查询里报 context 错误；历史脏数据依靠方案 A 的事务 DELETE+INSERT 在每次新 upsert 时自动清理。
 - **统一 schema**：所有内容统一序列化为 `fts_row`（type + nodeId + title + body），跨类型一次查询
 - **跨模块跳转解耦**：通过 nodeId 在 result 上挂 `routeName + args`，路由层用 go_router 跳转
 - **防抖 + 取消旧查询**：用 Riverpod 的 `autoDispose` + 计时器避免乱序
@@ -60,4 +60,4 @@
 - 2026-06：补 spec 设计书、性能压测、跨模块跳转
 - 2026-06：加入搜索历史 + 高亮
 - 2026-06-24：`SearchContent` 组件抽离，被笔记 tab 顶部复用——笔记 tab 顶部搜索统一为全文搜索；明确放弃主题名搜索能力（接受 FTS5 schema `themeTitle UNINDEXED` 事实）。详见 [CHANGELOG](../../modules/notes/CHANGELOG.md#10-笔记-tab-顶部搜索统一为全文搜索2026-06-24)
-- 2026-06-29：`upsertNote` 修复 EC-043（FTS5 upsert 静默失效 → 搜索结果重复）— 方案 A+B：`db.transaction` 删+插 + 查询侧 `GROUP BY entityType, entityId` 聚合。详见 [CHANGELOG](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[war-story](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)
+- 2026-06-29：`upsertNote` / `upsertMessage` 全部修复 EC-043（FTS5 upsert 静默失效 → 搜索结果重复）— 方案 A+B：`db.transaction` 删+插（源头去重）+ `search()` 扁平查询 + `col=5`（查询侧不再 GROUP BY——FTS5 helper function 在子查询里报 `unable to use function X`）。上游 commit `9205baa`，下游 commit `cb9891f`（补强：message 端同步修复 + 方案 B 子查询重写为扁平）。详见 [CHANGELOG 2026-06-29-fts5-upsert-repeat.md](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[CHANGELOG 2026-06-29-fts5-search-rework.md](../../CHANGELOG/2026-06-29-fts5-search-rework.md)、[war-story](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)

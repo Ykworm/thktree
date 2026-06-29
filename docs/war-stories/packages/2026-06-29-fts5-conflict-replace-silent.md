@@ -47,7 +47,7 @@ FTS5 虚拟表 **不支持**标准 SQLite 的 `PRIMARY KEY` / `UNIQUE` 约束。
 
 ### 2. `ConflictAlgorithm.replace` 在 FTS5 上静默失效
 
-原 `upsertNote`（[search_service.dart:111-138](file:///Users/yuweikang/dev/yktree/ThkTree/lib/data/services/search_service.dart)）：
+原 `upsertNote`（[search_service.dart:111-138](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/services/search_service.dart)）：
 
 ```dart
 await db.insert(
@@ -63,7 +63,7 @@ await db.insert(
 
 ### 3. `search()` 查询无去重
 
-原 `search()`（[search_service.dart:53-90](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/services/search_service.dart)）：
+原 `search()`（[search_service.dart:53-101](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/services/search_service.dart)）：
 
 ```sql
 SELECT ... FROM search_index WHERE search_index MATCH ?
@@ -132,6 +132,33 @@ LIMIT ?
 | 只用 B | 天然去重，不修源头 | 每次查询都 GROUP BY；脏数据越多排序越慢 |
 | **A+B 组合** | **A 保证新数据不重复，B 兜底历史脏数据；新增数据无 GROUP BY 性能损耗（每个 entityId 1 行）** | 实现复杂度略高（两个文件都要改） |
 
+### 方案 B 的实际落地为什么从子查询改成扁平？
+
+上游 commit `9205baa` 提交时认为子查询 + GROUP BY 可行。但在 iOS 真机实测，发现两个隐藏问题：
+
+1. **`unable to use function snippet/bm25 in the requested context`**——FTS5 helper function 不能在 GROUP BY 子查询里调用。子查询里的 `snippet(...)` / `bm25(...)` 报 context 错误，整个 query 直接被 SQLite 拒绝执行。
+2. **外层 SELECT 漏 `entityId`**：GROUP BY 需要在 outer SELECT 里同时 SELECT 该字段才能投影出来，否则报 `no such column: entityId`。
+
+在下游 commit `cb9891f` 里修复：
+
+```sql
+-- 实际落地的 search()（[search_service.dart:60-86](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/services/search_service.dart)）
+SELECT
+  entityType, entityId, themeId, themeTitle, entityTitle,
+  snippet(search_index, 5, '<b>', '</b>', '...', 40) AS snippet,
+  updatedAt,
+  bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
+FROM search_index
+WHERE search_index MATCH ?
+ORDER BY rank ASC, updatedAt DESC
+LIMIT ?
+```
+
+关键点：
+
+- **col=5 = `content`**（entityType=0, entityId=1, themeId=2, themeTitle=3 UNINDEXED, entityTitle=4, content=5, updatedAt=6）。原代码 `snippet(search_index, 1, ...)` 错取 entityId，高亮实际为 ID 文本。
+- **取消 GROUP BY**：历史脏数据靠方案 A 的事务 DELETE+INSERT 自动清理（每个 upsert 路径都先 DELETE 同 `(entityType, entityId)` 行）。
+
 ### 不选方案 C（架构级重构）
 
 方案 C：FTS5 `external content` 模式 + 普通 SQLite 表做主键管理。
@@ -142,7 +169,7 @@ LIMIT ?
 
 ## 关键代码/配置
 
-详见 commit `fce454f`：
+详见 commit `9205baa`：
 
 - `lib/data/services/search_service.dart:53-101`（`search` 子查询 + GROUP BY）
 - `lib/data/services/search_service.dart:111-138`（`upsertNote` 事务化 DELETE+INSERT）
@@ -154,7 +181,7 @@ LIMIT ?
 - `lib/data/services/app_database.dart` — `search_index` schema（无法改主键）
 - `integration_test/note_search_test.dart` — Case 5 复现 EC-043
 - `lib/ui/features/notes/note_editor_screen.dart` — 触发 `upsertNote` 2 次的源头（500ms 防抖 + √）
-- `lib/data/services/chat_task_service.dart` — 另一处触发 `upsertMessage` 多次（同 bug，未修）
+- `lib/data/services/chat_task_service.dart` — 另一处触发 `upsertMessage` 多次（同 bug，已在下游 commit `cb9891f` 同步修复：事务化 DELETE+INSERT）
 
 ## 参考链接
 
