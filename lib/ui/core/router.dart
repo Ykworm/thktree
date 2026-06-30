@@ -80,6 +80,7 @@ final appRouter = GoRouter(
                     nodeId: nodeId,
                     title: params.title,
                     autoTriggerReply: params.autoTriggerReply,
+                    isDocSplit: params.isDocSplit,
                   ),
                 );
               },
