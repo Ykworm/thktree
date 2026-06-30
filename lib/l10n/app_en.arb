@@ -737,6 +737,45 @@
   "@sourceTypeUserIdea": {
     "description": "Source type label: blank branch created with no source excerpt, filled in by the user"
   },
+  "sourceTypeDocSplit": "Doc Split",
+  "@sourceTypeDocSplit": {
+    "description": "Source type label for nodes created from document split"
+  },
+  "importDocSplit": "Import & Split Document",
+  "@importDocSplit": {
+    "description": "Menu item in ThemeDetailScreen to import and split a document"
+  },
+  "docSplitInputTitle": "Paste Document",
+  "@docSplitInputTitle": {
+    "description": "Title for the full-screen document input page"
+  },
+  "submitTreeStructure": "Submit Tree",
+  "@submitTreeStructure": {
+    "description": "Menu item in ChatScreen to submit the parsed tree structure"
+  },
+  "docSplitParsingFailed": "Cannot parse tree structure. Please ask the LLM to reformat.",
+  "@docSplitParsingFailed": {
+    "description": "Error when tree parser fails to extract nodes from LLM output"
+  },
+  "docSplitNoAssistantMessage": "No LLM response found. Please send a message first.",
+  "@docSplitNoAssistantMessage": {
+    "description": "Error when trying to submit but no assistant message exists"
+  },
+  "docSplitSuccess": "Created {count} nodes",
+  "@docSplitSuccess": {
+    "description": "Success message after tree materialization",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "docSplitEmptyInput": "Please paste document text",
+  "@docSplitEmptyInput": {
+    "description": "Error when user tries to submit empty text"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Generic confirm button"
+  },
   "swipeDelete": "Delete",
   "@swipeDelete": {
     "description": "Swipe action label for delete"

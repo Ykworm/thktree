@@ -571,6 +571,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sourceTypeUserIdea => 'User Idea';
 
   @override
+  String get sourceTypeDocSplit => 'Doc Split';
+
+  @override
+  String get importDocSplit => 'Import & Split Document';
+
+  @override
+  String get docSplitInputTitle => 'Paste Document';
+
+  @override
+  String get submitTreeStructure => 'Submit Tree';
+
+  @override
+  String get docSplitParsingFailed =>
+      'Cannot parse tree structure. Please ask the LLM to reformat.';
+
+  @override
+  String get docSplitNoAssistantMessage =>
+      'No LLM response found. Please send a message first.';
+
+  @override
+  String docSplitSuccess(int count) {
+    return 'Created $count nodes';
+  }
+
+  @override
+  String get docSplitEmptyInput => 'Please paste document text';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
   String get swipeDelete => 'Delete';
 
   @override

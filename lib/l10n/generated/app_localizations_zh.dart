@@ -547,6 +547,35 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sourceTypeUserIdea => '用户补充';
 
   @override
+  String get sourceTypeDocSplit => '文档拆分';
+
+  @override
+  String get importDocSplit => '导入文档拆分';
+
+  @override
+  String get docSplitInputTitle => '粘贴文档';
+
+  @override
+  String get submitTreeStructure => '提交树结构';
+
+  @override
+  String get docSplitParsingFailed => '无法解析树结构，请让 LLM 重新输出标准格式';
+
+  @override
+  String get docSplitNoAssistantMessage => '未找到 LLM 回复，请先发送消息';
+
+  @override
+  String docSplitSuccess(int count) {
+    return '已创建 $count 个节点';
+  }
+
+  @override
+  String get docSplitEmptyInput => '请粘贴文档文本';
+
+  @override
+  String get confirm => '确认';
+
+  @override
   String get swipeDelete => '删除';
 
   @override

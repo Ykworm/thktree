@@ -1082,6 +1082,60 @@ abstract class AppLocalizations {
   /// **'User Idea'**
   String get sourceTypeUserIdea;
 
+  /// Source type label for nodes created from document split
+  ///
+  /// In en, this message translates to:
+  /// **'Doc Split'**
+  String get sourceTypeDocSplit;
+
+  /// Menu item in ThemeDetailScreen to import and split a document
+  ///
+  /// In en, this message translates to:
+  /// **'Import & Split Document'**
+  String get importDocSplit;
+
+  /// Title for the full-screen document input page
+  ///
+  /// In en, this message translates to:
+  /// **'Paste Document'**
+  String get docSplitInputTitle;
+
+  /// Menu item in ChatScreen to submit the parsed tree structure
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Tree'**
+  String get submitTreeStructure;
+
+  /// Error when tree parser fails to extract nodes from LLM output
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot parse tree structure. Please ask the LLM to reformat.'**
+  String get docSplitParsingFailed;
+
+  /// Error when trying to submit but no assistant message exists
+  ///
+  /// In en, this message translates to:
+  /// **'No LLM response found. Please send a message first.'**
+  String get docSplitNoAssistantMessage;
+
+  /// Success message after tree materialization
+  ///
+  /// In en, this message translates to:
+  /// **'Created {count} nodes'**
+  String docSplitSuccess(int count);
+
+  /// Error when user tries to submit empty text
+  ///
+  /// In en, this message translates to:
+  /// **'Please paste document text'**
+  String get docSplitEmptyInput;
+
+  /// Generic confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
   /// Swipe action label for delete
   ///
   /// In en, this message translates to:
