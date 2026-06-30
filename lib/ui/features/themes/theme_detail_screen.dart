@@ -697,6 +697,7 @@ String? _sourceTypeLabel(AppLocalizations l10n, String? sourceType) {
     'summary' => l10n.sourceTypeSummary,
     'note' => l10n.sourceTypeNote,
     'userIdea' => l10n.sourceTypeUserIdea,
+    'docSplit' => l10n.sourceTypeDocSplit,
     _ => null,
   };
 }
