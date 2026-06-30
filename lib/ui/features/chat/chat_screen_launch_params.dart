@@ -6,6 +6,7 @@ class ChatScreenLaunchParams {
   const ChatScreenLaunchParams({
     required this.title,
     this.autoTriggerReply = false,
+    this.isDocSplit = false,
   });
 
   /// 显示在 nav bar 中的标题。
@@ -13,4 +14,6 @@ class ChatScreenLaunchParams {
 
   /// 是否在初始化完成后自动调一次 LLM。
   final bool autoTriggerReply;
+
+  final bool isDocSplit;
 }
