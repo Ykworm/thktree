@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectionArea;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:thk_tree/data/services/doc_split_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -12,7 +14,6 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/auto_title_controller.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
-import 'package:thk_tree/ui/features/notes/note_select_screen.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show estimateTokens, LlmProvider;
 import 'package:thk_tree/ui/core/shared/chat_composer.dart';
@@ -21,6 +22,7 @@ import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({
@@ -29,6 +31,7 @@ class ChatScreen extends ConsumerStatefulWidget {
     required this.nodeId,
     required this.title,
     this.autoTriggerReply = false,
+    this.isDocSplit = false,
   });
 
   final String themeId;
@@ -38,6 +41,8 @@ class ChatScreen extends ConsumerStatefulWidget {
   /// 若为 true，chat 加载完后若最后一条是 user 消息（status == done），
   /// 会自动调一次 LLM 回复（用于"笔记→对话自动续聊"和"summary 创建分支"场景）。
   final bool autoTriggerReply;
+
+  final bool isDocSplit;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -232,12 +237,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           child: const Icon(AppIcons.back),
         ),
         trailing: CupertinoButton(
-          key: const ValueKey('branch_button'),
+          key: const ValueKey('more_button'),
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,
-          onPressed: isStreaming ? null : () => _onCreateBranchFromMenu(context),
+          onPressed: isStreaming ? null : () => _showMoreActions(context),
           child: Icon(
-            AppIcons.branch,
+            AppIcons.more,
             size: 24,
             color: isStreaming
                 ? AppColors.textTertiary
@@ -385,23 +390,87 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _onAddToNote(BuildContext context, String text) {
-    Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (_) => NoteSelectScreen(
-          currentThemeId: widget.themeId,
-          selectedText: text,
-          onNoteSelected: (ctx, noteId) {
-            if (noteId != null) {
-              ThkAlert.show(
-                context: ctx,
-                message: AppLocalizations.of(ctx)!.addToNote,
-              );
-            }
-          },
+  void _showMoreActions(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    ThkGridBottomSheet.show(
+      context: context,
+      showCancel: false,
+      actions: [
+        if (widget.isDocSplit)
+          GridAction(
+            label: l10n.submitTreeStructure,
+            icon: AppIcons.checkCircle,
+            color: CupertinoColors.systemGreen,
+            onPressed: () => unawaited(_onSubmitDocSplit()),
+          ),
+        GridAction(
+          label: l10n.swipeBranch,
+          icon: AppIcons.branch,
+          color: AppColors.accent,
+          onPressed: () => unawaited(_onCreateBranchFromMenu(context)),
         ),
-      ),
+      ],
     );
+  }
+
+  Future<void> _onSubmitDocSplit() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      final sessionStore = await ref.read(sessionStoreProvider.future);
+      final doc = await sessionStore.readSession(widget.nodeId);
+
+      String? lastAssistantBody;
+      for (final msg in doc.messages.reversed) {
+        if (msg.role == SessionRole.assistant &&
+            msg.status == SessionMessageStatus.done &&
+            msg.body.trim().isNotEmpty) {
+          lastAssistantBody = msg.body;
+          break;
+        }
+      }
+      if (lastAssistantBody == null) {
+        if (!mounted) return;
+        ThkAlert.show(context: context, message: l10n.docSplitNoAssistantMessage);
+        return;
+      }
+
+      var sourceMdText = '';
+      for (final msg in doc.messages) {
+        if (msg.role == SessionRole.user && msg.body.trim().isNotEmpty) {
+          sourceMdText = msg.body;
+          break;
+        }
+      }
+
+      final themeRow = await nodeStore.getThemeRow(themeId: widget.themeId);
+      final themePath = themeRow['themePath']! as String;
+
+      final service = DocSplitService(
+        nodeStore: nodeStore,
+        sessionStore: sessionStore,
+      );
+      final createdCount = await service.materializeTree(
+        docSplitNodeId: widget.nodeId,
+        themeId: widget.themeId,
+        themePath: themePath,
+        sourceMdText: sourceMdText,
+      );
+
+      if (!mounted) return;
+
+      if (createdCount == 0) {
+        ThkAlert.show(context: context, message: l10n.docSplitParsingFailed);
+        return;
+      }
+
+      ref.read(themeDetailControllerProvider(widget.themeId).notifier).refresh();
+      ThkAlert.show(context: context, message: l10n.docSplitSuccess(createdCount));
+      context.go('/themes/${widget.themeId}/tree');
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(context: context, message: e.toString());
+    }
   }
 
   /// 从顶部 branch 按钮进入：先弹 sheet 让用户选 mode，再 [_showBranchFlow]。
