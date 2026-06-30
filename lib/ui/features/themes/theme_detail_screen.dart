@@ -16,6 +16,8 @@ import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
+import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
+import 'package:thk_tree/ui/features/doc_split/doc_split_input_screen.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/session_markdown.dart';
@@ -35,6 +37,85 @@ class ThemeDetailScreen extends ConsumerStatefulWidget {
 
 class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   final Set<String> _collapsedIds = {};
+
+  Future<void> _onImportDocSplit() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final mdText = await Navigator.of(context).push<String>(
+      CupertinoPageRoute(
+        builder: (_) => const DocSplitInputScreen(),
+      ),
+    );
+    if (mdText == null || mdText.trim().isEmpty) return;
+    if (!mounted) return;
+
+    try {
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      final sessionStore = await ref.read(sessionStoreProvider.future);
+      final detail = ref.read(themeDetailControllerProvider(widget.themeId)).value;
+      if (detail == null) return;
+
+      const systemPrompt = '''
+你是一个文档结构分析助手。用户会提供一段文档文本，你需要：
+1. 分析文档内容，提出 2-3 种不同的拆分维度（如按主题、按逻辑结构、按时间线等）
+2. 每种维度展示完整的树结构
+3. 树结构使用以下 Markdown 格式输出：
+
+## 维度A：[维度名称]
+[维度说明]
+
+- **[节点标题]**
+  [节点内容：该节点的详细说明，2-4句话概括核心信息]
+  - **[子节点标题]**
+    [子节点内容]
+  - **[子节点标题]**
+    [子节点内容]
+- **[节点标题]**
+  [节点内容]
+
+4. 每个维度之间用分隔线（---）隔开
+5. 节点标题用加粗（**标题**），内容紧跟标题后（不加粗，缩进对齐）
+6. 缩进表示层级关系（2空格 = 一级子节点）
+''';
+
+      final previewNode = await nodeStore.createChatNode(
+        themeId: widget.themeId,
+        themePath: detail.themePath,
+        parentId: null,
+        title: l10n.docSplitInputTitle,
+        systemPrompt: systemPrompt,
+      );
+
+      await sessionStore.appendUserMessage(
+        nodeId: previewNode.nodeId,
+        content: mdText,
+      );
+
+      final trimmed = mdText.trim();
+      final sourceExcerpt = trimmed.length <= 80 ? trimmed : '${trimmed.substring(0, 80)}...';
+      await nodeStore.updateNodeSourceInfo(
+        nodeId: previewNode.nodeId,
+        sourceExcerpt: sourceExcerpt,
+        sourceType: 'docSplit',
+      );
+
+      if (!mounted) return;
+
+      context.push(
+        '/themes/${widget.themeId}/nodes/${previewNode.nodeId}',
+        extra: ChatScreenLaunchParams(
+          title: l10n.docSplitInputTitle,
+          autoTriggerReply: false,
+          isDocSplit: true,
+        ),
+      );
+
+      ref.read(themeDetailControllerProvider(widget.themeId).notifier).refresh();
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(context: context, message: e.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +148,12 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                CupertinoButton(
+                  key: const ValueKey('doc_split_button'),
+                  padding: EdgeInsets.zero,
+                  onPressed: _onImportDocSplit,
+                  child: const Icon(AppIcons.document),
+                ),
                 CupertinoButton(
                   key: const ValueKey('refresh_button'),
                   padding: EdgeInsets.zero,
