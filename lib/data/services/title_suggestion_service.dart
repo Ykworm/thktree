@@ -219,10 +219,14 @@ class TitleSuggestionService {
   }
 
   /// 解析 LLM 返回的 title 文本：
-  /// trim → 按行切 → 过滤空行 → 过滤超过 30 字符的 → 上限 20 个。
+  /// strip `<think>` tags → trim → 按行切 → 过滤空行 → 过滤超过 30 字符的 → 上限 20 个。
   static List<String> parseResponse(String raw) {
+    // 移除 `<think>` 标签及其内容（LLM 可能在 title 生成时返回推理过程）
+    var cleaned = raw.replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '');
+    cleaned = cleaned.replaceAll(RegExp(r'<think>[\s\S]*$', caseSensitive: false), '');
+
     final result = <String>[];
-    for (final line in raw.split('\n')) {
+    for (final line in cleaned.split('\n')) {
       var trimmed = line.trim();
       // 去掉常见的列表前缀：数字加点、"-"、"•"、Markdown 引用等
       if (trimmed.isEmpty) continue;

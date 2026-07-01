@@ -17,18 +17,159 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/tts_controller.dart';
 import 'package:thk_tree/ui/features/settings/tts_player_screen.dart';
 
-final _tablePattern = RegExp(r'^\|.+\|', multiLine: true);
-final _tableSepPattern = RegExp(r'^\|[\s\-:]+\|', multiLine: true);
+final _tableRowPattern = RegExp(r'^\|.*\|$');
+final _tableSepPattern = RegExp(r'^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|$');
+final _looseTableSepPattern = RegExp(
+  r'^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$',
+);
 final _htmlBreakPattern = RegExp(r'<br\s*/?>', caseSensitive: false);
 
 bool _hasMarkdownTable(String text) {
   final lines = text.split('\n');
   for (var i = 0; i < lines.length - 1; i++) {
-    if (_tablePattern.hasMatch(lines[i]) && _tableSepPattern.hasMatch(lines[i + 1])) {
+    final header = lines[i].trim();
+    final sep = lines[i + 1].trim();
+    if (_tableRowPattern.hasMatch(header) && _tableSepPattern.hasMatch(sep)) {
       return true;
     }
   }
   return false;
+}
+
+String _sanitizeMarkdown(String text) {
+  var result = text.replaceAll('\r\n', '\n');
+  result = result.replaceAll(
+    RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false),
+    '',
+  );
+  result = result.replaceAll(RegExp(r'<think>[\s\S]*$', caseSensitive: false), '');
+  result = result.replaceAll('\uff0a', '*').replaceAll('\uff03', '#');
+
+  final lines = result.split('\n');
+  final expandedLines = <String>[];
+  var inCodeFence = false;
+  for (final raw in lines) {
+    final line = raw.trimRight();
+    final leftTrimmed = line.trimLeft();
+    if (leftTrimmed.startsWith('```')) {
+      inCodeFence = !inCodeFence;
+      expandedLines.add(line);
+      continue;
+    }
+    if (!inCodeFence &&
+        line.contains('||') &&
+        line.contains('|') &&
+        line.contains('-')) {
+      expandedLines.addAll(line.replaceAll('||', '|\n|').split('\n'));
+      continue;
+    }
+    expandedLines.add(line);
+  }
+
+  final normalizedLines = <String>[];
+  inCodeFence = false;
+  for (var i = 0; i < expandedLines.length; i++) {
+    final line = expandedLines[i].trimRight();
+    final leftTrimmed = line.trimLeft();
+    if (leftTrimmed.startsWith('```')) {
+      inCodeFence = !inCodeFence;
+      normalizedLines.add(line);
+      continue;
+    }
+
+    if (!inCodeFence && i < expandedLines.length - 1) {
+      final sep = expandedLines[i + 1].trim();
+      final hasSep = _looseTableSepPattern.hasMatch(sep);
+      final pipeCount = line.split('|').length - 1;
+      if (hasSep && pipeCount >= 2) {
+        final (prefix, headerRow) = _splitLeadingTextAndRow(line);
+        if (prefix.isNotEmpty) normalizedLines.add(prefix);
+        final normalizedHeader = _ensureRowPipes(headerRow);
+        final cols = _countColumns(normalizedHeader);
+        if (cols >= 2) {
+          normalizedLines.add(normalizedHeader);
+          normalizedLines.add(_buildSeparatorRow(cols));
+          i++;
+
+          while (i + 1 < expandedLines.length) {
+            final candidate = expandedLines[i + 1].trimRight();
+            if (candidate.trim().isEmpty) break;
+            final candidateLeft = candidate.trimLeft();
+            if (candidateLeft.startsWith('```')) break;
+            if (!candidate.contains('|')) break;
+
+            final (rowPrefix, rowBody) = _splitLeadingTextAndRow(candidate);
+            if (rowPrefix.isNotEmpty) normalizedLines.add(rowPrefix);
+            normalizedLines.add(_ensureRowPipes(rowBody));
+            i++;
+          }
+          continue;
+        }
+      }
+    }
+
+    normalizedLines.add(line);
+  }
+
+  final cleaned = <String>[];
+  for (var i = 0; i < normalizedLines.length; i++) {
+    final cur = normalizedLines[i].trimRight();
+    if (cur.isEmpty && i > 0 && i < normalizedLines.length - 1) {
+      final prev = normalizedLines[i - 1].trim();
+      final next = normalizedLines[i + 1].trim();
+      final prevIsTable = _tableRowPattern.hasMatch(prev) || _tableSepPattern.hasMatch(prev);
+      final nextIsTable = _tableRowPattern.hasMatch(next) || _tableSepPattern.hasMatch(next);
+      if (prevIsTable && nextIsTable) continue;
+    }
+    cleaned.add(cur);
+  }
+
+  return cleaned.join('\n');
+}
+
+(String, String) _splitLeadingTextAndRow(String line) {
+  final idx = line.indexOf('|');
+  if (idx <= 0) return ('', line);
+  final prefix = line.substring(0, idx).trimRight();
+  final row = line.substring(idx).trim();
+  return (prefix, row);
+}
+
+String _ensureRowPipes(String row) {
+  var r = row.trim();
+  if (!r.startsWith('|')) r = '|$r';
+  if (!r.endsWith('|')) r = '$r|';
+  return r;
+}
+
+int _countColumns(String row) {
+  final parts = row.split('|').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  return parts.length;
+}
+
+String _buildSeparatorRow(int columnCount) {
+  final cells = List.filled(columnCount, '---');
+  return '|${cells.join('|')}|';
+}
+
+String? _extractFirstMarkdownTable(String text) {
+  final lines = text.split('\n');
+  for (var i = 0; i < lines.length - 1; i++) {
+    final header = lines[i].trim();
+    final sep = lines[i + 1].trim();
+    if (!_tableRowPattern.hasMatch(header) || !_tableSepPattern.hasMatch(sep)) continue;
+    final buf = <String>[header, sep];
+    var j = i + 2;
+    while (j < lines.length) {
+      final line = lines[j].trimRight();
+      if (line.trim().isEmpty) break;
+      if (!_tableRowPattern.hasMatch(line.trim())) break;
+      buf.add(line.trim());
+      j++;
+    }
+    return buf.join('\n');
+  }
+  return null;
 }
 
 class MessageBubble extends ConsumerStatefulWidget {
@@ -64,6 +205,12 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     if (mounted) {
       setState(() => _copied = false);
     }
+  }
+
+  Future<void> _copyTableToClipboard(String content) async {
+    final table = _extractFirstMarkdownTable(content);
+    if (table == null || table.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: table));
   }
 
   Future<void> _shareAsImage() async {
@@ -114,10 +261,11 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         : AppColors.surface;
 
     final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
+    final sanitizedBody = _sanitizeMarkdown(body);
     final reasoning = widget.message.reasoning?.trim();
     final shouldExpandReasoning =
         _showReasoning || (reasoning != null && reasoning.isNotEmpty && widget.message.body.trim().isEmpty);
-    final hasTable = _hasMarkdownTable(widget.message.body);
+    final hasTable = _hasMarkdownTable(sanitizedBody);
     final maxWidth = hasTable
         ? MediaQuery.of(context).size.width - 32
         : 520.0;
@@ -157,13 +305,26 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         minimumSize: Size.zero,
-                        onPressed: () => _showExpanded(context, body),
+                        onPressed: () => _copyTableToClipboard(sanitizedBody),
+                        child: Icon(
+                          CupertinoIcons.doc_on_doc,
+                          size: 15,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    if (hasTable) ...[
+                      const SizedBox(width: 8),
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        onPressed: () => _showExpanded(context, sanitizedBody),
                         child: Icon(
                           CupertinoIcons.arrow_up_left_arrow_down_right,
                           size: 15,
                           color: AppColors.textSecondary,
                         ),
                       ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -198,7 +359,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                         const SizedBox(height: 8),
                       if (widget.message.body.trim().isNotEmpty)
                         GptMarkdown(
-                          body,
+                          sanitizedBody,
                           style: baseStyle,
                           tableBuilder: _buildTable,
                           codeBuilder: _buildCodeBlock,
@@ -343,7 +504,7 @@ class _ReasoningSection extends StatelessWidget {
           if (isExpanded) ...[
             const SizedBox(height: 8),
             GptMarkdown(
-              reasoning,
+              _sanitizeMarkdown(reasoning),
               style: TextStyle(
                 fontSize: 15,
                 color: AppColors.textSecondary,
@@ -417,7 +578,7 @@ class _TableExpandedView extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: GptMarkdown(
-            content,
+            _sanitizeMarkdown(content),
             style: baseStyle,
             codeBuilder: _buildCodeBlock,
             tableBuilder: (
