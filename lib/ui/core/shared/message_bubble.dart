@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show SelectableText;
+import 'package:flutter/material.dart' show SelectableText, SelectionArea;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
@@ -17,6 +17,7 @@ import 'package:thk_tree/ui/features/settings/tts_player_screen.dart';
 
 final _tablePattern = RegExp(r'^\|.+\|', multiLine: true);
 final _tableSepPattern = RegExp(r'^\|[\s\-:]+\|', multiLine: true);
+final _htmlBreakPattern = RegExp(r'<br\s*/?>', caseSensitive: false);
 
 bool _hasMarkdownTable(String text) {
   final lines = text.split('\n');
@@ -294,30 +295,9 @@ Widget _buildTable(
   TextStyle textStyle,
   GptMarkdownConfig config,
 ) {
-  return SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Table(
-      border: TableBorder.all(
-        color: AppColors.border,
-        width: 1,
-      ),
-      defaultColumnWidth: const IntrinsicColumnWidth(),
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: tableRows.map((row) {
-        return TableRow(
-          children: row.fields.map((cell) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                cell.data,
-                style: textStyle,
-                textAlign: cell.alignment,
-              ),
-            );
-          }).toList(),
-        );
-      }).toList(),
-    ),
+  return _MarkdownTableView(
+    tableRows: tableRows,
+    textStyle: textStyle,
   );
 }
 
@@ -328,31 +308,99 @@ class _TableExpandedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseStyle = TextStyle(
+      fontSize: 17,
+      color: AppColors.textPrimary,
+    );
+
     return CupertinoPageScaffold(
       navigationBar: ThkNavBar.inline(
         title: AppLocalizations.of(context)!.expandTable,
       ),
       child: SafeArea(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 3.0,
-          boundaryMargin: const EdgeInsets.all(40),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            padding: const EdgeInsets.all(16),
-            child: GptMarkdown(
-              content,
-              style: TextStyle(fontSize: 17, height: 1.6),
-              codeBuilder: _buildCodeBlock,
-              tableBuilder: _buildTable,
-              latexBuilder: buildLatex,
-              useDollarSignsForLatex: true,
-            ),
+        top: false,
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: GptMarkdown(
+            content,
+            style: baseStyle,
+            codeBuilder: _buildCodeBlock,
+            tableBuilder: (
+              context,
+              tableRows,
+              textStyle,
+              config,
+            ) {
+              return _MarkdownTableView(
+                tableRows: tableRows,
+                textStyle: textStyle,
+                expanded: true,
+              );
+            },
+            latexBuilder: buildLatex,
+            useDollarSignsForLatex: true,
           ),
         ),
       ),
     );
   }
+}
+
+class _MarkdownTableView extends StatelessWidget {
+  const _MarkdownTableView({
+    required this.tableRows,
+    required this.textStyle,
+    this.expanded = false,
+  });
+
+  final List<CustomTableRow> tableRows;
+  final TextStyle textStyle;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxCellWidth = expanded ? 320.0 : 220.0;
+    return SelectionArea(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Table(
+          border: TableBorder.all(
+            color: AppColors.border,
+            width: 1,
+          ),
+          defaultColumnWidth: const IntrinsicColumnWidth(),
+          defaultVerticalAlignment: TableCellVerticalAlignment.top,
+          children: tableRows.map((row) {
+            return TableRow(
+              decoration: row.isHeader
+                  ? BoxDecoration(color: AppColors.surfaceMuted)
+                  : null,
+              children: row.fields.map((cell) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxCellWidth),
+                    child: SelectableText(
+                      _normalizeTableCellText(cell.data),
+                      style: row.isHeader
+                          ? textStyle.copyWith(fontWeight: FontWeight.w600)
+                          : textStyle,
+                      textAlign: cell.alignment,
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+String _normalizeTableCellText(String value) {
+  return value.replaceAll(_htmlBreakPattern, '\n').trim();
 }
 
 
