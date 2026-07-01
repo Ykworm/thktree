@@ -9,7 +9,7 @@ import 'package:thk_tree/data/models/llm_provider_config.dart';
 abstract class LlmClient {
   const LlmClient();
 
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -57,13 +57,25 @@ abstract class LlmClient {
   }
 }
 
+class LlmResponseDelta {
+  const LlmResponseDelta({
+    this.content = '',
+    this.reasoning = '',
+  });
+
+  final String content;
+  final String reasoning;
+
+  bool get isEmpty => content.isEmpty && reasoning.isEmpty;
+}
+
 class OpenAiCompatibleClient extends LlmClient {
   OpenAiCompatibleClient({required this.provider});
 
   final LlmProvider provider;
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -118,7 +130,7 @@ class OpenAiCompatibleClient extends LlmClient {
             return;
           }
           final delta = _extractDelta(data);
-          if (delta != null && delta.isNotEmpty) {
+          if (delta != null && !delta.isEmpty) {
             yield delta;
           }
         }
@@ -139,7 +151,7 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
   final String providerName;
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -194,7 +206,7 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
             return;
           }
           final delta = _extractDelta(data);
-          if (delta != null && delta.isNotEmpty) {
+          if (delta != null && !delta.isEmpty) {
             yield delta;
           }
         }
@@ -213,7 +225,7 @@ class ClaudeClient extends LlmClient {
   const ClaudeClient.withBaseUrl(this.baseUrl);
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -282,7 +294,7 @@ class ClaudeClient extends LlmClient {
           if (!line.startsWith('data:')) continue;
           final data = line.substring('data:'.length).trimLeft();
           final delta = _extractClaudeDelta(data);
-          if (delta != null && delta.isNotEmpty) {
+          if (delta != null && !delta.isEmpty) {
             yield delta;
           }
         }
@@ -301,7 +313,7 @@ class GeminiClient extends LlmClient {
   const GeminiClient.withBaseUrl(this.baseUrl);
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -358,7 +370,7 @@ class GeminiClient extends LlmClient {
           if (!line.startsWith('data:')) continue;
           final data = line.substring('data:'.length).trimLeft();
           final delta = _extractGeminiDelta(data);
-          if (delta != null && delta.isNotEmpty) {
+          if (delta != null && !delta.isEmpty) {
             yield delta;
           }
         }
@@ -367,7 +379,7 @@ class GeminiClient extends LlmClient {
   }
 }
 
-String? _extractDelta(String jsonLine) {
+LlmResponseDelta? _extractDelta(String jsonLine) {
   try {
     final decoded = jsonDecode(jsonLine);
     if (decoded is! Map) return null;
@@ -377,15 +389,18 @@ String? _extractDelta(String jsonLine) {
     if (choice0 is! Map) return null;
     final delta = choice0['delta'];
     if (delta is! Map) return null;
-    final content = delta['content'];
-    if (content is String) return content;
-    return null;
+    return LlmResponseDelta(
+      content: _extractTextField(delta['content']),
+      reasoning: _extractTextField(
+        delta['reasoning_content'] ?? delta['reasoning'],
+      ),
+    );
   } catch (_) {
     return null;
   }
 }
 
-String? _extractClaudeDelta(String jsonLine) {
+LlmResponseDelta? _extractClaudeDelta(String jsonLine) {
   try {
     final decoded = jsonDecode(jsonLine);
     if (decoded is! Map) return null;
@@ -394,14 +409,18 @@ String? _extractClaudeDelta(String jsonLine) {
       final delta = decoded['delta'];
       if (delta is Map) {
         final text = delta['text'] as String?;
-        if (text != null && text.isNotEmpty) return text;
+        if (text != null && text.isNotEmpty) {
+          return LlmResponseDelta(content: text);
+        }
       }
     }
     if (type == 'content_block_start') {
       final block = decoded['content_block'];
       if (block is Map) {
         final text = block['text'] as String?;
-        if (text != null && text.isNotEmpty) return text;
+        if (text != null && text.isNotEmpty) {
+          return LlmResponseDelta(content: text);
+        }
       }
     }
     return null;
@@ -410,7 +429,7 @@ String? _extractClaudeDelta(String jsonLine) {
   }
 }
 
-String? _extractGeminiDelta(String jsonLine) {
+LlmResponseDelta? _extractGeminiDelta(String jsonLine) {
   try {
     final decoded = jsonDecode(jsonLine);
     if (decoded is! Map) return null;
@@ -425,8 +444,26 @@ String? _extractGeminiDelta(String jsonLine) {
     final part = parts.first;
     if (part is! Map) return null;
     final text = part['text'] as String?;
-    return text;
+    if (text == null || text.isEmpty) return null;
+    return LlmResponseDelta(content: text);
   } catch (_) {
     return null;
   }
+}
+
+String _extractTextField(Object? value) {
+  if (value is String) return value;
+  if (value is List) {
+    return value
+        .map((item) {
+          if (item is String) return item;
+          if (item is Map) {
+            final text = item['text'];
+            if (text is String) return text;
+          }
+          return '';
+        })
+        .join();
+  }
+  return '';
 }

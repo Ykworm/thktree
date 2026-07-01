@@ -163,8 +163,10 @@ class SessionStore {
 
   Future<void> appendAssistantDelta({
     required AssistantStreamHandle handle,
-    required String delta,
+    String contentDelta = '',
+    String reasoningDelta = '',
   }) async {
+    if (contentDelta.isEmpty && reasoningDelta.isEmpty) return;
     await _queue.run(handle.nodeId, () async {
       final path = await getSessionPathForNode(handle.nodeId);
       final file = File(path);
@@ -173,7 +175,27 @@ class SessionStore {
       if (!found) {
         return;
       }
-      final updated = withoutMarker + delta + _streamingMarker;
+      final doc = parseSessionMarkdown(withoutMarker);
+      final updatedMessages = doc.messages.toList(growable: true);
+      final messageIndex = updatedMessages.lastIndexWhere(
+        (message) => message.msgId == handle.msgId,
+      );
+      if (messageIndex < 0) return;
+      final message = updatedMessages[messageIndex];
+      updatedMessages[messageIndex] = SessionMessage(
+        role: message.role,
+        timestampUtcIso8601: message.timestampUtcIso8601,
+        msgId: message.msgId,
+        body: message.body + contentDelta,
+        status: SessionMessageStatus.streaming,
+        reasoning: (message.reasoning ?? '') + reasoningDelta,
+      );
+      final frontmatter = _extractFrontmatter(withoutMarker);
+      final updated = _rebuildSessionMarkdown(
+        frontmatter,
+        updatedMessages,
+        streamingMsgId: handle.msgId,
+      );
       await _atomicWriteString(path, updated);
     });
   }
@@ -234,7 +256,7 @@ class SessionStore {
       
       // Rebuild session.md without the last assistant message
       final frontmatter = _extractFrontmatter(content);
-      final rebuilt = _rebuildSessionMarkdown(frontmatter, doc, updatedMessages);
+      final rebuilt = _rebuildSessionMarkdown(frontmatter, updatedMessages);
       await _atomicWriteString(path, rebuilt);
     });
   }
@@ -305,8 +327,8 @@ String _extractFrontmatter(String content) {
 
 String _rebuildSessionMarkdown(
   String frontmatter,
-  SessionDocument doc,
   List<SessionMessage> messages,
+  {String? streamingMsgId}
 ) {
   final buffer = StringBuffer(frontmatter);
   if (buffer.isNotEmpty && !buffer.toString().endsWith('\n')) {
@@ -320,7 +342,17 @@ String _rebuildSessionMarkdown(
       msgId: msg.msgId,
     );
     buffer.writeln(header);
-    buffer.writeln(msg.body.trimRight());
+    final serializedBody = serializeSessionMessageBody(msg);
+    if (serializedBody.isNotEmpty) {
+      buffer.writeln(serializedBody);
+    }
+    if (msg.status == SessionMessageStatus.streaming &&
+        msg.msgId == streamingMsgId) {
+      buffer.writeln('<!-- streaming -->');
+    } else if (msg.status == SessionMessageStatus.error &&
+        msg.errorCode != null) {
+      buffer.writeln('<!-- error: ${msg.errorCode} -->');
+    }
   }
   
   return buffer.toString();

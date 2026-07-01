@@ -267,6 +267,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get expandTable => '扩大查看表格';
 
   @override
+  String get reasoningTitle => '思考过程';
+
+  @override
+  String get showReasoning => '查看思考过程';
+
+  @override
+  String get hideReasoning => '收起思考过程';
+
+  @override
   String get copy => '复制';
 
   @override

@@ -345,6 +345,18 @@
   "@expandTable": {
     "description": "Button to open table in full-screen view"
   },
+  "reasoningTitle": "Reasoning",
+  "@reasoningTitle": {
+    "description": "Title for assistant reasoning section"
+  },
+  "showReasoning": "Show Reasoning",
+  "@showReasoning": {
+    "description": "Button label to expand assistant reasoning"
+  },
+  "hideReasoning": "Hide Reasoning",
+  "@hideReasoning": {
+    "description": "Button label to collapse assistant reasoning"
+  },
   "copy": "Copy",
   "@copy": {
     "description": "Copy selected text action"

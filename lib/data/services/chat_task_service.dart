@@ -31,7 +31,7 @@ class ChatTask {
 
   final String nodeId;
   final AssistantStreamHandle handle;
-  final StreamSubscription<String> streamSub;
+  final StreamSubscription<LlmResponseDelta> streamSub;
   final CancelToken cancelToken;
   final int generation;
   final SessionStore sessionStore;
@@ -115,7 +115,11 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     final streamSub = stream.listen(
       (delta) async {
         try {
-          await sessionStore.appendAssistantDelta(handle: handle, delta: delta);
+          await sessionStore.appendAssistantDelta(
+            handle: handle,
+            contentDelta: delta.content,
+            reasoningDelta: delta.reasoning,
+          );
         } catch (e, st) {
           logger?.error(e, st, hint: 'ChatTask.appendDelta', attrs: {'nodeId': nodeId});
         }

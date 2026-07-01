@@ -107,7 +107,7 @@ class TitleSuggestionService {
     // 如果找不到消息边界，直接截断尾部
     if (messageBoundaries.isEmpty) {
       final truncatedLength = (transcript.length * maxTokens / totalTokens).round();
-      return transcript.substring(0, truncatedLength) + '\n\n[...content truncated due to length...]';
+      return '${transcript.substring(0, truncatedLength)}\n\n[...content truncated due to length...]';
     }
 
     // 从尾部向前裁剪消息
@@ -174,7 +174,7 @@ class TitleSuggestionService {
       cancelToken: cancelToken,
     );
     await for (final delta in stream) {
-      buffer.write(delta);
+      buffer.write(delta.content);
     }
     return parseResponse(buffer.toString());
   }
@@ -213,7 +213,7 @@ class TitleSuggestionService {
       cancelToken: cancelToken,
     );
     await for (final delta in stream) {
-      buffer.write(delta);
+      buffer.write(delta.content);
     }
     return buffer.toString().trim();
   }

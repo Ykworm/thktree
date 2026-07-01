@@ -554,6 +554,24 @@ abstract class AppLocalizations {
   /// **'Expand Table'**
   String get expandTable;
 
+  /// Title for assistant reasoning section
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning'**
+  String get reasoningTitle;
+
+  /// Button label to expand assistant reasoning
+  ///
+  /// In en, this message translates to:
+  /// **'Show Reasoning'**
+  String get showReasoning;
+
+  /// Button label to collapse assistant reasoning
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Reasoning'**
+  String get hideReasoning;
+
   /// Copy selected text action
   ///
   /// In en, this message translates to:

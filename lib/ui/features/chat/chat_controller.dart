@@ -168,6 +168,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           msgId: m.msgId,
           body: m.body,
           status: SessionMessageStatus.done,
+          reasoning: m.reasoning,
         );
       }
       return m;
@@ -195,6 +196,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
               msgId: m.msgId,
               body: m.body,
               status: SessionMessageStatus.done,
+              reasoning: m.reasoning,
             );
           }
           return m;

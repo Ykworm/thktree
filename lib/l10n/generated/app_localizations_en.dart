@@ -276,6 +276,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get expandTable => 'Expand Table';
 
   @override
+  String get reasoningTitle => 'Reasoning';
+
+  @override
+  String get showReasoning => 'Show Reasoning';
+
+  @override
+  String get hideReasoning => 'Hide Reasoning';
+
+  @override
   String get copy => 'Copy';
 
   @override

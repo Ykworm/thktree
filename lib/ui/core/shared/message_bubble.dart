@@ -52,6 +52,7 @@ class MessageBubble extends ConsumerStatefulWidget {
 class _MessageBubbleState extends ConsumerState<MessageBubble> {
   bool _copied = false;
   bool _sharing = false;
+  bool _showReasoning = false;
   final _shareButtonKey = GlobalKey();
 
   Future<void> _copyToClipboard() async {
@@ -113,6 +114,9 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         : AppColors.surface;
 
     final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
+    final reasoning = widget.message.reasoning?.trim();
+    final shouldExpandReasoning =
+        _showReasoning || (reasoning != null && reasoning.isNotEmpty && widget.message.body.trim().isEmpty);
     final hasTable = _hasMarkdownTable(widget.message.body);
     final maxWidth = hasTable
         ? MediaQuery.of(context).size.width - 32
@@ -178,13 +182,30 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                     },
                   )
                 else
-                  GptMarkdown(
-                    body,
-                    style: baseStyle,
-                    tableBuilder: _buildTable,
-                    codeBuilder: _buildCodeBlock,
-                    latexBuilder: buildLatex,
-                    useDollarSignsForLatex: true,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (reasoning != null && reasoning.isNotEmpty)
+                        _ReasoningSection(
+                          reasoning: reasoning,
+                          isExpanded: shouldExpandReasoning,
+                          onToggle: () =>
+                              setState(() => _showReasoning = !_showReasoning),
+                        ),
+                      if (reasoning != null &&
+                          reasoning.isNotEmpty &&
+                          widget.message.body.trim().isNotEmpty)
+                        const SizedBox(height: 8),
+                      if (widget.message.body.trim().isNotEmpty)
+                        GptMarkdown(
+                          body,
+                          style: baseStyle,
+                          tableBuilder: _buildTable,
+                          codeBuilder: _buildCodeBlock,
+                          latexBuilder: buildLatex,
+                          useDollarSignsForLatex: true,
+                        ),
+                    ],
                   ),
                 if (widget.message.role == SessionRole.assistant &&
                     widget.message.status != SessionMessageStatus.streaming) ...[
@@ -263,6 +284,77 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (_) => _TableExpandedView(content: content),
+      ),
+    );
+  }
+}
+
+class _ReasoningSection extends StatelessWidget {
+  const _ReasoningSection({
+    required this.reasoning,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  final String reasoning;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.reasoningTitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                onPressed: onToggle,
+                child: Text(
+                  isExpanded ? l10n.hideReasoning : l10n.showReasoning,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (isExpanded) ...[
+            const SizedBox(height: 8),
+            GptMarkdown(
+              reasoning,
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+              ),
+              tableBuilder: _buildTable,
+              codeBuilder: _buildCodeBlock,
+              latexBuilder: buildLatex,
+              useDollarSignsForLatex: true,
+            ),
+          ],
+        ],
       ),
     );
   }
