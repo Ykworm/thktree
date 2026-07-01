@@ -61,26 +61,32 @@ class _DocSplitInputScreenState extends State<DocSplitInputScreen> {
           ),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: CupertinoTextField(
-          controller: _controller,
-          maxLines: null,
-          expands: true,
-          textAlignVertical: TextAlignVertical.top,
-          placeholder: l10n.docSplitInputTitle,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppColors.border,
-              width: 0.5,
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox.expand(
+            child: CupertinoTextField(
+              controller: _controller,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              placeholder: l10n.docSplitInputTitle,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.border,
+                  width: 0.5,
+                ),
+              ),
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.textPrimary,
           ),
         ),
       ),

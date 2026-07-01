@@ -105,7 +105,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         '/themes/${widget.themeId}/nodes/${previewNode.nodeId}',
         extra: ChatScreenLaunchParams(
           title: l10n.docSplitInputTitle,
-          autoTriggerReply: false,
+          autoTriggerReply: true,
           isDocSplit: true,
         ),
       );
