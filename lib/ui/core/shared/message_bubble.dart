@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText, SelectionArea;
 import 'package:flutter/services.dart';
@@ -360,43 +362,74 @@ class _MarkdownTableView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxCellWidth = expanded ? 320.0 : 220.0;
-    return SelectionArea(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Table(
-          border: TableBorder.all(
-            color: AppColors.border,
-            width: 1,
-          ),
-          defaultColumnWidth: const IntrinsicColumnWidth(),
-          defaultVerticalAlignment: TableCellVerticalAlignment.top,
-          children: tableRows.map((row) {
-            return TableRow(
-              decoration: row.isHeader
-                  ? BoxDecoration(color: AppColors.surfaceMuted)
-                  : null,
-              children: row.fields.map((cell) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: maxCellWidth),
-                    child: SelectableText(
-                      _normalizeTableCellText(cell.data),
-                      style: row.isHeader
-                          ? textStyle.copyWith(fontWeight: FontWeight.w600)
-                          : textStyle,
-                      textAlign: cell.alignment,
-                    ),
-                  ),
+    final columnCount = tableRows.fold<int>(
+      0,
+      (maxColumns, row) => math.max(maxColumns, row.fields.length),
+    );
+    if (columnCount == 0) return const SizedBox.shrink();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fallbackWidth = MediaQuery.of(context).size.width - 48;
+        final availableWidth =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : fallbackWidth;
+        final columnWidth = _resolveTableColumnWidth(
+          availableWidth: availableWidth,
+          columnCount: columnCount,
+          expanded: expanded,
+        );
+
+        return SelectionArea(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Table(
+              border: TableBorder.all(
+                color: AppColors.border,
+                width: 1,
+              ),
+              defaultColumnWidth: FixedColumnWidth(columnWidth),
+              defaultVerticalAlignment: TableCellVerticalAlignment.top,
+              children: tableRows.map((row) {
+                return TableRow(
+                  decoration: row.isHeader
+                      ? BoxDecoration(color: AppColors.surfaceMuted)
+                      : null,
+                  children: row.fields.map((cell) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: SelectableText(
+                        _normalizeTableCellText(cell.data),
+                        style: row.isHeader
+                            ? textStyle.copyWith(fontWeight: FontWeight.w600)
+                            : textStyle,
+                        textAlign: cell.alignment,
+                      ),
+                    );
+                  }).toList(),
                 );
               }).toList(),
-            );
-          }).toList(),
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
+}
+
+double _resolveTableColumnWidth({
+  required double availableWidth,
+  required int columnCount,
+  required bool expanded,
+}) {
+  const cellHorizontalPadding = 16.0;
+  final minColumnWidth = expanded ? 180.0 : 120.0;
+  final maxColumnWidth = expanded ? 420.0 : 280.0;
+  final usableWidth = math.max(
+    minColumnWidth,
+    availableWidth - (columnCount * cellHorizontalPadding),
+  );
+  final targetWidth = usableWidth / columnCount;
+  return targetWidth.clamp(minColumnWidth, maxColumnWidth).toDouble();
 }
 
 String _normalizeTableCellText(String value) {
