@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText, SelectionArea;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
@@ -152,24 +151,43 @@ String _buildSeparatorRow(int columnCount) {
   return '|${cells.join('|')}|';
 }
 
-String? _extractFirstMarkdownTable(String text) {
-  final lines = text.split('\n');
-  for (var i = 0; i < lines.length - 1; i++) {
-    final header = lines[i].trim();
-    final sep = lines[i + 1].trim();
-    if (!_tableRowPattern.hasMatch(header) || !_tableSepPattern.hasMatch(sep)) continue;
-    final buf = <String>[header, sep];
-    var j = i + 2;
-    while (j < lines.length) {
-      final line = lines[j].trimRight();
-      if (line.trim().isEmpty) break;
-      if (!_tableRowPattern.hasMatch(line.trim())) break;
-      buf.add(line.trim());
-      j++;
-    }
-    return buf.join('\n');
-  }
-  return null;
+Future<void> _copyTextToClipboard(String content) async {
+  if (content.isEmpty) return;
+  await Clipboard.setData(ClipboardData(text: content));
+}
+
+String _tableRowsToMarkdown(List<CustomTableRow> tableRows) {
+  if (tableRows.isEmpty) return '';
+  final header = tableRows.first.fields;
+  final lines = <String>[
+    _tableFieldsToMarkdownRow(header),
+    _tableFieldsToSeparatorRow(header),
+    ...tableRows.skip(1).map((row) => _tableFieldsToMarkdownRow(row.fields)),
+  ];
+  return lines.join('\n');
+}
+
+String _tableFieldsToMarkdownRow(List<CustomTableField> fields) {
+  final cells = fields.map((field) {
+    final normalized = _normalizeTableCellText(field.data).replaceAll('\n', '<br>');
+    return _escapeMarkdownTableCell(normalized);
+  }).toList();
+  return '| ${cells.join(' | ')} |';
+}
+
+String _tableFieldsToSeparatorRow(List<CustomTableField> fields) {
+  final cells = fields.map((field) {
+    return switch (field.alignment) {
+      TextAlign.right => '---:',
+      TextAlign.center => ':---:',
+      _ => ':---',
+    };
+  }).toList();
+  return '| ${cells.join(' | ')} |';
+}
+
+String _escapeMarkdownTableCell(String value) {
+  return value.replaceAll(r'\', r'\\').replaceAll('|', r'\|');
 }
 
 class MessageBubble extends ConsumerStatefulWidget {
@@ -205,12 +223,6 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     if (mounted) {
       setState(() => _copied = false);
     }
-  }
-
-  Future<void> _copyTableToClipboard(String content) async {
-    final table = _extractFirstMarkdownTable(content);
-    if (table == null || table.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: table));
   }
 
   Future<void> _shareAsImage() async {
@@ -301,30 +313,6 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                         ),
                       ),
                     ),
-                    if (hasTable)
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        onPressed: () => _copyTableToClipboard(sanitizedBody),
-                        child: Icon(
-                          CupertinoIcons.doc_on_doc,
-                          size: 15,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    if (hasTable) ...[
-                      const SizedBox(width: 8),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        onPressed: () => _showExpanded(context, sanitizedBody),
-                        child: Icon(
-                          CupertinoIcons.arrow_up_left_arrow_down_right,
-                          size: 15,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -352,6 +340,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                           isExpanded: shouldExpandReasoning,
                           onToggle: () =>
                               setState(() => _showReasoning = !_showReasoning),
+                          onExpandTable: _showExpanded,
                         ),
                       if (reasoning != null &&
                           reasoning.isNotEmpty &&
@@ -361,7 +350,15 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                         GptMarkdown(
                           sanitizedBody,
                           style: baseStyle,
-                          tableBuilder: _buildTable,
+                          tableBuilder: (ctx, rows, style, cfg) {
+                            final tableMarkdown = _tableRowsToMarkdown(rows);
+                            return _TableWithActions(
+                              tableRows: rows,
+                              textStyle: style,
+                              onCopy: () => _copyTextToClipboard(tableMarkdown),
+                              onExpand: () => _showExpanded(ctx, tableMarkdown),
+                            );
+                          },
                           codeBuilder: _buildCodeBlock,
                           latexBuilder: buildLatex,
                           useDollarSignsForLatex: true,
@@ -455,15 +452,18 @@ class _ReasoningSection extends StatelessWidget {
     required this.reasoning,
     required this.isExpanded,
     required this.onToggle,
+    required this.onExpandTable,
   });
 
   final String reasoning;
   final bool isExpanded;
   final VoidCallback onToggle;
+  final void Function(BuildContext, String) onExpandTable;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final sanitizedReasoning = _sanitizeMarkdown(reasoning);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
@@ -504,17 +504,91 @@ class _ReasoningSection extends StatelessWidget {
           if (isExpanded) ...[
             const SizedBox(height: 8),
             GptMarkdown(
-              _sanitizeMarkdown(reasoning),
+              sanitizedReasoning,
               style: TextStyle(
                 fontSize: 15,
                 color: AppColors.textSecondary,
               ),
-              tableBuilder: _buildTable,
+              tableBuilder: (ctx, rows, style, cfg) {
+                final tableMarkdown = _tableRowsToMarkdown(rows);
+                return _TableWithActions(
+                  tableRows: rows,
+                  textStyle: style,
+                  onCopy: () => _copyTextToClipboard(tableMarkdown),
+                  onExpand: () => onExpandTable(ctx, tableMarkdown),
+                );
+              },
               codeBuilder: _buildCodeBlock,
               latexBuilder: buildLatex,
               useDollarSignsForLatex: true,
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TableWithActions extends StatelessWidget {
+  const _TableWithActions({
+    required this.tableRows,
+    required this.textStyle,
+    required this.onCopy,
+    required this.onExpand,
+  });
+
+  final List<CustomTableRow> tableRows;
+  final TextStyle textStyle;
+  final VoidCallback onCopy;
+  final VoidCallback onExpand;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                CupertinoButton(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  onPressed: onCopy,
+                  child: Icon(
+                    CupertinoIcons.doc_on_doc,
+                    size: 18,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(width: 4),
+                CupertinoButton(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  onPressed: onExpand,
+                  child: Icon(
+                    CupertinoIcons.arrow_up_left_arrow_down_right,
+                    size: 18,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _MarkdownTableView(
+            tableRows: tableRows,
+            textStyle: textStyle,
+          ),
         ],
       ),
     );
@@ -541,18 +615,6 @@ Widget _buildCodeBlock(
         fontSize: 14,
       ),
     ),
-  );
-}
-
-Widget _buildTable(
-  BuildContext context,
-  List<CustomTableRow> tableRows,
-  TextStyle textStyle,
-  GptMarkdownConfig config,
-) {
-  return _MarkdownTableView(
-    tableRows: tableRows,
-    textStyle: textStyle,
   );
 }
 
