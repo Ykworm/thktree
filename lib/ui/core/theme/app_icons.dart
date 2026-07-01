@@ -132,6 +132,9 @@ class AppIcons {
   /// AI / 模型选择（iOS 18+ AI 风格闪光图标）
   static const IconData sparkles = SFIcons.sf_sparkles;
 
+  /// 文档拆分 / 结构切分
+  static const IconData docSplit = SFIcons.sf_square_split_2x1;
+
   /// 实验室 tab 占位 icon（flask，iOS 14+）
   /// 后续迭代可换为 SVG（参考主题 tab 的 theme_unselect.svg 模式）
   static const IconData lab = SFIcons.sf_flask;

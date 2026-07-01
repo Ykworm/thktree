@@ -152,7 +152,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   key: const ValueKey('doc_split_button'),
                   padding: EdgeInsets.zero,
                   onPressed: _onImportDocSplit,
-                  child: const Icon(AppIcons.sparkles),
+                  child: const Icon(AppIcons.docSplit),
                 ),
                 CupertinoButton(
                   key: const ValueKey('refresh_button'),
