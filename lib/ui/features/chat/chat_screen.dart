@@ -258,7 +258,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onTap: () => FocusScope.of(context).unfocus(),
+                  onTap: () {
+                    _dismissModelPanel();
+                    FocusScope.of(context).unfocus();
+                  },
                   child: messagesAsync.when(
                     data: (messages) => SelectionArea(
                       onSelectionChanged: (value) {
@@ -312,7 +315,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               messagesAsync.maybeWhen(
                 data: (messages) {
                   final contextWindow = _resolveContextWindow(currentProviderId, currentModelId);
-                  return _ContextUsageBar(messages: messages, contextWindow: contextWindow);
+                  return Listener(
+                    onPointerDown: (_) => _dismissModelPanel(),
+                    child: _ContextUsageBar(
+                      messages: messages,
+                      contextWindow: contextWindow,
+                    ),
+                  );
                 },
                 orElse: () => const SizedBox.shrink(),
               ),
@@ -324,9 +333,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               // 而导致外层 GestureDetector 无法关闭 panel 的问题。
               Listener(
                 onPointerDown: (_) {
-                  if (_showModelPanel) {
-                    setState(() => _showModelPanel = false);
-                  }
+                  _dismissModelPanel();
                 },
                 child: ChatComposer(
                   hintText: l10n.messageHint,
@@ -375,19 +382,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
             ],
           ),
-          // 透明遮罩：panel 显示时点击 panel 外部区域（消息列表 / context bar /
-          // panel 内空白 / panel 标题栏）关闭 panel。panel 内部的模型项点击会被
-          // _ModelItem 的 GestureDetector 在 arena 中赢，不触发这里的 dismiss。
-          if (_showModelPanel && !isStreaming)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => setState(() => _showModelPanel = false),
-              ),
-            ),
         ],
       ),
     );
+  }
+
+  void _dismissModelPanel() {
+    if (!_showModelPanel || !mounted) return;
+    setState(() => _showModelPanel = false);
   }
 
   void _showMoreActions(BuildContext context) {
