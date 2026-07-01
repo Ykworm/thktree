@@ -12,6 +12,25 @@ class DocSplitService {
   final NodeStore nodeStore;
   final SessionStore sessionStore;
 
+  String _deriveRootTitle(String sourceMdText) {
+    final lines = sourceMdText.split('\n');
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) continue;
+
+      final normalized = line
+          .replaceFirst(RegExp(r'^#+\s*'), '')
+          .replaceAll(RegExp(r'^\*\*|\*\*$'), '')
+          .replaceAll(RegExp(r'^[-*]\s+'), '')
+          .trim();
+      if (normalized.isEmpty) continue;
+      return normalized.length <= 30
+          ? normalized
+          : '${normalized.substring(0, 30)}...';
+    }
+    return 'Imported Document';
+  }
+
   Future<int> materializeTree({
     required String docSplitNodeId,
     required String themeId,
@@ -46,13 +65,32 @@ class DocSplitService {
         ? trimmedSource
         : '${trimmedSource.substring(0, 80)}...';
 
+    final rootNode = await nodeStore.createChatNode(
+      themeId: themeId,
+      themePath: themePath,
+      parentId: null,
+      title: _deriveRootTitle(sourceMdText),
+    );
+    await sessionStore.appendUserMessage(
+      nodeId: rootNode.nodeId,
+      content: trimmedSource.isEmpty ? sourceExcerpt : sourceMdText,
+    );
+    await nodeStore.updateNodeSourceInfo(
+      nodeId: rootNode.nodeId,
+      sourceExcerpt: sourceExcerpt,
+      sourceType: 'docSplit',
+    );
+    createdCount++;
+
     for (final parsed in flatNodes) {
       while (stack.isNotEmpty && stack.last.$1 >= parsed.depth) {
         stack.removeLast();
       }
 
-      final String? parentId =
-          stack.isNotEmpty && stack.last.$1 < parsed.depth ? stack.last.$2 : null;
+      final String parentId =
+          stack.isNotEmpty && stack.last.$1 < parsed.depth
+          ? stack.last.$2
+          : rootNode.nodeId;
 
       final childNode = await nodeStore.createChatNode(
         themeId: themeId,
