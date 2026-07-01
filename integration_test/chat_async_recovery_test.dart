@@ -36,7 +36,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:thk_tree/data/services/background_task_bridge.dart';
 import 'package:thk_tree/data/services/chat_task_service.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
-import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/stores/session_store.dart';
@@ -75,13 +74,13 @@ class _NoopLlmClient extends LlmClient {
   const _NoopLlmClient();
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
   }) async* {
-    yield 'mock-reply';
+    yield const LlmResponseDelta(content: 'mock-reply');
   }
 }
 
@@ -127,22 +126,15 @@ Future<_TestEnv> _createTestEnv({
 
   // 4. 构造 fake AppSettings（LLM 配置）— 用 deepseek + fake key
   final fakeSettings = AppSettings(
-    llmProvider: LlmProvider.deepseek,
-    deepSeekApiKey: 'fake-key',
-    openaiApiKey: '',
-    claudeApiKey: '',
-    geminiApiKey: '',
-    minimaxApiKey: '',
-    kimiApiKey: '',
-    deepSeekModel: 'deepseek-chat',
-    openaiModel: 'gpt-4o-mini',
-    claudeModel: 'claude-3-5-sonnet-20241022',
-    geminiModel: 'gemini-2.0-flash',
-    minimaxModel: 'MiniMax-Text-01',
-    kimiModel: 'moonshot-v1-8k',
     localeLanguageCode: null,
     faceIdEnabled: false,
     darkMode: false,
+    chatDefaultProviderId: 'preset_deepseek',
+    chatDefaultModelId: 'deepseek-chat',
+    titleModelProviderId: 'preset_deepseek',
+    titleModelModelId: 'deepseek-chat',
+    summaryModelProviderId: 'preset_deepseek',
+    summaryModelModelId: 'deepseek-chat',
   );
 
   // 5. 构造 fake LlmConfigStore（InMemoryLlmConfigStore）
@@ -367,22 +359,15 @@ void main() {
     final sessionStore = _StubSessionStore({'node_x': sessionPath});
 
     final fakeSettings = AppSettings(
-      llmProvider: LlmProvider.deepseek,
-      deepSeekApiKey: 'fake-key',
-      openaiApiKey: '',
-      claudeApiKey: '',
-      geminiApiKey: '',
-      minimaxApiKey: '',
-      kimiApiKey: '',
-      deepSeekModel: 'deepseek-chat',
-      openaiModel: 'gpt-4o-mini',
-      claudeModel: 'claude-3-5-sonnet-20241022',
-      geminiModel: 'gemini-2.0-flash',
-      minimaxModel: 'MiniMax-Text-01',
-      kimiModel: 'moonshot-v1-8k',
       localeLanguageCode: null,
       faceIdEnabled: false,
       darkMode: false,
+      chatDefaultProviderId: 'preset_deepseek',
+      chatDefaultModelId: 'deepseek-chat',
+      titleModelProviderId: 'preset_deepseek',
+      titleModelModelId: 'deepseek-chat',
+      summaryModelProviderId: 'preset_deepseek',
+      summaryModelModelId: 'deepseek-chat',
     );
 
     final fakeConfigStore = InMemoryLlmConfigStore(

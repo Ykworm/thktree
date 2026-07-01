@@ -10,7 +10,6 @@ import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/data/services/app_database.dart';
 import 'package:thk_tree/data/services/biometric_service.dart';
-import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/stores/llm_config_store.dart';
 import 'package:thk_tree/data/stores/node_store.dart';
@@ -88,11 +87,6 @@ final biometricServiceProvider = Provider<BiometricService>((ref) {
   return BiometricService();
 });
 
-final llmClientProvider = FutureProvider<LlmClient>((ref) async {
-  final settings = await ref.watch(appSettingsProvider.future);
-  return LlmClient.forProvider(settings.llmProvider);
-});
-
 final appSettingsProvider = FutureProvider<AppSettings>((ref) async {
   final store = ref.watch(settingsStoreProvider);
   return store.load();
@@ -105,7 +99,6 @@ final llmConfigStoreProvider = Provider<LlmConfigStore>((ref) {
 final llmProvidersProvider = FutureProvider<List<LlmProviderConfig>>((ref) async {
   final store = ref.watch(llmConfigStoreProvider);
   await store.initializeIfNeeded();
-  await store.migrateFromLegacy();
   return store.loadAll();
 });
 

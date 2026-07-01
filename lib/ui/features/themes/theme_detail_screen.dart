@@ -14,12 +14,12 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
     show localizedThemeTitle;
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
+import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/doc_split/doc_split_input_screen.dart';
 import 'package:thk_tree/domain/node.dart';
-import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
 import 'package:thk_tree/data/services/session_markdown.dart';
 
 // ---------------------------------------------------------------------------
@@ -776,10 +776,16 @@ Future<void> _showBranchFlow(
     if (!context.mounted) return;
 
     final settings = ref.read(settingsControllerProvider).value;
-    if (settings != null) {
-      providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
-      modelId ??= settings.model;
-    }
+    final providers = ref.read(llmProvidersProvider).value;
+    final resolved = resolveChatModel(
+      sessionProviderId: providerId,
+      sessionModelId: modelId,
+      chatDefaultProviderId: settings?.chatDefaultProviderId,
+      chatDefaultModelId: settings?.chatDefaultModelId,
+      providers: providers,
+    );
+    providerId = resolved.$1;
+    modelId = resolved.$2;
 
     if (!context.mounted) return;
 
@@ -796,23 +802,6 @@ Future<void> _showBranchFlow(
   } catch (e) {
     if (!context.mounted) return;
     _showAlert(context, l10n.branchFailed(e.toString()));
-  }
-}
-
-String _mapLegacyProviderToPresetId(LlmProvider provider) {
-  switch (provider) {
-    case LlmProvider.claude:
-      return 'preset_anthropic';
-    case LlmProvider.deepseek:
-      return 'preset_deepseek';
-    case LlmProvider.openai:
-      return 'preset_openai';
-    case LlmProvider.gemini:
-      return 'preset_gemini';
-    case LlmProvider.minimax:
-      return 'preset_minimax';
-    case LlmProvider.kimi:
-      return 'preset_kimi';
   }
 }
 

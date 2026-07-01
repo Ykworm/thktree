@@ -9,7 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
-import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
+import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -18,7 +19,6 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
-import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 
@@ -311,13 +311,15 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     if (!mounted) return;
 
     // 2. 解析 provider/model（笔记默认继承全局设置）
-    String? providerId;
-    String? modelId;
     final settings = ref.read(settingsControllerProvider).value;
-    if (settings != null) {
-      providerId = _mapLegacyProviderToPresetId(settings.llmProvider);
-      modelId = settings.model;
-    }
+    final providers = ref.read(llmProvidersProvider).value;
+    final resolved = resolveChatModel(
+      chatDefaultProviderId: settings?.chatDefaultProviderId,
+      chatDefaultModelId: settings?.chatDefaultModelId,
+      providers: providers,
+    );
+    String? providerId = resolved.$1;
+    String? modelId = resolved.$2;
 
     // 3. 直接创建对话，title = note title
     try {
@@ -385,24 +387,6 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         context: context,
         message: l10n.branchFailed(e.toString()),
       );
-    }
-  }
-
-  /// 将旧版 LlmProvider 枚举映射到新系统的 preset provider id。
-  String _mapLegacyProviderToPresetId(LlmProvider provider) {
-    switch (provider) {
-      case LlmProvider.claude:
-        return 'preset_anthropic';
-      case LlmProvider.deepseek:
-        return 'preset_deepseek';
-      case LlmProvider.openai:
-        return 'preset_openai';
-      case LlmProvider.gemini:
-        return 'preset_gemini';
-      case LlmProvider.minimax:
-        return 'preset_minimax';
-      case LlmProvider.kimi:
-        return 'preset_kimi';
     }
   }
 

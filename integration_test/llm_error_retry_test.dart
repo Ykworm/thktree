@@ -23,7 +23,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
-import 'package:thk_tree/data/services/llm_provider.dart';
 // 用 main_test.dart 的 createTestApp（main.dart 不接受注入参数）。
 import 'package:thk_tree/main_test.dart' as test_app;
 import 'package:thk_tree/ui/core/app_logger.dart';
@@ -31,6 +30,11 @@ import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
 import '_support/in_memory_llm_config_store.dart';
+
+/// 本地定义 llmClientProvider（已从 app_services.dart 移除）。
+final llmClientProvider = FutureProvider<LlmClient>((ref) async {
+  throw UnimplementedError('Tests must override llmClientProvider');
+});
 
 /// Mock SettingsStore：_loadSettings() 读 settingsStoreProvider.load()，
 /// 在模拟器里 Storage 为空导致 apiKey 为空，LLM 不被调用。
@@ -81,22 +85,15 @@ void main() {
         appLoggerProvider.overrideWithValue(AsyncData<AppLogger>(recordingLogger)),
         llmClientProvider.overrideWith((ref) => mockClient),
         settingsStoreProvider.overrideWithValue(_MockSettingsStore(AppSettings(
-          llmProvider: LlmProvider.deepseek,
-          deepSeekApiKey: 'sk-8a3e5b90d3574becacab2e14bf62f3a6',
-          deepSeekModel: 'test-model',
-          openaiApiKey: '',
-          openaiModel: '',
-          claudeApiKey: '',
-          claudeModel: '',
-          geminiApiKey: '',
-          geminiModel: '',
-          minimaxApiKey: '',
-          minimaxModel: '',
-          kimiApiKey: '',
-          kimiModel: '',
           localeLanguageCode: null,
           faceIdEnabled: false,
           darkMode: false,
+          chatDefaultProviderId: 'preset_deepseek',
+          chatDefaultModelId: 'test-model',
+          titleModelProviderId: 'preset_deepseek',
+          titleModelModelId: 'test-model',
+          summaryModelProviderId: 'preset_deepseek',
+          summaryModelModelId: 'test-model',
         ))),
       ],
       locale: locale,
@@ -256,7 +253,7 @@ class _ErrorLlmClient extends LlmClient {
   int callCount = 0;
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -265,7 +262,7 @@ class _ErrorLlmClient extends LlmClient {
     callCount++;
     switch (scenario.kind) {
       case _ErrorKindScenario.success:
-        yield scenario.reply!;
+        yield LlmResponseDelta(content: scenario.reply!);
         return;
       case _ErrorKindScenario.network:
       case _ErrorKindScenario.timeout:

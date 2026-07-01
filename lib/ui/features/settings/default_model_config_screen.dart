@@ -13,21 +13,30 @@ import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 ///
 /// 展示三个默认模型设置项（聊天 / 标题生成 / 对话总结）。
 /// 每个设置项点击后弹出按提供商分组的模型选择器。
-class DefaultModelConfigScreen extends ConsumerWidget {
+class DefaultModelConfigScreen extends ConsumerStatefulWidget {
   const DefaultModelConfigScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DefaultModelConfigScreen> createState() => _DefaultModelConfigScreenState();
+}
+
+class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScreen> {
+  /// 防抖：自动保存默认模型后置 true，避免重复调用。
+  bool _autoModelSaved = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final settingsAsync = ref.watch(settingsControllerProvider);
 
-    // 如果 chatDefaultProviderId 未配置，自动保存第一个模型
+    // 如果 chatDefaultProviderId 未配置，自动保存第一个模型（仅执行一次）
     settingsAsync.whenData((settings) {
-      if (settings.chatDefaultProviderId == null) {
+      if (!_autoModelSaved && settings.chatDefaultProviderId == null) {
         final providers = ref.read(llmProvidersProvider).value;
         if (providers != null) {
           for (final p in providers) {
             if (p.models.isNotEmpty) {
+              _autoModelSaved = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ref.read(settingsControllerProvider.notifier).saveChatDefaultModel(
                   providerId: p.id,

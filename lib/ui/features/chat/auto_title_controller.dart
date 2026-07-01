@@ -240,8 +240,16 @@ class AutoTitleController extends AsyncNotifier<AutoTitleState> {
         }
       }
     }
-    final settings = ref.read(settingsControllerProvider).value;
-    return settings?.llmProvider.contextWindowTokens ?? 64000;
+    // fallback 到第一个有 models 的 provider 的默认 context window
+    final providers = ref.read(llmProvidersProvider).value;
+    if (providers != null) {
+      for (final p in providers) {
+        if (p.models.isNotEmpty) {
+          return p.models.first.contextWindow;
+        }
+      }
+    }
+    return 64000;
   }
 }
 

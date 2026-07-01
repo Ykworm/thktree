@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
-import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 
 abstract class LlmClient {
@@ -15,20 +14,6 @@ abstract class LlmClient {
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
   });
-
-  factory LlmClient.forProvider(LlmProvider provider) {
-    switch (provider) {
-      case LlmProvider.deepseek:
-      case LlmProvider.openai:
-      case LlmProvider.minimax:
-      case LlmProvider.kimi:
-        return OpenAiCompatibleClient(provider: provider);
-      case LlmProvider.claude:
-        return const ClaudeClient();
-      case LlmProvider.gemini:
-        return const GeminiClient();
-    }
-  }
 
   /// 根据 LlmProviderConfig 创建客户端实例。
   ///
@@ -69,78 +54,8 @@ class LlmResponseDelta {
   bool get isEmpty => content.isEmpty && reasoning.isEmpty;
 }
 
-class OpenAiCompatibleClient extends LlmClient {
-  OpenAiCompatibleClient({required this.provider});
-
-  final LlmProvider provider;
-
-  @override
-  Stream<LlmResponseDelta> streamChatCompletion({
-    required String apiKey,
-    required String model,
-    required List<Map<String, Object?>> messages,
-    CancelToken? cancelToken,
-  }) async* {
-    final dio = Dio(BaseOptions(baseUrl: provider.baseUrl));
-    final response = await dio.post<ResponseBody>(
-      '/chat/completions',
-      cancelToken: cancelToken,
-      options: Options(
-        responseType: ResponseType.stream,
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
-      ),
-      data: {
-        'model': model,
-        'stream': true,
-        'messages': messages,
-      },
-    );
-
-    final body = response.data;
-    if (body == null) {
-      throw StateError('Empty response body');
-    }
-
-    final stream = body.stream.cast<List<int>>().transform(utf8.decoder);
-    final buffer = StringBuffer();
-
-    await for (final chunk in stream) {
-      buffer.write(chunk);
-      while (true) {
-        final text = buffer.toString();
-        final idx = text.indexOf('\n\n');
-        if (idx < 0) break;
-        final event = text.substring(0, idx);
-        final rest = text.substring(idx + 2);
-        buffer
-          ..clear()
-          ..write(rest);
-
-        for (final line in event.split('\n')) {
-          final trimmed = line.trimRight();
-          if (trimmed.isEmpty) continue;
-          if (trimmed.startsWith(':')) continue;
-          if (!trimmed.startsWith('data:')) continue;
-          final data = trimmed.substring('data:'.length).trimLeft();
-          if (data == '[DONE]') {
-            return;
-          }
-          final delta = _extractDelta(data);
-          if (delta != null && !delta.isEmpty) {
-            yield delta;
-          }
-        }
-      }
-    }
-  }
-}
-
 /// 基于 LlmProviderConfig 的 OpenAI 兼容客户端，
-/// 不依赖 [LlmProvider] 枚举，可支持任意 baseUrl。
+/// 可支持任意 baseUrl。
 class ConfigBasedOpenAiCompatibleClient extends LlmClient {
   ConfigBasedOpenAiCompatibleClient({
     required this.baseUrl,
@@ -231,7 +146,7 @@ class ClaudeClient extends LlmClient {
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
   }) async* {
-    final dio = Dio(BaseOptions(baseUrl: baseUrl ?? LlmProvider.claude.baseUrl));
+    final dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'https://api.anthropic.com/v1'));
 
     final systemMessages = <Map<String, Object?>>[];
     final userAssistantMessages = <Map<String, Object?>>[];
@@ -319,7 +234,7 @@ class GeminiClient extends LlmClient {
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
   }) async* {
-    final dio = Dio(BaseOptions(baseUrl: baseUrl ?? LlmProvider.gemini.baseUrl));
+    final dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'https://generativelanguage.googleapis.com/v1beta'));
 
     final contents = <Map<String, Object?>>[];
     for (final msg in messages) {

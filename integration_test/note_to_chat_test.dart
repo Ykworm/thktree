@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:thk_tree/data/services/llm_provider.dart';
+import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/stores/llm_config_store.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
@@ -18,6 +18,11 @@ import '_support/llm_test_config.dart';
 import '_support/topic_llm_client.dart';
 import 'test_helpers.dart';
 
+/// 本地定义 llmClientProvider（已从 app_services.dart 移除）。
+final llmClientProvider = FutureProvider<LlmClient>((ref) async {
+  throw UnimplementedError('Tests must override llmClientProvider');
+});
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -31,31 +36,24 @@ void main() {
     if (useMockLlm) {
       final preset = createPresetProviders().firstWhere((p) => p.id == 'preset_deepseek');
       llmSettings = AppSettings(
-        llmProvider: LlmProvider.deepseek,
-        deepSeekApiKey: 'fake-key',
-        openaiApiKey: '',
-        claudeApiKey: '',
-        geminiApiKey: '',
-        minimaxApiKey: '',
-        kimiApiKey: '',
-        deepSeekModel: 'deepseek-chat',
-        openaiModel: LlmProvider.openai.defaultModel,
-        claudeModel: LlmProvider.claude.defaultModel,
-        geminiModel: LlmProvider.gemini.defaultModel,
-        minimaxModel: LlmProvider.minimax.defaultModel,
-        kimiModel: LlmProvider.kimi.defaultModel,
         localeLanguageCode: 'zh',
         faceIdEnabled: false,
         darkMode: false,
+        chatDefaultProviderId: 'preset_deepseek',
+        chatDefaultModelId: 'deepseek-chat',
+        titleModelProviderId: 'preset_deepseek',
+        titleModelModelId: 'deepseek-chat',
+        summaryModelProviderId: 'preset_deepseek',
+        summaryModelModelId: 'deepseek-chat',
       );
       llmConfigStore = InMemoryLlmConfigStore(
         providers: [
           preset.copyWith(
             models: [
-              LlmModelConfig(
+              const LlmModelConfig(
                 id: 'deepseek-chat',
                 name: 'deepseek-chat',
-                contextWindow: LlmProvider.deepseek.contextWindowTokens,
+                contextWindow: 65536,
               ),
             ],
             selectedModelId: 'deepseek-chat',
@@ -266,38 +264,6 @@ class _InMemorySettingsStore implements SettingsStore {
 
   @override
   Future<AppSettings> load() async => _settings;
-
-  @override
-  Future<void> saveProvider(LlmProvider provider) async {
-    _settings = _settings.copyWith(llmProvider: provider);
-  }
-
-  @override
-  Future<void> saveApiKey(LlmProvider provider, String apiKey) async {
-    final trimmed = apiKey.trim();
-    _settings = switch (provider) {
-      LlmProvider.deepseek => _settings.copyWith(deepSeekApiKey: trimmed),
-      LlmProvider.openai => _settings.copyWith(openaiApiKey: trimmed),
-      LlmProvider.claude => _settings.copyWith(claudeApiKey: trimmed),
-      LlmProvider.gemini => _settings.copyWith(geminiApiKey: trimmed),
-      LlmProvider.minimax => _settings.copyWith(minimaxApiKey: trimmed),
-      LlmProvider.kimi => _settings.copyWith(kimiApiKey: trimmed),
-    };
-  }
-
-  @override
-  Future<void> saveModel(LlmProvider provider, String model) async {
-    final trimmed = model.trim();
-    if (trimmed.isEmpty) return;
-    _settings = switch (provider) {
-      LlmProvider.deepseek => _settings.copyWith(deepSeekModel: trimmed),
-      LlmProvider.openai => _settings.copyWith(openaiModel: trimmed),
-      LlmProvider.claude => _settings.copyWith(claudeModel: trimmed),
-      LlmProvider.gemini => _settings.copyWith(geminiModel: trimmed),
-      LlmProvider.minimax => _settings.copyWith(minimaxModel: trimmed),
-      LlmProvider.kimi => _settings.copyWith(kimiModel: trimmed),
-    };
-  }
 
   @override
   Future<void> saveLocale(String? languageCode) async {

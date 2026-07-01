@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/main_test.dart';
@@ -21,15 +20,10 @@ void main() {
     testWidgets('选中文本 + raw 模式创建分支', (tester) async {
       // ── 前置：注入真实 LLM 配置 ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      // 预配置 titleModelProviderId，跳过模型选择器直接生成候选标题
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
+      // toAppSettings() 已预配置 titleModelProviderId/titleModelModelId
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -183,15 +177,10 @@ void main() {
     testWidgets('选中文本 + summarize 模式创建分支', (tester) async {
       // ── 前置：注入真实 LLM 配置 ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      // 预配置 titleModelProviderId，跳过模型选择器直接生成候选标题
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
+      // toAppSettings() 已预配置 titleModelProviderId/titleModelModelId
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -659,14 +648,9 @@ void main() {
     testWidgets('A 模式：创建空 node（验证 DB 字段）', (tester) async {
       // ── 1. 注入 LLM fixture ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -782,14 +766,9 @@ void main() {
     testWidgets('A 模式：流式回复结束后自动生成 title', (tester) async {
       // ── 1. 注入 LLM fixture ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -907,14 +886,9 @@ void main() {
     testWidgets('A 模式：自动 title 防抖只触发一次', (tester) async {
       // ── 1. 注入 LLM fixture ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -1042,14 +1016,9 @@ void main() {
     testWidgets('A 模式：自动 title 持久化（tree 刷新 + 第二次进入显示新 title）', (tester) async {
       // ── 1. 注入 LLM fixture ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -1196,14 +1165,9 @@ void main() {
     testWidgets('A 模式：提前 pop chat 后后台 title 任务仍能跑完', (tester) async {
       // ── 1. 注入 LLM fixture ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -1341,14 +1305,9 @@ void main() {
     testWidgets('A 模式：用户预改 title 后跳过自动生成', (tester) async {
       // ── 1. 注入 LLM fixture ──
       final llmConfig = LlmTestConfig.loadFromDefine();
-      final baseSettings = llmConfig.toAppSettings();
-      final titleSettings = baseSettings.copyWith(
-        titleModelProviderId: _presetIdFor(llmConfig.activeProvider),
-        titleModelModelId: baseSettings.deepSeekModel,
-      );
       final app = await createTestApp(
         locale: const Locale('zh'),
-        llmSettings: titleSettings,
+        llmSettings: llmConfig.toAppSettings(),
         llmConfigStore: llmConfig.toLlmConfigStore(),
       );
       await tester.pumpWidget(app);
@@ -1649,20 +1608,4 @@ Future<void> selectTextInMessage(WidgetTester tester, String text) async {
   await tester.pump(const Duration(milliseconds: 500));
 }
 
-/// LlmProvider → preset ID 映射（与 LlmTestConfig._presetIdFor 一致）
-String _presetIdFor(LlmProvider provider) {
-  switch (provider) {
-    case LlmProvider.claude:
-      return 'preset_anthropic';
-    case LlmProvider.deepseek:
-      return 'preset_deepseek';
-    case LlmProvider.openai:
-      return 'preset_openai';
-    case LlmProvider.gemini:
-      return 'preset_gemini';
-    case LlmProvider.minimax:
-      return 'preset_minimax';
-    case LlmProvider.kimi:
-      return 'preset_kimi';
-  }
-}
+

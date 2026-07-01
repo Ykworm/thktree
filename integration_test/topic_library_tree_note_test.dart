@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/stores/llm_config_store.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
@@ -17,7 +16,6 @@ import 'package:thk_tree/ui/core/widgets/thk_list_tile.dart';
 import '_support/in_memory_llm_config_store.dart';
 import '_support/llm_test_config.dart';
 import '_support/topic_library.dart';
-import '_support/topic_llm_client.dart';
 import 'test_helpers.dart';
 
 void main() {
@@ -36,22 +34,15 @@ void main() {
     if (useMockLlm) {
       final preset = createPresetProviders().firstWhere((p) => p.id == 'preset_deepseek');
       llmSettings = AppSettings(
-        llmProvider: LlmProvider.deepseek,
-        deepSeekApiKey: 'fake-key',
-        openaiApiKey: '',
-        claudeApiKey: '',
-        geminiApiKey: '',
-        minimaxApiKey: '',
-        kimiApiKey: '',
-        deepSeekModel: 'deepseek-chat',
-        openaiModel: LlmProvider.openai.defaultModel,
-        claudeModel: LlmProvider.claude.defaultModel,
-        geminiModel: LlmProvider.gemini.defaultModel,
-        minimaxModel: LlmProvider.minimax.defaultModel,
-        kimiModel: LlmProvider.kimi.defaultModel,
         localeLanguageCode: 'zh',
         faceIdEnabled: false,
         darkMode: false,
+        chatDefaultProviderId: 'preset_deepseek',
+        chatDefaultModelId: 'deepseek-chat',
+        titleModelProviderId: 'preset_deepseek',
+        titleModelModelId: 'deepseek-chat',
+        summaryModelProviderId: 'preset_deepseek',
+        summaryModelModelId: 'deepseek-chat',
       );
       llmConfigStore = InMemoryLlmConfigStore(
         providers: [
@@ -60,7 +51,7 @@ void main() {
               LlmModelConfig(
                 id: 'deepseek-chat',
                 name: 'deepseek-chat',
-                contextWindow: LlmProvider.deepseek.contextWindowTokens,
+                contextWindow: 65536,
               ),
             ],
             selectedModelId: 'deepseek-chat',
@@ -71,8 +62,8 @@ void main() {
     } else {
       final cfg = LlmTestConfig.loadFromDefine();
       final baseSettings = cfg.toAppSettings();
-      final presetId = _presetIdFor(baseSettings.llmProvider);
-      final modelId = baseSettings.model;
+      final presetId = 'preset_deepseek';
+      final modelId = 'deepseek-chat';
       llmSettings = baseSettings.copyWith(
         titleModelProviderId: presetId,
         titleModelModelId: modelId,
@@ -84,35 +75,12 @@ void main() {
       llmConfigStore = cfg.toLlmConfigStore();
     }
 
-    final llmOverride = useMockLlm
-        ? () {
-            final replies = <String, String>{};
-            void collectReplies(BranchPlan? plan) {
-              if (plan == null) return;
-              replies[plan.prompt] = plan.expectedReply;
-              collectReplies(plan.child);
-            }
-
-            for (final theme in TopicLibrary.themes) {
-              for (final root in theme.rootChats) {
-                collectReplies(root.child);
-              }
-            }
-
-            final mockClient = TopicLibraryLlmClient(repliesByUserPrompt: replies);
-            return llmClientProvider.overrideWith((ref) async => mockClient);
-          }()
-        : () {
-            return null;
-          }();
-
     final app = await createTestApp(
       locale: const Locale('zh'),
       llmSettings: llmSettings,
       llmConfigStore: llmConfigStore,
       extraOverrides: [
         settingsStoreProvider.overrideWithValue(_InMemorySettingsStore(llmSettings)),
-        if (llmOverride != null) llmOverride,
       ],
     );
 
@@ -457,23 +425,6 @@ Future<void> _createBranchRawWithTitle(WidgetTester tester, String title) async 
   await waitForWidget(tester, find.byKey(const ValueKey('chat_input')), timeout: const Duration(seconds: 10));
 }
 
-String _presetIdFor(LlmProvider provider) {
-  switch (provider) {
-    case LlmProvider.deepseek:
-      return 'preset_deepseek';
-    case LlmProvider.openai:
-      return 'preset_openai';
-    case LlmProvider.claude:
-      return 'preset_anthropic';
-    case LlmProvider.gemini:
-      return 'preset_gemini';
-    case LlmProvider.minimax:
-      return 'preset_minimax';
-    case LlmProvider.kimi:
-      return 'preset_kimi';
-  }
-}
-
 Future<void> _backFromChat(WidgetTester tester) async {
   final backBtn = find.byIcon(AppIcons.back);
   if (backBtn.evaluate().isEmpty) {
@@ -546,38 +497,6 @@ class _InMemorySettingsStore implements SettingsStore {
 
   @override
   Future<AppSettings> load() async => _settings;
-
-  @override
-  Future<void> saveProvider(LlmProvider provider) async {
-    _settings = _settings.copyWith(llmProvider: provider);
-  }
-
-  @override
-  Future<void> saveApiKey(LlmProvider provider, String apiKey) async {
-    final trimmed = apiKey.trim();
-    _settings = switch (provider) {
-      LlmProvider.deepseek => _settings.copyWith(deepSeekApiKey: trimmed),
-      LlmProvider.openai => _settings.copyWith(openaiApiKey: trimmed),
-      LlmProvider.claude => _settings.copyWith(claudeApiKey: trimmed),
-      LlmProvider.gemini => _settings.copyWith(geminiApiKey: trimmed),
-      LlmProvider.minimax => _settings.copyWith(minimaxApiKey: trimmed),
-      LlmProvider.kimi => _settings.copyWith(kimiApiKey: trimmed),
-    };
-  }
-
-  @override
-  Future<void> saveModel(LlmProvider provider, String model) async {
-    final trimmed = model.trim();
-    if (trimmed.isEmpty) return;
-    _settings = switch (provider) {
-      LlmProvider.deepseek => _settings.copyWith(deepSeekModel: trimmed),
-      LlmProvider.openai => _settings.copyWith(openaiModel: trimmed),
-      LlmProvider.claude => _settings.copyWith(claudeModel: trimmed),
-      LlmProvider.gemini => _settings.copyWith(geminiModel: trimmed),
-      LlmProvider.minimax => _settings.copyWith(minimaxModel: trimmed),
-      LlmProvider.kimi => _settings.copyWith(kimiModel: trimmed),
-    };
-  }
 
   @override
   Future<void> saveLocale(String? languageCode) async {

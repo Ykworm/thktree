@@ -6,13 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
-import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
 import '_support/in_memory_llm_config_store.dart';
 import 'test_helpers.dart';
+
+/// 本地定义 llmClientProvider（已从 app_services.dart 移除）。
+final llmClientProvider = FutureProvider<LlmClient>((ref) async {
+  throw UnimplementedError('Tests must override llmClientProvider');
+});
 
 class _InMemorySettingsStore implements SettingsStore {
   _InMemorySettingsStore(this._settings);
@@ -21,38 +25,6 @@ class _InMemorySettingsStore implements SettingsStore {
 
   @override
   Future<AppSettings> load() async => _settings;
-
-  @override
-  Future<void> saveProvider(LlmProvider provider) async {
-    _settings = _settings.copyWith(llmProvider: provider);
-  }
-
-  @override
-  Future<void> saveApiKey(LlmProvider provider, String apiKey) async {
-    final trimmed = apiKey.trim();
-    _settings = switch (provider) {
-      LlmProvider.deepseek => _settings.copyWith(deepSeekApiKey: trimmed),
-      LlmProvider.openai => _settings.copyWith(openaiApiKey: trimmed),
-      LlmProvider.claude => _settings.copyWith(claudeApiKey: trimmed),
-      LlmProvider.gemini => _settings.copyWith(geminiApiKey: trimmed),
-      LlmProvider.minimax => _settings.copyWith(minimaxApiKey: trimmed),
-      LlmProvider.kimi => _settings.copyWith(kimiApiKey: trimmed),
-    };
-  }
-
-  @override
-  Future<void> saveModel(LlmProvider provider, String model) async {
-    final trimmed = model.trim();
-    if (trimmed.isEmpty) return;
-    _settings = switch (provider) {
-      LlmProvider.deepseek => _settings.copyWith(deepSeekModel: trimmed),
-      LlmProvider.openai => _settings.copyWith(openaiModel: trimmed),
-      LlmProvider.claude => _settings.copyWith(claudeModel: trimmed),
-      LlmProvider.gemini => _settings.copyWith(geminiModel: trimmed),
-      LlmProvider.minimax => _settings.copyWith(minimaxModel: trimmed),
-      LlmProvider.kimi => _settings.copyWith(kimiModel: trimmed),
-    };
-  }
 
   @override
   Future<void> saveLocale(String? languageCode) async {
@@ -103,7 +75,7 @@ class _ImmediateNetworkErrorClient extends LlmClient {
   const _ImmediateNetworkErrorClient();
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -114,7 +86,7 @@ class _ImmediateNetworkErrorClient extends LlmClient {
       type: DioExceptionType.connectionError,
       error: const SocketException('network down'),
     );
-    return Stream<String>.error(err);
+    return Stream<LlmResponseDelta>.error(err);
   }
 }
 
@@ -122,13 +94,13 @@ class _MidStreamNetworkErrorClient extends LlmClient {
   const _MidStreamNetworkErrorClient();
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
   }) async* {
-    yield 'partial';
+    yield const LlmResponseDelta(content: 'partial');
     await Future<void>.delayed(const Duration(milliseconds: 50));
     throw DioException(
       requestOptions: RequestOptions(path: '/chat/completions'),
@@ -142,7 +114,7 @@ class _FlakyNetworkClient extends LlmClient {
   int callCount = 0;
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -156,7 +128,7 @@ class _FlakyNetworkClient extends LlmClient {
         error: const SocketException('network down'),
       );
     }
-    yield 'recovered';
+    yield const LlmResponseDelta(content: 'recovered');
   }
 }
 
@@ -234,22 +206,15 @@ void main() {
   group('断网场景（Mock LLM）', () {
     testWidgets('模拟网络错误并显示错误 UI（无需真实 API）', (tester) async {
       final settings = AppSettings(
-        llmProvider: LlmProvider.deepseek,
-        deepSeekApiKey: 'fake-key',
-        openaiApiKey: '',
-        claudeApiKey: '',
-        geminiApiKey: '',
-        minimaxApiKey: '',
-        kimiApiKey: '',
-        deepSeekModel: 'deepseek-chat',
-        openaiModel: 'gpt-4o-mini',
-        claudeModel: 'claude-3-5-sonnet-20241022',
-        geminiModel: 'gemini-2.0-flash',
-        minimaxModel: 'MiniMax-Text-01',
-        kimiModel: 'moonshot-v1-8k',
         localeLanguageCode: 'zh',
         faceIdEnabled: false,
         darkMode: false,
+        chatDefaultProviderId: 'preset_deepseek',
+        chatDefaultModelId: 'deepseek-chat',
+        titleModelProviderId: 'preset_deepseek',
+        titleModelModelId: 'deepseek-chat',
+        summaryModelProviderId: 'preset_deepseek',
+        summaryModelModelId: 'deepseek-chat',
       );
 
       final store = _InMemorySettingsStore(settings);
@@ -281,22 +246,15 @@ void main() {
 
     testWidgets('流式中途断网仍显示错误状态', (tester) async {
       final settings = AppSettings(
-        llmProvider: LlmProvider.deepseek,
-        deepSeekApiKey: 'fake-key',
-        openaiApiKey: '',
-        claudeApiKey: '',
-        geminiApiKey: '',
-        minimaxApiKey: '',
-        kimiApiKey: '',
-        deepSeekModel: 'deepseek-chat',
-        openaiModel: 'gpt-4o-mini',
-        claudeModel: 'claude-3-5-sonnet-20241022',
-        geminiModel: 'gemini-2.0-flash',
-        minimaxModel: 'MiniMax-Text-01',
-        kimiModel: 'moonshot-v1-8k',
         localeLanguageCode: 'zh',
         faceIdEnabled: false,
         darkMode: false,
+        chatDefaultProviderId: 'preset_deepseek',
+        chatDefaultModelId: 'deepseek-chat',
+        titleModelProviderId: 'preset_deepseek',
+        titleModelModelId: 'deepseek-chat',
+        summaryModelProviderId: 'preset_deepseek',
+        summaryModelModelId: 'deepseek-chat',
       );
 
       final store = _InMemorySettingsStore(settings);
@@ -328,22 +286,15 @@ void main() {
 
     testWidgets('网络恢复后点重试成功', (tester) async {
       final settings = AppSettings(
-        llmProvider: LlmProvider.deepseek,
-        deepSeekApiKey: 'fake-key',
-        openaiApiKey: '',
-        claudeApiKey: '',
-        geminiApiKey: '',
-        minimaxApiKey: '',
-        kimiApiKey: '',
-        deepSeekModel: 'deepseek-chat',
-        openaiModel: 'gpt-4o-mini',
-        claudeModel: 'claude-3-5-sonnet-20241022',
-        geminiModel: 'gemini-2.0-flash',
-        minimaxModel: 'MiniMax-Text-01',
-        kimiModel: 'moonshot-v1-8k',
         localeLanguageCode: 'zh',
         faceIdEnabled: false,
         darkMode: false,
+        chatDefaultProviderId: 'preset_deepseek',
+        chatDefaultModelId: 'deepseek-chat',
+        titleModelProviderId: 'preset_deepseek',
+        titleModelModelId: 'deepseek-chat',
+        summaryModelProviderId: 'preset_deepseek',
+        summaryModelModelId: 'deepseek-chat',
       );
 
       final store = _InMemorySettingsStore(settings);

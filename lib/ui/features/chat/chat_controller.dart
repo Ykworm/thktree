@@ -4,7 +4,6 @@ import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
-import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/chat_task_service.dart';
@@ -255,10 +254,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       }
     }
 
-    // 最终 fallback: 旧全局 settings
-    final settings = await _loadSettings();
-    if (settings.apiKey.isEmpty) return;
-    await _startStreamingWithSettings(settings);
+    // 没有可用的 provider/model，静默返回
   }
 
   /// Retry / Regenerate the last assistant message.
@@ -379,16 +375,12 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
             model: fallbackModel!,
           );
         } else {
-          final settings = await _loadSettings();
-          if (settings.apiKey.isEmpty) {
-            await sessionStore.appendAssistantMessage(
-              nodeId: nodeId,
-              content: '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。',
-            );
-            state = AsyncData(await _read());
-            return;
-          }
-          await _startStreamingWithSettings(settings);
+          await sessionStore.appendAssistantMessage(
+            nodeId: nodeId,
+            content: '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。',
+          );
+          state = AsyncData(await _read());
+          return;
         }
       }
     } catch (e, st) {
@@ -397,20 +389,6 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       state = AsyncError(e, st);
       rethrow;
     }
-  }
-
-  Future<AppSettings> _loadSettings() async {
-    final store = ref.read(settingsStoreProvider);
-    return store.load();
-  }
-
-  Future<void> _startStreamingWithSettings(AppSettings settings) async {
-    final client = await ref.read(llmClientProvider.future);
-    await _startStreamingWithConfig(
-      client: client,
-      apiKey: settings.apiKey,
-      model: settings.model,
-    );
   }
 
   Future<void> _startStreamingWithConfig({

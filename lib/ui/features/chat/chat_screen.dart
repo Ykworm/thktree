@@ -14,8 +14,9 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/auto_title_controller.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
+import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
-import 'package:thk_tree/data/services/llm_provider.dart' show estimateTokens, LlmProvider;
+import 'package:thk_tree/data/services/llm_provider.dart' show estimateTokens;
 import 'package:thk_tree/ui/core/shared/chat_composer.dart';
 import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
@@ -60,6 +61,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _autoTitleTriggered = false;
   /// DB 写新 title 后，缓存为本地展示值，覆盖 widget.title 显示在 nav bar。
   String? _displayedTitle;
+  /// 防抖：自动保存默认模型后置 true，避免重复调用 switchModel。
+  bool _autoModelSaved = false;
+  String? _panelProviderId;
+  String? _panelModelId;
 
   @override
   void initState() {
@@ -69,24 +74,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       title: widget.title,
       autoTriggerReply: widget.autoTriggerReply,
     );
-  }
-
-  /// 将旧版 LlmProvider 枚举映射到新系统的 preset provider id。
-  String _mapLegacyProviderToPresetId(LlmProvider provider) {
-    switch (provider) {
-      case LlmProvider.claude:
-        return 'preset_anthropic';
-      case LlmProvider.deepseek:
-        return 'preset_deepseek';
-      case LlmProvider.openai:
-        return 'preset_openai';
-      case LlmProvider.gemini:
-        return 'preset_gemini';
-      case LlmProvider.minimax:
-        return 'preset_minimax';
-      case LlmProvider.kimi:
-        return 'preset_kimi';
-    }
   }
 
   /// 从当前对话的 providerId/modelId 查找 contextWindow，找不到则 fallback
@@ -103,9 +90,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         }
       }
     }
-    // fallback 到旧的全局 provider 设置
-    final settings = ref.read(settingsControllerProvider).value;
-    return settings?.llmProvider.contextWindowTokens ?? 64000;
+    // fallback 到第一个有 models 的 provider 的默认 context window
+    final providers = ref.read(llmProvidersProvider).value;
+    if (providers != null) {
+      for (final p in providers) {
+        if (p.models.isNotEmpty) {
+          return p.models.first.contextWindow;
+        }
+      }
+    }
+    return 64000;
   }
 
   /// 获取当前对话的模型显示信息
@@ -177,28 +171,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     var currentProviderId = chatCtrl.providerId;
     var currentModelId = chatCtrl.modelId;
 
-    // 如果对话未指定模型，fallback 到全局设置
+    // 如果对话未指定模型，fallback 到全局默认设置
     final settings = ref.watch(settingsControllerProvider).value;
-    if (settings != null) {
-      currentProviderId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
-      currentModelId ??= settings.model;
+    final providers = ref.watch(llmProvidersProvider).value;
+    final resolved = resolveChatModel(
+      sessionProviderId: currentProviderId,
+      sessionModelId: currentModelId,
+      chatDefaultProviderId: settings?.chatDefaultProviderId,
+      chatDefaultModelId: settings?.chatDefaultModelId,
+      providers: providers,
+    );
+    currentProviderId = resolved.$1.isNotEmpty ? resolved.$1 : null;
+    currentModelId = resolved.$2.isNotEmpty ? resolved.$2 : null;
+
+    // 自动保存到 session.md 以便模型选择器显示选中状态
+    if (currentProviderId != null && currentModelId != null && !_autoModelSaved) {
+      _autoModelSaved = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await ref.read(chatControllerProvider(_args).notifier).switchModel(currentProviderId!, currentModelId!);
+      });
     }
 
-    // 如果还是没有，使用第一个有 apiKey 的 provider 的第一个 model
-    if (currentProviderId == null || currentModelId == null) {
-      final providers = ref.watch(llmProvidersProvider).value;
-      if (providers != null) {
-        for (final p in providers) {
-          if (p.models.isNotEmpty) {
-            currentProviderId ??= p.id;
-            currentModelId ??= p.models.first.id;
-            break;
-          }
-        }
-      }
-    }
+    final effectiveProviderId = _showModelPanel ? (_panelProviderId ?? currentProviderId) : currentProviderId;
+    final effectiveModelId = _showModelPanel ? (_panelModelId ?? currentModelId) : currentModelId;
 
-    final modelSubtitle = _resolveModelSubtitle(currentProviderId, currentModelId);
+    final modelSubtitle = _resolveModelSubtitle(effectiveProviderId, effectiveModelId);
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
@@ -256,9 +253,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             children: [
               // 消息列表 - 面板出现时它会被压缩变小
               Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
+                child: Listener(
+                  onPointerDown: (_) {
                     _dismissModelPanel();
                     FocusScope.of(context).unfocus();
                   },
@@ -282,7 +278,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 orElse: () => message,
                               );
 
-                          // 查找配对的用户提问
                           String? userQuestion;
                           if (message.role == SessionRole.assistant) {
                             final idx = messages.indexOf(message);
@@ -314,7 +309,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               // Context 使用条
               messagesAsync.maybeWhen(
                 data: (messages) {
-                  final contextWindow = _resolveContextWindow(currentProviderId, currentModelId);
+                  final contextWindow = _resolveContextWindow(effectiveProviderId, effectiveModelId);
                   return Listener(
                     onPointerDown: (_) => _dismissModelPanel(),
                     child: _ContextUsageBar(
@@ -347,21 +342,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   onModelSelectorTap: () {
                     if (isStreaming) return;
                     FocusScope.of(context).unfocus();
-                    // 如果 chatDefaultProviderId 未配置，自动保存第一个模型
-                    if (currentProviderId == null || currentModelId == null) {
+                    var nextProviderId = currentProviderId;
+                    var nextModelId = currentModelId;
+                    if (nextProviderId == null || nextModelId == null) {
                       final providers = ref.read(llmProvidersProvider).value;
                       if (providers != null) {
                         for (final p in providers) {
                           if (p.models.isNotEmpty) {
-                            ref.read(settingsControllerProvider.notifier).saveChatDefaultModel(
-                              providerId: p.id,
-                              modelId: p.models.first.id,
-                            );
-                            currentProviderId = p.id;
-                            currentModelId = p.models.first.id;
+                            nextProviderId = p.id;
+                            nextModelId = p.models.first.id;
                             break;
                           }
                         }
+                      }
+                    }
+                    if (!_showModelPanel && nextProviderId != null && nextModelId != null) {
+                      _panelProviderId = nextProviderId;
+                      _panelModelId = nextModelId;
+                      if (chatCtrl.providerId == null || chatCtrl.modelId == null) {
+                        ref.read(chatControllerProvider(_args).notifier).switchModel(nextProviderId!, nextModelId!);
                       }
                     }
                     setState(() => _showModelPanel = !_showModelPanel);
@@ -372,10 +371,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               if (_showModelPanel && !isStreaming)
                 Flexible(
                   child: ModelSelectorPanel(
-                    currentProviderId: currentProviderId,
-                    currentModelId: currentModelId,
+                    currentProviderId: effectiveProviderId,
+                    currentModelId: effectiveModelId,
                     onModelSelected: (providerId, modelId) async {
                       await ref.read(chatControllerProvider(_args).notifier).switchModel(providerId, modelId);
+                      _panelProviderId = providerId;
+                      _panelModelId = modelId;
                       if (mounted) setState(() => _showModelPanel = false);
                     },
                   ),
@@ -529,13 +530,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
       // 2. 解析 providerId / modelId
       final chatCtrl = ref.read(chatControllerProvider(_args).notifier);
-      String? providerId = chatCtrl.providerId;
-      String? modelId = chatCtrl.modelId;
       final settings = ref.read(settingsControllerProvider).value;
-      if (settings != null) {
-        providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
-        modelId ??= settings.model;
-      }
+      final branchProviders = ref.read(llmProvidersProvider).value;
+      final resolved = resolveChatModel(
+        sessionProviderId: chatCtrl.providerId,
+        sessionModelId: chatCtrl.modelId,
+        chatDefaultProviderId: settings?.chatDefaultProviderId,
+        chatDefaultModelId: settings?.chatDefaultModelId,
+        providers: branchProviders,
+      );
+      String? providerId = resolved.$1.isNotEmpty ? resolved.$1 : null;
+      String? modelId = resolved.$2.isNotEmpty ? resolved.$2 : null;
 
       if (!context.mounted) return;
 

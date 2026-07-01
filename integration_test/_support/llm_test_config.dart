@@ -27,7 +27,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/models/preset_providers.dart';
-import 'package:thk_tree/data/services/llm_provider.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/stores/llm_config_store.dart';
 
@@ -36,15 +35,16 @@ import 'in_memory_llm_config_store.dart';
 class LlmTestConfig {
   LlmTestConfig._({
     required this.activeProvider,
-    required Map<LlmProvider, _ProviderEntry> entries,
+    required Map<String, _ProviderEntry> entries,
   // ignore: prefer_initializing_formals
   }) : _entries = entries;
 
-  /// 默认当前激活的厂商。
-  final LlmProvider activeProvider;
+  /// 默认当前激活的厂商（provider type name，如 'deepseek'）。
+  final String activeProvider;
 
   /// 所有厂商的配置（apiKey 可能为空，表示未配置）。
-  final Map<LlmProvider, _ProviderEntry> _entries;
+  /// key = provider type name（如 'deepseek', 'openai'）。
+  final Map<String, _ProviderEntry> _entries;
 
   /// 从 `--dart-define-from-file` 注入的编译期常量读取配置（推荐）。
   ///
@@ -116,76 +116,70 @@ class LlmTestConfig {
     if (activeName == null || activeName.isEmpty) {
       throw const FormatException('Missing required field: activeProvider');
     }
-    final active = LlmProvider.values.firstWhere(
-      (p) => p.name == activeName,
-      orElse: () => throw FormatException(
-        'Unknown LlmProvider in activeProvider: $activeName '
-        '(valid: ${LlmProvider.values.map((p) => p.name).join(', ')})',
-      ),
-    );
 
     final providersJson = raw['providers'] as Map<String, Object?>?;
     if (providersJson == null) {
       throw const FormatException('Missing required field: providers');
     }
 
-    final entries = <LlmProvider, _ProviderEntry>{};
-    for (final provider in LlmProvider.values) {
-      final entry = providersJson[provider.name] as Map<String, Object?>?;
+    // 已知的 provider type names（与 LlmProviderType enum 对应）。
+    const knownProviders = ['openai', 'anthropic', 'gemini', 'deepseek', 'kimi', 'minimax', 'mimo'];
+
+    final entries = <String, _ProviderEntry>{};
+    for (final typeName in knownProviders) {
+      final entry = providersJson[typeName] as Map<String, Object?>?;
       if (entry == null) {
-        entries[provider] = const _ProviderEntry(apiKey: '', model: '');
+        entries[typeName] = const _ProviderEntry(apiKey: '', model: '');
         continue;
       }
-      entries[provider] = _ProviderEntry(
+      entries[typeName] = _ProviderEntry(
         apiKey: (entry['apiKey'] as String? ?? '').trim(),
         model: (entry['model'] as String? ?? '').trim(),
       );
     }
+    // 同时解析 JSON 中有但不在 knownProviders 里的自定义厂商
+    for (final key in providersJson.keys) {
+      if (!entries.containsKey(key)) {
+        final entry = providersJson[key] as Map<String, Object?>?;
+        if (entry != null) {
+          entries[key] = _ProviderEntry(
+            apiKey: (entry['apiKey'] as String? ?? '').trim(),
+            model: (entry['model'] as String? ?? '').trim(),
+          );
+        }
+      }
+    }
 
-    final activeEntry = entries[active]!;
-    if (activeEntry.apiKey.isEmpty) {
+    final activeEntry = entries[activeName];
+    if (activeEntry == null || activeEntry.apiKey.isEmpty) {
       throw StateError(
         'activeProvider "$activeName" 在 providers 中没有有效的 apiKey。\n'
         '请在 dart-define 注入的 test_llm_config.json 里填入该厂商的 API Key。',
       );
     }
 
-    return LlmTestConfig._(activeProvider: active, entries: entries);
+    return LlmTestConfig._(activeProvider: activeName, entries: entries);
   }
 
   /// 把当前激活厂商转成 [AppSettings] 用于 Riverpod override。
   ///
   /// 其他厂商字段也一并填入（虽然不会被使用，但要满足 [AppSettings] 的 required 字段）。
   AppSettings toAppSettings() {
+    final presetId = _presetIdForType(activeProvider);
+    final entry = _entries[activeProvider]!;
+    final defaultModel = _defaultModelForType(activeProvider);
+    final modelId = entry.model.isEmpty ? defaultModel : entry.model;
+
     return AppSettings(
-      llmProvider: activeProvider,
-      deepSeekApiKey: _entries[LlmProvider.deepseek]!.apiKey,
-      openaiApiKey: _entries[LlmProvider.openai]!.apiKey,
-      claudeApiKey: _entries[LlmProvider.claude]!.apiKey,
-      geminiApiKey: _entries[LlmProvider.gemini]!.apiKey,
-      minimaxApiKey: _entries[LlmProvider.minimax]!.apiKey,
-      kimiApiKey: _entries[LlmProvider.kimi]!.apiKey,
-      deepSeekModel: _entries[LlmProvider.deepseek]!.model.isEmpty
-          ? LlmProvider.deepseek.defaultModel
-          : _entries[LlmProvider.deepseek]!.model,
-      openaiModel: _entries[LlmProvider.openai]!.model.isEmpty
-          ? LlmProvider.openai.defaultModel
-          : _entries[LlmProvider.openai]!.model,
-      claudeModel: _entries[LlmProvider.claude]!.model.isEmpty
-          ? LlmProvider.claude.defaultModel
-          : _entries[LlmProvider.claude]!.model,
-      geminiModel: _entries[LlmProvider.gemini]!.model.isEmpty
-          ? LlmProvider.gemini.defaultModel
-          : _entries[LlmProvider.gemini]!.model,
-      minimaxModel: _entries[LlmProvider.minimax]!.model.isEmpty
-          ? LlmProvider.minimax.defaultModel
-          : _entries[LlmProvider.minimax]!.model,
-      kimiModel: _entries[LlmProvider.kimi]!.model.isEmpty
-          ? LlmProvider.kimi.defaultModel
-          : _entries[LlmProvider.kimi]!.model,
       localeLanguageCode: null,
       faceIdEnabled: false,
       darkMode: false,
+      chatDefaultProviderId: presetId,
+      chatDefaultModelId: modelId,
+      titleModelProviderId: presetId,
+      titleModelModelId: modelId,
+      summaryModelProviderId: presetId,
+      summaryModelModelId: modelId,
     );
   }
 
@@ -216,17 +210,16 @@ class LlmTestConfig {
     final apiKeys = <String, String>{};
 
     for (final entry in _entries.entries) {
-      final provider = entry.key;
-      final presetId = _presetIdFor(provider);
+      final typeName = entry.key;
+      final presetId = _presetIdForType(typeName);
       final preset = presetById[presetId];
       if (preset == null) {
-        // 理论上不会发生：所有 LlmProvider 都在 preset 列表里有对应项。
-        // 这里静默跳过，避免一个枚举值变更导致所有集成测试崩溃。
         continue;
       }
 
+      final defaultModel = _defaultModelForType(typeName);
       final modelId = entry.value.model.isEmpty
-          ? provider.defaultModel
+          ? defaultModel
           : entry.value.model;
 
       providers.add(
@@ -235,7 +228,7 @@ class LlmTestConfig {
             LlmModelConfig(
               id: modelId,
               name: modelId,
-              contextWindow: provider.contextWindowTokens,
+              contextWindow: 1000000,
             ),
           ],
           selectedModelId: modelId,
@@ -253,26 +246,34 @@ class LlmTestConfig {
     );
   }
 
-  /// [LlmProvider] → preset ID 的映射。
+  /// provider type name → preset ID 的映射。
   ///
-  /// ⚠️ [LlmProvider.claude] 对应 `preset_anthropic`，因为 preset ID 是按
-  /// [LlmProviderType] 命名（type=anthropic），而不是按 [LlmProvider] 名字
-  /// （name=claude）。
-  static String _presetIdFor(LlmProvider provider) {
-    switch (provider) {
-      case LlmProvider.claude:
-        return 'preset_anthropic';
-      case LlmProvider.deepseek:
-        return 'preset_deepseek';
-      case LlmProvider.openai:
-        return 'preset_openai';
-      case LlmProvider.gemini:
-        return 'preset_gemini';
-      case LlmProvider.minimax:
-        return 'preset_minimax';
-      case LlmProvider.kimi:
-        return 'preset_kimi';
-    }
+  /// ⚠️ 'anthropic' 对应 `preset_anthropic`（不是 `preset_claude`）。
+  static String _presetIdForType(String typeName) {
+    return switch (typeName) {
+      'openai' => 'preset_openai',
+      'anthropic' => 'preset_anthropic',
+      'gemini' => 'preset_gemini',
+      'deepseek' => 'preset_deepseek',
+      'kimi' => 'preset_kimi',
+      'minimax' => 'preset_minimax',
+      'mimo' => 'preset_mimo',
+      _ => 'preset_$typeName',
+    };
+  }
+
+  /// provider type name → default model ID。
+  static String _defaultModelForType(String typeName) {
+    return switch (typeName) {
+      'openai' => 'gpt-4o',
+      'anthropic' => 'claude-3-5-sonnet-20241022',
+      'gemini' => 'gemini-1.5-pro',
+      'deepseek' => 'deepseek-chat',
+      'kimi' => 'moonshot-v1-8k',
+      'minimax' => 'abab6.5s-chat',
+      'mimo' => 'mimo-7b',
+      _ => 'default',
+    };
   }
 }
 

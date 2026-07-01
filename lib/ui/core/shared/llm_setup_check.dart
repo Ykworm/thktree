@@ -16,7 +16,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
-import 'package:thk_tree/data/services/llm_provider.dart' show LlmProvider;
+
 import 'package:thk_tree/data/services/settings_store.dart' show AppSettings;
 import 'package:thk_tree/data/stores/llm_config_store.dart' show LlmConfigStore;
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -117,16 +117,6 @@ Future<(LlmProviderConfig, String, String)?> resolveModelForTitleCore({
     modelId = currentModelId;
   }
 
-  // 3. legacy：settings.llmProvider（通过 _mapLegacyProviderToPresetId 转换）
-  //    + settings.model
-  if (providerId == null || modelId == null) {
-    if (settings != null) {
-      providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
-      modelId ??= settings.model;
-    }
-  }
-
-  // 在 providers 里找匹配的
   LlmProviderConfig? provider;
   if (providerId != null) {
     for (final p in providers) {
@@ -193,14 +183,7 @@ Future<(LlmProviderConfig, String, String)?> resolveModelForSummary(
     modelId = currentModelId;
   }
 
-  // 3. legacy
-  if (providerId == null || modelId == null) {
-    if (settings != null) {
-      providerId ??= _mapLegacyProviderToPresetId(settings.llmProvider);
-      modelId ??= settings.model;
-    }
-  }
-
+  // 3. 归一化：保证 providerId + modelId 在 providers 列表中有效
   LlmProviderConfig? provider;
   if (providerId != null) {
     for (final p in providers) {
@@ -211,7 +194,6 @@ Future<(LlmProviderConfig, String, String)?> resolveModelForSummary(
     }
   }
 
-  // 4. 兜底
   final configStore = container.read(llmConfigStoreProvider);
   if (provider == null) {
     for (final p in providers) {
@@ -242,19 +224,44 @@ Future<(LlmProviderConfig, String, String)?> resolveModelForSummary(
   return (provider, effectiveModelId, apiKey);
 }
 
-/// 旧版 [LlmProvider] enum → preset provider id 的映射（保留兼容路径）。
+/// 解析对话用的 (providerId, modelId)。
 ///
-/// 行为与原 `_mapLegacyProviderToPresetId` 实例方法 +
-/// `_mapLegacyProviderToPresetIdStatic` 顶层函数完全一致。
-String _mapLegacyProviderToPresetId(LlmProvider provider) {
-  return switch (provider) {
-    LlmProvider.claude => 'preset_anthropic',
-    LlmProvider.deepseek => 'preset_deepseek',
-    LlmProvider.openai => 'preset_openai',
-    LlmProvider.gemini => 'preset_gemini',
-    LlmProvider.minimax => 'preset_minimax',
-    LlmProvider.kimi => 'preset_kimi',
-  };
+/// 用于分支创建、笔记转对话等需要"聊天模型"的场景。
+///
+/// 优先级：
+///   1. 会话自带的 [sessionProviderId] / [sessionModelId]
+///   2. [chatDefaultProviderId] / [chatDefaultModelId]（全局默认）
+///   3. 遍历 providers 找第一个有 model 的
+(String providerId, String modelId) resolveChatModel({
+  String? sessionProviderId,
+  String? sessionModelId,
+  String? chatDefaultProviderId,
+  String? chatDefaultModelId,
+  List<LlmProviderConfig>? providers,
+}) {
+  String? providerId = sessionProviderId;
+  String? modelId = sessionModelId;
+
+  // 2. chatDefault（全局默认）
+  if (providerId == null || modelId == null) {
+    providerId ??= chatDefaultProviderId;
+    modelId ??= chatDefaultModelId;
+  }
+
+  // 3. 兜底：第一个有 model 的 provider
+  if (providerId == null || modelId == null) {
+    if (providers != null) {
+      for (final p in providers) {
+        if (p.models.isNotEmpty) {
+          providerId ??= p.id;
+          modelId ??= p.models.first.id;
+          break;
+        }
+      }
+    }
+  }
+
+  return (providerId ?? '', modelId ?? '');
 }
 
 /// 检查「用于对话总结」的 LLM 配置状态。
