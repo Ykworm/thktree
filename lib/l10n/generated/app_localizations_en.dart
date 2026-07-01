@@ -580,6 +580,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String get docSplitInputTitle => 'Paste Document';
 
   @override
+  String get docSplitFeatureTitle => 'AI Doc Split';
+
+  @override
+  String get docSplitStartAnalysis => 'Start Analysis';
+
+  @override
+  String get docSplitHintTitle =>
+      'Paste a document and let AI turn it into a tree';
+
+  @override
+  String get docSplitHintBody =>
+      'The app first analyzes the structure, then generates an adjustable tree preview in chat.';
+
+  @override
+  String get docSplitViewDetails => 'View Details';
+
+  @override
+  String get docSplitPlaceholder =>
+      'Paste a document, plan, or meeting notes here...\nAI will analyze the structure first, then generate an adjustable tree preview.';
+
+  @override
+  String get docSplitDetailsTitle => 'How Doc Split Works';
+
+  @override
+  String get docSplitDetailsWhatTitle => 'What It Does';
+
+  @override
+  String get docSplitDetailsWhatBody =>
+      'Turn one long document into a structured tree of chat nodes with AI, then refine it before creating the real nodes.';
+
+  @override
+  String get docSplitDetailsFlowTitle => 'What Happens Next';
+
+  @override
+  String get docSplitDetailsFlow1 =>
+      'After pasting the document, AI first analyzes the structure in chat.';
+
+  @override
+  String get docSplitDetailsFlow2 =>
+      'You can continue chatting to merge, regroup, or simplify the tree.';
+
+  @override
+  String get docSplitDetailsFlow3 =>
+      'Only after tapping \"Submit Tree\" will the preview become real nodes.';
+
+  @override
+  String get docSplitDetailsBestForTitle => 'Best For';
+
+  @override
+  String get docSplitDetailsBestForBody =>
+      'Plans, meeting notes, interview notes, long markdown drafts, and any text that benefits from hierarchical grouping.';
+
+  @override
+  String get docSplitDetailsPromptTitle => 'Prompt Ideas';
+
+  @override
+  String get docSplitDetailsPrompt1 => 'Please split this by topic.';
+
+  @override
+  String get docSplitDetailsPrompt2 => 'Keep it within two levels.';
+
+  @override
+  String get docSplitDetailsPrompt3 =>
+      'Merge repeated ideas and make the structure cleaner.';
+
+  @override
   String get submitTreeStructure => 'Submit Tree';
 
   @override

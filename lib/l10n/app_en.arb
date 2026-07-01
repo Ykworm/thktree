@@ -749,6 +749,82 @@
   "@docSplitInputTitle": {
     "description": "Title for the full-screen document input page"
   },
+  "docSplitFeatureTitle": "AI Doc Split",
+  "@docSplitFeatureTitle": {
+    "description": "Title for the document split feature entry and input page"
+  },
+  "docSplitStartAnalysis": "Start Analysis",
+  "@docSplitStartAnalysis": {
+    "description": "Primary action label for starting document analysis"
+  },
+  "docSplitHintTitle": "Paste a document and let AI turn it into a tree",
+  "@docSplitHintTitle": {
+    "description": "Short hint title shown above the editor"
+  },
+  "docSplitHintBody": "The app first analyzes the structure, then generates an adjustable tree preview in chat.",
+  "@docSplitHintBody": {
+    "description": "Short hint body shown above the editor"
+  },
+  "docSplitViewDetails": "View Details",
+  "@docSplitViewDetails": {
+    "description": "Action to open the detailed document split help page"
+  },
+  "docSplitPlaceholder": "Paste a document, plan, or meeting notes here...\nAI will analyze the structure first, then generate an adjustable tree preview.",
+  "@docSplitPlaceholder": {
+    "description": "Editor placeholder for document split input"
+  },
+  "docSplitDetailsTitle": "How Doc Split Works",
+  "@docSplitDetailsTitle": {
+    "description": "Title for the document split details page"
+  },
+  "docSplitDetailsWhatTitle": "What It Does",
+  "@docSplitDetailsWhatTitle": {
+    "description": "Section title describing what the feature does"
+  },
+  "docSplitDetailsWhatBody": "Turn one long document into a structured tree of chat nodes with AI, then refine it before creating the real nodes.",
+  "@docSplitDetailsWhatBody": {
+    "description": "Section body describing what the feature does"
+  },
+  "docSplitDetailsFlowTitle": "What Happens Next",
+  "@docSplitDetailsFlowTitle": {
+    "description": "Section title for the workflow steps"
+  },
+  "docSplitDetailsFlow1": "After pasting the document, AI first analyzes the structure in chat.",
+  "@docSplitDetailsFlow1": {
+    "description": "Workflow step 1"
+  },
+  "docSplitDetailsFlow2": "You can continue chatting to merge, regroup, or simplify the tree.",
+  "@docSplitDetailsFlow2": {
+    "description": "Workflow step 2"
+  },
+  "docSplitDetailsFlow3": "Only after tapping \"Submit Tree\" will the preview become real nodes.",
+  "@docSplitDetailsFlow3": {
+    "description": "Workflow step 3"
+  },
+  "docSplitDetailsBestForTitle": "Best For",
+  "@docSplitDetailsBestForTitle": {
+    "description": "Section title for suitable input types"
+  },
+  "docSplitDetailsBestForBody": "Plans, meeting notes, interview notes, long markdown drafts, and any text that benefits from hierarchical grouping.",
+  "@docSplitDetailsBestForBody": {
+    "description": "Section body for suitable input types"
+  },
+  "docSplitDetailsPromptTitle": "Prompt Ideas",
+  "@docSplitDetailsPromptTitle": {
+    "description": "Section title for suggested follow-up prompts"
+  },
+  "docSplitDetailsPrompt1": "Please split this by topic.",
+  "@docSplitDetailsPrompt1": {
+    "description": "Suggested prompt 1"
+  },
+  "docSplitDetailsPrompt2": "Keep it within two levels.",
+  "@docSplitDetailsPrompt2": {
+    "description": "Suggested prompt 2"
+  },
+  "docSplitDetailsPrompt3": "Merge repeated ideas and make the structure cleaner.",
+  "@docSplitDetailsPrompt3": {
+    "description": "Suggested prompt 3"
+  },
   "submitTreeStructure": "Submit Tree",
   "@submitTreeStructure": {
     "description": "Menu item in ChatScreen to submit the parsed tree structure"

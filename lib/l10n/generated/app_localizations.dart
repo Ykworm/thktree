@@ -1100,6 +1100,120 @@ abstract class AppLocalizations {
   /// **'Paste Document'**
   String get docSplitInputTitle;
 
+  /// Title for the document split feature entry and input page
+  ///
+  /// In en, this message translates to:
+  /// **'AI Doc Split'**
+  String get docSplitFeatureTitle;
+
+  /// Primary action label for starting document analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Start Analysis'**
+  String get docSplitStartAnalysis;
+
+  /// Short hint title shown above the editor
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a document and let AI turn it into a tree'**
+  String get docSplitHintTitle;
+
+  /// Short hint body shown above the editor
+  ///
+  /// In en, this message translates to:
+  /// **'The app first analyzes the structure, then generates an adjustable tree preview in chat.'**
+  String get docSplitHintBody;
+
+  /// Action to open the detailed document split help page
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get docSplitViewDetails;
+
+  /// Editor placeholder for document split input
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a document, plan, or meeting notes here...\nAI will analyze the structure first, then generate an adjustable tree preview.'**
+  String get docSplitPlaceholder;
+
+  /// Title for the document split details page
+  ///
+  /// In en, this message translates to:
+  /// **'How Doc Split Works'**
+  String get docSplitDetailsTitle;
+
+  /// Section title describing what the feature does
+  ///
+  /// In en, this message translates to:
+  /// **'What It Does'**
+  String get docSplitDetailsWhatTitle;
+
+  /// Section body describing what the feature does
+  ///
+  /// In en, this message translates to:
+  /// **'Turn one long document into a structured tree of chat nodes with AI, then refine it before creating the real nodes.'**
+  String get docSplitDetailsWhatBody;
+
+  /// Section title for the workflow steps
+  ///
+  /// In en, this message translates to:
+  /// **'What Happens Next'**
+  String get docSplitDetailsFlowTitle;
+
+  /// Workflow step 1
+  ///
+  /// In en, this message translates to:
+  /// **'After pasting the document, AI first analyzes the structure in chat.'**
+  String get docSplitDetailsFlow1;
+
+  /// Workflow step 2
+  ///
+  /// In en, this message translates to:
+  /// **'You can continue chatting to merge, regroup, or simplify the tree.'**
+  String get docSplitDetailsFlow2;
+
+  /// Workflow step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Only after tapping \"Submit Tree\" will the preview become real nodes.'**
+  String get docSplitDetailsFlow3;
+
+  /// Section title for suitable input types
+  ///
+  /// In en, this message translates to:
+  /// **'Best For'**
+  String get docSplitDetailsBestForTitle;
+
+  /// Section body for suitable input types
+  ///
+  /// In en, this message translates to:
+  /// **'Plans, meeting notes, interview notes, long markdown drafts, and any text that benefits from hierarchical grouping.'**
+  String get docSplitDetailsBestForBody;
+
+  /// Section title for suggested follow-up prompts
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Ideas'**
+  String get docSplitDetailsPromptTitle;
+
+  /// Suggested prompt 1
+  ///
+  /// In en, this message translates to:
+  /// **'Please split this by topic.'**
+  String get docSplitDetailsPrompt1;
+
+  /// Suggested prompt 2
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it within two levels.'**
+  String get docSplitDetailsPrompt2;
+
+  /// Suggested prompt 3
+  ///
+  /// In en, this message translates to:
+  /// **'Merge repeated ideas and make the structure cleaner.'**
+  String get docSplitDetailsPrompt3;
+
   /// Menu item in ChatScreen to submit the parsed tree structure
   ///
   /// In en, this message translates to:

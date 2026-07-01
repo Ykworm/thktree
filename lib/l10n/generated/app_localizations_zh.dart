@@ -556,6 +556,65 @@ class AppLocalizationsZh extends AppLocalizations {
   String get docSplitInputTitle => '粘贴文档';
 
   @override
+  String get docSplitFeatureTitle => 'AI 文档拆分';
+
+  @override
+  String get docSplitStartAnalysis => '开始分析';
+
+  @override
+  String get docSplitHintTitle => '粘贴一篇文章，让 AI 帮你拆成树';
+
+  @override
+  String get docSplitHintBody => '系统会先分析结构，再在 Chat 中生成一版可调整的树状预览。';
+
+  @override
+  String get docSplitViewDetails => '查看详情';
+
+  @override
+  String get docSplitPlaceholder => '在这里粘贴文章、方案或会议纪要…\nAI 会先分析结构，再生成可调整的树状预览。';
+
+  @override
+  String get docSplitDetailsTitle => '文档拆分说明';
+
+  @override
+  String get docSplitDetailsWhatTitle => '这是什么';
+
+  @override
+  String get docSplitDetailsWhatBody =>
+      '把一篇长文先交给 AI 分析，再转成可调整的树状聊天节点，确认后再创建真实节点。';
+
+  @override
+  String get docSplitDetailsFlowTitle => '接下来会发生什么';
+
+  @override
+  String get docSplitDetailsFlow1 => '粘贴文档后，AI 会先在 Chat 中分析并生成树结构预览。';
+
+  @override
+  String get docSplitDetailsFlow2 => '你可以继续对话，让它合并、重组或简化结构。';
+
+  @override
+  String get docSplitDetailsFlow3 => '只有点击“提交树结构”后，这些预览才会变成真实节点。';
+
+  @override
+  String get docSplitDetailsBestForTitle => '适合什么内容';
+
+  @override
+  String get docSplitDetailsBestForBody =>
+      '方案文档、会议纪要、访谈记录、长篇 Markdown 草稿，以及任何适合按层级整理的文本。';
+
+  @override
+  String get docSplitDetailsPromptTitle => '可直接使用的提示词';
+
+  @override
+  String get docSplitDetailsPrompt1 => '请按主题维度拆分。';
+
+  @override
+  String get docSplitDetailsPrompt2 => '请控制在两层结构。';
+
+  @override
+  String get docSplitDetailsPrompt3 => '请合并重复内容，让结构更清晰。';
+
+  @override
   String get submitTreeStructure => '提交树结构';
 
   @override
