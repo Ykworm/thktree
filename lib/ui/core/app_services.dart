@@ -22,6 +22,7 @@ import 'package:thk_tree/data/services/apple_tts_service.dart';
 import 'package:thk_tree/data/services/no_op_tts_service.dart';
 import 'package:thk_tree/data/services/tts_service.dart';
 import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
+import 'package:thk_tree/data/services/keyword_analysis_service.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/data/services/keyword_category_storage.dart';
 
@@ -265,4 +266,14 @@ final keywordCategoryStorageProvider =
     FutureProvider<KeywordCategoryStorage>((ref) async {
   final paths = await ref.watch(appPathsProvider.future);
   return KeywordCategoryStorage(rootDir: paths.rootDir.path);
+});
+
+/// 单个 theme 的关键词分析状态机服务（依赖对应 [keywordAnalysisStorageProvider]）。
+///
+/// 输入：[themeId] = theme 目录名。
+/// 提供 leaf 三态状态机（pending / fresh / stale）+ 反向查询。
+final keywordAnalysisServiceProvider =
+    FutureProvider.family<KeywordAnalysisService, String>((ref, themeId) async {
+  final storage = await ref.watch(keywordAnalysisStorageProvider(themeId).future);
+  return KeywordAnalysisService(storage: storage);
 });
