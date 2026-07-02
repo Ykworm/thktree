@@ -650,6 +650,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get swipeBranch => '分支';
 
   @override
+  String get viewTree => '查看整棵树';
+
+  @override
   String get renameNode => '重命名节点';
 
   @override

@@ -14,7 +14,7 @@ class TopicLibraryLlmClient extends LlmClient {
   final Duration chunkDelay;
 
   @override
-  Stream<String> streamChatCompletion({
+  Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
@@ -36,13 +36,13 @@ class TopicLibraryLlmClient extends LlmClient {
     if (reply.isEmpty) return;
 
     final firstLen = min(reply.length, max(16, reply.length ~/ 2));
-    yield reply.substring(0, firstLen);
+    yield LlmResponseDelta(content: reply.substring(0, firstLen));
 
     await Future<void>.delayed(chunkDelay);
     if (cancelToken?.isCancelled == true) return;
 
     if (firstLen < reply.length) {
-      yield reply.substring(firstLen);
+      yield LlmResponseDelta(content: reply.substring(firstLen));
     }
   }
 

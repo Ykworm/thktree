@@ -872,6 +872,10 @@
   "@swipeBranch": {
     "description": "Swipe action label for creating a branch"
   },
+  "viewTree": "View Tree",
+  "@viewTree": {
+    "description": "More action label for viewing the full tree"
+  },
   "renameNode": "Rename Node",
   "@renameNode": {
     "description": "Title for rename dialog"

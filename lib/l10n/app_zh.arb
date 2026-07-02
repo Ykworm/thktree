@@ -272,6 +272,7 @@
   "confirm": "确认",
   "swipeDelete": "删除",
   "swipeBranch": "分支",
+  "viewTree": "查看整棵树",
   "renameNode": "重命名节点",
   "enterNewTitle": "输入新标题",
   "retry": "重试",

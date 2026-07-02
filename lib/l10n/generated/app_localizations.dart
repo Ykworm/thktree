@@ -1280,6 +1280,12 @@ abstract class AppLocalizations {
   /// **'Branch'**
   String get swipeBranch;
 
+  /// More action label for viewing the full tree
+  ///
+  /// In en, this message translates to:
+  /// **'View Tree'**
+  String get viewTree;
+
   /// Title for rename dialog
   ///
   /// In en, this message translates to:

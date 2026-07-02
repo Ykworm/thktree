@@ -683,6 +683,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get swipeBranch => 'Branch';
 
   @override
+  String get viewTree => 'View Tree';
+
+  @override
   String get renameNode => 'Rename Node';
 
   @override

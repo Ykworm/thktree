@@ -23,6 +23,7 @@ import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/ui/features/themes/full_tree_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -411,6 +412,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           icon: AppIcons.branch,
           color: AppColors.accent,
           onPressed: () => unawaited(_onCreateBranchFromMenu(context)),
+        ),
+        GridAction(
+          label: l10n.viewTree,
+          icon: AppIcons.accountTree,
+          color: CupertinoColors.systemIndigo,
+          onPressed: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              CupertinoPageRoute(
+                builder: (_) => FullTreeScreen(
+                  themeId: widget.themeId,
+                  currentNodeId: widget.nodeId,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
