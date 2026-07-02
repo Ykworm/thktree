@@ -63,6 +63,18 @@ class ThemeListController extends AsyncNotifier<List<ThemeEntity>> {
 
   Future<void> deleteTheme({required String themeId}) async {
     final store = await ref.read(themeStoreProvider.future);
+
+    // 同步清理 keyword_global.json 中该 theme 的反向索引 + 孤立关键词。
+    // 必须在 store.deleteTheme() 之前调用，因为 deleteTheme 会递归删除
+    // 整个 theme 目录（含 keyword_analysis.json）。
+    try {
+      final globalStorage =
+          await ref.read(keywordGlobalStorageProvider.future);
+      await globalStorage.removeThemeRefs(themeId);
+    } catch (_) {
+      // 静默失败，不影响主流程。
+    }
+
     await store.deleteTheme(themeId: themeId);
     state = AsyncData(await _loadPreviews(await store.listThemes()));
   }

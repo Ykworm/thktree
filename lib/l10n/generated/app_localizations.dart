@@ -890,6 +890,132 @@ abstract class AppLocalizations {
   /// **'List view is coming soon'**
   String get keywordRankingComingSoon;
 
+  /// Trailing button on keyword ranking screen that navigates to leaf selection
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze'**
+  String get keywordRankingAnalyze;
+
+  /// Label shown above the keyword ranking list to indicate when the last score calculation finished
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get keywordRankingLastUpdated;
+
+  /// Empty state shown when keyword_global.json has no keywords
+  ///
+  /// In en, this message translates to:
+  /// **'No keywords yet. Tap Analyze to start.'**
+  String get keywordRankingEmpty;
+
+  /// Title of the screen for picking which leaf chats to run keyword analysis on
+  ///
+  /// In en, this message translates to:
+  /// **'Select Chats'**
+  String get keywordRankingSelectLeaves;
+
+  /// Subtitle hint on the leaf selection screen
+  ///
+  /// In en, this message translates to:
+  /// **'Pick chats to analyze with LLM'**
+  String get keywordRankingSelectLeavesHint;
+
+  /// Footer counter on the leaf selection screen showing how many leaves are currently selected
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{None selected} =1{1 selected} other{{count} selected}}'**
+  String keywordRankingSelectLeavesSelected(int count);
+
+  /// Primary action button on the leaf selection screen that triggers Prompt A + B analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Start Analysis'**
+  String get keywordRankingStartAnalysis;
+
+  /// Label shown on the analyze button while LLM analysis is running
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing...'**
+  String get keywordRankingAnalyzing;
+
+  /// SnackBar / dialog message after keyword analysis finishes successfully
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis complete'**
+  String get keywordRankingAnalysisDone;
+
+  /// Error message shown when keyword analysis fails (Prompt A or B)
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis failed: {error}'**
+  String keywordRankingAnalysisFailed(String error);
+
+  /// Status badge shown on a chat node that has never been analyzed
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get keywordRankingLeafStatusPending;
+
+  /// Status badge shown on a chat node whose keyword analysis is up to date
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh'**
+  String get keywordRankingLeafStatusFresh;
+
+  /// Status badge shown on a chat node whose keyword analysis needs refresh
+  ///
+  /// In en, this message translates to:
+  /// **'Stale'**
+  String get keywordRankingLeafStatusStale;
+
+  /// Empty state on the leaf selection screen when there are no themes
+  ///
+  /// In en, this message translates to:
+  /// **'No themes yet'**
+  String get keywordRankingNoThemes;
+
+  /// Empty state on the leaf selection screen when a theme has no chat leaves
+  ///
+  /// In en, this message translates to:
+  /// **'No chats to analyze in this theme'**
+  String get keywordRankingNoAnalyzableLeaves;
+
+  /// Button on the leaf selection screen to select every visible chat leaf
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get keywordRankingSelectAll;
+
+  /// Button on the leaf selection screen to clear all chat leaf selections
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get keywordRankingDeselectAll;
+
+  /// Accessibility label for the score shown next to each keyword in the ranking list
+  ///
+  /// In en, this message translates to:
+  /// **'Score'**
+  String get keywordRankingScoreLabel;
+
+  /// Inline badge shown when a keyword has at least one stale association
+  ///
+  /// In en, this message translates to:
+  /// **'stale'**
+  String get keywordRankingStaleBadge;
+
+  /// Subtitle on each keyword ranking row showing cross-theme count, cross-leaf count, and average tree depth
+  ///
+  /// In en, this message translates to:
+  /// **'{themes}T · {leaves}L · depth {depth}'**
+  String keywordRankingLeafCount(int themes, int leaves, String depth);
+
+  /// Button on a chat card in the keyword detail view to jump to the corresponding chat in ThemeDetailScreen
+  ///
+  /// In en, this message translates to:
+  /// **'Go to chat'**
+  String get keywordRankingJumpToChat;
+
   /// Tab bar label for the settings tab
   ///
   /// In en, this message translates to:
@@ -1747,6 +1873,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear All Default Models'**
   String get clearAllDefaultModels;
+
+  /// Title of the keyword score prompt editing screen in Settings
+  ///
+  /// In en, this message translates to:
+  /// **'Score Prompt'**
+  String get keywordScorePromptTitle;
+
+  /// Description text at the top of the keyword score prompt screen
+  ///
+  /// In en, this message translates to:
+  /// **'Customize the prompt used to score keywords. The score determines ranking order in the keyword list.'**
+  String get keywordScorePromptDescription;
+
+  /// Section title for the read-only input data example block
+  ///
+  /// In en, this message translates to:
+  /// **'Input Data Example'**
+  String get keywordScorePromptInputExample;
+
+  /// Section title for the editable score prompt text field
+  ///
+  /// In en, this message translates to:
+  /// **'Score Calculation Logic'**
+  String get keywordScorePromptEditableSection;
+
+  /// Section title for the read-only output format example block
+  ///
+  /// In en, this message translates to:
+  /// **'Output Format'**
+  String get keywordScorePromptOutputFormat;
+
+  /// Button to reset the score prompt to its default value
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to Default'**
+  String get keywordScorePromptResetDefault;
+
+  /// Success message after saving the score prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Score prompt saved'**
+  String get keywordScorePromptSaveSuccess;
+
+  /// Error message when saving the score prompt fails
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed'**
+  String get keywordScorePromptSaveFailed;
+
+  /// Settings entry title for the keyword score prompt screen
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword Score Prompt'**
+  String get keywordScorePromptEntry;
+
+  /// Settings entry subtitle for the keyword score prompt screen
+  ///
+  /// In en, this message translates to:
+  /// **'Customize keyword ranking score logic'**
+  String get keywordScorePromptEntrySubtitle;
 }
 
 class _AppLocalizationsDelegate

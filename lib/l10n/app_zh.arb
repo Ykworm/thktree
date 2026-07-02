@@ -200,6 +200,111 @@
   "keywordRankingTitle": "关键词排行榜",
   "keywordRankingSubtitle": "回顾最近的思考脉络",
   "keywordRankingComingSoon": "List 视图即将上线",
+  "keywordRankingAnalyze": "分析",
+  "@keywordRankingAnalyze": {
+    "description": "关键词排行榜页右上角按钮，跳转到选择对话页"
+  },
+  "keywordRankingLastUpdated": "上次计算",
+  "@keywordRankingLastUpdated": {
+    "description": "排行榜列表顶部时间标签，表示上一次完成 score 计算的时间"
+  },
+  "keywordRankingEmpty": "暂无关键词，点击右上角「分析」开始抽取",
+  "@keywordRankingEmpty": {
+    "description": "keyword_global.json 没有关键词时的空状态"
+  },
+  "keywordRankingSelectLeaves": "选择对话",
+  "@keywordRankingSelectLeaves": {
+    "description": "选择需要进行关键词分析的对应对话页面标题"
+  },
+  "keywordRankingSelectLeavesHint": "选择需要用 LLM 分析的对话（leaf）",
+  "@keywordRankingSelectLeavesHint": {
+    "description": "选择对话页的提示副标题"
+  },
+  "keywordRankingSelectLeavesSelected": "已选 {count} 个",
+  "@keywordRankingSelectLeavesSelected": {
+    "description": "选择对话页底部计数器，展示当前已选多少个对话",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "keywordRankingStartAnalysis": "开始分析",
+  "@keywordRankingStartAnalysis": {
+    "description": "选择对话页主操作按钮，触发 Prompt A + B 分析流程"
+  },
+  "keywordRankingAnalyzing": "分析中...",
+  "@keywordRankingAnalyzing": {
+    "description": "LLM 分析运行时分析按钮上展示的文案"
+  },
+  "keywordRankingAnalysisDone": "分析完成",
+  "@keywordRankingAnalysisDone": {
+    "description": "关键词分析成功结束后的 SnackBar / 弹窗提示"
+  },
+  "keywordRankingAnalysisFailed": "分析失败：{error}",
+  "@keywordRankingAnalysisFailed": {
+    "description": "关键词分析（Prompt A 或 B）失败时的错误提示",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "keywordRankingLeafStatusPending": "待分析",
+  "@keywordRankingLeafStatusPending": {
+    "description": "未分析过的对话节点状态徽章"
+  },
+  "keywordRankingLeafStatusFresh": "新鲜",
+  "@keywordRankingLeafStatusFresh": {
+    "description": "关键词分析结果处于最新状态的对话徽章"
+  },
+  "keywordRankingLeafStatusStale": "需刷新",
+  "@keywordRankingLeafStatusStale": {
+    "description": "关键词分析结果需要刷新的对话徽章"
+  },
+  "keywordRankingNoThemes": "暂无主题",
+  "@keywordRankingNoThemes": {
+    "description": "选择对话页在没有任何主题时的空状态"
+  },
+  "keywordRankingNoAnalyzableLeaves": "该主题暂无可分析的对话",
+  "@keywordRankingNoAnalyzableLeaves": {
+    "description": "主题下没有可分析对话时的空状态"
+  },
+  "keywordRankingSelectAll": "全选",
+  "@keywordRankingSelectAll": {
+    "description": "选择对话页全选按钮"
+  },
+  "keywordRankingDeselectAll": "取消全选",
+  "@keywordRankingDeselectAll": {
+    "description": "选择对话页取消全选按钮"
+  },
+  "keywordRankingScoreLabel": "分数",
+  "@keywordRankingScoreLabel": {
+    "description": "关键词排名行分数的无障碍标签"
+  },
+  "keywordRankingStaleBadge": "含 stale",
+  "@keywordRankingStaleBadge": {
+    "description": "关键词行上表示包含 stale 关联的徽章"
+  },
+  "keywordRankingLeafCount": "{themes}主题 \u00b7 {leaves}对话 \u00b7 深度 {depth}",
+  "@keywordRankingLeafCount": {
+    "description": "关键词排名行的副标题，展示跨主题数、跨对话数和平均树深度",
+    "placeholders": {
+      "themes": {
+        "type": "int"
+      },
+      "leaves": {
+        "type": "int"
+      },
+      "depth": {
+        "type": "String"
+      }
+    }
+  },
+  "keywordRankingJumpToChat": "跳转到对话",
+  "@keywordRankingJumpToChat": {
+    "description": "关键词详情页 chat 卡片上的跳转按钮，点击后进入 ThemeDetailScreen"
+  },
   "settingsTabLabel": "设置",
   "createBranchRawFromSelection": "用所选文字直接创建",
   "createBranchSummarizeFromSelection": "总结所选文字后创建",
@@ -502,5 +607,15 @@
   "llmErrorUnknown": "生成失败，请重试",
   "llmErrorRetry": "重试",
   "llmErrorCancel": "取消",
-  "clearAllDefaultModels": "清除所有默认模型"
+  "clearAllDefaultModels": "清除所有默认模型",
+  "keywordScorePromptTitle": "Score Prompt",
+  "keywordScorePromptDescription": "自定义用于关键词评分的 prompt。分数决定关键词在排行榜中的排名顺序。",
+  "keywordScorePromptInputExample": "输入数据示例",
+  "keywordScorePromptEditableSection": "分数计算逻辑",
+  "keywordScorePromptOutputFormat": "输出格式",
+  "keywordScorePromptResetDefault": "恢复默认",
+  "keywordScorePromptSaveSuccess": "Score prompt 已保存",
+  "keywordScorePromptSaveFailed": "保存失败",
+  "keywordScorePromptEntry": "关键词 Score Prompt",
+  "keywordScorePromptEntrySubtitle": "自定义关键词排行榜分数逻辑"
 }

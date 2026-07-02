@@ -468,6 +468,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keywordRankingComingSoon => 'List view is coming soon';
 
   @override
+  String get keywordRankingAnalyze => 'Analyze';
+
+  @override
+  String get keywordRankingLastUpdated => 'Last updated';
+
+  @override
+  String get keywordRankingEmpty => 'No keywords yet. Tap Analyze to start.';
+
+  @override
+  String get keywordRankingSelectLeaves => 'Select Chats';
+
+  @override
+  String get keywordRankingSelectLeavesHint => 'Pick chats to analyze with LLM';
+
+  @override
+  String keywordRankingSelectLeavesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+      zero: 'None selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keywordRankingStartAnalysis => 'Start Analysis';
+
+  @override
+  String get keywordRankingAnalyzing => 'Analyzing...';
+
+  @override
+  String get keywordRankingAnalysisDone => 'Analysis complete';
+
+  @override
+  String keywordRankingAnalysisFailed(String error) {
+    return 'Analysis failed: $error';
+  }
+
+  @override
+  String get keywordRankingLeafStatusPending => 'Pending';
+
+  @override
+  String get keywordRankingLeafStatusFresh => 'Fresh';
+
+  @override
+  String get keywordRankingLeafStatusStale => 'Stale';
+
+  @override
+  String get keywordRankingNoThemes => 'No themes yet';
+
+  @override
+  String get keywordRankingNoAnalyzableLeaves =>
+      'No chats to analyze in this theme';
+
+  @override
+  String get keywordRankingSelectAll => 'Select all';
+
+  @override
+  String get keywordRankingDeselectAll => 'Clear';
+
+  @override
+  String get keywordRankingScoreLabel => 'Score';
+
+  @override
+  String get keywordRankingStaleBadge => 'stale';
+
+  @override
+  String keywordRankingLeafCount(int themes, int leaves, String depth) {
+    return '${themes}T · ${leaves}L · depth $depth';
+  }
+
+  @override
+  String get keywordRankingJumpToChat => 'Go to chat';
+
+  @override
   String get settingsTabLabel => 'Settings';
 
   @override
@@ -935,4 +1012,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clearAllDefaultModels => 'Clear All Default Models';
+
+  @override
+  String get keywordScorePromptTitle => 'Score Prompt';
+
+  @override
+  String get keywordScorePromptDescription =>
+      'Customize the prompt used to score keywords. The score determines ranking order in the keyword list.';
+
+  @override
+  String get keywordScorePromptInputExample => 'Input Data Example';
+
+  @override
+  String get keywordScorePromptEditableSection => 'Score Calculation Logic';
+
+  @override
+  String get keywordScorePromptOutputFormat => 'Output Format';
+
+  @override
+  String get keywordScorePromptResetDefault => 'Reset to Default';
+
+  @override
+  String get keywordScorePromptSaveSuccess => 'Score prompt saved';
+
+  @override
+  String get keywordScorePromptSaveFailed => 'Save failed';
+
+  @override
+  String get keywordScorePromptEntry => 'Keyword Score Prompt';
+
+  @override
+  String get keywordScorePromptEntrySubtitle =>
+      'Customize keyword ranking score logic';
 }

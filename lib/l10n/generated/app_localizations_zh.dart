@@ -447,6 +447,75 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keywordRankingComingSoon => 'List 视图即将上线';
 
   @override
+  String get keywordRankingAnalyze => '分析';
+
+  @override
+  String get keywordRankingLastUpdated => '上次计算';
+
+  @override
+  String get keywordRankingEmpty => '暂无关键词，点击右上角「分析」开始抽取';
+
+  @override
+  String get keywordRankingSelectLeaves => '选择对话';
+
+  @override
+  String get keywordRankingSelectLeavesHint => '选择需要用 LLM 分析的对话（leaf）';
+
+  @override
+  String keywordRankingSelectLeavesSelected(int count) {
+    return '已选 $count 个';
+  }
+
+  @override
+  String get keywordRankingStartAnalysis => '开始分析';
+
+  @override
+  String get keywordRankingAnalyzing => '分析中...';
+
+  @override
+  String get keywordRankingAnalysisDone => '分析完成';
+
+  @override
+  String keywordRankingAnalysisFailed(String error) {
+    return '分析失败：$error';
+  }
+
+  @override
+  String get keywordRankingLeafStatusPending => '待分析';
+
+  @override
+  String get keywordRankingLeafStatusFresh => '新鲜';
+
+  @override
+  String get keywordRankingLeafStatusStale => '需刷新';
+
+  @override
+  String get keywordRankingNoThemes => '暂无主题';
+
+  @override
+  String get keywordRankingNoAnalyzableLeaves => '该主题暂无可分析的对话';
+
+  @override
+  String get keywordRankingSelectAll => '全选';
+
+  @override
+  String get keywordRankingDeselectAll => '取消全选';
+
+  @override
+  String get keywordRankingScoreLabel => '分数';
+
+  @override
+  String get keywordRankingStaleBadge => '含 stale';
+
+  @override
+  String keywordRankingLeafCount(int themes, int leaves, String depth) {
+    return '$themes主题 · $leaves对话 · 深度 $depth';
+  }
+
+  @override
+  String get keywordRankingJumpToChat => '跳转到对话';
+
+  @override
   String get settingsTabLabel => '设置';
 
   @override
@@ -896,4 +965,35 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get clearAllDefaultModels => '清除所有默认模型';
+
+  @override
+  String get keywordScorePromptTitle => 'Score Prompt';
+
+  @override
+  String get keywordScorePromptDescription =>
+      '自定义用于关键词评分的 prompt。分数决定关键词在排行榜中的排名顺序。';
+
+  @override
+  String get keywordScorePromptInputExample => '输入数据示例';
+
+  @override
+  String get keywordScorePromptEditableSection => '分数计算逻辑';
+
+  @override
+  String get keywordScorePromptOutputFormat => '输出格式';
+
+  @override
+  String get keywordScorePromptResetDefault => '恢复默认';
+
+  @override
+  String get keywordScorePromptSaveSuccess => 'Score prompt 已保存';
+
+  @override
+  String get keywordScorePromptSaveFailed => '保存失败';
+
+  @override
+  String get keywordScorePromptEntry => '关键词 Score Prompt';
+
+  @override
+  String get keywordScorePromptEntrySubtitle => '自定义关键词排行榜分数逻辑';
 }

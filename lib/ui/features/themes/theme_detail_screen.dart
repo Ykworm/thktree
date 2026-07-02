@@ -27,9 +27,16 @@ import 'package:thk_tree/data/services/session_markdown.dart';
 // ---------------------------------------------------------------------------
 
 class ThemeDetailScreen extends ConsumerStatefulWidget {
-  const ThemeDetailScreen({super.key, required this.themeId});
+  const ThemeDetailScreen({
+    super.key,
+    required this.themeId,
+    this.scrollToNodeId,
+    this.searchPrefill,
+  });
 
   final String themeId;
+  final String? scrollToNodeId;
+  final String? searchPrefill;
 
   @override
   ConsumerState<ThemeDetailScreen> createState() => _ThemeDetailScreenState();

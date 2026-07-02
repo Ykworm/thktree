@@ -11,8 +11,11 @@ import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/lab/lab_placeholder_screen.dart';
-import 'package:thk_tree/ui/features/lab/keyword_ranking_screen.dart';
+import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_ranking_screen.dart';
+import 'package:thk_tree/ui/features/lab/keyword_ranking/leaf_selection_screen.dart';
+import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_detail_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_screen.dart';
+import 'package:thk_tree/ui/features/settings/keyword_score_prompt_screen.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_screen.dart';
@@ -56,8 +59,14 @@ final appRouter = GoRouter(
               path: '/themes/:themeId/tree',
               pageBuilder: (context, state) {
                 final themeId = state.pathParameters['themeId']!;
+                final scrollToNodeId = state.uri.queryParameters['scrollToNodeId'];
+                final searchPrefill = state.uri.queryParameters['searchPrefill'];
                 return CupertinoPage(
-                  child: ThemeDetailScreen(themeId: themeId),
+                  child: ThemeDetailScreen(
+                    themeId: themeId,
+                    scrollToNodeId: scrollToNodeId,
+                    searchPrefill: searchPrefill,
+                  ),
                 );
               },
             ),
@@ -114,6 +123,21 @@ final appRouter = GoRouter(
                 child: const KeywordRankingScreen(),
               ),
             ),
+            GoRoute(
+              path: '/lab/keyword-ranking/select-leaves',
+              pageBuilder: (context, state) => CupertinoPage(
+                child: const LeafSelectionScreen(),
+              ),
+            ),
+            GoRoute(
+              path: '/lab/keyword-ranking/detail/:keyword',
+              pageBuilder: (context, state) {
+                final keyword = state.pathParameters['keyword'] ?? '';
+                return CupertinoPage(
+                  child: KeywordDetailScreen(keyword: keyword),
+                );
+              },
+            ),
           ],
         ),
       ],
@@ -123,6 +147,13 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       pageBuilder: (context, state) => CupertinoPage(
         child: const SettingsScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/settings/keyword-score-prompt',
+      parentNavigatorKey: _rootNavigatorKey,
+      pageBuilder: (context, state) => CupertinoPage(
+        child: const KeywordScorePromptScreen(),
       ),
     ),
     GoRoute(

@@ -203,13 +203,21 @@ class KeywordGlobalStorage {
 
   /// 删除指定 theme 的所有反向索引引用（theme 删除时调用）。
   ///
-  /// 注意：keywords 聚合条目不在此处删除，由调用方按需聚合重建。
+  /// 同时清理 [keywords] 中不再有任何 leaf 引用的孤立条目，
+  /// 防止排行榜显示已删除 theme 的关键词。
   Future<KeywordGlobalFile> removeThemeRefs(String themeId) async {
     return updateAsync((current) {
+      // 1. 从 keywordLeafMap 中删除该 theme 的所有映射
       current.keywordLeafMap.removeWhere((keyword, refs) {
         refs.removeWhere((r) => r.themeId == themeId);
         return refs.isEmpty;
       });
+
+      // 2. 清理 keywords 中不再有 leaf 引用的孤立条目
+      current.keywords.removeWhere(
+        (keyword, _) => !current.keywordLeafMap.containsKey(keyword),
+      );
+
       return current;
     });
   }

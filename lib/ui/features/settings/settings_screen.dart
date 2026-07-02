@@ -16,6 +16,7 @@ import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/settings/llm_settings_screen.dart';
+import 'package:thk_tree/ui/features/settings/keyword_score_prompt_screen.dart';
 import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
 import 'package:thk_tree/data/services/export_service.dart';
 import 'package:share_plus/share_plus.dart';
@@ -49,6 +50,11 @@ class SettingsScreen extends ConsumerWidget {
         ThkListSection(
           children: [
             _TtsEntry(),
+          ],
+        ),
+        ThkListSection(
+          children: [
+            _KeywordScorePromptEntry(),
           ],
         ),
         ThkListSection(
@@ -415,6 +421,30 @@ class _FaceIdToggle extends ConsumerWidget {
   }
 }
 
+
+class _KeywordScorePromptEntry extends ConsumerWidget {
+  const _KeywordScorePromptEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return ThkListTile(
+      leading: const Padding(
+        padding: EdgeInsets.only(bottom: 2),
+        child: Icon(CupertinoIcons.chart_bar_alt_fill),
+      ),
+      title: l10n.keywordScorePromptEntry,
+      subtitle: l10n.keywordScorePromptEntrySubtitle,
+      onTap: () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(
+            builder: (_) => const KeywordScorePromptScreen(),
+          ),
+        );
+      },
+    );
+  }
+}
 
 class _TtsEntry extends ConsumerWidget {
   const _TtsEntry();

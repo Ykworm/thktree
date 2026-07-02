@@ -599,6 +599,111 @@
   "@keywordRankingComingSoon": {
     "description": "Placeholder text on the keyword ranking screen while the list view is under development"
   },
+  "keywordRankingAnalyze": "Analyze",
+  "@keywordRankingAnalyze": {
+    "description": "Trailing button on keyword ranking screen that navigates to leaf selection"
+  },
+  "keywordRankingLastUpdated": "Last updated",
+  "@keywordRankingLastUpdated": {
+    "description": "Label shown above the keyword ranking list to indicate when the last score calculation finished"
+  },
+  "keywordRankingEmpty": "No keywords yet. Tap Analyze to start.",
+  "@keywordRankingEmpty": {
+    "description": "Empty state shown when keyword_global.json has no keywords"
+  },
+  "keywordRankingSelectLeaves": "Select Chats",
+  "@keywordRankingSelectLeaves": {
+    "description": "Title of the screen for picking which leaf chats to run keyword analysis on"
+  },
+  "keywordRankingSelectLeavesHint": "Pick chats to analyze with LLM",
+  "@keywordRankingSelectLeavesHint": {
+    "description": "Subtitle hint on the leaf selection screen"
+  },
+  "keywordRankingSelectLeavesSelected": "{count, plural, =0{None selected} =1{1 selected} other{{count} selected}}",
+  "@keywordRankingSelectLeavesSelected": {
+    "description": "Footer counter on the leaf selection screen showing how many leaves are currently selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "keywordRankingStartAnalysis": "Start Analysis",
+  "@keywordRankingStartAnalysis": {
+    "description": "Primary action button on the leaf selection screen that triggers Prompt A + B analysis"
+  },
+  "keywordRankingAnalyzing": "Analyzing...",
+  "@keywordRankingAnalyzing": {
+    "description": "Label shown on the analyze button while LLM analysis is running"
+  },
+  "keywordRankingAnalysisDone": "Analysis complete",
+  "@keywordRankingAnalysisDone": {
+    "description": "SnackBar / dialog message after keyword analysis finishes successfully"
+  },
+  "keywordRankingAnalysisFailed": "Analysis failed: {error}",
+  "@keywordRankingAnalysisFailed": {
+    "description": "Error message shown when keyword analysis fails (Prompt A or B)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "keywordRankingLeafStatusPending": "Pending",
+  "@keywordRankingLeafStatusPending": {
+    "description": "Status badge shown on a chat node that has never been analyzed"
+  },
+  "keywordRankingLeafStatusFresh": "Fresh",
+  "@keywordRankingLeafStatusFresh": {
+    "description": "Status badge shown on a chat node whose keyword analysis is up to date"
+  },
+  "keywordRankingLeafStatusStale": "Stale",
+  "@keywordRankingLeafStatusStale": {
+    "description": "Status badge shown on a chat node whose keyword analysis needs refresh"
+  },
+  "keywordRankingNoThemes": "No themes yet",
+  "@keywordRankingNoThemes": {
+    "description": "Empty state on the leaf selection screen when there are no themes"
+  },
+  "keywordRankingNoAnalyzableLeaves": "No chats to analyze in this theme",
+  "@keywordRankingNoAnalyzableLeaves": {
+    "description": "Empty state on the leaf selection screen when a theme has no chat leaves"
+  },
+  "keywordRankingSelectAll": "Select all",
+  "@keywordRankingSelectAll": {
+    "description": "Button on the leaf selection screen to select every visible chat leaf"
+  },
+  "keywordRankingDeselectAll": "Clear",
+  "@keywordRankingDeselectAll": {
+    "description": "Button on the leaf selection screen to clear all chat leaf selections"
+  },
+  "keywordRankingScoreLabel": "Score",
+  "@keywordRankingScoreLabel": {
+    "description": "Accessibility label for the score shown next to each keyword in the ranking list"
+  },
+  "keywordRankingStaleBadge": "stale",
+  "@keywordRankingStaleBadge": {
+    "description": "Inline badge shown when a keyword has at least one stale association"
+  },
+  "keywordRankingLeafCount": "{themes}T \u00b7 {leaves}L \u00b7 depth {depth}",
+  "@keywordRankingLeafCount": {
+    "description": "Subtitle on each keyword ranking row showing cross-theme count, cross-leaf count, and average tree depth",
+    "placeholders": {
+      "themes": {
+        "type": "int"
+      },
+      "leaves": {
+        "type": "int"
+      },
+      "depth": {
+        "type": "String"
+      }
+    }
+  },
+  "keywordRankingJumpToChat": "Go to chat",
+  "@keywordRankingJumpToChat": {
+    "description": "Button on a chat card in the keyword detail view to jump to the corresponding chat in ThemeDetailScreen"
+  },
   "settingsTabLabel": "Settings",
   "@settingsTabLabel": {
     "description": "Tab bar label for the settings tab"
@@ -1213,5 +1318,45 @@
   "@llmErrorCancel": {
     "description": "Secondary action button on LlmErrorCard"
   },
-  "clearAllDefaultModels": "Clear All Default Models"
+  "clearAllDefaultModels": "Clear All Default Models",
+  "keywordScorePromptTitle": "Score Prompt",
+  "@keywordScorePromptTitle": {
+    "description": "Title of the keyword score prompt editing screen in Settings"
+  },
+  "keywordScorePromptDescription": "Customize the prompt used to score keywords. The score determines ranking order in the keyword list.",
+  "@keywordScorePromptDescription": {
+    "description": "Description text at the top of the keyword score prompt screen"
+  },
+  "keywordScorePromptInputExample": "Input Data Example",
+  "@keywordScorePromptInputExample": {
+    "description": "Section title for the read-only input data example block"
+  },
+  "keywordScorePromptEditableSection": "Score Calculation Logic",
+  "@keywordScorePromptEditableSection": {
+    "description": "Section title for the editable score prompt text field"
+  },
+  "keywordScorePromptOutputFormat": "Output Format",
+  "@keywordScorePromptOutputFormat": {
+    "description": "Section title for the read-only output format example block"
+  },
+  "keywordScorePromptResetDefault": "Reset to Default",
+  "@keywordScorePromptResetDefault": {
+    "description": "Button to reset the score prompt to its default value"
+  },
+  "keywordScorePromptSaveSuccess": "Score prompt saved",
+  "@keywordScorePromptSaveSuccess": {
+    "description": "Success message after saving the score prompt"
+  },
+  "keywordScorePromptSaveFailed": "Save failed",
+  "@keywordScorePromptSaveFailed": {
+    "description": "Error message when saving the score prompt fails"
+  },
+  "keywordScorePromptEntry": "Keyword Score Prompt",
+  "@keywordScorePromptEntry": {
+    "description": "Settings entry title for the keyword score prompt screen"
+  },
+  "keywordScorePromptEntrySubtitle": "Customize keyword ranking score logic",
+  "@keywordScorePromptEntrySubtitle": {
+    "description": "Settings entry subtitle for the keyword score prompt screen"
+  }
 }
