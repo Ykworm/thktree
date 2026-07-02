@@ -21,6 +21,9 @@ import 'package:thk_tree/data/services/search_service.dart';
 import 'package:thk_tree/data/services/apple_tts_service.dart';
 import 'package:thk_tree/data/services/no_op_tts_service.dart';
 import 'package:thk_tree/data/services/tts_service.dart';
+import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
+import 'package:thk_tree/data/services/keyword_global_storage.dart';
+import 'package:thk_tree/data/services/keyword_category_storage.dart';
 
 class NoteListVersionNotifier extends Notifier<int> {
   @override
@@ -234,4 +237,32 @@ final ttsServiceProvider = Provider<TtsService?>((ref) {
     return AppleTtsService();
   }
   return NoOpTtsService();
+});
+
+// ── 关键词排行榜（per-theme + 全局） ──
+
+/// 单个 theme 的 `keyword_analysis.json` 文件读写器。
+///
+/// 输入：[themeId] = theme 目录名（即 `themes/<themeId>`）。
+/// 首次读取时自动初始化空骨架。
+final keywordAnalysisStorageProvider =
+    FutureProvider.family<KeywordAnalysisStorage, String>((ref, themeId) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  final themePath = p.join(paths.themesDir.path, themeId);
+  return KeywordAnalysisStorage(themePath: themePath);
+});
+
+/// 全局 `keyword_global.json` 文件读写器（含反向索引 keyword_leaf_map）。
+final keywordGlobalStorageProvider = FutureProvider<KeywordGlobalStorage>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  return KeywordGlobalStorage(rootDir: paths.rootDir.path);
+});
+
+/// 全局 `keyword_category_catalog.json` 文件读写器。
+///
+/// 首次读取时自动写入默认 10 个分类（id 由程序生成的 8 位短 ID）。
+final keywordCategoryStorageProvider =
+    FutureProvider<KeywordCategoryStorage>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  return KeywordCategoryStorage(rootDir: paths.rootDir.path);
 });
