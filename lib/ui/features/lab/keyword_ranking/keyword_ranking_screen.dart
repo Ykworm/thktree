@@ -52,7 +52,7 @@ class KeywordRankingScreen extends ConsumerWidget {
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () =>
-                  context.push('/lab/keyword-ranking/select-leaves'),
+                  context.push('/lab/keyword-ranking/select-theme'),
               child: Text(
                 l10n.keywordRankingAnalyze,
                 style: const TextStyle(fontSize: 17),

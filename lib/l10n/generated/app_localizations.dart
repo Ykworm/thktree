@@ -908,6 +908,18 @@ abstract class AppLocalizations {
   /// **'No keywords yet. Tap Analyze to start.'**
   String get keywordRankingEmpty;
 
+  /// Title of the screen for picking which theme to analyze
+  ///
+  /// In en, this message translates to:
+  /// **'Select Theme'**
+  String get keywordRankingSelectThemes;
+
+  /// Subtitle hint on the theme selection screen
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a theme to analyze its chats'**
+  String get keywordRankingSelectThemesHint;
+
   /// Title of the screen for picking which leaf chats to run keyword analysis on
   ///
   /// In en, this message translates to:

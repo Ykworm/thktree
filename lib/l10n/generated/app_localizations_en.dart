@@ -477,6 +477,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keywordRankingEmpty => 'No keywords yet. Tap Analyze to start.';
 
   @override
+  String get keywordRankingSelectThemes => 'Select Theme';
+
+  @override
+  String get keywordRankingSelectThemesHint =>
+      'Pick a theme to analyze its chats';
+
+  @override
   String get keywordRankingSelectLeaves => 'Select Chats';
 
   @override

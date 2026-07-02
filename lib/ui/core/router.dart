@@ -12,6 +12,7 @@ import 'package:thk_tree/ui/features/chat/chat_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/lab/lab_placeholder_screen.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_ranking_screen.dart';
+import 'package:thk_tree/ui/features/lab/keyword_ranking/theme_selection_screen.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/leaf_selection_screen.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_detail_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_screen.dart';
@@ -121,6 +122,12 @@ final appRouter = GoRouter(
               path: '/lab/keyword-ranking',
               pageBuilder: (context, state) => CupertinoPage(
                 child: const KeywordRankingScreen(),
+              ),
+            ),
+            GoRoute(
+              path: '/lab/keyword-ranking/select-theme',
+              pageBuilder: (context, state) => CupertinoPage(
+                child: const ThemeSelectionScreen(),
               ),
             ),
             GoRoute(

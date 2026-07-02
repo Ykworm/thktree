@@ -611,6 +611,14 @@
   "@keywordRankingEmpty": {
     "description": "Empty state shown when keyword_global.json has no keywords"
   },
+  "keywordRankingSelectThemes": "Select Theme",
+  "@keywordRankingSelectThemes": {
+    "description": "Title of the screen for picking which theme to analyze"
+  },
+  "keywordRankingSelectThemesHint": "Pick a theme to analyze its chats",
+  "@keywordRankingSelectThemesHint": {
+    "description": "Subtitle hint on the theme selection screen"
+  },
   "keywordRankingSelectLeaves": "Select Chats",
   "@keywordRankingSelectLeaves": {
     "description": "Title of the screen for picking which leaf chats to run keyword analysis on"

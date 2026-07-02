@@ -456,6 +456,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keywordRankingEmpty => '暂无关键词，点击右上角「分析」开始抽取';
 
   @override
+  String get keywordRankingSelectThemes => '选择主题';
+
+  @override
+  String get keywordRankingSelectThemesHint => '选择一个主题，分析其下的对话';
+
+  @override
   String get keywordRankingSelectLeaves => '选择对话';
 
   @override

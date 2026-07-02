@@ -212,6 +212,14 @@
   "@keywordRankingEmpty": {
     "description": "keyword_global.json 没有关键词时的空状态"
   },
+  "keywordRankingSelectThemes": "选择主题",
+  "@keywordRankingSelectThemes": {
+    "description": "选择需要进行关键词分析的主题页面标题"
+  },
+  "keywordRankingSelectThemesHint": "选择一个主题，分析其下的对话",
+  "@keywordRankingSelectThemesHint": {
+    "description": "选择主题页的提示副标题"
+  },
   "keywordRankingSelectLeaves": "选择对话",
   "@keywordRankingSelectLeaves": {
     "description": "选择需要进行关键词分析的对应对话页面标题"
