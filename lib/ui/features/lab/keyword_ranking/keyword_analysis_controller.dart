@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:thk_tree/data/models/llm_model_config.dart';
+import 'package:thk_tree/domain/node.dart';
 
 import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
 import 'package:thk_tree/data/services/keyword_aggregation_service.dart';
@@ -106,7 +107,7 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
       final nodes = await nodeStore.listNodes(themeId: theme.themeId);
       // 只取 leaf（chat 节点）
       final chatNodes =
-          nodes.where((n) => n.kind.toString().contains('chat')).toList();
+          nodes.where((n) => n.kind == NodeKind.chat).toList();
 
       if (chatNodes.isEmpty) continue;
 
