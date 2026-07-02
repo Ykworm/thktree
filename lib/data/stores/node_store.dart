@@ -334,6 +334,22 @@ class NodeStore {
     return _inflateNodeRow(rows.single);
   }
 
+  /// 通过 nodeId 反查所属 themeId。
+  ///
+  /// 用于 chat_controller.sendUserMessage 触发 stale 检测时反查 leaf 所属 theme。
+  /// 找不到对应节点时返回 null（不抛异常），由调用方决定如何降级。
+  Future<String?> getThemeIdByNodeId(String nodeId) async {
+    final rows = await db.query(
+      'nodes',
+      columns: ['themeId'],
+      where: 'nodeId = ?',
+      whereArgs: [nodeId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.single['themeId'] as String?;
+  }
+
   Future<void> updateNodeSessionPath({
     required String nodeId,
     required String sessionPath,

@@ -262,7 +262,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   Future<void> retryLastMessage() async {
     final messages = state.value ?? [];
     if (messages.isEmpty) return;
-    
+
     // Find the last non-streaming assistant message
     int lastAssistantIdx = -1;
     for (int i = messages.length - 1; i >= 0; i--) {
@@ -272,9 +272,9 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
         break;
       }
     }
-    
+
     if (lastAssistantIdx == -1) return;
-    
+
     // Find the last user message before the assistant
     int lastUserIdx = -1;
     for (int i = lastAssistantIdx - 1; i >= 0; i--) {
@@ -283,18 +283,18 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
         break;
       }
     }
-    
+
     if (lastUserIdx == -1) return;
-    
+
     final userMessage = messages[lastUserIdx].body;
-    
+
     // Remove the assistant message from session.md
     final sessionStore = await ref.read(sessionStoreProvider.future);
     await sessionStore.removeLastAssistantMessage(nodeId: nodeId);
-    
+
     // Re-read state
     state = AsyncData(await _read());
-    
+
     // Re-send the user message (this will append a new assistant message)
     await sendUserMessage(userMessage);
   }
@@ -322,6 +322,12 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       // 3. 磁盘写入（异步，不阻塞 UI）
       final sessionStore = await ref.read(sessionStoreProvider.future);
       await sessionStore.appendUserMessage(nodeId: nodeId, content: trimmed);
+
+      // 4. 触发关键词榜 stale 检测（fire-and-forget，不阻塞主流程）
+      // - 方案：通过 NodeStore.getThemeIdByNodeId 反查 themeId
+      //   （避免改 ChatControllerParams 签名）
+      // - try-catch 包裹：异常静默吞掉，仅记录 trace，不阻塞 LLM 流式回复
+      unawaited(_markStaleIfAnalyzed());
 
       // 判断使用对话级模型还是全局设置
       final sessionProviderId = _providerId;
@@ -388,6 +394,50 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       await logger.error(e, st, hint: 'sendUserMessage', attrs: {'nodeId': nodeId, 'title': title});
       state = AsyncError(e, st);
       rethrow;
+    }
+  }
+
+  /// 关键词榜 stale 触发（fire-and-forget 内部方法）。
+  ///
+  /// 由 [sendUserMessage] 在磁盘写入成功后调用。
+  /// 流程：
+  ///   1. 通过 NodeStore.getThemeIdByNodeId 反查 leaf 所属 themeId
+  ///   2. 拿对应 theme 的 KeywordAnalysisService
+  ///   3. 调 markStaleIfAnalyzed 标记当前 leaf 为 stale（如已分析过）
+  ///
+  /// 反查失败或服务不可用时静默吞掉异常，不阻塞主流程。
+  /// 仅在 trace 日志中留痕（便于排查为什么某些 leaf 没标 stale）。
+  Future<void> _markStaleIfAnalyzed() async {
+    try {
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      final themeId = await nodeStore.getThemeIdByNodeId(nodeId);
+      if (themeId == null) {
+        // 节点可能已被删除（极少见），跳过
+        _trace('chat_controller.mark_stale_skipped', attrs: {
+          'nodeId': nodeId,
+          'reason': 'theme_not_found',
+        });
+        return;
+      }
+      final service = await ref.read(keywordAnalysisServiceProvider(themeId).future);
+      await service.markStaleIfAnalyzed(leafId: nodeId);
+    } catch (e, st) {
+      // 静默失败：异常被吞掉，仅记录 trace + logger，不阻塞主流程
+      _trace('chat_controller.mark_stale_failed', attrs: {
+        'nodeId': nodeId,
+        'error': e.toString(),
+      });
+      try {
+        final logger = await ref.read(appLoggerProvider.future);
+        await logger.error(
+          e,
+          st,
+          hint: 'chat_controller._markStaleIfAnalyzed',
+          attrs: {'nodeId': nodeId},
+        );
+      } catch (_) {
+        // logger 不可用也吞掉
+      }
     }
   }
 
