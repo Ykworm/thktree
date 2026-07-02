@@ -94,9 +94,10 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
 
   /// 加载所有 theme 的 leaf + 分析状态。
   Future<void> loadThemesAndLeaves() async {
-    final themeStore = ref.read(themeStoreProvider).requireValue;
-    final nodeStore = ref.read(nodeStoreProvider).requireValue;
-    final appPaths = ref.read(appPathsProvider).requireValue;
+    // 等待所有依赖的 provider 就绪
+    final themeStore = await ref.read(themeStoreProvider.future);
+    final nodeStore = await ref.read(nodeStoreProvider.future);
+    final appPaths = await ref.read(appPathsProvider.future);
 
     final themes = await themeStore.listThemes();
     final result = <ThemeLeafInfo>[];

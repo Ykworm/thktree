@@ -36,11 +36,20 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
     _loadThemes();
   }
 
+  String? _loadError;
+
   Future<void> _loadThemes() async {
-    final controller = ref.read(keywordAnalysisControllerProvider.notifier);
-    await controller.loadThemesAndLeaves();
-    if (mounted) {
-      setState(() => _isLoading = false);
+    try {
+      final controller = ref.read(keywordAnalysisControllerProvider.notifier);
+      await controller.loadThemesAndLeaves();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadError = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -74,7 +83,47 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
       ),
       child: _isLoading
           ? const Center(child: CupertinoActivityIndicator())
-          : _buildContent(context, l10n, controller, analysisState),
+          : _loadError != null
+              ? _buildError(l10n)
+              : _buildContent(context, l10n, controller, analysisState),
+    );
+  }
+
+  Widget _buildError(AppLocalizations l10n) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              CupertinoIcons.exclamationmark_triangle,
+              size: 48,
+              color: AppColors.destructive,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _loadError!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            CupertinoButton.filled(
+              onPressed: () {
+                setState(() {
+                  _isLoading = true;
+                  _loadError = null;
+                });
+                _loadThemes();
+              },
+              child: Text(l10n.retry),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
