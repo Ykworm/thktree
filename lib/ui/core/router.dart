@@ -11,6 +11,7 @@ import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/lab/lab_placeholder_screen.dart';
+import 'package:thk_tree/ui/features/lab/keyword_ranking_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_screen.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
@@ -105,6 +106,12 @@ final appRouter = GoRouter(
               path: '/lab',
               pageBuilder: (context, state) => CupertinoPage(
                 child: const LabPlaceholderScreen(),
+              ),
+            ),
+            GoRoute(
+              path: '/lab/keyword-ranking',
+              pageBuilder: (context, state) => CupertinoPage(
+                child: const KeywordRankingScreen(),
               ),
             ),
           ],

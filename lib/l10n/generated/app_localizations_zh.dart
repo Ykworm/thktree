@@ -438,6 +438,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get labEmptyHint => '实验功能筹备中';
 
   @override
+  String get keywordRankingTitle => '关键词排行榜';
+
+  @override
+  String get keywordRankingSubtitle => '回顾最近的思考脉络';
+
+  @override
+  String get keywordRankingComingSoon => 'List 视图即将上线';
+
+  @override
   String get settingsTabLabel => '设置';
 
   @override

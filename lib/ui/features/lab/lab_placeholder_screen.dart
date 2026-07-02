@@ -1,16 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
-/// 占位屏幕：Lab tab 的占位实现。
+/// Lab tab 占位屏幕 + 子功能入口列表。
 ///
-/// P.9（Lab tab）目前仅暴露一个 tab entry，具体子功能
-/// （AI 摘要交互卡 / 多节点对比 / 思维碰撞原型 / AI 写节点 / AI 节点标签建议）
-/// 后续单独迭代，本屏仅提供兜底展示，避免空指针或全黑页。
+/// 当前（Task 7）只暴露已上线的「关键词排行榜」入口：
+///   - 点击卡片 → push 到 `/lab/keyword-ranking`
 ///
-/// 视觉：白色背景（[AppColors.surface]）兜底，顶部展示 `l10n.labEmptyHint` 占位文案，
-/// 下方居中展示 `assets/background/lab_bg_32pt.png` 装饰图（`BoxFit.contain` 保持比例，不撑满）。
+/// 其他 Lab 子功能（AI 摘要交互卡 / 多节点对比 / 思维碰撞原型 / AI 写节点 /
+/// AI 节点标签建议）后续单独迭代，本屏保留兜底视觉（lab_bg 装饰图）。
 class LabPlaceholderScreen extends ConsumerWidget {
   const LabPlaceholderScreen({super.key});
 
@@ -31,6 +32,18 @@ class LabPlaceholderScreen extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
               ),
+            ),
+            // Lab 子功能入口列表
+            ThkListSection(
+              children: [
+                ThkListTile(
+                  title: l10n.keywordRankingTitle,
+                  subtitle: l10n.keywordRankingSubtitle,
+                  onTap: () {
+                    context.push('/lab/keyword-ranking');
+                  },
+                ),
+              ],
             ),
             // 下方装饰图（BoxFit.contain 保持比例，居顶对齐）
             Expanded(

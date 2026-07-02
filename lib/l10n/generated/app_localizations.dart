@@ -872,6 +872,24 @@ abstract class AppLocalizations {
   /// **'Experimental features are coming soon'**
   String get labEmptyHint;
 
+  /// Title of the keyword ranking sub-screen in the Lab tab
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword Ranking'**
+  String get keywordRankingTitle;
+
+  /// Subtitle shown on the keyword ranking entry card in the Lab tab
+  ///
+  /// In en, this message translates to:
+  /// **'Reflect on recent thinking patterns'**
+  String get keywordRankingSubtitle;
+
+  /// Placeholder text on the keyword ranking screen while the list view is under development
+  ///
+  /// In en, this message translates to:
+  /// **'List view is coming soon'**
+  String get keywordRankingComingSoon;
+
   /// Tab bar label for the settings tab
   ///
   /// In en, this message translates to:

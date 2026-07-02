@@ -459,6 +459,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEmptyHint => 'Experimental features are coming soon';
 
   @override
+  String get keywordRankingTitle => 'Keyword Ranking';
+
+  @override
+  String get keywordRankingSubtitle => 'Reflect on recent thinking patterns';
+
+  @override
+  String get keywordRankingComingSoon => 'List view is coming soon';
+
+  @override
   String get settingsTabLabel => 'Settings';
 
   @override
