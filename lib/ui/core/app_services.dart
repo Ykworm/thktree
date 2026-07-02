@@ -24,6 +24,7 @@ import 'package:thk_tree/data/services/tts_service.dart';
 import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
 import 'package:thk_tree/data/services/keyword_analysis_service.dart';
 import 'package:thk_tree/data/services/keyword_extraction_service.dart';
+import 'package:thk_tree/data/services/keyword_aggregation_service.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/data/services/keyword_category_storage.dart';
 
@@ -286,4 +287,13 @@ final keywordAnalysisServiceProvider =
 /// 任何不合规输出都会抛出 [KeywordExtractionException]，由调用方整体拒绝并保留旧数据。
 final keywordExtractionServiceProvider = Provider<KeywordExtractionService>((ref) {
   return KeywordExtractionService();
+});
+
+/// Prompt B 聚合 + score 计算服务（无状态，注册单例即可）。
+///
+/// 一次性调用 [KeywordAggregationService.aggregate] 跑 LLM 并返回
+/// 已校验的 `List<GlobalKeywordEntry>`（含 score 0.0-1.0 clamp）。
+/// 任何不合规输出都抛出 [KeywordAggregationException]，由调用方整体拒绝并保留旧数据。
+final keywordAggregationServiceProvider = Provider<KeywordAggregationService>((ref) {
+  return KeywordAggregationService();
 });
