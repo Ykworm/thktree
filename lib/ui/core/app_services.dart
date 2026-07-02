@@ -23,6 +23,7 @@ import 'package:thk_tree/data/services/no_op_tts_service.dart';
 import 'package:thk_tree/data/services/tts_service.dart';
 import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
 import 'package:thk_tree/data/services/keyword_analysis_service.dart';
+import 'package:thk_tree/data/services/keyword_extraction_service.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/data/services/keyword_category_storage.dart';
 
@@ -276,4 +277,13 @@ final keywordAnalysisServiceProvider =
     FutureProvider.family<KeywordAnalysisService, String>((ref, themeId) async {
   final storage = await ref.watch(keywordAnalysisStorageProvider(themeId).future);
   return KeywordAnalysisService(storage: storage);
+});
+
+/// Prompt A 关键词抽取服务（无状态，注册单例即可）。
+///
+/// 一次性调用 [KeywordExtractionService.extract] 跑 LLM 并返回
+/// [KeywordExtractionResult]（含已校验的 keywords + 可选 pendingNewCategory）。
+/// 任何不合规输出都会抛出 [KeywordExtractionException]，由调用方整体拒绝并保留旧数据。
+final keywordExtractionServiceProvider = Provider<KeywordExtractionService>((ref) {
+  return KeywordExtractionService();
 });
