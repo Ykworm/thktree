@@ -374,11 +374,10 @@ class _ChatCardState extends ConsumerState<_ChatCard> {
 
   void _navigateToTheme(BuildContext context) {
     // 跳转到 ThemeDetailScreen，search input 预填关键词
-    context.push(
-      '/themes/${widget.leafRef.themeId}'
-      '?scrollToNodeId=${widget.leafRef.leafId}'
-      '&searchPrefill=${Uri.encodeComponent(widget.keyword)}',
-    );
+    final themeId = Uri.encodeComponent(widget.leafRef.themeId);
+    final nodeId = Uri.encodeComponent(widget.leafRef.leafId);
+    final keyword = Uri.encodeComponent(widget.keyword);
+    context.push('/themes/$themeId/tree?scrollToNodeId=$nodeId&searchPrefill=$keyword');
   }
 
   String _formatTimestamp(DateTime utc) {
