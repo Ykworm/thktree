@@ -121,12 +121,20 @@ class KeywordGlobalFile {
         : KeywordGlobalFile.defaultScorePrompt;
     final scorePromptIsDefault = json['score_prompt_is_default'] as bool? ?? true;
 
-    final keywordsRaw = json['keywords'] as List? ?? const [];
+    final keywordsRaw = json['keywords'];
     final keywords = <String, GlobalKeywordEntry>{};
-    for (final raw in keywordsRaw) {
-      final m = Map<String, Object?>.from(raw as Map);
-      final entry = GlobalKeywordEntry.fromJson(m);
-      keywords[entry.keyword] = entry;
+    if (keywordsRaw is Map) {
+      for (final entry in keywordsRaw.entries) {
+        final m = Map<String, Object?>.from(entry.value as Map);
+        final kw = GlobalKeywordEntry.fromJson(m);
+        keywords[kw.keyword] = kw;
+      }
+    } else if (keywordsRaw is List) {
+      for (final raw in keywordsRaw) {
+        final m = Map<String, Object?>.from(raw as Map);
+        final kw = GlobalKeywordEntry.fromJson(m);
+        keywords[kw.keyword] = kw;
+      }
     }
 
     final mapRaw = json['keyword_leaf_map'] as Map? ?? const {};
