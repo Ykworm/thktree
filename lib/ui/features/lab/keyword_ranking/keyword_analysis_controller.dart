@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:thk_tree/data/models/llm_model_config.dart';
+import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/domain/node.dart';
 
 import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
@@ -203,24 +204,31 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
           ref.read(keywordCategoryStorageProvider).requireValue;
       final nodeStore = ref.read(nodeStoreProvider).requireValue;
 
-      // 加载 LLM 配置
+      // 加载 LLM 配置，找到第一个有 API Key + 模型的 provider
       final providers = await llmConfig.loadAll();
       if (providers.isEmpty) {
         throw StateError('未配置 LLM');
       }
-      final provider = providers.first;
-      final apiKey = await llmConfig.readApiKey(provider.id);
-      if (apiKey.isEmpty) {
+      LlmProviderConfig? provider;
+      String? apiKey;
+      LlmModelConfig? selectedModel;
+      for (final p in providers) {
+        final key = await llmConfig.readApiKey(p.id);
+        if (key.isEmpty || p.models.isEmpty) continue;
+        // 优先取 selectedModel，否则取第一个
+        LlmModelConfig? model;
+        if (p.selectedModelId != null) {
+          model = p.models.where((m) => m.id == p.selectedModelId).firstOrNull;
+        }
+        model ??= p.models.first;
+        provider = p;
+        apiKey = key;
+        selectedModel = model;
+        break;
+      }
+      if (provider == null || apiKey == null || apiKey.isEmpty) {
         throw StateError('未配置 API Key');
       }
-
-      // 获取默认模型
-      final selectedModelId = provider.selectedModelId;
-      LlmModelConfig? selectedModel;
-      if (selectedModelId != null && provider.models.isNotEmpty) {
-        selectedModel = provider.models.where((m) => m.id == selectedModelId).firstOrNull;
-      }
-      selectedModel ??= provider.models.isNotEmpty ? provider.models.first : null;
       if (selectedModel == null) {
         throw StateError('未配置模型');
       }
