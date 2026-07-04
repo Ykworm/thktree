@@ -544,53 +544,76 @@ class _TableWithActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                CupertinoButton(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  onPressed: onCopy,
-                  child: Icon(
-                    CupertinoIcons.doc_on_doc,
-                    size: 18,
-                    color: AppColors.textPrimary,
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width - 48;
+
+        final columnCount = tableRows.fold<int>(
+          0,
+          (max, row) => math.max(max, row.fields.length),
+        );
+        final columnWidth = _resolveTableColumnWidth(
+          availableWidth: availableWidth,
+          columnCount: columnCount,
+          expanded: false,
+        );
+        final tableWidth = columnWidth * columnCount;
+
+        final barWidth = tableWidth + 10 < availableWidth
+            ? tableWidth
+            : availableWidth;
+
+        return SizedBox(
+          width: availableWidth,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: barWidth,
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                SizedBox(width: 4),
-                CupertinoButton(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  onPressed: onExpand,
-                  child: Icon(
-                    CupertinoIcons.arrow_up_left_arrow_down_right,
-                    size: 18,
-                    color: AppColors.textPrimary,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      onPressed: onCopy,
+                      child: Icon(
+                        CupertinoIcons.doc_on_doc,
+                        size: 18,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    CupertinoButton(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      onPressed: onExpand,
+                      child: Icon(
+                        CupertinoIcons.arrow_up_left_arrow_down_right,
+                        size: 18,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              _MarkdownTableView(
+                tableRows: tableRows,
+                textStyle: textStyle,
+              ),
+            ],
           ),
-          _MarkdownTableView(
-            tableRows: tableRows,
-            textStyle: textStyle,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
