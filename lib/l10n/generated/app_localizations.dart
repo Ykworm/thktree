@@ -2107,6 +2107,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No keywords yet. Run keyword analysis first!'**
   String get thinkingCollisionNoKeywords;
+
+  /// Title for the user input navigation sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Outline'**
+  String get chatOutline;
+
+  /// Title for the chat search sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search Chat'**
+  String get chatSearch;
+
+  /// Placeholder for chat search input
+  ///
+  /// In en, this message translates to:
+  /// **'Search message content'**
+  String get searchInChat;
+
+  /// Empty state when no user messages exist
+  ///
+  /// In en, this message translates to:
+  /// **'No user messages yet'**
+  String get noUserMessages;
+
+  /// Empty state when search yields no results
+  ///
+  /// In en, this message translates to:
+  /// **'No matching results found'**
+  String get noSearchResults;
 }
 
 class _AppLocalizationsDelegate

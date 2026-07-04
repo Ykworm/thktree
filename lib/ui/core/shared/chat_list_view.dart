@@ -17,13 +17,14 @@ class ChatListView extends StatefulWidget {
   final MessageBuilder messageBuilder;
 
   @override
-  State<ChatListView> createState() => _ChatListViewState();
+  ChatListViewState createState() => ChatListViewState();
 }
 
-class _ChatListViewState extends State<ChatListView> {
+class ChatListViewState extends State<ChatListView> {
   static const _bottomTolerance = 24.0;
 
   final _scrollController = ScrollController();
+  final _itemKeys = <String, GlobalKey>{};
   bool _stickToBottom = true;
 
   @override
@@ -32,12 +33,34 @@ class _ChatListViewState extends State<ChatListView> {
     super.dispose();
   }
 
+  /// 滚动到指定消息（通过 msgId 定位）。
+  ///
+  /// 如果目标消息在屏幕外，先近似跳转使其被构建，再精确对齐。
+  void scrollToMessage(String msgId) {
+    final key = _itemKeys[msgId];
+    if (key?.currentContext == null) return;
+    Scrollable.ensureVisible(
+      key!.currentContext!,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      alignment: 0.3, // 目标消息停在屏幕上方 30% 处
+    );
+    // 取消吸底，避免滚动后被自动拉回底部
+    if (_stickToBottom) {
+      setState(() => _stickToBottom = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.messages.isEmpty) {
       final l10n = AppLocalizations.of(context)!;
       return Center(child: Text(l10n.noMessagesYet));
     }
+
+    // 清理不再存在的 key
+    final currentIds = <String>{for (final m in widget.messages) m.msgId};
+    _itemKeys.keys.where((id) => !currentIds.contains(id)).toList().forEach(_itemKeys.remove);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -80,7 +103,11 @@ class _ChatListViewState extends State<ChatListView> {
           itemCount: widget.messages.length,
           itemBuilder: (context, index) {
             final msg = widget.messages[index];
-            return widget.messageBuilder(context, msg);
+            final key = _itemKeys.putIfAbsent(msg.msgId, () => GlobalKey());
+            return KeyedSubtree(
+              key: key,
+              child: widget.messageBuilder(context, msg),
+            );
           },
         ),
       ),

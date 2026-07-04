@@ -1089,4 +1089,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get thinkingCollisionNoKeywords => '暂无关键词，请先在关键词排行榜中分析';
+
+  @override
+  String get chatOutline => '对话目录';
+
+  @override
+  String get chatSearch => '搜索对话';
+
+  @override
+  String get searchInChat => '搜索消息内容';
+
+  @override
+  String get noUserMessages => '暂无用户消息';
+
+  @override
+  String get noSearchResults => '没有找到匹配的结果';
 }

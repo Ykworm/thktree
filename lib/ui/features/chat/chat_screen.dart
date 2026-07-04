@@ -22,6 +22,8 @@ import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
+import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
+import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
@@ -54,6 +56,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final ChatControllerParams _args;
+  final _chatListKey = GlobalKey<ChatListViewState>();
   bool _showModelPanel = false;
   String? _currentSelectedText;
 
@@ -342,6 +345,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         }
                       },
                       child: ChatListView(
+                        key: _chatListKey,
                         messages: messages,
                         messageBuilder: (context, message) {
                           final isLastAssistant = message.role == SessionRole.assistant &&
@@ -364,8 +368,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             }
                           }
 
+                          // 时间戳显示逻辑：第一条、角色切换、或间隔 > 2 分钟
+                          final showTimestamp = _shouldShowTimestamp(messages, message);
+
                           return MessageBubble(
                             message: message,
+                            showTimestamp: showTimestamp,
                             onRetry: isLastAssistant
                                 ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
                                 : null,
@@ -480,8 +488,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() => _showModelPanel = false);
   }
 
+  /// 判断是否应该在该消息上方显示时间戳。
+  ///
+  /// 规则：第一条消息、角色切换、或与前一条同角色但间隔 > 2 分钟。
+  static bool _shouldShowTimestamp(List<SessionMessage> messages, SessionMessage message) {
+    final idx = messages.indexOf(message);
+    if (idx <= 0) return true;
+
+    final prev = messages[idx - 1];
+    if (prev.role != message.role) return true;
+
+    final prevTime = DateTime.tryParse(prev.timestampUtcIso8601);
+    final curTime = DateTime.tryParse(message.timestampUtcIso8601);
+    if (prevTime == null || curTime == null) return true;
+
+    return curTime.difference(prevTime).inMinutes > 2;
+  }
+
   void _showMoreActions(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final messagesAsync = ref.read(chatControllerProvider(_args));
+    final messages = messagesAsync.maybeWhen(
+      data: (m) => m,
+      orElse: () => <SessionMessage>[],
+    );
+
     ThkGridBottomSheet.show(
       context: context,
       showCancel: false,
@@ -493,6 +524,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             color: CupertinoColors.systemGreen,
             onPressed: () => unawaited(_onSubmitDocSplit()),
           ),
+        GridAction(
+          label: l10n.chatOutline,
+          icon: AppIcons.document,
+          color: AppColors.accent,
+          onPressed: () => _onOpenOutline(context, messages),
+        ),
+        GridAction(
+          label: l10n.chatSearch,
+          icon: AppIcons.search,
+          color: CupertinoColors.systemOrange,
+          onPressed: () => _onOpenSearch(context, messages),
+        ),
         GridAction(
           label: l10n.swipeBranch,
           icon: AppIcons.branch,
@@ -517,6 +560,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _onOpenOutline(BuildContext context, List<SessionMessage> messages) async {
+    Navigator.of(context).pop();
+    final selected = await showChatOutlineSheet(context, messages);
+    if (selected != null && mounted) {
+      _chatListKey.currentState?.scrollToMessage(selected.msgId);
+    }
+  }
+
+  Future<void> _onOpenSearch(BuildContext context, List<SessionMessage> messages) async {
+    Navigator.of(context).pop();
+    final selected = await showChatSearchSheet(context, messages);
+    if (selected != null && mounted) {
+      _chatListKey.currentState?.scrollToMessage(selected.msgId);
+    }
   }
 
   Future<void> _onSubmitDocSplit() async {

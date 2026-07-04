@@ -676,5 +676,10 @@
   "thinkingCollisionHint": "点击碰撞对，发现知识间的隐藏联系",
   "thinkingCollisionLoading": "正在读取关键词…",
   "thinkingCollisionExpanding": "正在探索思维连接…",
-  "thinkingCollisionNoKeywords": "暂无关键词，请先在关键词排行榜中分析"
+  "thinkingCollisionNoKeywords": "暂无关键词，请先在关键词排行榜中分析",
+  "chatOutline": "对话目录",
+  "chatSearch": "搜索对话",
+  "searchInChat": "搜索消息内容",
+  "noUserMessages": "暂无用户消息",
+  "noSearchResults": "没有找到匹配的结果"
 }

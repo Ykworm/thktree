@@ -1492,5 +1492,25 @@
   "thinkingCollisionNoKeywords": "No keywords yet. Run keyword analysis first!",
   "@thinkingCollisionNoKeywords": {
     "description": "Empty state when no keywords exist at all"
+  },
+  "chatOutline": "Chat Outline",
+  "@chatOutline": {
+    "description": "Title for the user input navigation sheet"
+  },
+  "chatSearch": "Search Chat",
+  "@chatSearch": {
+    "description": "Title for the chat search sheet"
+  },
+  "searchInChat": "Search message content",
+  "@searchInChat": {
+    "description": "Placeholder for chat search input"
+  },
+  "noUserMessages": "No user messages yet",
+  "@noUserMessages": {
+    "description": "Empty state when no user messages exist"
+  },
+  "noSearchResults": "No matching results found",
+  "@noSearchResults": {
+    "description": "Empty state when search yields no results"
   }
 }

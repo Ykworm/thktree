@@ -1142,4 +1142,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get thinkingCollisionNoKeywords =>
       'No keywords yet. Run keyword analysis first!';
+
+  @override
+  String get chatOutline => 'Chat Outline';
+
+  @override
+  String get chatSearch => 'Search Chat';
+
+  @override
+  String get searchInChat => 'Search message content';
+
+  @override
+  String get noUserMessages => 'No user messages yet';
+
+  @override
+  String get noSearchResults => 'No matching results found';
 }
