@@ -25,6 +25,13 @@
 - 联网搜索开关（`ChatComposer`）：输入框区域新增联网搜索按钮，位于模型选择器和发送按钮之间
   - 参数：`webSearchEnabled`（bool，当前开关状态）、`webSearchSupported`（bool，当前模型是否支持）、`onWebSearchToggle`（VoidCallback?，null 时不显示按钮）
   - 图标：地球图标，开启时蓝色、关闭时灰色；不支持时灰色不可点击，tooltip 提示"当前模型不支持联网搜索"
+- 图片上传（`ChatComposer`，2026-07-05）：输入框底部图片按钮，支持的模型显示蓝色图标+文字，不支持变灰不可点击
+  - 参数：`onImagePick`（VoidCallback?，null 时不显示）、`imageSupported`（bool，模型是否支持 vision）、`selectedImageData`/`selectedImageMimeType`（已选图片）
+  - 点击弹出 CupertinoActionSheet：拍照（`ImageSource.camera`）/ 从相册选择（`ImageSource.gallery`）
+  - 选中后输入框上方显示 80x80 缩略图预览条（`_ImagePreview`），支持移除
+  - 发送时 `imageData`/`imageMimeType` 随消息传入 `ChatController.sendUserMessage` → `ChatTaskService.startTask` → `_buildMessages` 构建多模态 content（base64 `image_url`）
+  - 模型 vision 能力自动检测：`ModelCapability.vision` + `model_capabilities.dart` 推断（gpt-4o / claude-3 / gemini / kimi-k2.5 / mimo-v2.5 等）
+  - iOS 权限：`NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription`
 - 消息时间戳（2026-07-04）：assistant 消息气泡上方显示人类可读时间，`formatMessageTime` 支持 4 级格式（今天 `HH:mm` / 昨天 / 月日 / 跨年全日期）
 - Chat-to-Note（2026-07-04）：assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote` 回调），自动用当前主题创建笔记并跳转 `NoteEditorScreen`
 
@@ -39,7 +46,7 @@
 | `lib/data/services/chat_task_service.dart` | 服务层调度器：串行重发 queue + generation token + bridge.begin/end 包裹 + resumeInterrupted / cancelResumeQueue 入口 | 新增 |
 | `lib/data/services/background_task_bridge.dart` | iOS `beginBackgroundTask` MethodChannel 客户端（`begin()` / `end(taskId)`），可注入 | 新增 |
 | `ios/Runner/BackgroundTaskHandler.swift` | Swift MethodChannel handler + `UIApplication.beginBackgroundTask` 调用 + `expirationHandler` 释放 | 新增 |
-| `lib/ui/core/shared/chat_composer.dart` | 底部输入框（文本输入 + 发送/停止 + 模型选择 + 联网搜索开关） | - |
+| `lib/ui/core/shared/chat_composer.dart` | 底部输入框（文本输入 + 发送/停止 + 模型选择 + 联网搜索开关 + 图片按钮 + 图片预览） | - |
 | `lib/ui/core/shared/message_bubble.dart` | 消息气泡（user + assistant，GptMarkdown 渲染 + LaTeX 注入 + 每张表格独立工具栏：复制/全屏按钮） | 388 |
 | `lib/ui/core/shared/markdown_builders.dart` | GptMarkdown 自定义构建器（含 `buildLatex`——`FittedBox(scaleDown)` 包裹 `Math.tex`） | 61 |
 | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支流式结束后后台补 title：3 次重试（指数退避 1s/2s/4s）+ 调 LLM + 写 DB + refresh tree；`ref.keepAlive()` 保活（2026-06-29 新增） | 新增 |

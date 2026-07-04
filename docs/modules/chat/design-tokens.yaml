@@ -195,19 +195,30 @@ sharedComponents:
   ChatComposer:
     file: "lib/ui/core/shared/chat_composer.dart"
     dartRef: "ChatComposer"
-    usage: "聊天输入框，包含发送/停止 + 模型选择入口"
+    usage: "聊天输入框，包含发送/停止 + 模型选择入口 + 联网搜索开关 + 图片按钮"
     props:
       hintText: "String — placeholder"
       isStreaming: "bool — 是否正在生成"
-      onSend: "Future<void> Function(String) — 发送回调"
+      onSend: "Future<void> Function(String, {Uint8List? imageData, String? imageMimeType}) — 发送回调"
       onStopStreaming: "Future<void> Function() — 停止回调"
       enabled: "bool — 默认 true"
       onModelSelectorTap: "VoidCallback? — 模型选择按钮回调"
+      webSearchEnabled: "bool — 联网搜索开关状态"
+      webSearchSupported: "bool — 当前模型是否支持联网搜索"
+      onWebSearchToggle: "VoidCallback? — 联网搜索开关回调（null 时不显示按钮）"
+      onImagePick: "VoidCallback? — 图片选择按钮回调（null 时不显示）"
+      imageSupported: "bool — 当前模型是否支持 vision"
+      selectedImageData: "Uint8List? — 已选图片数据"
+      selectedImageMimeType: "String? — 已选图片 MIME 类型"
+      onImageRemove: "VoidCallback? — 移除已选图片回调"
     elements:
-      input: "ThkTextField"
+      input: "CupertinoTextField (minLines: 1, maxLines: 6)"
       sendButton: "AppIcons.send (arrow_up_circle_fill)"
       stopButton: "AppIcons.stop (stop_circle_fill) — isStreaming 时替换 send"
       modelSelector: "AppIcons.modelSelector (plus_circle_fill)"
+      webSearchToggle: "_WebSearchToggle — 联网搜索开关（AppIcons.globe，开启蓝色/关闭灰色）"
+      imageButton: "_ImageButton — 图片按钮（AppIcons.image，supported 蓝色/不支持灰色）"
+      imagePreview: "_ImagePreview — 已选图片缩略图预览条（80x80，支持移除）"
 
   ChatListView:
     file: "lib/ui/core/shared/chat_list_view.dart"

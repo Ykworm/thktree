@@ -126,7 +126,7 @@ lib/
 | `LlmProviderConfig` | 数据模型 | `lib/data/models/llm_provider_config.dart` | LLM Provider（API Key、Base URL、Model ID） |
 | `AppDatabase` | 服务 | `lib/data/services/app_database.dart` | SQLite 数据库单例（关系/索引/FTS5 搜索） |
 | `FileWriteQueue` | 服务 | `lib/data/services/file_write_queue.dart` | 单写者队列（并发写盘安全、流式追加原子化） |
-| `ChatController` | 控制器 | `lib/ui/features/chat/chat_controller.dart` | 对话页 StateNotifier（消息列表/流式订阅/重试） |
+| `ChatController` | 控制器 | `lib/ui/features/chat/chat_controller.dart` | 对话页 StateNotifier（消息列表/流式订阅/重试/图片数据转发） |
 | `ChatTaskService` | 服务 | `lib/data/services/chat_task_service.dart` | 后台中断恢复调度器（串行重发 queue + generation token + bridge.begin/end 包裹） |
 | `BackgroundTaskBridge` | 服务 | `lib/data/services/background_task_bridge.dart` | iOS `beginBackgroundTask` MethodChannel 客户端（可注入，test 用 `_CountingBridge` 计数验证） |
 | `ThemeDetailController` | 控制器 | `lib/ui/features/themes/theme_detail_controller.dart` | 树视图 StateNotifier（节点展开/选中/拖拽） |
@@ -148,6 +148,7 @@ lib/
 | `flutter_math_fork` | LaTeX 公式渲染 | UI 层（chat 模块 `message_bubble.dart` 注入 `latexBuilder`——`FittedBox(scaleDown)` 包裹避免 `RenderLine` 溢出；详见 [CHANGELOG/2026-06-18](CHANGELOG/2026-06-18-latex-overflow-fix.md) 与 [war-story/ui-ux/2026-06-18](war-stories/ui-ux/2026-06-18-gptmarkdown-latex-renderline-overflow.md)） |
 | `shared_preferences` | 轻量 KV | LLM Provider / 设置项 |
 | `flutter_secure_storage` | 安全存储 | API Key、Face ID 相关 |
+| `image_picker` | 拍照/相册选择图片 | chat 模块图片上传（iOS `NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription`） |
 
 ---
 
