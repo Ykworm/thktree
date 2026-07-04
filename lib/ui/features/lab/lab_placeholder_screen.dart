@@ -47,8 +47,29 @@ class LabPlaceholderScreen extends ConsumerWidget {
                         icon: CupertinoIcons.doc_text_search,
                         title: l10n.keywordRankingTitle,
                         description: l10n.keywordRankingSubtitle,
+                        color: const Color(0xFF3B82F6), // 蓝色系
                         onTap: () {
                           context.push('/lab/keyword-ranking');
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _FeatureCard(
+                        icon: CupertinoIcons.doc_plaintext,
+                        title: l10n.userInputSummaryTitle,
+                        description: l10n.userInputSummarySubtitle,
+                        color: const Color(0xFFF97316), // 橙色系
+                        onTap: () {
+                          context.push('/lab/user-input-summary');
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _FeatureCard(
+                        icon: CupertinoIcons.bolt_horizontal,
+                        title: l10n.thinkingCollisionTitle,
+                        description: l10n.thinkingCollisionSubtitle,
+                        color: const Color(0xFFA855F7), // 紫色系
+                        onTap: () {
+                          context.push('/lab/thinking-collision');
                         },
                       ),
                     ],
@@ -70,12 +91,14 @@ class _FeatureCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.onTap,
+    this.color = AppColors.accent,
   });
 
   final IconData icon;
   final String title;
   final String description;
   final VoidCallback onTap;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -85,56 +108,51 @@ class _FeatureCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.surfaceMuted,
+          color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  child: Icon(
-                    icon,
-                    color: AppColors.accent,
-                    size: 24,
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  CupertinoIcons.chevron_right,
-                  color: AppColors.textTertiary,
-                  size: 18,
-                ),
-              ],
+                ],
+              ),
+            ),
+            Icon(
+              CupertinoIcons.chevron_right,
+              color: AppColors.textTertiary,
+              size: 18,
             ),
           ],
         ),

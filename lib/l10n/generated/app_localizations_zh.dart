@@ -140,6 +140,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emptyTree => '种下第一颗种子，点击 + 开始对话';
 
   @override
+  String get collapseAll => '全部折叠';
+
+  @override
+  String get expandAll => '全部展开';
+
+  @override
+  String get refresh => '刷新';
+
+  @override
   String get newSession => '新建会话';
 
   @override
@@ -766,6 +775,21 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get saveToNote => '存为笔记';
+
+  @override
+  String get generateTitle => '生成标题';
+
+  @override
+  String get generatingTitle => '正在生成标题…';
+
+  @override
+  String get moveNote => '转移';
+
+  @override
+  String get noteMoved => '已转移';
+
+  @override
   String get searchTabLabel => '搜索';
 
   @override
@@ -1005,4 +1029,64 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keywordScorePromptEntrySubtitle => '自定义关键词排行榜分数逻辑';
+
+  @override
+  String get userInputSummaryTitle => '输入总结';
+
+  @override
+  String get userInputSummarySubtitle => '回顾你最近的输入脉络';
+
+  @override
+  String get userInputSummaryScanning => '正在扫描对话记录…';
+
+  @override
+  String get userInputSummaryAnalyzing => '正在分析你的输入…';
+
+  @override
+  String userInputSummaryFoundInputs(int count) {
+    return '找到 $count 条输入';
+  }
+
+  @override
+  String get userInputSummaryError => '分析失败';
+
+  @override
+  String userInputSummaryEmpty(int days) {
+    return '近 $days 天内暂无输入记录';
+  }
+
+  @override
+  String get userInputSummaryGenerate => '生成报告';
+
+  @override
+  String userInputSummaryReportInfo(int days, int count) {
+    return '近 $days 天 · 共 $count 条输入';
+  }
+
+  @override
+  String get userInputSummaryCopy => '复制全部';
+
+  @override
+  String get userInputSummaryRefresh => '重新生成';
+
+  @override
+  String get thinkingCollisionTitle => '思维碰撞';
+
+  @override
+  String get thinkingCollisionSubtitle => '跨主题知识的意外连接';
+
+  @override
+  String get labComingSoon => '即将上线，敬请期待';
+
+  @override
+  String get thinkingCollisionHint => '点击碰撞对，发现知识间的隐藏联系';
+
+  @override
+  String get thinkingCollisionLoading => '正在读取关键词…';
+
+  @override
+  String get thinkingCollisionExpanding => '正在探索思维连接…';
+
+  @override
+  String get thinkingCollisionNoKeywords => '暂无关键词，请先在关键词排行榜中分析';
 }

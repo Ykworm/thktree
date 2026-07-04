@@ -175,6 +175,18 @@
   "@emptyTree": {
     "description": "Empty state for tree screen"
   },
+  "collapseAll": "Collapse All",
+  "@collapseAll": {
+    "description": "Menu item to collapse all tree nodes"
+  },
+  "expandAll": "Expand All",
+  "@expandAll": {
+    "description": "Menu item to expand all tree nodes"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Menu item to refresh data"
+  },
   "newSession": "New Session",
   "@newSession": {
     "description": "Dialog title for creating a new session"
@@ -1042,6 +1054,26 @@
       }
     }
   },
+  "saveToNote": "Save to Note",
+  "@saveToNote": {
+    "description": "Button label to save chat message as a note"
+  },
+  "generateTitle": "Generate Title",
+  "@generateTitle": {
+    "description": "Button label to generate a note title using LLM"
+  },
+  "generatingTitle": "Generating title…",
+  "@generatingTitle": {
+    "description": "Loading indicator text while LLM generates a note title"
+  },
+  "moveNote": "Move",
+  "@moveNote": {
+    "description": "Button label to move a note to another theme"
+  },
+  "noteMoved": "Moved",
+  "@noteMoved": {
+    "description": "Confirmation text after a note has been moved"
+  },
   "searchTabLabel": "Search",
   "@searchTabLabel": {
     "description": "Bottom navigation bar search label"
@@ -1370,5 +1402,95 @@
   "keywordScorePromptEntrySubtitle": "Customize keyword ranking score logic",
   "@keywordScorePromptEntrySubtitle": {
     "description": "Settings entry subtitle for the keyword score prompt screen"
+  },
+  "userInputSummaryTitle": "Input Summary",
+  "@userInputSummaryTitle": {
+    "description": "Title of the user input summary sub-screen in the Lab tab"
+  },
+  "userInputSummarySubtitle": "Review your recent input patterns",
+  "@userInputSummarySubtitle": {
+    "description": "Subtitle shown on the user input summary entry card in the Lab tab"
+  },
+  "userInputSummaryScanning": "Scanning conversations…",
+  "@userInputSummaryScanning": {
+    "description": "Loading text while scanning session.md files"
+  },
+  "userInputSummaryAnalyzing": "Analyzing your inputs…",
+  "@userInputSummaryAnalyzing": {
+    "description": "Loading text while LLM is generating the summary report"
+  },
+  "userInputSummaryFoundInputs": "{count} inputs found",
+  "@userInputSummaryFoundInputs": {
+    "description": "Shows the number of user inputs found during scanning",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userInputSummaryError": "Analysis failed",
+  "@userInputSummaryError": {
+    "description": "Error title when the summary generation fails"
+  },
+  "userInputSummaryEmpty": "No input records found in the last {days} days",
+  "@userInputSummaryEmpty": {
+    "description": "Empty state text when no user inputs are found",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "userInputSummaryGenerate": "Generate Report",
+  "@userInputSummaryGenerate": {
+    "description": "Button text to start generating the summary report"
+  },
+  "userInputSummaryReportInfo": "Last {days} days · {count} inputs",
+  "@userInputSummaryReportInfo": {
+    "description": "Report header showing the time range and total input count",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userInputSummaryCopy": "Copy All",
+  "@userInputSummaryCopy": {
+    "description": "Button text to copy the entire report to clipboard"
+  },
+  "userInputSummaryRefresh": "Regenerate",
+  "@userInputSummaryRefresh": {
+    "description": "Button text to regenerate the summary report"
+  },
+  "thinkingCollisionTitle": "Thinking Collision",
+  "@thinkingCollisionTitle": {
+    "description": "Title of the thinking collision sub-screen in the Lab tab"
+  },
+  "thinkingCollisionSubtitle": "Unexpected connections across themes",
+  "@thinkingCollisionSubtitle": {
+    "description": "Subtitle shown on the thinking collision entry card in the Lab tab"
+  },
+  "labComingSoon": "Coming soon. Stay tuned!",
+  "@labComingSoon": {
+    "description": "Generic coming soon message for Lab features"
+  },
+  "thinkingCollisionHint": "Tap a pair to discover hidden connections",
+  "@thinkingCollisionHint": {
+    "description": "Hint text shown above the collision pairs list"
+  },
+  "thinkingCollisionLoading": "Loading keywords…",
+  "@thinkingCollisionLoading": {
+    "description": "Loading text while reading cross-theme keywords"
+  },
+  "thinkingCollisionExpanding": "Exploring connections…",
+  "@thinkingCollisionExpanding": {
+    "description": "Loading text while LLM generates the thinking connection report"
+  },
+  "thinkingCollisionNoKeywords": "No keywords yet. Run keyword analysis first!",
+  "@thinkingCollisionNoKeywords": {
+    "description": "Empty state when no keywords exist at all"
   }
 }

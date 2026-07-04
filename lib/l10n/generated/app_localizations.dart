@@ -344,6 +344,24 @@ abstract class AppLocalizations {
   /// **'Plant the first seed — tap + to start'**
   String get emptyTree;
 
+  /// Menu item to collapse all tree nodes
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse All'**
+  String get collapseAll;
+
+  /// Menu item to expand all tree nodes
+  ///
+  /// In en, this message translates to:
+  /// **'Expand All'**
+  String get expandAll;
+
+  /// Menu item to refresh data
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
   /// Dialog title for creating a new session
   ///
   /// In en, this message translates to:
@@ -1496,6 +1514,36 @@ abstract class AppLocalizations {
   /// **'Delete \"{title}\"?'**
   String deleteNoteConfirmTitle(String title);
 
+  /// Button label to save chat message as a note
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Note'**
+  String get saveToNote;
+
+  /// Button label to generate a note title using LLM
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Title'**
+  String get generateTitle;
+
+  /// Loading indicator text while LLM generates a note title
+  ///
+  /// In en, this message translates to:
+  /// **'Generating title…'**
+  String get generatingTitle;
+
+  /// Button label to move a note to another theme
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get moveNote;
+
+  /// Confirmation text after a note has been moved
+  ///
+  /// In en, this message translates to:
+  /// **'Moved'**
+  String get noteMoved;
+
   /// Bottom navigation bar search label
   ///
   /// In en, this message translates to:
@@ -1951,6 +1999,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Customize keyword ranking score logic'**
   String get keywordScorePromptEntrySubtitle;
+
+  /// Title of the user input summary sub-screen in the Lab tab
+  ///
+  /// In en, this message translates to:
+  /// **'Input Summary'**
+  String get userInputSummaryTitle;
+
+  /// Subtitle shown on the user input summary entry card in the Lab tab
+  ///
+  /// In en, this message translates to:
+  /// **'Review your recent input patterns'**
+  String get userInputSummarySubtitle;
+
+  /// Loading text while scanning session.md files
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning conversations…'**
+  String get userInputSummaryScanning;
+
+  /// Loading text while LLM is generating the summary report
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing your inputs…'**
+  String get userInputSummaryAnalyzing;
+
+  /// Shows the number of user inputs found during scanning
+  ///
+  /// In en, this message translates to:
+  /// **'{count} inputs found'**
+  String userInputSummaryFoundInputs(int count);
+
+  /// Error title when the summary generation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis failed'**
+  String get userInputSummaryError;
+
+  /// Empty state text when no user inputs are found
+  ///
+  /// In en, this message translates to:
+  /// **'No input records found in the last {days} days'**
+  String userInputSummaryEmpty(int days);
+
+  /// Button text to start generating the summary report
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Report'**
+  String get userInputSummaryGenerate;
+
+  /// Report header showing the time range and total input count
+  ///
+  /// In en, this message translates to:
+  /// **'Last {days} days · {count} inputs'**
+  String userInputSummaryReportInfo(int days, int count);
+
+  /// Button text to copy the entire report to clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copy All'**
+  String get userInputSummaryCopy;
+
+  /// Button text to regenerate the summary report
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get userInputSummaryRefresh;
+
+  /// Title of the thinking collision sub-screen in the Lab tab
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking Collision'**
+  String get thinkingCollisionTitle;
+
+  /// Subtitle shown on the thinking collision entry card in the Lab tab
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected connections across themes'**
+  String get thinkingCollisionSubtitle;
+
+  /// Generic coming soon message for Lab features
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon. Stay tuned!'**
+  String get labComingSoon;
+
+  /// Hint text shown above the collision pairs list
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a pair to discover hidden connections'**
+  String get thinkingCollisionHint;
+
+  /// Loading text while reading cross-theme keywords
+  ///
+  /// In en, this message translates to:
+  /// **'Loading keywords…'**
+  String get thinkingCollisionLoading;
+
+  /// Loading text while LLM generates the thinking connection report
+  ///
+  /// In en, this message translates to:
+  /// **'Exploring connections…'**
+  String get thinkingCollisionExpanding;
+
+  /// Empty state when no keywords exist at all
+  ///
+  /// In en, this message translates to:
+  /// **'No keywords yet. Run keyword analysis first!'**
+  String get thinkingCollisionNoKeywords;
 }
 
 class _AppLocalizationsDelegate

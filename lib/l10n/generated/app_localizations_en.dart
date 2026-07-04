@@ -141,6 +141,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyTree => 'Plant the first seed — tap + to start';
 
   @override
+  String get collapseAll => 'Collapse All';
+
+  @override
+  String get expandAll => 'Expand All';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
   String get newSession => 'New Session';
 
   @override
@@ -808,6 +817,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get saveToNote => 'Save to Note';
+
+  @override
+  String get generateTitle => 'Generate Title';
+
+  @override
+  String get generatingTitle => 'Generating title…';
+
+  @override
+  String get moveNote => 'Move';
+
+  @override
+  String get noteMoved => 'Moved';
+
+  @override
   String get searchTabLabel => 'Search';
 
   @override
@@ -1055,4 +1079,67 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get keywordScorePromptEntrySubtitle =>
       'Customize keyword ranking score logic';
+
+  @override
+  String get userInputSummaryTitle => 'Input Summary';
+
+  @override
+  String get userInputSummarySubtitle => 'Review your recent input patterns';
+
+  @override
+  String get userInputSummaryScanning => 'Scanning conversations…';
+
+  @override
+  String get userInputSummaryAnalyzing => 'Analyzing your inputs…';
+
+  @override
+  String userInputSummaryFoundInputs(int count) {
+    return '$count inputs found';
+  }
+
+  @override
+  String get userInputSummaryError => 'Analysis failed';
+
+  @override
+  String userInputSummaryEmpty(int days) {
+    return 'No input records found in the last $days days';
+  }
+
+  @override
+  String get userInputSummaryGenerate => 'Generate Report';
+
+  @override
+  String userInputSummaryReportInfo(int days, int count) {
+    return 'Last $days days · $count inputs';
+  }
+
+  @override
+  String get userInputSummaryCopy => 'Copy All';
+
+  @override
+  String get userInputSummaryRefresh => 'Regenerate';
+
+  @override
+  String get thinkingCollisionTitle => 'Thinking Collision';
+
+  @override
+  String get thinkingCollisionSubtitle =>
+      'Unexpected connections across themes';
+
+  @override
+  String get labComingSoon => 'Coming soon. Stay tuned!';
+
+  @override
+  String get thinkingCollisionHint =>
+      'Tap a pair to discover hidden connections';
+
+  @override
+  String get thinkingCollisionLoading => 'Loading keywords…';
+
+  @override
+  String get thinkingCollisionExpanding => 'Exploring connections…';
+
+  @override
+  String get thinkingCollisionNoKeywords =>
+      'No keywords yet. Run keyword analysis first!';
 }

@@ -62,6 +62,11 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
     await nodeStore.syncFromDisk(themePath: themePath);
   }
 
+  // 确保"未分类"主题始终存在
+  if (!themes.any((t) => t.title == '未分类')) {
+    await themeStore.createTheme(title: '未分类');
+  }
+
   return db;
 });
 

@@ -67,6 +67,9 @@
   "dataRoot": "数据根目录",
   "treeTitle": "{title} · 树",
   "emptyTree": "种下第一颗种子，点击 + 开始对话",
+  "collapseAll": "全部折叠",
+  "expandAll": "全部展开",
+  "refresh": "刷新",
   "newSession": "新建会话",
   "newBranch": "新建分支",
   "deleteItem": "删除项目",
@@ -412,6 +415,11 @@
       }
     }
   },
+  "saveToNote": "存为笔记",
+  "generateTitle": "生成标题",
+  "generatingTitle": "正在生成标题…",
+  "moveNote": "转移",
+  "noteMoved": "已转移",
   "searchTabLabel": "搜索",
   "@searchTabLabel": {
     "description": "底部导航栏搜索标签"
@@ -626,5 +634,47 @@
   "keywordScorePromptSaveSuccess": "Score prompt 已保存",
   "keywordScorePromptSaveFailed": "保存失败",
   "keywordScorePromptEntry": "关键词 Score Prompt",
-  "keywordScorePromptEntrySubtitle": "自定义关键词排行榜分数逻辑"
+  "keywordScorePromptEntrySubtitle": "自定义关键词排行榜分数逻辑",
+  "userInputSummaryTitle": "输入总结",
+  "userInputSummarySubtitle": "回顾你最近的输入脉络",
+  "userInputSummaryScanning": "正在扫描对话记录…",
+  "userInputSummaryAnalyzing": "正在分析你的输入…",
+  "userInputSummaryFoundInputs": "找到 {count} 条输入",
+  "@userInputSummaryFoundInputs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userInputSummaryError": "分析失败",
+  "userInputSummaryEmpty": "近 {days} 天内暂无输入记录",
+  "@userInputSummaryEmpty": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "userInputSummaryGenerate": "生成报告",
+  "userInputSummaryReportInfo": "近 {days} 天 · 共 {count} 条输入",
+  "@userInputSummaryReportInfo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userInputSummaryCopy": "复制全部",
+  "userInputSummaryRefresh": "重新生成",
+  "thinkingCollisionTitle": "思维碰撞",
+  "thinkingCollisionSubtitle": "跨主题知识的意外连接",
+  "labComingSoon": "即将上线，敬请期待",
+  "thinkingCollisionHint": "点击碰撞对，发现知识间的隐藏联系",
+  "thinkingCollisionLoading": "正在读取关键词…",
+  "thinkingCollisionExpanding": "正在探索思维连接…",
+  "thinkingCollisionNoKeywords": "暂无关键词，请先在关键词排行榜中分析"
 }

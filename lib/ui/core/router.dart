@@ -15,6 +15,8 @@ import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_ranking_screen.
 import 'package:thk_tree/ui/features/lab/keyword_ranking/theme_selection_screen.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/leaf_selection_screen.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_detail_screen.dart';
+import 'package:thk_tree/ui/features/lab/thinking_collision/thinking_collision_screen.dart';
+import 'package:thk_tree/ui/features/lab/user_input_summary/user_input_summary_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_screen.dart';
 import 'package:thk_tree/ui/features/settings/keyword_score_prompt_screen.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
@@ -144,6 +146,18 @@ final appRouter = GoRouter(
                   child: KeywordDetailScreen(keyword: keyword),
                 );
               },
+            ),
+            GoRoute(
+              path: '/lab/user-input-summary',
+              pageBuilder: (context, state) => CupertinoPage(
+                child: const UserInputSummaryScreen(),
+              ),
+            ),
+            GoRoute(
+              path: '/lab/thinking-collision',
+              pageBuilder: (context, state) => CupertinoPage(
+                child: const ThinkingCollisionScreen(),
+              ),
             ),
           ],
         ),
