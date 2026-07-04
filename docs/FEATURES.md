@@ -95,7 +95,7 @@ KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实�
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| Lab tab 入口 | lab | ✅ 完成 | 2026-06-29 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/lab_placeholder_screen.dart` + `lib/ui/core/router.dart` | tab bar 4→5（搜索/主题/笔记/**Lab**/设置）+ `LabPlaceholderScreen` 占位页（白底 `AppColors.surface` 兜底 + 顶部 hint + 下方 `assets/background/lab_bg_32pt.png` 装饰图）+ `AppIcons.lab`（sf_flask）+ 中英 l10n（统一 "Lab"）；当前为占位实现，子功能候选见 [brainstorm 草稿](_tmp/2026-06-24-lab-tab-brainstorm.md)，详见 [CHANGELOG](CHANGELOG/2026-06-29-lab-tab-white-bg.md) |
+| Lab tab 入口 | lab | ✅ 完成 | 2026-07-04 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/lab_placeholder_screen.dart` + `lib/ui/core/router.dart` | tab bar 4→5（搜索/主题/笔记/**Lab**/设置）+ `LabPlaceholderScreen` 功能块卡片布局（`_FeatureCard` 组件）+ `lab_bg_with_title.png` 覆盖灵动岛 + 状态栏深色背景（`#0F1035`）+ 支持滚动 + `AppIcons.lab`（sf_flask）+ 中英 l10n（统一 "Lab"）；子功能候选见 [brainstorm 草稿](_tmp/2026-06-24-lab-tab-brainstorm.md)，详见 commit `31b201d` |
 
 ---
 
