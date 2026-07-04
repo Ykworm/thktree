@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -18,7 +19,12 @@ class ThemeStore {
   static const _kUncategorized = '未分类';
 
   Future<List<ThemeEntity>> listThemes() async {
+    log('ThemeStore.listThemes: querying database');
     final rows = await db.query('themes', orderBy: 'pinned DESC, updatedAt DESC');
+    log('ThemeStore.listThemes: found ${rows.length} rows');
+    for (final row in rows) {
+      log('ThemeStore.listThemes: row: themeId=${row['themeId']}, title=${row['title']}');
+    }
     return rows
         .map(
           (row) => ThemeEntity(
@@ -199,10 +205,14 @@ class ThemeStore {
   /// Only scans directory names and reads meta.json (lightweight I/O).
   /// No full reindex, no DELETE ALL + re-INSERT.
   Future<void> syncFromDisk() async {
+    log('ThemeStore.syncFromDisk: starting sync');
+
     // 1. Scan disk for theme directories
     await paths.ensureCreated();
     final diskThemes = <String, ThemeMetaV1>{};
     final themeDirs = await paths.themesDir.list(followLinks: false).toList();
+    log('ThemeStore.syncFromDisk: found ${themeDirs.length} theme directories');
+
     for (final entity in themeDirs) {
       if (entity is! Directory) continue;
       final metaPath = p.join(entity.path, 'theme.meta.json');
@@ -210,7 +220,9 @@ class ThemeStore {
       try {
         final meta = await _readThemeMeta(metaPath);
         diskThemes[meta.themeId] = meta;
-      } catch (_) {
+        log('ThemeStore.syncFromDisk: found disk theme: ${meta.themeId} - ${meta.title}');
+      } catch (e) {
+        log('ThemeStore.syncFromDisk: skipping malformed meta: $e');
         // skip malformed meta
       }
     }
@@ -218,6 +230,7 @@ class ThemeStore {
     // 2. Query DB for existing themeIds
     final dbRows = await db.query('themes', columns: ['themeId']);
     final dbIds = dbRows.map((r) => r['themeId'] as String).toSet();
+    log('ThemeStore.syncFromDisk: found ${dbIds.length} themes in DB');
 
     // 3. disk has, DB doesn't → INSERT
     for (final entry in diskThemes.entries) {
@@ -235,6 +248,7 @@ class ThemeStore {
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        log('ThemeStore.syncFromDisk: inserted theme from disk: ${meta.themeId}');
       }
     }
 
@@ -242,8 +256,11 @@ class ThemeStore {
     for (final id in dbIds) {
       if (!diskThemes.containsKey(id)) {
         await db.delete('themes', where: 'themeId = ?', whereArgs: [id]);
+        log('ThemeStore.syncFromDisk: deleted theme from DB: $id');
       }
     }
+
+    log('ThemeStore.syncFromDisk: sync completed');
   }
 }
 

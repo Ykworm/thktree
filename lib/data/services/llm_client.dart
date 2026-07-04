@@ -1,10 +1,28 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
+
+/// 多模态消息内容部分
+class ContentPart {
+  const ContentPart.text(this.text)
+      : type = 'text',
+        imageData = null,
+        mimeType = null;
+
+  const ContentPart.image(this.imageData, {this.mimeType = 'image/jpeg'})
+      : type = 'image',
+        text = null;
+
+  final String type; // 'text' | 'image'
+  final String? text;
+  final Uint8List? imageData;
+  final String? mimeType;
+}
 
 abstract class LlmClient {
   const LlmClient();
@@ -16,6 +34,31 @@ abstract class LlmClient {
     CancelToken? cancelToken,
     bool webSearch = false,
   });
+
+  /// 构建多模态消息内容（支持文本+图片）
+  ///
+  /// 子类可覆盖此方法以适配不同 API 格式。
+  /// 默认实现：OpenAI 兼容格式（content 为数组）。
+  Object buildMultimodalContent({
+    required String text,
+    Uint8List? imageData,
+    String? imageMimeType,
+  }) {
+    if (imageData == null) {
+      return text;
+    }
+
+    final base64Image = base64Encode(imageData);
+    final mimeType = imageMimeType ?? 'image/jpeg';
+
+    return [
+      {'type': 'text', 'text': text},
+      {
+        'type': 'image_url',
+        'image_url': {'url': 'data:$mimeType;base64,$base64Image'},
+      },
+    ];
+  }
 
   /// 根据 LlmProviderConfig 创建客户端实例。
   ///
@@ -348,6 +391,33 @@ class ClaudeClient extends LlmClient {
   /// 带自定义 baseUrl 的构造函数
   const ClaudeClient.withBaseUrl(this.baseUrl);
 
+  /// Claude 多模态消息格式
+  @override
+  Object buildMultimodalContent({
+    required String text,
+    Uint8List? imageData,
+    String? imageMimeType,
+  }) {
+    if (imageData == null) {
+      return text;
+    }
+
+    final base64Image = base64Encode(imageData);
+    final mimeType = imageMimeType ?? 'image/jpeg';
+
+    return [
+      {
+        'type': 'image',
+        'source': {
+          'type': 'base64',
+          'media_type': mimeType,
+          'data': base64Image,
+        },
+      },
+      {'type': 'text', 'text': text},
+    ];
+  }
+
   @override
   Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
@@ -372,7 +442,21 @@ class ClaudeClient extends LlmClient {
       if (role == 'system') {
         systemMessages.add(msg);
       } else {
-        userAssistantMessages.add(msg);
+        // 处理多模态消息（content 为数组）
+        final content = msg['content'];
+        if (content is List) {
+          // 已经是多模态格式，直接使用
+          userAssistantMessages.add(msg);
+        } else {
+          // 纯文本消息，转换为 Claude 的 content 数组格式
+          final text = content as String? ?? '';
+          userAssistantMessages.add({
+            'role': role,
+            'content': [
+              {'type': 'text', 'text': text},
+            ],
+          });
+        }
       }
     }
 
@@ -466,6 +550,33 @@ class GeminiClient extends LlmClient {
   /// 带自定义 baseUrl 的构造函数
   const GeminiClient.withBaseUrl(this.baseUrl);
 
+  /// Gemini 多模态消息格式（返回 parts 数组）
+  @override
+  Object buildMultimodalContent({
+    required String text,
+    Uint8List? imageData,
+    String? imageMimeType,
+  }) {
+    if (imageData == null) {
+      return [
+        {'text': text},
+      ];
+    }
+
+    final base64Image = base64Encode(imageData);
+    final mimeType = imageMimeType ?? 'image/jpeg';
+
+    return [
+      {'text': text},
+      {
+        'inlineData': {
+          'mimeType': mimeType,
+          'data': base64Image,
+        },
+      },
+    ];
+  }
+
   @override
   Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
@@ -479,14 +590,54 @@ class GeminiClient extends LlmClient {
     final contents = <Map<String, Object?>>[];
     for (final msg in messages) {
       final role = msg['role'] as String?;
-      final content = msg['content'] as String? ?? '';
+      final content = msg['content'];
       final geminiRole = role == 'assistant' ? 'model' : 'user';
-      contents.add({
-        'role': geminiRole,
-        'parts': [
-          {'text': content},
-        ],
-      });
+
+      // 处理多模态消息（content 为数组）
+      if (content is List) {
+        final parts = <Map<String, Object?>>[];
+        for (final part in content) {
+          if (part is Map) {
+            final type = part['type'] as String?;
+            if (type == 'text') {
+              parts.add({'text': part['text'] as String? ?? ''});
+            } else if (type == 'image_url') {
+              final imageUrl = part['image_url'] as Map<String, Object?>?;
+              final url = imageUrl?['url'] as String?;
+              if (url != null && url.startsWith('data:')) {
+                // 解析 data URI: data:image/jpeg;base64,...
+                final commaIndex = url.indexOf(',');
+                if (commaIndex > 0) {
+                  final header = url.substring(0, commaIndex);
+                  final base64Data = url.substring(commaIndex + 1);
+                  final mimeType = header.split(';')[0].replaceFirst('data:', '');
+                  parts.add({
+                    'inlineData': {
+                      'mimeType': mimeType,
+                      'data': base64Data,
+                    },
+                  });
+                }
+              }
+            }
+          }
+        }
+        if (parts.isNotEmpty) {
+          contents.add({
+            'role': geminiRole,
+            'parts': parts,
+          });
+        }
+      } else {
+        // 纯文本消息
+        final text = content as String? ?? '';
+        contents.add({
+          'role': geminiRole,
+          'parts': [
+            {'text': text},
+          ],
+        });
+      }
     }
 
     final response = await dio.post<ResponseBody>(

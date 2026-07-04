@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -17,12 +19,17 @@ class ChatComposer extends StatefulWidget {
     this.webSearchEnabled = false,
     this.webSearchSupported = false,
     this.onWebSearchToggle,
+    this.onImagePick,
+    this.imageSupported = false,
+    this.selectedImageData,
+    this.selectedImageMimeType,
+    this.onImageRemove,
   });
 
   final String hintText;
   final bool isStreaming;
   final bool enabled;
-  final Future<void> Function(String text) onSend;
+  final Future<void> Function(String text, {Uint8List? imageData, String? imageMimeType}) onSend;
   final Future<void> Function() onStopStreaming;
 
   /// 点击模型选择按钮的回调（可选，向后兼容）
@@ -36,6 +43,21 @@ class ChatComposer extends StatefulWidget {
 
   /// 联网搜索开关回调（null 表示不显示按钮）
   final VoidCallback? onWebSearchToggle;
+
+  /// 图片选择回调（null 表示不显示按钮）
+  final VoidCallback? onImagePick;
+
+  /// 当前模型是否支持图片
+  final bool imageSupported;
+
+  /// 已选图片数据
+  final Uint8List? selectedImageData;
+
+  /// 已选图片 MIME 类型
+  final String? selectedImageMimeType;
+
+  /// 移除已选图片回调
+  final VoidCallback? onImageRemove;
 
   @override
   State<ChatComposer> createState() => _ChatComposerState();
@@ -69,120 +91,142 @@ class _ChatComposerState extends State<ChatComposer> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 图片预览条（在输入框上方）
+          if (widget.selectedImageData != null) ...[
+            _ImagePreview(
+              imageData: widget.selectedImageData!,
+              onRemove: widget.onImageRemove!,
+            ),
+            const SizedBox(height: 4),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: Focus(
-              onKeyEvent: (node, event) {
-                if (!widget.enabled) return KeyEventResult.ignored;
-                if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                if (event.logicalKey != LogicalKeyboardKey.enter &&
-                    event.logicalKey != LogicalKeyboardKey.numpadEnter) {
-                  return KeyEventResult.ignored;
-                }
-                final composing = _controller.value.composing;
-                if (composing.isValid && !composing.isCollapsed) {
-                  return KeyEventResult.ignored;
-                }
-                if (HardwareKeyboard.instance.isShiftPressed ||
-                    HardwareKeyboard.instance.isControlPressed) {
-                  _insertNewline();
-                  return KeyEventResult.handled;
-                }
-                _send();
-                return KeyEventResult.handled;
-              },
-              child: CupertinoTextField(
-                key: const ValueKey('chat_input'),
-                controller: _controller,
-                focusNode: _inputFocusNode,
-                enabled: widget.enabled,
-                autofocus: true,
-                minLines: 1,
-                maxLines: 6,
-                keyboardType: TextInputType.multiline,
-                autocorrect: false,
-                enableSuggestions: false,
-                enableInteractiveSelection: true,
-                textCapitalization: TextCapitalization.none,
-                smartDashesType: SmartDashesType.disabled,
-                smartQuotesType: SmartQuotesType.disabled,
-                placeholder: widget.hintText,
+            children: [
+              Expanded(
+                child: Focus(
+                  onKeyEvent: (node, event) {
+                    if (!widget.enabled) return KeyEventResult.ignored;
+                    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                    if (event.logicalKey != LogicalKeyboardKey.enter &&
+                        event.logicalKey != LogicalKeyboardKey.numpadEnter) {
+                      return KeyEventResult.ignored;
+                    }
+                    final composing = _controller.value.composing;
+                    if (composing.isValid && !composing.isCollapsed) {
+                      return KeyEventResult.ignored;
+                    }
+                    if (HardwareKeyboard.instance.isShiftPressed ||
+                        HardwareKeyboard.instance.isControlPressed) {
+                      _insertNewline();
+                      return KeyEventResult.handled;
+                    }
+                    _send();
+                    return KeyEventResult.handled;
+                  },
+                  child: CupertinoTextField(
+                    key: const ValueKey('chat_input'),
+                    controller: _controller,
+                    focusNode: _inputFocusNode,
+                    enabled: widget.enabled,
+                    autofocus: true,
+                    minLines: 1,
+                    maxLines: 6,
+                    keyboardType: TextInputType.multiline,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    enableInteractiveSelection: true,
+                    textCapitalization: TextCapitalization.none,
+                    smartDashesType: SmartDashesType.disabled,
+                    smartQuotesType: SmartQuotesType.disabled,
+                    placeholder: widget.hintText,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    onSubmitted: (_) {
+                      final composing = _controller.value.composing;
+                      if (composing.isValid && !composing.isCollapsed) return;
+                      if (HardwareKeyboard.instance.isShiftPressed ||
+                          HardwareKeyboard.instance.isControlPressed) {
+                        return;
+                      }
+                      _send();
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                onSubmitted: (_) {
-                  final composing = _controller.value.composing;
-                  if (composing.isValid && !composing.isCollapsed) return;
-                  if (HardwareKeyboard.instance.isShiftPressed ||
-                      HardwareKeyboard.instance.isControlPressed) {
-                    return;
-                  }
-                  _send();
-                },
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: CupertinoButton(
-              key: ValueKey(widget.isStreaming ? 'stop_button' : 'send_button'),
-              padding: const EdgeInsets.all(8),
-              onPressed: widget.enabled
-                  ? widget.isStreaming
-                      ? _stopStreaming
-                      : _send
-                  : null,
-              child: Icon(
-                widget.isStreaming ? AppIcons.stop : AppIcons.send,
-                size: 20,
-                color: widget.enabled
-                    ? AppColors.accent
-                    : AppColors.textTertiary,
-              ),
-            ),
-          ),
-          if (widget.onModelSelectorTap != null) ...[
-            const SizedBox(width: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: CupertinoButton(
-                padding: const EdgeInsets.all(8),
-                onPressed:
-                    widget.isStreaming ? null : widget.onModelSelectorTap,
-                child: Icon(
-                  AppIcons.sparkles,
-                  size: 20,
-                  color: widget.isStreaming
-                      ? AppColors.textTertiary
-                      : AppColors.textSecondary,
+                child: CupertinoButton(
+                  key: ValueKey(widget.isStreaming ? 'stop_button' : 'send_button'),
+                  padding: const EdgeInsets.all(8),
+                  onPressed: widget.enabled
+                      ? widget.isStreaming
+                          ? _stopStreaming
+                          : _send
+                      : null,
+                  child: Icon(
+                    widget.isStreaming ? AppIcons.stop : AppIcons.send,
+                    size: 20,
+                    color: widget.enabled
+                        ? AppColors.accent
+                        : AppColors.textTertiary,
+                  ),
                 ),
               ),
+              if (widget.onModelSelectorTap != null) ...[
+                const SizedBox(width: 4),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.all(8),
+                    onPressed:
+                        widget.isStreaming ? null : widget.onModelSelectorTap,
+                    child: Icon(
+                      AppIcons.sparkles,
+                      size: 20,
+                      color: widget.isStreaming
+                          ? AppColors.textTertiary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          // 联网搜索和图片按钮（输入框下方）
+          if (widget.onWebSearchToggle != null || widget.onImagePick != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                if (widget.onWebSearchToggle != null) ...[
+                  _WebSearchToggle(
+                    enabled: widget.webSearchEnabled,
+                    supported: widget.webSearchSupported,
+                    isStreaming: widget.isStreaming,
+                    onToggle: widget.onWebSearchToggle!,
+                  ),
+                ],
+                if (widget.onImagePick != null) ...[
+                  if (widget.onWebSearchToggle != null) const SizedBox(width: 8),
+                  _ImageButton(
+                    supported: widget.imageSupported,
+                    isStreaming: widget.isStreaming,
+                    onPick: widget.onImagePick!,
+                  ),
+                ],
+              ],
             ),
           ],
-        ],
-      ),
-      // 联网搜索开关（输入框下方）
-      if (widget.onWebSearchToggle != null) ...[
-        const SizedBox(height: 4),
-        _WebSearchToggle(
-          enabled: widget.webSearchEnabled,
-          supported: widget.webSearchSupported,
-          isStreaming: widget.isStreaming,
-          onToggle: widget.onWebSearchToggle!,
-        ),
-      ],
         ],
       ),
     );
@@ -190,10 +234,15 @@ class _ChatComposerState extends State<ChatComposer> {
 
   Future<void> _send() async {
     final text = _controller.text;
-    if (text.trim().isEmpty) return;
+    // 允许只发图片不发文本
+    if (text.trim().isEmpty && widget.selectedImageData == null) return;
     _controller.clear();
     try {
-      await widget.onSend(text);
+      await widget.onSend(
+        text,
+        imageData: widget.selectedImageData,
+        imageMimeType: widget.selectedImageMimeType,
+      );
       if (mounted) {
         _inputFocusNode.requestFocus();
       }
@@ -286,6 +335,107 @@ class _WebSearchToggle extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 图片预览条（输入框上方）
+class _ImagePreview extends StatelessWidget {
+  const _ImagePreview({
+    required this.imageData,
+    required this.onRemove,
+  });
+
+  final Uint8List imageData;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 80,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              imageData,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '图片已选择',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: onRemove,
+            child: Icon(
+              AppIcons.close,
+              size: 20,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 图片按钮（联网搜索旁边）
+class _ImageButton extends StatelessWidget {
+  const _ImageButton({
+    required this.supported,
+    required this.isStreaming,
+    required this.onPick,
+  });
+
+  final bool supported;
+  final bool isStreaming;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = supported
+        ? AppColors.accent
+        : AppColors.textTertiary.withValues(alpha: 0.5);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: CupertinoButton(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        minSize: 0,
+        onPressed: supported && !isStreaming ? onPick : null,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.image,
+              size: 14,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              supported ? '添加图片' : '不支持图片',
+              style: TextStyle(fontSize: 12, color: color),
+            ),
+          ],
         ),
       ),
     );

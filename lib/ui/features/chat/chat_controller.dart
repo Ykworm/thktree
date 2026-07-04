@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as dev;
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -204,8 +205,9 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       // 只修正返回值，不写磁盘，避免与其他读操作竞争
       final hasStreaming = doc.messages.any((m) => m.status == SessionMessageStatus.streaming);
       final hasActiveTask = ref.read(chatTaskServiceProvider).containsKey(nodeId);
+      List<SessionMessage> diskMessages;
       if (hasStreaming && !hasActiveTask) {
-        return doc.messages.map((m) {
+        diskMessages = doc.messages.map((m) {
           if (m.status == SessionMessageStatus.streaming) {
             return SessionMessage(
               role: m.role,
@@ -218,9 +220,12 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           }
           return m;
         }).toList();
+      } else {
+        diskMessages = doc.messages;
       }
 
-      return doc.messages;
+      // 合并 in-memory state 中的图片数据（磁盘不存储二进制图片）
+      return _mergeImageData(diskMessages, state.value);
     } catch (e, st) {
       try {
         final logger = await ref.read(appLoggerProvider.future);
@@ -228,6 +233,37 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       } catch (_) {}
       return state.value ?? [];
     }
+  }
+
+  /// 将 in-memory 消息中的 imageData/imageMimeType 合并到磁盘消息中。
+  /// 按 msgId + role 匹配，只补全磁盘缺失的图片字段。
+  List<SessionMessage> _mergeImageData(
+    List<SessionMessage> diskMessages,
+    List<SessionMessage>? memoryMessages,
+  ) {
+    if (memoryMessages == null || memoryMessages.isEmpty) return diskMessages;
+    final memoryMap = {
+      for (final m in memoryMessages)
+        if (m.imageData != null) '${m.msgId}_${m.role.index}': m,
+    };
+    if (memoryMap.isEmpty) return diskMessages;
+    return diskMessages.map((m) {
+      final key = '${m.msgId}_${m.role.index}';
+      final mem = memoryMap[key];
+      if (mem != null && m.imageData == null) {
+        return SessionMessage(
+          role: m.role,
+          timestampUtcIso8601: m.timestampUtcIso8601,
+          msgId: m.msgId,
+          body: m.body,
+          status: m.status,
+          reasoning: m.reasoning,
+          imageData: mem.imageData,
+          imageMimeType: mem.imageMimeType,
+        );
+      }
+      return m;
+    }).toList();
   }
 
   /// 在 build() 完成后由 [ChatControllerParams.autoTriggerReply] 调度执行。
@@ -317,10 +353,15 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     await sendUserMessage(userMessage);
   }
 
-  Future<void> sendUserMessage(String text) async {
+  Future<void> sendUserMessage(
+    String text, {
+    Uint8List? imageData,
+    String? imageMimeType,
+  }) async {
     try {
       final trimmed = text.trim();
-      if (trimmed.isEmpty) return;
+      // 允许只发图片不发文本
+      if (trimmed.isEmpty && imageData == null) return;
 
       // 1. 取消当前流（同步，不阻塞）
       _cancelCurrentStream();
@@ -333,9 +374,12 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
         msgId: 'pending',
         body: trimmed,
         status: SessionMessageStatus.done,
+        imageData: imageData,
+        imageMimeType: imageMimeType,
       );
       final current = state.value ?? [];
       state = AsyncData([...current, userMsg]);
+      final messagesForLlm = state.value!;
 
       // 3. 磁盘写入（异步，不阻塞 UI）
       final sessionStore = await ref.read(sessionStoreProvider.future);
@@ -376,6 +420,9 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           providerConfig: provider,
           apiKey: apiKey,
           model: sessionModelId,
+          imageData: imageData,
+          imageMimeType: imageMimeType,
+          currentMessages: messagesForLlm,
         );
       } else {
         final configStore = ref.read(llmConfigStoreProvider);
@@ -397,6 +444,9 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
             providerConfig: fallbackProvider!,
             apiKey: fallbackApiKey,
             model: fallbackModel!,
+            imageData: imageData,
+            imageMimeType: imageMimeType,
+            currentMessages: messagesForLlm,
           );
         } else {
           await sessionStore.appendAssistantMessage(
@@ -463,17 +513,22 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     required LlmProviderConfig providerConfig,
     required String apiKey,
     required String model,
+    Uint8List? imageData,
+    String? imageMimeType,
+    List<SessionMessage>? currentMessages,
   }) async {
     final sessionStore = await ref.read(sessionStoreProvider.future);
     final logger = await ref.read(appLoggerProvider.future);
-    final history = await _read();
+    // 优先用调用方传入的 in-memory 消息（含图片等内存态数据），
+    // 避免 _read() 从磁盘重读丢失未持久化的字段。
+    final history = currentMessages ?? await _read();
 
     // 解析联网搜索状态
     final webSearch = _resolveWebSearch(providerConfig.type);
     final client = LlmClient.forConfig(providerConfig, webSearch: webSearch);
 
     // 更新 UI 状态（显示开始）
-    state = AsyncData(await _read());
+    state = AsyncData(history);
 
     // 委托给 ChatTaskService 在后台运行
     await ref.read(chatTaskServiceProvider.notifier).startTask(
@@ -486,6 +541,8 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       sessionStore: sessionStore,
       logger: logger,
       webSearch: webSearch,
+      imageData: imageData,
+      imageMimeType: imageMimeType,
     );
 
     // Update search index (fire-and-forget after task completes)

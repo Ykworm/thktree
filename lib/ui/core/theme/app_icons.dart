@@ -140,6 +140,14 @@ class AppIcons {
   /// 后续迭代可换为 SVG（参考主题 tab 的 theme_unselect.svg 模式）
   static const IconData lab = SFIcons.sf_flask;
 
+  // ── 图片/媒体 ──
+
+  /// 图片（photo）
+  static const IconData image = CupertinoIcons.photo;
+
+  /// 相机（camera）
+  static const IconData camera = CupertinoIcons.camera;
+
   // ── TTS（语音播放） ──
 
   /// 滚动到顶部（用于 player 页浮按钮）

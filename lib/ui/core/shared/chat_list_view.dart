@@ -35,20 +35,99 @@ class ChatListViewState extends State<ChatListView> {
 
   /// 滚动到指定消息（通过 msgId 定位）。
   ///
-  /// 如果目标消息在屏幕外，先近似跳转使其被构建，再精确对齐。
+  /// 先测量所有消息的实际高度，再用精确偏移量跳转。
+  /// 如果目标已在屏幕上，直接用 `Scrollable.ensureVisible`。
   void scrollToMessage(String msgId) {
-    final key = _itemKeys[msgId];
-    if (key?.currentContext == null) return;
-    Scrollable.ensureVisible(
-      key!.currentContext!,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      alignment: 0.3, // 目标消息停在屏幕上方 30% 处
-    );
+    if (!_scrollController.hasClients) return;
+
     // 取消吸底，避免滚动后被自动拉回底部
     if (_stickToBottom) {
       setState(() => _stickToBottom = false);
     }
+
+    // 目标已在屏幕上，直接精确滚动
+    final key = _itemKeys[msgId];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        alignment: 0.3,
+      );
+      return;
+    }
+
+    // 测量所有消息高度，计算精确偏移量
+    final index = widget.messages.indexWhere((m) => m.msgId == msgId);
+    if (index < 0) return;
+
+    _measureAndScroll(index);
+  }
+
+  /// 测量所有消息的实际高度，然后精确跳转到目标索引。
+  void _measureAndScroll(int targetIndex) async {
+    final heights = await _measureAllItemHeights();
+    if (!mounted || heights.isEmpty) return;
+
+    // 累计偏移量（含 12px ListView padding）
+    var offset = 12.0;
+    for (var i = 0; i < targetIndex; i++) {
+      offset += heights[i];
+    }
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    _scrollController.jumpTo(offset.clamp(0.0, maxScroll));
+
+    // 等一帧渲染，再精确对齐
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctx = _itemKeys[widget.messages[targetIndex].msgId]?.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: 0.3,
+        );
+      }
+    });
+  }
+
+  /// 逐条构建消息并测量实际渲染高度。
+  ///
+  /// 通过临时 overlay 附加 widget → 读取 RenderBox.size → 移除，
+  /// 得到每条消息在当前宽度下的精确高度。
+  Future<List<double>> _measureAllItemHeights() async {
+    final heights = <double>[];
+    final overlay = Overlay.of(context, debugRequiredFor: widget);
+
+    for (final msg in widget.messages) {
+      final key = GlobalKey();
+      final entry = OverlayEntry(
+        builder: (_) => Offstage(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: KeyedSubtree(
+              key: key,
+              child: widget.messageBuilder(context, msg),
+            ),
+          ),
+        ),
+      );
+
+      overlay.insert(entry);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        entry.remove();
+        return heights;
+      }
+
+      final box = key.currentContext?.findRenderObject() as RenderBox?;
+      heights.add(box?.size.height ?? 80.0);
+      entry.remove();
+    }
+
+    return heights;
   }
 
   @override

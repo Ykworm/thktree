@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,6 +95,8 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     required SessionStore sessionStore,
     AppLogger? logger,
     bool webSearch = false,
+    Uint8List? imageData,
+    String? imageMimeType,
   }) async {
     if (state.containsKey(nodeId)) {
       await stopTask(nodeId);
@@ -105,7 +109,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     final handle = await sessionStore.beginAssistantMessage(nodeId: nodeId);
     final generation = DateTime.now().millisecondsSinceEpoch;
 
-    final messages = _buildMessages(history, systemPrompt);
+    final messages = _buildMessages(history, systemPrompt, imageData: imageData, imageMimeType: imageMimeType);
     final stream = client.streamChatCompletion(
       apiKey: apiKey,
       model: model,
@@ -353,7 +357,12 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
   }
 }
 
-List<Map<String, Object?>> _buildMessages(List<SessionMessage> history, String systemPrompt) {
+List<Map<String, Object?>> _buildMessages(
+  List<SessionMessage> history,
+  String systemPrompt, {
+  Uint8List? imageData,
+  String? imageMimeType,
+}) {
   final messages = <Map<String, Object?>>[
     {'role': 'system', 'content': systemPrompt},
   ];
@@ -364,8 +373,25 @@ List<Map<String, Object?>> _buildMessages(List<SessionMessage> history, String s
       SessionRole.assistant => 'assistant',
       SessionRole.system => 'system',
     };
-    if (msg.body.trim().isEmpty) continue;
-    messages.add({'role': role, 'content': msg.body});
+
+    // 处理用户消息中的图片
+    if (msg.role == SessionRole.user && msg.imageData != null) {
+      // 构建多模态消息
+      final content = <Map<String, Object?>>[
+        if (msg.body.trim().isNotEmpty) {'type': 'text', 'text': msg.body},
+        {
+          'type': 'image_url',
+          'image_url': {
+            'url': 'data:${msg.imageMimeType ?? 'image/jpeg'};base64,${base64Encode(msg.imageData!)}',
+          },
+        },
+      ];
+      messages.add({'role': role, 'content': content});
+    } else {
+      // 纯文本消息
+      if (msg.body.trim().isEmpty) continue;
+      messages.add({'role': role, 'content': msg.body});
+    }
   }
 
   return messages;

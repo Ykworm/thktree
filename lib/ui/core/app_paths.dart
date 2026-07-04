@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:intl/intl.dart';
@@ -34,6 +35,12 @@ class AppPaths {
     final tempDir = Directory(p.join(rootDir.path, 'temp'));
     final indexDbPath = p.join(rootDir.path, 'index.sqlite');
     final appLogPath = p.join(logsDir.path, 'app.log');
+
+    log('AppPaths.load: docDir=${docDir.path}');
+    log('AppPaths.load: rootDir=${rootDir.path}');
+    log('AppPaths.load: themesDir=${themesDir.path}');
+    log('AppPaths.load: indexDbPath=$indexDbPath');
+
     return AppPaths(
       rootDir: rootDir,
       themesDir: themesDir,

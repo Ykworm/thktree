@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'package:yaml/yaml.dart';
 
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:yaml/yaml.dart';
+
 enum SessionRole {
   user,
   assistant,
@@ -22,6 +26,9 @@ class SessionMessage {
     required this.status,
     this.errorCode,
     this.reasoning,
+    this.imagePath,
+    this.imageData,
+    this.imageMimeType,
   });
 
   final SessionRole role;
@@ -31,6 +38,18 @@ class SessionMessage {
   final SessionMessageStatus status;
   final String? errorCode;
   final String? reasoning;
+
+  /// 图片文件路径（本地存储）
+  final String? imagePath;
+
+  /// 图片 Base64 数据（用于发送给 LLM）
+  final Uint8List? imageData;
+
+  /// 图片 MIME 类型（如 'image/jpeg', 'image/png'）
+  final String? imageMimeType;
+
+  /// 是否包含图片
+  bool get hasImage => imagePath != null || imageData != null;
 }
 
 class SessionDocument {

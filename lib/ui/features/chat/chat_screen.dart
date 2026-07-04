@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectionArea;
@@ -18,6 +19,7 @@ import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/llm_provider.dart' show estimateTokens;
 import 'package:thk_tree/ui/core/shared/chat_composer.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
@@ -59,6 +61,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _chatListKey = GlobalKey<ChatListViewState>();
   bool _showModelPanel = false;
   String? _currentSelectedText;
+
+  // ---- 图片选择状态 ----
+  Uint8List? _selectedImageData;
+  String? _selectedImageMimeType;
 
   // ---- 空白分支（A 模式）后置自动 title 生成 ----
   /// 上次 build 的 isStreaming，用于检测 true → false 边沿。
@@ -418,8 +424,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: ChatComposer(
                   hintText: l10n.messageHint,
                   isStreaming: isStreaming,
-                  onSend: (text) {
-                    return ref.read(chatControllerProvider(_args).notifier).sendUserMessage(text);
+                  onSend: (text, {imageData, imageMimeType}) async {
+                    await ref.read(chatControllerProvider(_args).notifier).sendUserMessage(
+                      text,
+                      imageData: imageData,
+                      imageMimeType: imageMimeType,
+                    );
+                    // 发送后清除图片选择状态
+                    if (mounted) {
+                      setState(() {
+                        _selectedImageData = null;
+                        _selectedImageMimeType = null;
+                      });
+                    }
                   },
                   onStopStreaming: () async {
                     await ref.read(chatControllerProvider(_args).notifier).stopStreaming();
@@ -460,6 +477,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           );
                         }
                       : null,
+                  onImagePick: () => _showImagePicker(context),
+                  imageSupported: _isImageSupported(currentProviderId, currentModelId),
+                  selectedImageData: _selectedImageData,
+                  selectedImageMimeType: _selectedImageMimeType,
+                  onImageRemove: () {
+                    if (mounted) {
+                      setState(() {
+                        _selectedImageData = null;
+                        _selectedImageMimeType = null;
+                      });
+                    }
+                  },
                 ),
               ),
               // 模型面板（出现在输入框下方，取代软键盘位置）
@@ -486,6 +515,106 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _dismissModelPanel() {
     if (!_showModelPanel || !mounted) return;
     setState(() => _showModelPanel = false);
+  }
+
+  /// 检查当前模型是否支持图片
+  bool _isImageSupported(String? providerId, String? modelId) {
+    if (providerId == null || modelId == null) return false;
+    final providers = ref.read(llmProvidersProvider).value;
+    if (providers == null) return false;
+    final provider = providers.where((p) => p.id == providerId).firstOrNull;
+    if (provider == null) return false;
+    final model = provider.models.where((m) => m.id == modelId).firstOrNull;
+    if (model == null) return false;
+    return model.supportsVision;
+  }
+
+  /// 显示图片选择器
+  Future<void> _showImagePicker(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    // 检查是否支持图片
+    final chatCtrl = ref.read(chatControllerProvider(_args).notifier);
+    final settings = ref.read(settingsControllerProvider).value;
+    final providers = ref.read(llmProvidersProvider).value;
+    final resolved = resolveChatModel(
+      sessionProviderId: chatCtrl.providerId,
+      sessionModelId: chatCtrl.modelId,
+      chatDefaultProviderId: settings?.chatDefaultProviderId,
+      chatDefaultModelId: settings?.chatDefaultModelId,
+      providers: providers,
+    );
+    final currentProviderId = resolved.$1.isNotEmpty ? resolved.$1 : null;
+    final currentModelId = resolved.$2.isNotEmpty ? resolved.$2 : null;
+
+    if (!_isImageSupported(currentProviderId, currentModelId)) {
+      ThkAlert.show(
+        context: context,
+        message: '当前模型不支持图片功能',
+        defaultAction: l10n.ok,
+      );
+      return;
+    }
+
+    // 显示 ActionSheet
+    final action = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text('选择图片来源'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context, 'camera'),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(AppIcons.camera, size: 20),
+                const SizedBox(width: 8),
+                Text('拍照'),
+              ],
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context, 'gallery'),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(AppIcons.image, size: 20),
+                const SizedBox(width: 8),
+                Text('从相册选择'),
+              ],
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+      ),
+    );
+
+    if (action == null || !mounted) return;
+
+    try {
+      final picker = ImagePicker();
+      final source = action == 'camera' ? ImageSource.camera : ImageSource.gallery;
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile == null || !mounted) return;
+
+      final bytes = await pickedFile.readAsBytes();
+      final mimeType = pickedFile.mimeType ?? 'image/jpeg';
+
+      setState(() {
+        _selectedImageData = bytes;
+        _selectedImageMimeType = mimeType;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: '选择图片失败：$e',
+        defaultAction: l10n.ok,
+      );
+    }
   }
 
   /// 判断是否应该在该消息上方显示时间戳。
@@ -563,7 +692,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _onOpenOutline(BuildContext context, List<SessionMessage> messages) async {
-    Navigator.of(context).pop();
+    // 注意：ThkGridBottomSheet 已经 pop 了自身，不要再 pop
     final selected = await showChatOutlineSheet(context, messages);
     if (selected != null && mounted) {
       _chatListKey.currentState?.scrollToMessage(selected.msgId);
@@ -571,7 +700,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _onOpenSearch(BuildContext context, List<SessionMessage> messages) async {
-    Navigator.of(context).pop();
+    // 注意：ThkGridBottomSheet 已经 pop 了自身，不要再 pop
     final selected = await showChatSearchSheet(context, messages);
     if (selected != null && mounted) {
       _chatListKey.currentState?.scrollToMessage(selected.msgId);

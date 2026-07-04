@@ -192,27 +192,18 @@ String _escapeMarkdownTableCell(String value) {
 
 /// 将 ISO 8601 UTC 时间戳格式化为人类可读的本地时间。
 ///
-/// - 今天：`14:32`
-/// - 昨天：`昨天 14:32`
-/// - 今年内：`6月28日 14:32`
-/// - 跨年：`2025年6月28日 14:32`
+/// 格式：`2025-06-28 14:32:05`
 String formatMessageTime(String timestampUtcIso8601) {
   final utc = DateTime.tryParse(timestampUtcIso8601);
   if (utc == null) return '';
   final local = utc.toLocal();
-  final now = DateTime.now();
-  final time = '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-
-  final today = DateTime(now.year, now.month, now.day);
-  final targetDay = DateTime(local.year, local.month, local.day);
-  final diff = today.difference(targetDay).inDays;
-
-  if (diff == 0) return time;
-  if (diff == 1) return '昨天 $time';
-  if (local.year == now.year) {
-    return '${local.month}月${local.day}日 $time';
-  }
-  return '${local.year}年${local.month}月${local.day}日 $time';
+  final y = local.year;
+  final m = local.month.toString().padLeft(2, '0');
+  final d = local.day.toString().padLeft(2, '0');
+  final h = local.hour.toString().padLeft(2, '0');
+  final min = local.minute.toString().padLeft(2, '0');
+  final s = local.second.toString().padLeft(2, '0');
+  return '$y-$m-$d $h:$min:$s';
 }
 
 class MessageBubble extends ConsumerStatefulWidget {
@@ -385,6 +376,16 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // 图片渲染（如果有）
+                            if (widget.message.imageData != null) ...[
+                              _MessageImage(
+                                imageData: widget.message.imageData!,
+                                onTap: () => _showFullImage(context),
+                              ),
+                              if (widget.message.body.trim().isNotEmpty ||
+                                  (reasoning != null && reasoning.isNotEmpty))
+                                const SizedBox(height: 8),
+                            ],
                             if (reasoning != null && reasoning.isNotEmpty)
                               _ReasoningSection(
                                 reasoning: reasoning,
@@ -509,6 +510,15 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (_) => _TableExpandedView(content: content),
+      ),
+    );
+  }
+
+  void _showFullImage(BuildContext context) {
+    if (widget.message.imageData == null) return;
+    Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => _ImageFullScreen(imageData: widget.message.imageData!),
       ),
     );
   }
@@ -883,6 +893,69 @@ class _TtsPlayButton extends ConsumerWidget {
         color: isThisPlaying
             ? CupertinoColors.systemBlue
             : AppColors.textSecondary,
+      ),
+    );
+  }
+}
+
+/// 消息中的图片缩略图
+class _MessageImage extends StatelessWidget {
+  const _MessageImage({
+    required this.imageData,
+    required this.onTap,
+  });
+
+  final Uint8List imageData;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          imageData,
+          width: 200,
+          height: 200,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
+/// 全屏图片查看器
+class _ImageFullScreen extends StatelessWidget {
+  const _ImageFullScreen({required this.imageData});
+
+  final Uint8List imageData;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.black,
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: CupertinoColors.black,
+        middle: Text(
+          '图片预览',
+          style: TextStyle(color: CupertinoColors.white),
+        ),
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Icon(
+            CupertinoIcons.back,
+            color: CupertinoColors.white,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: InteractiveViewer(
+            child: Image.memory(imageData),
+          ),
+        ),
       ),
     );
   }

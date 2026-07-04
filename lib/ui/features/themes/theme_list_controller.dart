@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/domain/theme.dart';
@@ -5,8 +7,10 @@ import 'package:thk_tree/domain/theme.dart';
 class ThemeListController extends AsyncNotifier<List<ThemeEntity>> {
   @override
   Future<List<ThemeEntity>> build() async {
+    log('ThemeListController.build: starting');
     final store = await ref.watch(themeStoreProvider.future);
     final themes = await store.listThemes();
+    log('ThemeListController.build: found ${themes.length} themes');
     return _loadPreviews(themes);
   }
 

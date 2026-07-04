@@ -49,24 +49,35 @@ final tempDirProvider = FutureProvider<Directory>((ref) async {
 });
 
 final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
+  dev.log('[appDatabaseProvider] starting');
   final paths = await ref.watch(appPathsProvider.future);
+  dev.log('[appDatabaseProvider] paths loaded, indexDbPath=${paths.indexDbPath}');
   final db = await AppDatabase.open(path: paths.indexDbPath);
+  dev.log('[appDatabaseProvider] database opened');
 
   // Startup sync: reconcile disk vs DB (lightweight, runs once)
+  dev.log('[appDatabaseProvider] starting theme syncFromDisk');
   final themeStore = ThemeStore(paths: paths, db: db.db);
   await themeStore.syncFromDisk();
+  dev.log('[appDatabaseProvider] theme syncFromDisk completed');
+
   final nodeStore = NodeStore(db: db.db, paths: paths);
   final themes = await themeStore.listThemes();
+  dev.log('[appDatabaseProvider] found ${themes.length} themes after sync');
+
   for (final theme in themes) {
     final themePath = p.join(paths.themesDir.path, theme.themeId);
+    dev.log('[appDatabaseProvider] syncing nodes for theme: ${theme.themeId}');
     await nodeStore.syncFromDisk(themePath: themePath);
   }
 
   // 确保"未分类"主题始终存在
   if (!themes.any((t) => t.title == '未分类')) {
+    dev.log('[appDatabaseProvider] creating 未分类 theme');
     await themeStore.createTheme(title: '未分类');
   }
 
+  dev.log('[appDatabaseProvider] completed');
   return db;
 });
 

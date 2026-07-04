@@ -19,6 +19,7 @@ class TopicLibraryLlmClient extends LlmClient {
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   }) async* {
     if (cancelToken?.isCancelled == true) return;
 

@@ -59,6 +59,7 @@ dependencies:
   share_plus: ^10.0.0
   archive: ^3.6.1
   file_picker: ^8.0.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   integration_test:

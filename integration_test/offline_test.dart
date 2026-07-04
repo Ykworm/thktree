@@ -69,6 +69,11 @@ class _InMemorySettingsStore implements SettingsStore {
   Future<void> saveTtsVoiceId(String? voiceId) async {
     _settings = _settings.copyWith(ttsVoiceId: voiceId);
   }
+
+  @override
+  Future<void> saveWebSearchEnabled(String providerType, bool enabled) async {
+    // 实现联网搜索设置保存
+  }
 }
 
 class _ImmediateNetworkErrorClient extends LlmClient {
@@ -80,6 +85,7 @@ class _ImmediateNetworkErrorClient extends LlmClient {
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   }) {
     final err = DioException(
       requestOptions: RequestOptions(path: '/chat/completions'),
@@ -99,6 +105,7 @@ class _MidStreamNetworkErrorClient extends LlmClient {
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   }) async* {
     yield const LlmResponseDelta(content: 'partial');
     await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -119,6 +126,7 @@ class _FlakyNetworkClient extends LlmClient {
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   }) async* {
     callCount++;
     if (callCount == 1) {

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/llm_model_config.dart';
 import '../models/llm_provider_config.dart';
+import '../models/model_capabilities.dart';
 
 /// 默认上下文窗口大小（默认 1M tokens）
 const int _defaultContextWindow = 1000000;
@@ -90,6 +91,7 @@ class ModelFetcher {
           id: id,
           name: id, // OpenAI 兼容接口通常不提供 display_name，用 id 作为 name
           contextWindow: contextWindow,
+          capabilities: inferCapabilities(id),
         ));
       }
 
@@ -138,6 +140,7 @@ class ModelFetcher {
           id: id,
           name: name,
           contextWindow: contextWindow,
+          capabilities: inferCapabilities(id),
         ));
       }
 
@@ -188,6 +191,7 @@ class ModelFetcher {
           id: id,
           name: displayName,
           contextWindow: contextWindow,
+          capabilities: inferCapabilities(id),
         ));
       }
 
