@@ -92,7 +92,7 @@ lib/
     features/
       themes/                # ThemeListScreen, ThemeDetailScreen（主题列表 + 树视图）
       chat/                  # ChatScreen, ChatController（对话 + 流式回复）
-      notes/                 # NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteSelectScreen, NodeLocationPicker（笔记）
+      notes/                 # NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteSelectScreen, NodeLocationPicker, GenerateTitleScreen（笔记）
       llm/                   # LlmProvidersScreen, LlmProviderDetailScreen（LLM 配置）
       settings/              # SettingsScreen, SettingsController（设置页）
       search/                # SearchScreen（全文搜索）

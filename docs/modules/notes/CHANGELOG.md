@@ -401,3 +401,80 @@ final int contextWindow; // 0 表示未知
 - `note_select_screen.dart:_createAndAppend` 的 `_promptTitle`——已有自己的空标题处理
 - 自动标题生成机制
 - 历史空标题笔记的展示兜底（已用 `noteId` 占位）
+
+---
+
+## 12. Chat → 笔记互操作：存为笔记 + 生成标题 + 转移（2026-07-03）
+
+### 12.1 背景
+
+笔记模块缺乏与 Chat 的联动入口，用户无法直接将对话中的有价值内容保存为笔记。笔记详情的"更多"操作也缺少独立的标题生成入口和跨主题转移能力。
+
+### 12.2 功能
+
+#### 12.2.1 聊天消息"存为笔记"
+- Chat 消息气泡（assistant 角色 + done 状态）右下角显示笔记图标按钮
+- 点击后以消息前 20 字（去 Markdown）为临时标题，当前 Chat 所属主题为笔记分类
+- 若主题不存在则自动创建同名主题
+- 创建后跳转 `NoteEditorScreen`（createMode: true）供用户编辑
+- 实现位置：[chat_screen.dart `_saveMessageAsNote`](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/chat/chat_screen.dart#L85-L135)
+
+#### 12.2.2 笔记"生成标题"（独立页面）
+- 笔记详情 → 更多 → 生成标题：跳转 `GenerateTitleScreen`
+- 进入页面后 LLM 自动调用 `TitleSuggestionService.generateTitles()` 生成 3-5 个备选标题
+- 展示候选列表（可选卡片）+ 自定义输入框
+- 导航栏：左侧 × 取消，右侧 ✓ 确认
+- 返回选中的标题更新到笔记
+- 实现位置：[generate_title_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/generate_title_screen.dart)
+
+#### 12.2.3 笔记"转移"
+- 笔记详情 → 更多 → 转移：弹出 `ThemePicker` 选择目标主题
+- 选择后调用 `NoteStore.moveNote()`：读取文件 → 更新 frontmatter `themeId` → 写入目标目录 → 删除源文件
+- 成功后自动返回笔记详情（刷新显示）
+- 实现位置：[note_detail_screen.dart `_moveToTheme`](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L197-L223)
+
+### 12.3 数据模型变更
+
+#### NoteStore 新增方法
+```dart
+Future<void> moveNote({
+  required String noteId,
+  required String targetThemeId,
+  required Directory targetNotesDir,
+})
+```
+
+#### 新增辅助函数
+```dart
+String _updateYamlThemeId(String content, String themeId)
+```
+
+### 12.4 文件变更
+
+**新增（1 个）：**
+- `lib/ui/features/notes/generate_title_screen.dart` — LLM 标题生成独立页面
+
+**修改（4 个）：**
+- `lib/ui/features/chat/chat_screen.dart` — `_saveMessageAsNote()` + MessageBubble `onSaveToNote` 接入
+- `lib/ui/core/shared/message_bubble.dart` — assistant 消息气泡增加笔记图标按钮
+- `lib/ui/features/notes/note_detail_screen.dart` — "生成标题"跳转 + "转移"功能 + 网格底栏新增两项
+- `lib/data/stores/note_store.dart` — `moveNote()` + `_updateYamlThemeId()`
+
+**修改（2 个 l10n）：**
+- `lib/l10n/app_zh.arb` + `lib/l10n/app_en.arb` — 新增 `saveToNote`、`generateTitle`、`generatingTitle`、`moveNote`、`noteMoved`
+
+**自动生成（3 个）：**
+- `lib/l10n/generated/app_localizations*.dart` — `flutter gen-l10n` 重新生成
+
+### 12.5 测试覆盖
+
+- `flutter analyze` 无新增 error
+- 手工验证：Chat 消息存为笔记 → 笔记详情生成标题 → 笔记转移
+
+### 12.6 后续 TODO
+
+| 优先级 | 事项 | 说明 |
+|--------|------|------|
+| 🟡 | 空白状态按钮置灰/隐藏 | "生成标题"和"转移"在笔记无内容时应禁用 |
+| 🟢 | User 角色消息存为笔记 | 当前仅支持 assistant 消息 |
+| 🟢 | 转移目标主题支持"新建" | 目前只能选已有主题 |

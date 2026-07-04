@@ -28,6 +28,7 @@
 | 子孙视图过滤 | 🔨 进行中 | — | 基础树已有，过滤未完整 |
 | 汇总预览 | 📋 待开发 | — | 未实现 |
 | 祖先上下文总结 | 🔨 部分实现 | — | context-summary.md 写入存在 |
+| 主题详情 overflow menu | ✅ 完成 | 2026-07-04 | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
 
 ## 3. 代码文件
 
@@ -83,6 +84,7 @@ lib/ui/features/themes/
 
 ## 7. 相关历史
 
+- **2026-07-04** — ThemeDetailScreen NavBar 刷新按钮改为 overflow menu（`⋯` + CupertinoActionSheet：刷新 / 折叠全部 / 展开全部）
 - **2026-06-07** — 节点卡片重构：从 chevron 改为圆圈 toggle，5 套配色，行高 56px
 - **2026-06-07** — 节点圆圈改为所有节点均显示空心圆（叶子节点不可点击），圆圈与标题间距缩至 0px
 - **2026-06-07** — visual 文档从 `docs/visual/themes/` 迁至 `docs/modules/themes/visual/`

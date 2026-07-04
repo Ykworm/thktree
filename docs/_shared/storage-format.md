@@ -291,6 +291,15 @@ spawnedNodeId: null
 - sourceNodeId：可选
 - spawnedNodeId：可选（场景 A 成功发起对话后写入）
 
+### 6.2 themeId 可变性（2026-07-03 新增）
+
+`themeId` 在创建时固定，但支持跨主题转移（`NoteStore.moveNote()`）：
+- 文件物理移动到目标主题的 `notes/` 目录
+- frontmatter 中 `themeId` 更新为目标主题 ID
+- 原文件删除
+
+注意：`noteId` 全局唯一，跨主题转移不改变 `noteId`。
+
 ---
 
 ## 7. SQLite 索引（可重建）

@@ -28,6 +28,7 @@
 | 子孙视图过滤 | themes | 🔨 进行中 | — | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `lib/ui/features/themes/theme_detail_*` | ThemeDetailScreen 有基础树，过滤功能未完整 |
 | 汇总预览 | themes | ❌ 取消 | 2026-06-22 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | — | 产品决策取消 |
 | 祖先上下文总结 | themes | 🔨 部分实现 | — | [README](modules/themes/README.md) | — | `lib/data/services/` | context-summary.md 写入存在，注入对话未完成 |
+| 主题详情 overflow menu | themes | ✅ 完成 | 2026-07-04 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/theme_detail_screen.dart` | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
 
 ## 2. 笔记模块（notes）
 
@@ -38,6 +39,9 @@
 | Markdown 工具栏增强 | notes | ✅ 完成 | 2026-06-17 | [README](modules/notes/README.md) | — | `lib/ui/core/widgets/markdown_toolbar.dart` | 标题级别循环切换（h2→h3→h1→无）+ 表格插入按钮 |
 | 标题必填校验 | notes | ✅ 完成 | 2026-06-29 | [README](modules/notes/README.md) | — | `lib/ui/features/notes/note_editor_screen.dart` | NoteEditorScreen ✓ 按钮加 `trim().isEmpty` 拦截 → 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮），不调 `_saveNow` 不 pop；l10n 新增 `titleCannotBeEmpty`（zh + en）；详见 [notes/CHANGELOG § 11](modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29) + [CHANGELOG](CHANGELOG/2026-06-29-note-title-required.md) |
 | 图片插入 | notes | 📋 待开发 | 2026-06-17 | [README](modules/notes/README.md) | — | — | 编辑器工具栏插入图片，支持相册/拍照 |
+| Chat-to-Note | notes | ✅ 完成 | 2026-07-04 | [README](modules/notes/README.md) | — | `lib/ui/features/chat/chat_screen.dart` + `lib/ui/core/shared/message_bubble.dart` | assistant 消息"存为笔记"按钮，自动用当前主题创建笔记并跳转编辑器 |
+| LLM 生成标题 | notes | ✅ 完成 | 2026-07-04 | [README](modules/notes/README.md) | — | `lib/ui/features/notes/generate_title_screen.dart` | 笔记详情更多菜单→生成标题，LLM 生成备选列表 + 自定义输入 |
+| 笔记转移主题 | notes | ✅ 完成 | 2026-07-04 | [README](modules/notes/README.md) | — | `lib/ui/features/notes/note_detail_screen.dart` + `lib/data/stores/note_store.dart` | 笔记详情更多菜单→转移主题，NoteStore.moveNote 跨目录迁移 |
 
 ## 3. 对话模块（chat）
 
@@ -48,6 +52,7 @@
 | 空白分支自动 title 持久化 | chat | ✅ 完成 | 2026-06-29 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支（A 模式）chat 流式结束后自动调 LLM 生成 title 并写入 DB + refresh tree；与 widget 生命周期解耦（`ref.keepAlive()`），提前 back 回 tree 也能后台完成；详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [war-story](war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) + [CHANGELOG](CHANGELOG/2026-06-29-auto-title-persistence.md) |
 | iOS 后台中断恢复 | chat | ✅ 完成（iOS only） | 2026-06-22 | [README](modules/chat/README.md) | — | `lib/data/services/chat_task_service.dart` 等 | App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队；详见 [ADR-015](DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) |
 | 联网搜索 | chat | ✅ 完成 | 2026-07-04 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_composer.dart` 等 | 聊天输入框底部联网搜索开关（地球图标），KIMI/MIMO/DeepSeek 三提供商支持，详见下方说明 |
+| 消息时间戳 | chat | ✅ 完成 | 2026-07-04 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/message_bubble.dart` | assistant 消息气泡上方显示人类可读时间（今天 HH:mm / 昨天 / 月日 / 跨年） |
 
 ### 联网搜索
 
@@ -103,6 +108,7 @@ KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实�
 
 > 倒序排列，最新在上。
 
+- **2026-07-04** — 笔记模块新增 3 个功能：(1) Chat-to-Note — assistant 消息"存为笔记"按钮（`onSaveToNote`），自动用当前主题创建笔记并跳转 `NoteEditorScreen`，主题不存在时自动创建同名主题；(2) LLM 生成标题 — `GenerateTitleScreen`（286 行），复用 `TitleSuggestionService` 生成备选标题列表，支持自定义输入 + 点选确认；(3) 笔记转移主题 — `NoteStore.moveNote` 跨目录迁移（frontmatter themeId 更新 + 文件物理移动），`NoteDetailScreen` 更多菜单新增"转移主题"入口。对话模块同步新增：消息时间戳（`formatMessageTime`，assistant 消息气泡上方显示人类可读时间）、`MessageBubble.onSaveToNote` 回调。主题模块：`ThemeDetailScreen` NavBar 刷新按钮改为 overflow menu（`⋯` + CupertinoActionSheet，含刷新 + 折叠/展开全部）。
 - **2026-06-29** — 笔记编辑器标题必填校验：`NoteEditorScreen` ✓ 按钮加 `trim().isEmpty` 拦截（`_titleController.text.trim().isEmpty`）→ 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮）→ `return;`（不调 `_saveNow` 不 `pop`）。l10n 新增 `titleCannotBeEmpty`（zh: 标题不能为空，请输入后再保存 / en: Title cannot be empty, please enter a title before saving）。覆盖笔记 Tab `+` 新建和详情页编辑入口（单点修复）；已有空标题笔记的历史数据不动。新增 `integration_test/note_title_required_test.dart`（5 个 case）。详见 [CHANGELOG](CHANGELOG/2026-06-29-note-title-required.md) + [notes/CHANGELOG § 11](modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29)
 - **2026-06-29** — 空白分支 chat 流式结束后自动生成 title 并持久化：`AutoTitleController`（`lib/ui/features/chat/auto_title_controller.dart`，按 `nodeId` family）从 widget 抽离生成任务，3 层守卫（state 去重 / currentTitle 改过跳过 / DB title 兜底）+ `ref.keepAlive()` 保活（提前 pop 回 tree 也能后台完成）+ 写 DB + refresh `themeDetailControllerProvider(themeId)` 树。`chat_screen` 增加 `ref.listen<AsyncValue<AutoTitleState>>` 同步 `_displayedTitle`，监听 `failed + error=='noModel'` 弹 `showLlmSetupAlert`。集成测试 `integration_test/branch_creation_test.dart` 加 case 9.5（空白分支 E2E 自动 title）+ 激活 case 9.4（DB check 守卫），新增 case 9.6（提前 pop 后台完成）。详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [CHANGELOG](CHANGELOG/2026-06-29-auto-title-persistence.md) + [war-story](war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md)
 - **2026-06-29** — Lab tab 视觉规范化：tab label 中英文统一为 "Lab"（`app_zh.arb::labTabLabel` "实验室" → "Lab"），`LabPlaceholderScreen` 改为白底（`AppColors.surface`）兜底 + 顶部 hint 文字 + 下方 `assets/background/lab_bg_32pt.png` 装饰图（`BoxFit.contain` 保持比例，不撑满）。集成测试 `integration_test/lab_tab_test.dart` 断言同步。详见 [CHANGELOG](CHANGELOG/2026-06-29-lab-tab-white-bg.md)

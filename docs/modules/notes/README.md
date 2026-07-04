@@ -33,16 +33,20 @@
 | 笔记选择器 | ✅ 完成 | 2026-06-07 | note_select_screen（主题创建对话入口） |
 | **标题必填校验** | ✅ 完成 | 2026-06-29 | NoteEditorScreen ✓ 按钮加 `trim().isEmpty` 拦截 → 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮），不调 `_saveNow` 不 pop；详见 [CHANGELOG § 11](CHANGELOG.md#11-笔记标题必填校验2026-06-29) |
 | 图片插入 | 📋 待开发 | 2026-06-17 | 编辑器工具栏插入图片 |
+| **Chat-to-Note** | ✅ 完成 | 2026-07-04 | assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote`），自动用当前主题创建笔记并跳转 `NoteEditorScreen`；主题不存在时自动创建同名主题 |
+| **LLM 生成标题** | ✅ 完成 | 2026-07-04 | `GenerateTitleScreen`：复用 `TitleSuggestionService` 生成备选标题列表，支持自定义输入 + 点选确认 |
+| **笔记转移主题** | ✅ 完成 | 2026-07-04 | `NoteStore.moveNote` 跨目录迁移（frontmatter themeId 更新 + 文件物理移动），`NoteDetailScreen` 更多菜单新增"转移主题"入口 |
 
 ## 3. 代码文件
 
 ```
 lib/ui/features/notes/
 ├── note_browse_screen.dart         # 笔记浏览（Large Title + slivers）
-├── note_detail_screen.dart         # 笔记详情（网格底栏 Action Sheet）
+├── note_detail_screen.dart         # 笔记详情（网格底栏 Action Sheet + 生成标题 + 转移主题）
 ├── note_editor_screen.dart         # 笔记编辑器
 ├── note_select_screen.dart         # 笔记选择器
-└── node_location_picker.dart       # 节点位置选择器
+├── node_location_picker.dart       # 节点位置选择器
+└── generate_title_screen.dart      # LLM 生成标题（286 行）
 ```
 
 依赖：
@@ -89,6 +93,7 @@ lib/ui/features/notes/
 
 ## 7. 相关历史
 
+- **2026-07-04** — 新增 3 个功能：(1) Chat-to-Note — assistant 消息"存为笔记"，自动用当前主题创建笔记并跳转编辑器；(2) LLM 生成标题 — `GenerateTitleScreen`（286 行），复用 `TitleSuggestionService`；(3) 笔记转移主题 — `NoteStore.moveNote` 跨目录迁移
 - **2026-06-29** — NoteEditorScreen ✓ 按钮加空标题校验（`titleCannotBeEmpty` alert），新增 `integration_test/note_title_required_test.dart`（5 个 case）
 - **2026-06-07** — 笔记列表页改为 ThkLargeTitlePage + slivers 布局
 - **2026-06-07** — 新增 node_location_picker（节点位置选择器）
