@@ -127,27 +127,6 @@ class _ChatComposerState extends State<ChatComposer> {
               ),
             ),
           ),
-          if (widget.onModelSelectorTap != null) ...[
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: CupertinoButton(
-                padding: const EdgeInsets.all(8),
-                onPressed:
-                    widget.isStreaming ? null : widget.onModelSelectorTap,
-                child: Icon(
-                  AppIcons.sparkles,
-                  size: 20,
-                  color: widget.isStreaming
-                      ? AppColors.textTertiary
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-          ],
           const SizedBox(width: 4),
           Container(
             decoration: BoxDecoration(
@@ -171,6 +150,27 @@ class _ChatComposerState extends State<ChatComposer> {
               ),
             ),
           ),
+          if (widget.onModelSelectorTap != null) ...[
+            const SizedBox(width: 4),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: CupertinoButton(
+                padding: const EdgeInsets.all(8),
+                onPressed:
+                    widget.isStreaming ? null : widget.onModelSelectorTap,
+                child: Icon(
+                  AppIcons.sparkles,
+                  size: 20,
+                  color: widget.isStreaming
+                      ? AppColors.textTertiary
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
       // 联网搜索开关（输入框下方）
@@ -254,31 +254,39 @@ class _WebSearchToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: supported && !isStreaming ? onToggle : null,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            enabled ? AppIcons.globe : AppIcons.globeSlash,
-            size: 14,
-            color: supported
-                ? (enabled ? AppColors.accent : AppColors.textTertiary)
-                : AppColors.textTertiary.withValues(alpha: 0.5),
+    final color = supported
+        ? (enabled ? AppColors.accent : AppColors.textTertiary)
+        : AppColors.textTertiary.withValues(alpha: 0.5);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: CupertinoButton(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          minSize: 0,
+          onPressed: supported && !isStreaming ? onToggle : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                enabled ? AppIcons.globe : AppIcons.globeSlash,
+                size: 14,
+                color: color,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                supported
+                    ? (enabled ? '联网搜索' : '联网搜索')
+                    : '不支持联网',
+                style: TextStyle(fontSize: 12, color: color),
+              ),
+            ],
           ),
-          const SizedBox(width: 4),
-          Text(
-            supported
-                ? (enabled ? '联网搜索' : '联网搜索')
-                : '不支持联网',
-            style: TextStyle(
-              fontSize: 12,
-              color: supported
-                  ? (enabled ? AppColors.accent : AppColors.textTertiary)
-                  : AppColors.textTertiary.withValues(alpha: 0.5),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
