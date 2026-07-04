@@ -44,6 +44,44 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - **错误统一**：所有 LLM 调用场景通过 `LlmError.fromException` 分类 + `LlmErrorCard` 展示，cancelled 不渲染不上报
 - **无可信 logo 时不硬上图标**：Provider 列表宁可保持纯文字 + 模型数量，也不要使用会误导用户的占位 icon
 
+## 联网搜索支持
+
+> 详细设计见 [联网搜索功能设计](../../_tmp/2026-07-03-web-search-design.md)
+
+### LlmClient 接口变更
+
+- `streamChatCompletion` 新增 `webSearch` 参数（`bool`，默认 `false`），调用方按需启用联网
+- `LlmClient.forConfig` 新增 `webSearch` 命名参数；工厂方法内部根据参数和 provider 类型自动路由：
+  - **DeepSeek + webSearch** → 自动切换到 `ClaudeClient`（Anthropic 兼容 Messages API），端点 `${config.baseUrl}/anthropic/v1`，认证改用 `x-api-key`
+  - **其他 provider** → 继续走 `ConfigBasedOpenAiCompatibleClient`（OpenAI 兼容 Chat Completions API）
+
+### ConfigBasedOpenAiCompatibleClient 变更
+
+- **tool_calls 多轮交互**：支持流式收集 tool_calls 增量 → 构建 tool 消息 → 发送第二轮请求的完整流程（KIMI / MIMO 联网搜索场景）
+- **工具声明自动选择**（根据 `providerName`）：
+  - **KIMI** → `{"type": "builtin_function", "function": {"name": "$web_search"}}`（KIMI 专用内置函数）
+  - **其他**（MIMO 等）→ `{"type": "function", "function": {"name": "web_search"}}`
+- **KIMI 自动禁用 thinking**：使用 `$web_search` 时自动注入 `thinking: {"type": "disabled"}`（KIMI API 硬性要求）
+
+### 提供商配置
+
+```dart
+enum WebSearchSupport {
+  supported,    // 官方原生支持
+  unsupported,  // 官方不支持
+}
+```
+
+- **`visibleProviderTypes`**：设置页面只显示 KIMI、MiniMax、MIMO、DeepSeek 四个提供商（OpenAI / Anthropic / Gemini / 自定义暂不发布）
+- **`webSearchSupportMap`**：硬编码各提供商联网支持状态（当前四家全部 `supported`，新模型接入时更新此映射）
+
+| 提供商 | 联网搜索 | 实现方式 |
+|--------|---------|---------|
+| KIMI | ✅ | Chat Completions API + `builtin_function.$web_search` + tool_calls 多轮 |
+| MiniMax | ✅（待定） | Assistants API 架构差异大，暂未实现 |
+| MIMO | ✅ | Chat Completions API + `web_search` 工具声明 |
+| DeepSeek | ✅ | Anthropic 兼容 Messages API + `web_search_20260209` 工具 |
+
 ## 维护要点
 
 - 改 LLM 配置前必读 [DECISIONS.md ADR-006](../../DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage)（SSE 流式 + Key 存储）
@@ -52,6 +90,7 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - Provider 删除是软删除（标记 isDeleted），避免历史对话失去模型引用
 - 注意 Provider 配置变更后，正在进行的对话不会被中断（chat 已缓存当时的 client）
 - Provider 列表页的标题、副标题和 chevron 是核心信息；厂商图标仅在拿到可信品牌资产时再加
+- 联网搜索：新增提供商时同步更新 `webSearchSupportMap` + `visibleProviderTypes`
 
 ## 相关历史
 
@@ -61,3 +100,4 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 - 2026-06：模型预置 + 默认参数功能
 - 2026-06-20：Provider 列表页改为填满 body 的 pane 式设置子页，subtitle 改为模型数量
 - 2026-06-24：统一 LLM 错误处理与重试（LlmError + LlmErrorCard + 4 场景接入 + 5 个集成测试）
+- 2026-07：联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）

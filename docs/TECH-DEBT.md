@@ -13,6 +13,7 @@
 | 全文搜索结果准确性未做对比测试 | 低 | SQLite FTS5 + BM25 已上线，无 query 质量基线，5 套配色方案行高 56px 的实际体验数据未收集 | 2026-06-07 |
 | `docs/_tmp/` 集成测试 report 缺定期清理机制 | 低 | 收尾流程已补充 planning doc 清理（步骤 5），但 report 文件（如 `step-timer-report.md`）保留策略未定：保留多少份、何时归档或删除、是否需要索引。需制定方案避免 `_tmp` 目录无限膨胀 | 2026-06-22 |
 | `autoTitleControllerProvider` 内存常驻 | 低 | 用 `ref.keepAlive()`（ADR-018）后 Notifier 实例永不被自动 dispose。每个 chat nodeId 一次任务完成后保留一个 AutoTitleController 实例（实测 ~100B/instance）。当前估算单次会话 1-2 个实例完全可接受。后续可考虑 WeakReference + 定时清理（暂不实施，待 keepAlive 任务累计超 1000 个再 review） | 2026-06-29 |
+| MiniMax 联网搜索未实现 | 中 | MiniMax 联网搜索需走 Assistants API（创建 Assistant → Thread → Run），与当前 `LlmClient` 接口（基于 Chat Completions API）架构差异较大。当前 MiniMax 在 `webSearchSupportMap` 中标为"支持"，但实际未实现 tool_calls 流程——用户开启联网开关后 MiniMax 请求不会携带搜索工具定义，返回结果无网页引用。需评估三个方案：方案 A 为 MiniMax 单独实现 Assistants API 客户端（工程量大，需新建 `MiniMaxAssistantClient`，引入 Assistant/Thread/Run 三阶段生命周期管理）；方案 B 调研 MiniMax Chat Completions API 是否也支持 `web_search` 类似能力（若有则可复用 `LlmClient` 现有架构，代价最小）；方案 C 暂时将 MiniMax 从 `webSearchSupportMap` 中移除，避免 UI 显示"支持"但实际无效的误导。建议优先尝试方案 B | 2026-07-04 |
 
 ---
 

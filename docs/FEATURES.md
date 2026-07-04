@@ -47,6 +47,18 @@
 | 标题自动建议 | chat | ✅ 完成 | 2026-06-29 | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` + `lib/ui/core/shared/title_suggestion_screen.dart` + `lib/ui/features/chat/auto_title_controller.dart`（2026-06-29 新增） | 分支创建时触发，支持选中文本/对话总结/笔记多种来源；**2026-06-29 新增** 空白分支 chat 流式结束后由 `AutoTitleController` 自动 LLM 补 title 并写入 DB（3 层守卫 + `ref.keepAlive()`保活，详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式)；三层防御拦截 LLM 未配置死路（`lib/ui/core/shared/llm_setup_check.dart`）：L1-A（`showBranchFlow` 入口）→ L1-B（`TitleSuggestionScreen.initState`）→ L2（sheet filter 空时弹窗引导） + `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` 跳转默认模型配置页 |
 | 空白分支自动 title 持久化 | chat | ✅ 完成 | 2026-06-29 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支（A 模式）chat 流式结束后自动调 LLM 生成 title 并写入 DB + refresh tree；与 widget 生命周期解耦（`ref.keepAlive()`），提前 back 回 tree 也能后台完成；详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [war-story](war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) + [CHANGELOG](CHANGELOG/2026-06-29-auto-title-persistence.md) |
 | iOS 后台中断恢复 | chat | ✅ 完成（iOS only） | 2026-06-22 | [README](modules/chat/README.md) | — | `lib/data/services/chat_task_service.dart` 等 | App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队；详见 [ADR-015](DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) |
+| 联网搜索 | chat | ✅ 完成 | 2026-07-04 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_composer.dart` 等 | 聊天输入框底部联网搜索开关（地球图标），KIMI/MIMO/DeepSeek 三提供商支持，详见下方说明 |
+
+### 联网搜索
+
+KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实现）。聊天输入框底部新增联网搜索开关按钮（地球图标），支持的提供商默认开启，用户可手动关闭。不支持的提供商按钮变灰不可点击。
+
+各提供商实现方式：
+- KIMI：`builtin_function.$web_search` 工具（自动禁用 thinking）
+- MIMO：`web_search` function 工具
+- DeepSeek：Anthropic 兼容接口 `web_search_20260209` 工具
+
+用户偏好持久化在 FlutterSecureStorage（key: `web_search_enabled_{providerType}`）。
 
 ## 4. 搜索模块（search）
 

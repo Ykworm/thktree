@@ -22,6 +22,9 @@
 - 消息复制：长按复制单条消息
 - **空白分支自动 title 持久化**（2026-06-29）：空白分支（A 模式）chat 流式结束后由 `AutoTitleController`（`lib/ui/features/chat/auto_title_controller.dart`，按 `nodeId` family）自动 LLM 生成 title 并写入 DB + refresh tree；`ref.keepAlive()` 保活，user 提前 pop 也能后台跑完（详见 [ADR-018](../../DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式)）
 - iOS 后台中断恢复：App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队（仅 iOS，详见 [ADR-015](../../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界)）
+- 联网搜索开关（`ChatComposer`）：输入框区域新增联网搜索按钮，位于模型选择器和发送按钮之间
+  - 参数：`webSearchEnabled`（bool，当前开关状态）、`webSearchSupported`（bool，当前模型是否支持）、`onWebSearchToggle`（VoidCallback?，null 时不显示按钮）
+  - 图标：地球图标，开启时蓝色、关闭时灰色；不支持时灰色不可点击，tooltip 提示"当前模型不支持联网搜索"
 
 ## 代码文件
 
@@ -34,6 +37,7 @@
 | `lib/data/services/chat_task_service.dart` | 服务层调度器：串行重发 queue + generation token + bridge.begin/end 包裹 + resumeInterrupted / cancelResumeQueue 入口 | 新增 |
 | `lib/data/services/background_task_bridge.dart` | iOS `beginBackgroundTask` MethodChannel 客户端（`begin()` / `end(taskId)`），可注入 | 新增 |
 | `ios/Runner/BackgroundTaskHandler.swift` | Swift MethodChannel handler + `UIApplication.beginBackgroundTask` 调用 + `expirationHandler` 释放 | 新增 |
+| `lib/ui/core/shared/chat_composer.dart` | 底部输入框（文本输入 + 发送/停止 + 模型选择 + 联网搜索开关） | - |
 | `lib/ui/core/shared/message_bubble.dart` | 消息气泡（user + assistant，GptMarkdown 渲染 + LaTeX 注入） | 388 |
 | `lib/ui/core/shared/markdown_builders.dart` | GptMarkdown 自定义构建器（含 `buildLatex`——`FittedBox(scaleDown)` 包裹 `Math.tex`） | 61 |
 | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支流式结束后后台补 title：3 次重试（指数退避 1s/2s/4s）+ 调 LLM + 写 DB + refresh tree；`ref.keepAlive()` 保活（2026-06-29 新增） | 新增 |

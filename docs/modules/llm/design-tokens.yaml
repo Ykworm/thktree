@@ -93,6 +93,12 @@ constraints:
   - "Provider 删除是软删除，避免历史对话失去模型引用"
   - "Provider 配置变更后，正在进行的对话不会被中断（chat 已缓存当时的 client）"
   - "连接测试失败时展示 HTTP status + body 摘要"
+  - "LlmClient.streamChatCompletion 新增 webSearch 参数（bool，默认 false）"
+  - "LlmClient.forConfig 新增 webSearch 命名参数，DeepSeek + webSearch 自动切换 ClaudeClient（Anthropic 兼容接口）"
+  - "ConfigBasedOpenAiCompatibleClient 支持 tool_calls 多轮交互（联网搜索场景）"
+  - "KIMI 使用 builtin_function.$web_search 工具声明 + 自动禁用 thinking；其他 provider 使用 function web_search"
+  - "WebSearchSupport 枚举（supported / unsupported）+ webSearchSupportMap 硬编码映射"
+  - "visibleProviderTypes 过滤设置页提供商列表（只显示 KIMI / MiniMax / MIMO / DeepSeek）"
 
 # ============================================================
 # 相关历史
@@ -103,3 +109,4 @@ history:
   - "2026-05: 扩展多 Provider 架构 + 流式统一"
   - "2026-05: API key 改用 Keychain 加密"
   - "2026-06: 模型预置 + 默认参数功能"
+  - "2026-07: 联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）"
