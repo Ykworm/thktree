@@ -224,7 +224,10 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                           minimumSize: Size.zero,
                           onPressed: () {
                             setState(() {
-                              final allSelected = theme.leaves.every(
+                              final selectable = theme.leaves
+                                  .where((l) => l.status != LeafStatus.fresh)
+                                  .toList();
+                              final allSelected = selectable.every(
                                   (l) =>
                                       controller.selectedLeafIds
                                           .contains(l.nodeId));
@@ -238,9 +241,11 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                             });
                           },
                           child: Text(
-                            theme.leaves.every((l) =>
-                                    controller.selectedLeafIds
-                                        .contains(l.nodeId))
+                            theme.leaves
+                                    .where((l) => l.status != LeafStatus.fresh)
+                                    .every((l) =>
+                                        controller.selectedLeafIds
+                                            .contains(l.nodeId))
                                 ? l10n.keywordRankingDeselectAll
                                 : l10n.keywordRankingSelectAll,
                             style: TextStyle(
@@ -372,9 +377,10 @@ class _LeafTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isSelectable = leaf.status != LeafStatus.fresh;
 
     return GestureDetector(
-      onTap: onToggle,
+      onTap: isSelectable ? onToggle : null,
       child: Container(
         padding: const EdgeInsetsDirectional.fromSTEB(52, 10, 20, 10),
         color: material.Colors.transparent,
@@ -386,7 +392,9 @@ class _LeafTile extends StatelessWidget {
                   ? CupertinoIcons.checkmark_circle_fill
                   : CupertinoIcons.circle,
               size: 24,
-              color: isSelected ? AppColors.accent : AppColors.textTertiary,
+              color: isSelectable
+                  ? (isSelected ? AppColors.accent : AppColors.textTertiary)
+                  : AppColors.textTertiary.withValues(alpha: 0.4),
             ),
             const SizedBox(width: 12),
 
@@ -398,7 +406,9 @@ class _LeafTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 15,
-                  color: AppColors.textPrimary,
+                  color: isSelectable
+                      ? AppColors.textPrimary
+                      : AppColors.textTertiary,
                 ),
               ),
             ),

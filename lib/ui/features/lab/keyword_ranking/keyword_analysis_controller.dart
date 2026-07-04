@@ -148,11 +148,13 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
     }
   }
 
-  /// 全选指定 theme 的所有 leaf。
+  /// 全选指定 theme 的所有 leaf（跳过 fresh，内容未变无需重分析）。
   void selectAllForTheme(String themeId) {
     final theme = themeLeaves.firstWhere((t) => t.themeId == themeId);
     for (final leaf in theme.leaves) {
-      selectedLeafIds.add(leaf.nodeId);
+      if (leaf.status != LeafStatus.fresh) {
+        selectedLeafIds.add(leaf.nodeId);
+      }
     }
   }
 
@@ -250,6 +252,9 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
         final leafInfo = themeLeaves
             .expand((t) => t.leaves)
             .firstWhere((l) => l.nodeId == leafId);
+
+        // 跳过 fresh：内容未变，无需重新分析
+        if (leafInfo.status == LeafStatus.fresh) continue;
 
         state = AsyncValue.data(AnalysisProgress(
           phase: AnalysisPhase.extracting,
