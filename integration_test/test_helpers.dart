@@ -296,12 +296,17 @@ Future<void> stopStreaming(WidgetTester tester) async {
 
 /// 刷新节点列表
 /// 
-/// 点击刷新按钮
+/// 点击 ⋯ 菜单中的"刷新"选项
 Future<void> refreshNodeList(WidgetTester tester) async {
-  final refreshButton = find.byKey(const ValueKey('refresh_button'));
-  if (refreshButton.evaluate().isNotEmpty) {
-    await tester.tap(refreshButton);
-    await tester.pump();
+  final menuButton = find.byKey(const ValueKey('overflow_menu_button'));
+  if (menuButton.evaluate().isEmpty) return;
+  await tester.tap(menuButton);
+  await tester.pumpAndSettle();
+  // CupertinoActionSheet renders "Refresh" as a button text.
+  final refreshAction = find.text('Refresh');
+  if (refreshAction.evaluate().isNotEmpty) {
+    await tester.tap(refreshAction);
+    await tester.pumpAndSettle();
   }
 }
 

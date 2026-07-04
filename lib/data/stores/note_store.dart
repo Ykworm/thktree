@@ -182,6 +182,45 @@ class NoteStore {
     await _file(noteId).writeAsString('$updated\n---\n\n$newBody\n');
   }
 
+  /// Move a note to a different theme by updating its frontmatter themeId
+  /// and moving the file to the target notes directory.
+  Future<void> moveNote({
+    required String noteId,
+    required String targetThemeId,
+    required Directory targetNotesDir,
+  }) async {
+    final srcFile = _file(noteId);
+    if (!await srcFile.exists()) {
+      throw StateError('Note file not found: $noteId');
+    }
+
+    final raw = await srcFile.readAsString();
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    final frontEnd = raw.indexOf('\n---\n');
+    if (frontEnd < 0) {
+      throw StateError('Invalid note format: $noteId');
+    }
+
+    String frontmatter = raw.substring(0, frontEnd);
+    String body = raw.substring(frontEnd + 5);
+
+    // Update themeId in frontmatter
+    final updatedFrontmatter = _updateYamlThemeId(frontmatter, targetThemeId);
+    // Update updatedAt
+    final finalFrontmatter = _updateYamlUpdatedAt(updatedFrontmatter, now);
+
+    // Ensure target directory exists
+    await targetNotesDir.create(recursive: true);
+
+    // Write to target location
+    final targetFile = File(p.join(targetNotesDir.path, '$noteId.md'));
+    await targetFile.writeAsString('$finalFrontmatter\n---\n$body');
+
+    // Delete source file
+    await srcFile.delete();
+  }
+
   File _file(String noteId) => File(p.join(notesDir.path, '$noteId.md'));
 
   NoteMeta? _parseFrontmatter(String raw) {
@@ -219,6 +258,19 @@ String _updateYamlUpdatedAt(String frontmatter, String newTime) {
   for (final line in lines) {
     if (line.trimLeft().startsWith('updatedAt:')) {
       buf.writeln('updatedAt: "$newTime"');
+    } else {
+      buf.writeln(line);
+    }
+  }
+  return buf.toString().trimRight();
+}
+
+String _updateYamlThemeId(String frontmatter, String newThemeId) {
+  final lines = frontmatter.split('\n');
+  final buf = StringBuffer();
+  for (final line in lines) {
+    if (line.trimLeft().startsWith('themeId:')) {
+      buf.writeln('themeId: "$newThemeId"');
     } else {
       buf.writeln(line);
     }

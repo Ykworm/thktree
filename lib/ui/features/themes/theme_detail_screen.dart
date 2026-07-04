@@ -45,6 +45,61 @@ class ThemeDetailScreen extends ConsumerStatefulWidget {
 class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   final Set<String> _collapsedIds = {};
 
+  void _showOverflowMenu() {
+    final l10n = AppLocalizations.of(context)!;
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref
+                  .read(themeDetailControllerProvider(widget.themeId).notifier)
+                  .refresh();
+            },
+            child: Text(l10n.refresh),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _collapsedIds.isEmpty ? _collapseAll() : _expandAll();
+            },
+            child: Text(
+              _collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll,
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+      ),
+    );
+  }
+
+  void _collapseAll() {
+    final detail =
+        ref.read(themeDetailControllerProvider(widget.themeId)).value;
+    if (detail == null) return;
+    final nodes = detail.nodes;
+    // Build parent→children index to find non-leaf nodes.
+    final parentIds = <String>{};
+    for (final n in nodes) {
+      if (n.parentId != null) parentIds.add(n.parentId!);
+    }
+    setState(() {
+      _collapsedIds.addAll(parentIds);
+    });
+  }
+
+  void _expandAll() {
+    setState(() {
+      _collapsedIds.clear();
+    });
+  }
+
   Future<void> _onImportDocSplit() async {
     final l10n = AppLocalizations.of(context)!;
 
@@ -162,13 +217,10 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   child: const Icon(AppIcons.docSplit),
                 ),
                 CupertinoButton(
-                  key: const ValueKey('refresh_button'),
+                  key: const ValueKey('overflow_menu_button'),
                   padding: EdgeInsets.zero,
-                  onPressed: () => ref
-                      .read(themeDetailControllerProvider(widget.themeId)
-                          .notifier)
-                      .refresh(),
-                  child: Icon(AppIcons.refresh),
+                  onPressed: _showOverflowMenu,
+                  child: const Icon(AppIcons.more),
                 ),
                 CupertinoButton(
                   key: const ValueKey('add_node_button'),

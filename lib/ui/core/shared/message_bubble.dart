@@ -190,12 +190,39 @@ String _escapeMarkdownTableCell(String value) {
   return value.replaceAll(r'\', r'\\').replaceAll('|', r'\|');
 }
 
+/// 将 ISO 8601 UTC 时间戳格式化为人类可读的本地时间。
+///
+/// - 今天：`14:32`
+/// - 昨天：`昨天 14:32`
+/// - 今年内：`6月28日 14:32`
+/// - 跨年：`2025年6月28日 14:32`
+String formatMessageTime(String timestampUtcIso8601) {
+  final utc = DateTime.tryParse(timestampUtcIso8601);
+  if (utc == null) return '';
+  final local = utc.toLocal();
+  final now = DateTime.now();
+  final time = '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+
+  final today = DateTime(now.year, now.month, now.day);
+  final targetDay = DateTime(local.year, local.month, local.day);
+  final diff = today.difference(targetDay).inDays;
+
+  if (diff == 0) return time;
+  if (diff == 1) return '昨天 $time';
+  if (local.year == now.year) {
+    return '${local.month}月${local.day}日 $time';
+  }
+  return '${local.year}年${local.month}月${local.day}日 $time';
+}
+
 class MessageBubble extends ConsumerStatefulWidget {
   const MessageBubble({
     super.key,
     required this.message,
     this.onRetry,
     this.userQuestion,
+    this.onSaveToNote,
+    this.showTimestamp = false,
   });
 
   final SessionMessage message;
@@ -203,6 +230,12 @@ class MessageBubble extends ConsumerStatefulWidget {
 
   /// 配对的用户提问（可选，用于分享图片）
   final String? userQuestion;
+
+  /// 点击"存为笔记"按钮时的回调
+  final VoidCallback? onSaveToNote;
+
+  /// 是否在气泡上方显示时间戳
+  final bool showTimestamp;
 
   @override
   ConsumerState<MessageBubble> createState() => _MessageBubbleState();
@@ -287,153 +320,187 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
       color: AppColors.textPrimary,
     );
 
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Container(
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        statusText == null ? title : '$title · $statusText',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
+    final timestampText = widget.showTimestamp
+        ? formatMessageTime(widget.message.timestampUtcIso8601)
+        : '';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (timestampText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                timestampText,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textTertiary,
                 ),
-                const SizedBox(height: 6),
-                if (widget.message.status == SessionMessageStatus.error)
-                  LlmErrorCard(
-                    key: const ValueKey('llm_error_card_compact'),
-                    compact: true,
-                    error: LlmError(
-                      kind: llmErrorKindFromCodeName(
-                        widget.message.errorCode ?? '',
-                      ),
-                    ),
-                    onRetry: widget.onRetry ?? () {},
-                    onCancel: () {
-                      // 取消语义：什么都不做（用户可能在等上下文）
-                    },
-                  )
-                else
-                  Column(
+              ),
+            ),
+          Align(
+            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (reasoning != null && reasoning.isNotEmpty)
-                        _ReasoningSection(
-                          reasoning: reasoning,
-                          isExpanded: shouldExpandReasoning,
-                          onToggle: () =>
-                              setState(() => _showReasoning = !_showReasoning),
-                          onExpandTable: _showExpanded,
-                        ),
-                      if (reasoning != null &&
-                          reasoning.isNotEmpty &&
-                          widget.message.body.trim().isNotEmpty)
-                        const SizedBox(height: 8),
-                      if (widget.message.body.trim().isNotEmpty)
-                        GptMarkdown(
-                          sanitizedBody,
-                          style: baseStyle,
-                          tableBuilder: (ctx, rows, style, cfg) {
-                            final tableMarkdown = _tableRowsToMarkdown(rows);
-                            return _TableWithActions(
-                              tableRows: rows,
-                              textStyle: style,
-                              onCopy: () => _copyTextToClipboard(tableMarkdown),
-                              onExpand: () => _showExpanded(ctx, tableMarkdown),
-                            );
-                          },
-                          codeBuilder: _buildCodeBlock,
-                          latexBuilder: buildLatex,
-                          useDollarSignsForLatex: true,
-                        ),
-                    ],
-                  ),
-                if (widget.message.role == SessionRole.assistant &&
-                    widget.message.status != SessionMessageStatus.streaming) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        onPressed: _copyToClipboard,
-                        child: Icon(
-                          _copied ? AppIcons.checkCircle : AppIcons.copy,
-                          size: 18,
-                          color: _copied
-                              ? CupertinoColors.systemGreen
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      _TtsPlayButton(
-                        messageId: widget.message.msgId,
-                        body: widget.message.body,
-                        text: widget.message.body,
-                      ),
-                      const SizedBox(width: 12),
-                      CupertinoButton(
-                        key: _shareButtonKey,
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        onPressed: _sharing ? null : _shareAsImage,
-                        child: _sharing
-                            ? const CupertinoActivityIndicator(radius: 8)
-                            : Icon(
-                                AppIcons.share,
-                                size: 18,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              statusText == null ? title : '$title · $statusText',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                                 color: AppColors.textSecondary,
                               ),
-                      ),
-                      if (widget.onRetry != null) ...[
-                        const SizedBox(width: 12),
-                        if (widget.message.status == SessionMessageStatus.error)
-                          CupertinoButton(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            color: CupertinoColors.systemRed,
-                            onPressed: widget.onRetry,
-                            child: Text(
-                              l10n.retry,
-                              style: TextStyle(fontSize: 14, color: CupertinoColors.white),
-                            ),
-                          )
-                        else
-                          CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            onPressed: widget.onRetry,
-                            child: Icon(
-                              CupertinoIcons.arrow_counterclockwise,
-                              size: 18,
-                              color: AppColors.textSecondary,
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      if (widget.message.status == SessionMessageStatus.error)
+                        LlmErrorCard(
+                          key: const ValueKey('llm_error_card_compact'),
+                          compact: true,
+                          error: LlmError(
+                            kind: llmErrorKindFromCodeName(
+                              widget.message.errorCode ?? '',
+                            ),
+                          ),
+                          onRetry: widget.onRetry ?? () {},
+                          onCancel: () {},
+                        )
+                      else
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (reasoning != null && reasoning.isNotEmpty)
+                              _ReasoningSection(
+                                reasoning: reasoning,
+                                isExpanded: shouldExpandReasoning,
+                                onToggle: () =>
+                                    setState(() => _showReasoning = !_showReasoning),
+                                onExpandTable: _showExpanded,
+                              ),
+                            if (reasoning != null &&
+                                reasoning.isNotEmpty &&
+                                widget.message.body.trim().isNotEmpty)
+                              const SizedBox(height: 8),
+                            if (widget.message.body.trim().isNotEmpty)
+                              GptMarkdown(
+                                sanitizedBody,
+                                style: baseStyle,
+                                tableBuilder: (ctx, rows, style, cfg) {
+                                  final tableMarkdown = _tableRowsToMarkdown(rows);
+                                  return _TableWithActions(
+                                    tableRows: rows,
+                                    textStyle: style,
+                                    onCopy: () => _copyTextToClipboard(tableMarkdown),
+                                    onExpand: () => _showExpanded(ctx, tableMarkdown),
+                                  );
+                                },
+                                codeBuilder: _buildCodeBlock,
+                                latexBuilder: buildLatex,
+                                useDollarSignsForLatex: true,
+                              ),
+                          ],
+                        ),
+                      if (widget.message.role == SessionRole.assistant &&
+                          widget.message.status != SessionMessageStatus.streaming) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              onPressed: _copyToClipboard,
+                              child: Icon(
+                                _copied ? AppIcons.checkCircle : AppIcons.copy,
+                                size: 18,
+                                color: _copied
+                                    ? CupertinoColors.systemGreen
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            _TtsPlayButton(
+                              messageId: widget.message.msgId,
+                              body: widget.message.body,
+                              text: widget.message.body,
+                            ),
+                            const SizedBox(width: 12),
+                            CupertinoButton(
+                              key: _shareButtonKey,
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              onPressed: _sharing ? null : _shareAsImage,
+                              child: _sharing
+                                  ? const CupertinoActivityIndicator(radius: 8)
+                                  : Icon(
+                                      AppIcons.share,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
+                            ),
+                            if (widget.onSaveToNote != null) ...[
+                              const SizedBox(width: 12),
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                onPressed: widget.onSaveToNote,
+                                child: Icon(
+                                  AppIcons.note,
+                                  size: 18,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                            if (widget.onRetry != null) ...[
+                              const SizedBox(width: 12),
+                              if (widget.message.status == SessionMessageStatus.error)
+                                CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  color: CupertinoColors.systemRed,
+                                  onPressed: widget.onRetry,
+                                  child: Text(
+                                    l10n.retry,
+                                    style: TextStyle(fontSize: 14, color: CupertinoColors.white),
+                                  ),
+                                )
+                              else
+                                CupertinoButton(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  onPressed: widget.onRetry,
+                                  child: Icon(
+                                    CupertinoIcons.arrow_counterclockwise,
+                                    size: 18,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          ],
+                        ),
                       ],
                     ],
                   ),
-                ],
-              ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

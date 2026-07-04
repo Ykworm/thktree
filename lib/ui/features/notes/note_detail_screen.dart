@@ -9,7 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
-import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
+import 'package:thk_tree/ui/core/shared/llm_setup_check.dart'
+    show resolveChatModel;
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -19,6 +20,7 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
+import 'package:thk_tree/ui/features/notes/generate_title_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 
@@ -252,6 +254,74 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
   }
 
+  /// 跳转到 GenerateTitleScreen，让用户选择/自定义标题后确认。
+  Future<void> _generateTitle() async {
+    if (_body.trim().isEmpty) return;
+    if (!mounted) return;
+
+    final newTitle = await Navigator.of(context).push<String>(
+      CupertinoPageRoute(
+        builder: (_) => GenerateTitleScreen(
+          noteId: widget.noteId,
+          notesDir: widget.notesDir,
+          currentTitle: _title,
+          body: _body,
+        ),
+      ),
+    );
+
+    if (newTitle != null && newTitle != _title && mounted) {
+      ref.read(noteListVersionProvider.notifier).bump();
+      setState(() {
+        _title = newTitle;
+      });
+    }
+  }
+
+  /// 将笔记转移到另一个主题。
+  Future<void> _moveToTheme() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final themeResult = await showThemePicker(
+      context,
+      ref,
+      onThemeCreated: () {
+        ref.invalidate(themeListControllerProvider);
+      },
+    );
+    if (themeResult == null) return;
+    if (!mounted) return;
+
+    try {
+      final paths = await ref.read(appPathsProvider.future);
+      final targetNotesDir = Directory('${paths.themesDir.path}/${themeResult.themeId}/notes');
+
+      await _store.moveNote(
+        noteId: widget.noteId,
+        targetThemeId: themeResult.themeId,
+        targetNotesDir: targetNotesDir,
+      );
+
+      ref.read(noteListVersionProvider.notifier).bump();
+
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: l10n.noteMoved,
+        defaultAction: l10n.ok,
+      );
+      // Pop back to note list since the note moved to a different theme
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: 'Failed: $e',
+        defaultAction: l10n.ok,
+      );
+    }
+  }
+
   void _showMoreActions() {
     final l10n = AppLocalizations.of(context)!;
     final canCopy = (_editing ? _controller.text : _body).isNotEmpty;
@@ -271,6 +341,18 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
           icon: AppIcons.edit,
           color: AppColors.textSecondary,
           onPressed: _renameNote,
+        ),
+        GridAction(
+          label: l10n.generateTitle,
+          icon: AppIcons.sparkles,
+          color: AppColors.accent,
+          onPressed: _generateTitle,
+        ),
+        GridAction(
+          label: l10n.moveNote,
+          icon: AppIcons.folder,
+          color: CupertinoColors.systemIndigo,
+          onPressed: _moveToTheme,
         ),
       ],
       destructiveActions: [

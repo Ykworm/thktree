@@ -23,6 +23,8 @@ import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/data/stores/note_store.dart';
+import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
 import 'package:thk_tree/ui/features/themes/full_tree_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 
@@ -111,6 +113,69 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final provider = providers.where((p) => p.id == providerId).firstOrNull;
     if (provider == null) return null;
     return '$modelId · ${provider.name}';
+  }
+
+  /// 将助手消息保存为笔记（临时标题 = 正文前 N 字）。
+  ///
+  /// 使用当前对话所在主题作为笔记分类。若主题不存在则自动创建同名主题。
+  Future<void> _saveMessageAsNote(SessionMessage message) async {
+    if (message.body.trim().isEmpty || !mounted) return;
+
+    // 生成临时标题：去掉 Markdown 标记，取前 20 字
+    final plainText = message.body
+        .replaceAll(RegExp(r'[#*_`~\[\]()>|]'), '')
+        .replaceAll(RegExp(r'\n+'), ' ')
+        .trim();
+    final tempTitle = plainText.length <= 20
+        ? plainText
+        : '${plainText.substring(0, 20)}…';
+
+    try {
+      final paths = await ref.read(appPathsProvider.future);
+
+      // 确保主题存在，不存在则自动创建同名主题
+      final themeStore = await ref.read(themeStoreProvider.future);
+      final themes = await themeStore.listThemes();
+      final themeTitle = _displayedTitle ?? widget.title;
+      var themeId = widget.themeId;
+
+      final themeExists = themes.any((t) => t.themeId == themeId);
+      if (!themeExists) {
+        final newTheme = await themeStore.createTheme(title: themeTitle);
+        themeId = newTheme.themeId;
+      }
+
+      final notesDir = Directory('${paths.themesDir.path}/$themeId/notes');
+      final store = NoteStore(notesDir: notesDir);
+
+      final meta = await store.createNote(
+        themeId: themeId,
+        title: tempTitle,
+      );
+      await store.writeBody(meta.noteId, message.body);
+
+      ref.read(noteListVersionProvider.notifier).bump();
+
+      if (!mounted) return;
+
+      Navigator.of(context).push(
+        CupertinoPageRoute(
+          builder: (_) => NoteEditorScreen(
+            themeId: themeId,
+            themeTitle: themeTitle,
+            themePath: '${paths.themesDir.path}/$themeId',
+            notesDir: notesDir.path,
+            noteId: meta.noteId,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: 'Failed to save note: $e',
+      );
+    }
   }
 
   @override
@@ -305,6 +370,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
                                 : null,
                             userQuestion: userQuestion,
+                            onSaveToNote: message.role == SessionRole.assistant &&
+                                    message.status == SessionMessageStatus.done
+                                ? () => _saveMessageAsNote(message)
+                                : null,
                           );
                         },
                       ),
