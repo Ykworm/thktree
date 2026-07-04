@@ -14,6 +14,9 @@ class ChatComposer extends StatefulWidget {
     required this.onStopStreaming,
     this.enabled = true,
     this.onModelSelectorTap,
+    this.webSearchEnabled = false,
+    this.webSearchSupported = false,
+    this.onWebSearchToggle,
   });
 
   final String hintText;
@@ -24,6 +27,15 @@ class ChatComposer extends StatefulWidget {
 
   /// 点击模型选择按钮的回调（可选，向后兼容）
   final VoidCallback? onModelSelectorTap;
+
+  /// 联网搜索是否开启
+  final bool webSearchEnabled;
+
+  /// 当前模型是否支持联网搜索
+  final bool webSearchSupported;
+
+  /// 联网搜索开关回调（null 表示不显示按钮）
+  final VoidCallback? onWebSearchToggle;
 
   @override
   State<ChatComposer> createState() => _ChatComposerState();
@@ -53,8 +65,12 @@ class _ChatComposerState extends State<ChatComposer> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: Focus(
@@ -157,6 +173,18 @@ class _ChatComposerState extends State<ChatComposer> {
           ),
         ],
       ),
+      // 联网搜索开关（输入框下方）
+      if (widget.onWebSearchToggle != null) ...[
+        const SizedBox(height: 4),
+        _WebSearchToggle(
+          enabled: widget.webSearchEnabled,
+          supported: widget.webSearchSupported,
+          isStreaming: widget.isStreaming,
+          onToggle: widget.onWebSearchToggle!,
+        ),
+      ],
+        ],
+      ),
     );
   }
 
@@ -206,6 +234,52 @@ class _ChatComposerState extends State<ChatComposer> {
       text: updated,
       selection: TextSelection.collapsed(offset: start + 1),
       composing: TextRange.empty,
+    );
+  }
+}
+
+/// 联网搜索开关（紧凑横条，放在输入框下方）
+class _WebSearchToggle extends StatelessWidget {
+  const _WebSearchToggle({
+    required this.enabled,
+    required this.supported,
+    required this.isStreaming,
+    required this.onToggle,
+  });
+
+  final bool enabled;
+  final bool supported;
+  final bool isStreaming;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: supported && !isStreaming ? onToggle : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            enabled ? AppIcons.globe : AppIcons.globeSlash,
+            size: 14,
+            color: supported
+                ? (enabled ? AppColors.accent : AppColors.textTertiary)
+                : AppColors.textTertiary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            supported
+                ? (enabled ? '联网搜索' : '联网搜索')
+                : '不支持联网',
+            style: TextStyle(
+              fontSize: 12,
+              color: supported
+                  ? (enabled ? AppColors.accent : AppColors.textTertiary)
+                  : AppColors.textTertiary.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

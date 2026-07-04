@@ -92,6 +92,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     required String systemPrompt,
     required SessionStore sessionStore,
     AppLogger? logger,
+    bool webSearch = false,
   }) async {
     if (state.containsKey(nodeId)) {
       await stopTask(nodeId);
@@ -110,6 +111,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
       model: model,
       messages: messages,
       cancelToken: cancelToken,
+      webSearch: webSearch,
     );
 
     final streamSub = stream.listen(

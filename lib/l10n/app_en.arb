@@ -1310,6 +1310,10 @@
   "@llmErrorAuthFailed": {
     "description": "LLM error card body when HTTP 401/403"
   },
+  "llmErrorPaymentRequired": "Insufficient balance. Please top up in the provider's console.",
+  "@llmErrorPaymentRequired": {
+    "description": "Payment required (HTTP 402)"
+  },
   "llmErrorServerError": "Service temporarily unavailable. Please try again.",
   "@llmErrorServerError": {
     "description": "LLM error card body when HTTP 5xx"

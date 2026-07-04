@@ -19,6 +19,9 @@ enum LlmErrorKind {
   /// 鉴权失败（HTTP 401/403）。
   authFailed,
 
+  /// 余额不足 / 付费问题（HTTP 402）。
+  paymentRequired,
+
   /// 服务端错误（HTTP 5xx）。
   serverError,
 
@@ -125,6 +128,7 @@ class LlmError {
           final code = e.response?.statusCode ?? 0;
           if (code == 429) return LlmErrorKind.rateLimited;
           if (code == 401 || code == 403) return LlmErrorKind.authFailed;
+          if (code == 402) return LlmErrorKind.paymentRequired;
           if (code >= 500) return LlmErrorKind.serverError;
           return LlmErrorKind.unknown;
         case DioExceptionType.badCertificate:

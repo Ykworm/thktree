@@ -33,6 +33,33 @@ enum LlmProviderType {
   }
 }
 
+/// 联网搜索支持状态
+enum WebSearchSupport {
+  /// 官方原生支持
+  supported,
+
+  /// 官方不支持
+  unsupported,
+}
+
+/// APP 当前支持在设置页面显示的提供商类型
+const Set<LlmProviderType> visibleProviderTypes = {
+  LlmProviderType.kimi,
+  LlmProviderType.minimax,
+  LlmProviderType.mimo,
+  LlmProviderType.deepseek,
+};
+
+/// 各提供商的联网搜索支持状态
+///
+/// 新模型接入时更新此映射（APP update 更新）。
+const Map<LlmProviderType, WebSearchSupport> webSearchSupportMap = {
+  LlmProviderType.kimi: WebSearchSupport.supported,
+  LlmProviderType.minimax: WebSearchSupport.supported,
+  LlmProviderType.mimo: WebSearchSupport.supported,
+  LlmProviderType.deepseek: WebSearchSupport.supported,
+};
+
 /// LLM 提供商配置
 class LlmProviderConfig {
   final String id; // 唯一ID (ulid)

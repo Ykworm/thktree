@@ -7,6 +7,7 @@ import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/chat_task_service.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 class ChatControllerParams {
   const ChatControllerParams({
@@ -38,6 +39,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   // 缓存当前对话的模型信息
   String? _providerId;
   String? _modelId;
+  LlmProviderType? _providerType;
 
   /// 缓存当前对话的 system prompt
   String _systemPrompt = 'You are a helpful assistant. Reply in Markdown.';
@@ -47,6 +49,9 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
 
   /// 当前对话关联的 modelId（可为 null 表示使用全局设置）
   String? get modelId => _modelId;
+
+  /// 当前对话关联的提供商类型（用于联网搜索等判断）
+  LlmProviderType? get providerType => _providerType;
 
   void _trace(String message, {Map<String, Object?>? attrs}) {
     dev.log(message);
@@ -130,10 +135,19 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       _providerId = doc.providerId;
       _modelId = doc.modelId;
       _systemPrompt = doc.systemPrompt;
+      // 加载提供商类型
+      if (_providerId != null) {
+        final configStore = ref.read(llmConfigStoreProvider);
+        final config = await configStore.getProvider(_providerId!);
+        _providerType = config?.type;
+      } else {
+        _providerType = null;
+      }
       _trace('chat_controller.load_session_model', attrs: {'providerId': _providerId, 'modelId': _modelId});
     } catch (_) {
       _providerId = null;
       _modelId = null;
+      _providerType = null;
       _systemPrompt = 'You are a helpful assistant. Reply in Markdown.';
     }
   }
@@ -149,6 +163,10 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     );
     _providerId = providerId;
     _modelId = modelId;
+    // 同步更新提供商类型
+    final configStore = ref.read(llmConfigStoreProvider);
+    final config = await configStore.getProvider(providerId);
+    _providerType = config?.type;
     // 通知 UI 刷新
     state = AsyncData(await _read());
   }
@@ -232,7 +250,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       final apiKey = await configStore.readApiKey(sessionProviderId);
       if (apiKey.isEmpty) return;
       await _startStreamingWithConfig(
-        client: LlmClient.forConfig(provider),
+        providerConfig: provider,
         apiKey: apiKey,
         model: sessionModelId,
       );
@@ -246,7 +264,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       final key = await configStore.readApiKey(p.id);
       if (key.isNotEmpty && p.models.isNotEmpty) {
         await _startStreamingWithConfig(
-          client: LlmClient.forConfig(p),
+          providerConfig: p,
           apiKey: key,
           model: p.models.first.id,
         );
@@ -355,7 +373,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           return;
         }
         await _startStreamingWithConfig(
-          client: LlmClient.forConfig(provider),
+          providerConfig: provider,
           apiKey: apiKey,
           model: sessionModelId,
         );
@@ -376,7 +394,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
         }
         if (fallbackApiKey != null && fallbackApiKey.isNotEmpty) {
           await _startStreamingWithConfig(
-            client: LlmClient.forConfig(fallbackProvider!),
+            providerConfig: fallbackProvider!,
             apiKey: fallbackApiKey,
             model: fallbackModel!,
           );
@@ -442,13 +460,17 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   }
 
   Future<void> _startStreamingWithConfig({
-    required LlmClient client,
+    required LlmProviderConfig providerConfig,
     required String apiKey,
     required String model,
   }) async {
     final sessionStore = await ref.read(sessionStoreProvider.future);
     final logger = await ref.read(appLoggerProvider.future);
     final history = await _read();
+
+    // 解析联网搜索状态
+    final webSearch = _resolveWebSearch(providerConfig.type);
+    final client = LlmClient.forConfig(providerConfig, webSearch: webSearch);
 
     // 更新 UI 状态（显示开始）
     state = AsyncData(await _read());
@@ -463,11 +485,33 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       systemPrompt: _systemPrompt,
       sessionStore: sessionStore,
       logger: logger,
+      webSearch: webSearch,
     );
 
     // Update search index (fire-and-forget after task completes)
     // 注意：这里搜索索引更新将由 ChatTaskService 的 onDone 处理
     // 我们保持这个方法的签名不变，但实际执行在 ChatTaskService 中
+  }
+
+  /// 解析当前提供商的联网搜索是否应该开启
+  bool _resolveWebSearch(LlmProviderType? providerType) {
+    if (providerType == null) {
+      dev.log('_resolveWebSearch: providerType=null → false', name: 'chat_controller');
+      return false;
+    }
+    final support = webSearchSupportMap[providerType];
+    if (support != WebSearchSupport.supported) {
+      dev.log('_resolveWebSearch: $providerType not supported → false', name: 'chat_controller');
+      return false;
+    }
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings == null) {
+      dev.log('_resolveWebSearch: settings=null → default true', name: 'chat_controller');
+      return true;
+    }
+    final enabled = settings.isWebSearchEnabled(providerType.name);
+    dev.log('_resolveWebSearch: $providerType enabled=$enabled', name: 'chat_controller');
+    return enabled;
   }
 }
 

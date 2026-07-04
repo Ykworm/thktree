@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:thk_tree/data/models/llm_provider_config.dart';
 
 class AppSettings {
   AppSettings({
@@ -12,6 +13,7 @@ class AppSettings {
     this.chatDefaultProviderId,
     this.chatDefaultModelId,
     this.ttsVoiceId,
+    this.webSearchEnabledMap = const {},
   });
 
   final String? localeLanguageCode;
@@ -25,6 +27,9 @@ class AppSettings {
   final String? chatDefaultModelId;
   final String? ttsVoiceId;
 
+  /// 各提供商的联网搜索开关状态（key: providerType name, value: enabled）
+  final Map<String, bool> webSearchEnabledMap;
+
   AppSettings copyWith({
     String? localeLanguageCode,
     bool? faceIdEnabled,
@@ -36,6 +41,7 @@ class AppSettings {
     String? chatDefaultProviderId,
     String? chatDefaultModelId,
     String? ttsVoiceId,
+    Map<String, bool>? webSearchEnabledMap,
   }) {
     return AppSettings(
       localeLanguageCode: localeLanguageCode ?? this.localeLanguageCode,
@@ -48,7 +54,20 @@ class AppSettings {
       chatDefaultProviderId: chatDefaultProviderId ?? this.chatDefaultProviderId,
       chatDefaultModelId: chatDefaultModelId ?? this.chatDefaultModelId,
       ttsVoiceId: ttsVoiceId ?? this.ttsVoiceId,
+      webSearchEnabledMap: webSearchEnabledMap ?? this.webSearchEnabledMap,
     );
+  }
+
+  /// 获取指定提供商的联网搜索开关状态
+  ///
+  /// 支持联网的提供商默认开启，不支持的默认关闭。
+  /// 使用 dynamic 访问避免 hot reload 时旧实例字段为 null。
+  bool isWebSearchEnabled(String providerTypeName) {
+    try {
+      return webSearchEnabledMap[providerTypeName] ?? true;
+    } catch (_) {
+      return true;
+    }
   }
 }
 
@@ -67,6 +86,9 @@ class SettingsStore {
   static const _keyChatDefaultProviderId = 'chat_default_provider_id';
   static const _keyChatDefaultModelId = 'chat_default_model_id';
   static const _keyTtsVoiceId = 'tts_voice_id';
+  static const _keyWebSearchPrefix = 'web_search_enabled_';
+  static final _webSearchKeys =
+      webSearchSupportMap.keys.map((t) => t.name).toList();
 
   Future<AppSettings> load() async {
     final locale = await _secureStorage.read(key: _keyLocale);
@@ -85,6 +107,14 @@ class SettingsStore {
     final chatDefaultModelId = await _secureStorage.read(key: _keyChatDefaultModelId);
     final ttsVoiceId = await _secureStorage.read(key: _keyTtsVoiceId);
 
+    final webSearchMap = <String, bool>{};
+    for (final key in _webSearchKeys) {
+      final val = await _secureStorage.read(key: '$_keyWebSearchPrefix$key');
+      if (val != null) {
+        webSearchMap[key] = val == 'true';
+      }
+    }
+
     return AppSettings(
       localeLanguageCode: locale,
       faceIdEnabled: faceIdEnabled,
@@ -96,6 +126,7 @@ class SettingsStore {
       chatDefaultProviderId: chatDefaultProviderId,
       chatDefaultModelId: chatDefaultModelId,
       ttsVoiceId: ttsVoiceId,
+      webSearchEnabledMap: webSearchMap,
     );
   }
 
@@ -152,5 +183,13 @@ class SettingsStore {
     } else {
       await _secureStorage.write(key: _keyTtsVoiceId, value: voiceId);
     }
+  }
+
+  /// 保存指定提供商的联网搜索开关状态
+  Future<void> saveWebSearchEnabled(String providerType, bool enabled) async {
+    await _secureStorage.write(
+      key: '$_keyWebSearchPrefix$providerType',
+      value: enabled.toString(),
+    );
   }
 }

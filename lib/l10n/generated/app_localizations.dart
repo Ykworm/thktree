@@ -1856,6 +1856,12 @@ abstract class AppLocalizations {
   /// **'API key invalid or expired. Check settings.'**
   String get llmErrorAuthFailed;
 
+  /// Payment required (HTTP 402)
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient balance. Please top up in the provider\'s console.'**
+  String get llmErrorPaymentRequired;
+
   /// LLM error card body when HTTP 5xx
   ///
   /// In en, this message translates to:

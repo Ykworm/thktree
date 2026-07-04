@@ -196,6 +196,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final effectiveProviderId = _showModelPanel ? (_panelProviderId ?? currentProviderId) : currentProviderId;
     final effectiveModelId = _showModelPanel ? (_panelModelId ?? currentModelId) : currentModelId;
 
+    // 联网搜索状态
+    final currentProviderType = chatCtrl.providerType;
+    final webSearchSupported = currentProviderType != null &&
+        webSearchSupportMap[currentProviderType] == WebSearchSupport.supported;
+    final webSearchEnabled = webSearchSupported &&
+        (settings?.isWebSearchEnabled(currentProviderType.name) ?? true);
+
     final modelSubtitle = _resolveModelSubtitle(effectiveProviderId, effectiveModelId);
 
     return CupertinoPageScaffold(
@@ -366,6 +373,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     }
                     setState(() => _showModelPanel = !_showModelPanel);
                   },
+                  webSearchEnabled: webSearchEnabled,
+                  webSearchSupported: webSearchSupported,
+                  onWebSearchToggle: webSearchSupported
+                      ? () {
+                          ref.read(settingsControllerProvider.notifier).saveWebSearchEnabled(
+                            currentProviderType.name,
+                            !webSearchEnabled,
+                          );
+                        }
+                      : null,
                 ),
               ),
               // 模型面板（出现在输入框下方，取代软键盘位置）

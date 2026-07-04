@@ -1005,6 +1005,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'API key invalid or expired. Check settings.';
 
   @override
+  String get llmErrorPaymentRequired =>
+      'Insufficient balance. Please top up in the provider\'s console.';
+
+  @override
   String get llmErrorServerError =>
       'Service temporarily unavailable. Please try again.';
 

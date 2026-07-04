@@ -56,6 +56,12 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     await store.saveChatDefaultModel(providerId: null, modelId: null);
     state = AsyncData(await store.load());
   }
+
+  Future<void> saveWebSearchEnabled(String providerType, bool enabled) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveWebSearchEnabled(providerType, enabled);
+    state = AsyncData(await store.load());
+  }
 }
 
 final settingsControllerProvider =

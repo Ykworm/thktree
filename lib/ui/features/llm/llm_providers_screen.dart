@@ -39,7 +39,11 @@ class LlmProvidersScreen extends ConsumerWidget {
       child: SafeArea(
         child: providersAsync.when(
           data: (providers) {
-            if (providers.isEmpty) {
+            // 只显示 APP 支持的提供商
+            final visible = providers
+                .where((p) => visibleProviderTypes.contains(p.type))
+                .toList();
+            if (visible.isEmpty) {
               return ThkFillCardPageBody(
                 child: Center(
                   child: Column(
@@ -64,14 +68,14 @@ class LlmProvidersScreen extends ConsumerWidget {
             return ThkFillCardPageBody(
               child: ListView.separated(
                 padding: EdgeInsets.zero,
-                itemCount: providers.length,
+                itemCount: visible.length,
                 separatorBuilder: (context, index) => Container(
                   height: 0.5,
                   margin: const EdgeInsetsDirectional.only(start: 16),
                   color: CupertinoColors.separator.resolveFrom(context),
                 ),
                 itemBuilder: (context, index) {
-                  final provider = providers[index];
+                  final provider = visible[index];
                   return _ProviderTile(
                     provider: provider,
                     onTap: () async {

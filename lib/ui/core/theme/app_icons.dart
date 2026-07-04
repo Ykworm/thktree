@@ -98,6 +98,7 @@ class AppIcons {
 
   /// 语言 (globe)
   static const IconData globe = SFIcons.sf_globe;
+  static const IconData globeSlash = CupertinoIcons.clear;
 
   /// Cloud fill (remote logging on)
   static const IconData cloudFill = SFIcons.sf_cloud_fill;

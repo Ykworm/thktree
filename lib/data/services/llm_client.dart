@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as dev;
 
 import 'package:dio/dio.dart';
 
@@ -13,6 +14,7 @@ abstract class LlmClient {
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   });
 
   /// 根据 LlmProviderConfig 创建客户端实例。
@@ -20,7 +22,25 @@ abstract class LlmClient {
   /// 对于 OpenAI 兼容的提供商（包括 custom），使用 [ConfigBasedOpenAiCompatibleClient]；
   /// 对于 anthropic 类型使用 [ClaudeClient]；
   /// 对于 gemini 类型使用 [GeminiClient]。
-  factory LlmClient.forConfig(LlmProviderConfig config) {
+  factory LlmClient.forConfig(
+    LlmProviderConfig config, {
+    bool webSearch = false,
+  }) {
+    dev.log(
+      'LlmClient.forConfig: type=${config.type}, webSearch=$webSearch, baseUrl=${config.baseUrl}, name=${config.name}',
+      name: 'llm_client',
+    );
+    // DeepSeek 联网搜索需要走 Anthropic 兼容接口
+    if (config.type == LlmProviderType.deepseek && webSearch) {
+      // 去掉可能的 /v1 后缀，再拼 /anthropic/v1
+      var base = config.baseUrl;
+      if (base.endsWith('/v1')) {
+        base = base.substring(0, base.length - 3);
+      }
+      final url = '$base/anthropic/v1';
+      dev.log('DeepSeek web search → ClaudeClient.withBaseUrl($url)', name: 'llm_client');
+      return ClaudeClient.withBaseUrl(url);
+    }
     if (config.isOpenAiCompatible) {
       return ConfigBasedOpenAiCompatibleClient(
         baseUrl: config.baseUrl,
@@ -65,68 +85,257 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
   final String baseUrl;
   final String providerName;
 
+  /// 构建联网搜索的 tools 声明
+  ///
+  /// KIMI 使用 builtin_function.$web_search，其他使用 function web_search。
+  List<Map<String, Object?>> _buildWebSearchTools() {
+    if (providerName.toLowerCase().contains('kimi') ||
+        providerName.toLowerCase().contains('moonshot')) {
+      return [
+        {
+          'type': 'builtin_function',
+          'function': {'name': r'$web_search'},
+        },
+      ];
+    }
+    return [
+      {
+        'type': 'function',
+        'function': {
+          'name': 'web_search',
+          'description': 'Search the web for real-time information',
+          'parameters': {
+            'type': 'object',
+            'properties': {
+              'query': {
+                'type': 'string',
+                'description': 'The search query',
+              },
+            },
+            'required': ['query'],
+          },
+        },
+      },
+    ];
+  }
+
   @override
   Stream<LlmResponseDelta> streamChatCompletion({
     required String apiKey,
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   }) async* {
-    final dio = Dio(BaseOptions(baseUrl: baseUrl));
-    final response = await dio.post<ResponseBody>(
-      '/chat/completions',
-      cancelToken: cancelToken,
-      options: Options(
-        responseType: ResponseType.stream,
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
-      ),
-      data: {
-        'model': model,
-        'stream': true,
-        'messages': messages,
-      },
+    final currentMessages = List<Map<String, Object?>>.from(messages);
+    final effectiveBaseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+
+    dev.log(
+      'streamChatCompletion: provider=$providerName, model=$model, webSearch=$webSearch, baseUrl=$effectiveBaseUrl',
+      name: 'llm_client',
     );
 
-    final body = response.data;
-    if (body == null) {
-      throw StateError('Empty response body');
-    }
+    // 联网搜索可能触发多轮 tool_calls，最多循环 3 次
+    const maxToolRounds = 3;
+    for (var round = 0; round < maxToolRounds; round++) {
+      final body = <String, Object?>{
+        'model': model,
+        'stream': true,
+        'messages': currentMessages,
+        if (webSearch) 'tools': _buildWebSearchTools(),
+      };
 
-    final stream = body.stream.cast<List<int>>().transform(utf8.decoder);
-    final buffer = StringBuffer();
+      // KIMI 使用 $web_search 时必须禁用 thinking
+      if (webSearch &&
+          (providerName.toLowerCase().contains('kimi') ||
+           providerName.toLowerCase().contains('moonshot'))) {
+        body['thinking'] = {'type': 'disabled'};
+      }
 
-    await for (final chunk in stream) {
-      buffer.write(chunk);
-      while (true) {
-        final text = buffer.toString();
-        final idx = text.indexOf('\n\n');
-        if (idx < 0) break;
-        final event = text.substring(0, idx);
-        final rest = text.substring(idx + 2);
-        buffer
-          ..clear()
-          ..write(rest);
+      dev.log(
+        'Round $round: POST $effectiveBaseUrl/chat/completions, tools=${body['tools'] != null}, msgCount=${currentMessages.length}',
+        name: 'llm_client',
+      );
 
-        for (final line in event.split('\n')) {
-          final trimmed = line.trimRight();
-          if (trimmed.isEmpty) continue;
-          if (trimmed.startsWith(':')) continue;
-          if (!trimmed.startsWith('data:')) continue;
-          final data = trimmed.substring('data:'.length).trimLeft();
-          if (data == '[DONE]') {
-            return;
-          }
-          final delta = _extractDelta(data);
-          if (delta != null && !delta.isEmpty) {
-            yield delta;
+      final dio = Dio(BaseOptions(baseUrl: effectiveBaseUrl));
+      final Response<ResponseBody> response;
+      try {
+        response = await dio.post<ResponseBody>(
+          '/chat/completions',
+          cancelToken: cancelToken,
+          options: Options(
+            responseType: ResponseType.stream,
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+              'Accept': 'text/event-stream',
+            },
+          ),
+          data: body,
+        );
+      } on DioException catch (e) {
+        dev.log(
+          'Request failed: ${e.message}, statusCode=${e.response?.statusCode}, data=${e.response?.data}',
+          name: 'llm_client',
+          error: e,
+        );
+        rethrow;
+      }
+
+      final responseBody = response.data;
+      if (responseBody == null) {
+        throw StateError('Empty response body');
+      }
+
+      final stream =
+          responseBody.stream.cast<List<int>>().transform(utf8.decoder);
+      final buffer = StringBuffer();
+
+      // 收集 tool_calls（用于多轮交互）
+      final toolCallsMap = <int, Map<String, Object?>>{};
+      String? finishReason;
+
+      await for (final chunk in stream) {
+        buffer.write(chunk);
+        while (true) {
+          final text = buffer.toString();
+          final idx = text.indexOf('\n\n');
+          if (idx < 0) break;
+          final event = text.substring(0, idx);
+          final rest = text.substring(idx + 2);
+          buffer
+            ..clear()
+            ..write(rest);
+
+          for (final line in event.split('\n')) {
+            final trimmed = line.trimRight();
+            if (trimmed.isEmpty) continue;
+            if (trimmed.startsWith(':')) continue;
+            if (!trimmed.startsWith('data:')) continue;
+            final data = trimmed.substring('data:'.length).trimLeft();
+            if (data == '[DONE]') {
+              break;
+            }
+            final parsed = _parseJsonSafe(data);
+            if (parsed == null) continue;
+            final choices = parsed['choices'] as List?;
+            if (choices == null || choices.isEmpty) continue;
+            final choice = choices.first as Map<String, Object?>;
+
+            // 记录 finish_reason
+            final fr = choice['finish_reason'] as String?;
+            if (fr != null) finishReason = fr;
+
+            // 收集 tool_calls 增量
+            final delta = choice['delta'] as Map<String, Object?>?;
+            if (delta != null) {
+              final toolCalls = delta['tool_calls'] as List?;
+              if (toolCalls != null) {
+                for (final tc in toolCalls) {
+                  final tcMap = tc as Map<String, Object?>;
+                  final index = tcMap['index'] as int;
+                  final existing = toolCallsMap[index] ?? {
+                    'id': tcMap['id'] as String? ?? '',
+                    'type': tcMap['type'] as String? ?? 'function',
+                    'function': <String, Object?>{
+                      'name': '',
+                      'arguments': '',
+                    },
+                  };
+                  final fn = tcMap['function'] as Map<String, Object?>?;
+                  if (fn != null) {
+                    final existingFn =
+                        existing['function'] as Map<String, Object?>;
+                    if (fn['name'] != null) {
+                      existingFn['name'] = fn['name'];
+                    }
+                    if (fn['arguments'] != null) {
+                      existingFn['arguments'] =
+                          '${existingFn['arguments']}${fn['arguments']}';
+                    }
+                  }
+                  if (tcMap['id'] != null &&
+                      (tcMap['id'] as String).isNotEmpty) {
+                    existing['id'] = tcMap['id'];
+                  }
+                  toolCallsMap[index] = existing;
+                }
+              }
+            }
+
+            // 提取 content/reasoning delta
+            final deltaContent = _extractDeltaFromMap(delta);
+            if (deltaContent != null && !deltaContent.isEmpty) {
+              yield deltaContent;
+            }
           }
         }
       }
+
+      dev.log(
+        'Round $round done: finishReason=$finishReason, toolCalls=${toolCallsMap.length}',
+        name: 'llm_client',
+      );
+
+      // 如果没有 tool_calls，结束循环
+      if (finishReason != 'tool_calls' || toolCallsMap.isEmpty) {
+        return;
+      }
+
+      dev.log(
+        'Processing ${toolCallsMap.length} tool_calls, building tool messages...',
+        name: 'llm_client',
+      );
+
+      // 有 tool_calls：构建 tool 结果消息并继续下一轮
+      final assistantToolCalls = toolCallsMap.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+
+      // 添加 assistant 消息（含 tool_calls）
+      currentMessages.add({
+        'role': 'assistant',
+        'tool_calls': assistantToolCalls.map((e) => e.value).toList(),
+      });
+
+      // 添加 tool 结果消息
+      for (final entry in assistantToolCalls) {
+        final tc = entry.value;
+        final fn = tc['function'] as Map<String, Object?>;
+        final name = fn['name'] as String;
+        final arguments = fn['arguments'] as String;
+
+        // 对于 KIMI $web_search，直接返回 arguments（服务端执行搜索）
+        currentMessages.add({
+          'role': 'tool',
+          'tool_call_id': tc['id'],
+          'name': name,
+          'content': arguments,
+        });
+      }
     }
+  }
+
+  static Map<String, Object?>? _parseJsonSafe(String data) {
+    try {
+      final result = json.decode(data);
+      return result is Map<String, Object?> ? result : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static LlmResponseDelta? _extractDeltaFromMap(Map<String, Object?>? delta) {
+    if (delta == null) return null;
+    final content = delta['content'] as String? ?? '';
+    final reasoningContent =
+        delta['reasoning_content'] as String? ?? '';
+    if (content.isEmpty && reasoningContent.isEmpty) return null;
+    return LlmResponseDelta(
+      content: content,
+      reasoning: reasoningContent,
+    );
   }
 }
 
@@ -145,8 +354,15 @@ class ClaudeClient extends LlmClient {
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   }) async* {
-    final dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'https://api.anthropic.com/v1'));
+    final effectiveBaseUrl = baseUrl ?? 'https://api.anthropic.com/v1';
+    final dio = Dio(BaseOptions(baseUrl: effectiveBaseUrl));
+
+    dev.log(
+      'ClaudeClient.streamChatCompletion: baseUrl=$effectiveBaseUrl, model=$model, webSearch=$webSearch',
+      name: 'llm_client',
+    );
 
     final systemMessages = <Map<String, Object?>>[];
     final userAssistantMessages = <Map<String, Object?>>[];
@@ -165,25 +381,48 @@ class ClaudeClient extends LlmClient {
       'stream': true,
       'max_tokens': 4096,
       'messages': userAssistantMessages,
+      if (webSearch)
+        'tools': [
+          {
+            'type': 'web_search_20260209',
+            'name': 'web_search',
+            'max_uses': 3,
+          },
+        ],
     };
 
     if (systemMessages.isNotEmpty) {
       bodyData['system'] = systemMessages.map((m) => m['content']).join('\n');
     }
 
-    final response = await dio.post<ResponseBody>(
-      '/messages',
-      cancelToken: cancelToken,
-      options: Options(
-        responseType: ResponseType.stream,
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
-      ),
-      data: bodyData,
+    dev.log(
+      'ClaudeClient POST $effectiveBaseUrl/messages, bodyKeys=${bodyData.keys.toList()}',
+      name: 'llm_client',
     );
+
+    final Response<ResponseBody> response;
+    try {
+      response = await dio.post<ResponseBody>(
+        '/messages',
+        cancelToken: cancelToken,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: bodyData,
+      );
+    } on DioException catch (e) {
+      dev.log(
+        'ClaudeClient request failed: ${e.message}, statusCode=${e.response?.statusCode}, data=${e.response?.data}',
+        name: 'llm_client',
+        error: e,
+      );
+      rethrow;
+    }
 
     final body = response.data;
     if (body == null) {
@@ -233,6 +472,7 @@ class GeminiClient extends LlmClient {
     required String model,
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
+    bool webSearch = false,
   }) async* {
     final dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'https://generativelanguage.googleapis.com/v1beta'));
 
@@ -294,27 +534,6 @@ class GeminiClient extends LlmClient {
   }
 }
 
-LlmResponseDelta? _extractDelta(String jsonLine) {
-  try {
-    final decoded = jsonDecode(jsonLine);
-    if (decoded is! Map) return null;
-    final choices = decoded['choices'];
-    if (choices is! List || choices.isEmpty) return null;
-    final choice0 = choices.first;
-    if (choice0 is! Map) return null;
-    final delta = choice0['delta'];
-    if (delta is! Map) return null;
-    return LlmResponseDelta(
-      content: _extractTextField(delta['content']),
-      reasoning: _extractTextField(
-        delta['reasoning_content'] ?? delta['reasoning'],
-      ),
-    );
-  } catch (_) {
-    return null;
-  }
-}
-
 LlmResponseDelta? _extractClaudeDelta(String jsonLine) {
   try {
     final decoded = jsonDecode(jsonLine);
@@ -364,21 +583,4 @@ LlmResponseDelta? _extractGeminiDelta(String jsonLine) {
   } catch (_) {
     return null;
   }
-}
-
-String _extractTextField(Object? value) {
-  if (value is String) return value;
-  if (value is List) {
-    return value
-        .map((item) {
-          if (item is String) return item;
-          if (item is Map) {
-            final text = item['text'];
-            if (text is String) return text;
-          }
-          return '';
-        })
-        .join();
-  }
-  return '';
 }

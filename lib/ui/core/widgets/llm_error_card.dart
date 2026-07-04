@@ -43,8 +43,9 @@ class LlmErrorCard extends StatelessWidget {
       LlmErrorKind.timeout => l10n.llmErrorTimeout,
       LlmErrorKind.rateLimited => l10n.llmErrorRateLimited,
       LlmErrorKind.authFailed => l10n.llmErrorAuthFailed,
+      LlmErrorKind.paymentRequired => l10n.llmErrorPaymentRequired,
       LlmErrorKind.serverError => l10n.llmErrorServerError,
-      LlmErrorKind.cancelled => l10n.llmErrorCancel, // 调用方不该走到这里；兜底文案
+      LlmErrorKind.cancelled => l10n.llmErrorCancel,
       LlmErrorKind.unknown => l10n.llmErrorUnknown,
     };
   }

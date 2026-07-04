@@ -958,6 +958,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmErrorAuthFailed => 'API Key 无效或已过期，请检查设置';
 
   @override
+  String get llmErrorPaymentRequired => '账户余额不足，请前往服务商控制台充值';
+
+  @override
   String get llmErrorServerError => '服务暂不可用，请稍后再试';
 
   @override
