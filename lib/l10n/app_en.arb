@@ -1503,6 +1503,14 @@
   "@chatSearch": {
     "description": "Title for the chat search sheet"
   },
+  "chatMarkdown": "Raw Markdown",
+  "@chatMarkdown": {
+    "description": "Title for the sheet showing raw session.md content"
+  },
+  "chatMarkdownEmpty": "No chat content yet",
+  "@chatMarkdownEmpty": {
+    "description": "Empty state when the session has no content"
+  },
   "searchInChat": "Search message content",
   "@searchInChat": {
     "description": "Placeholder for chat search input"

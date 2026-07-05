@@ -1103,6 +1103,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatSearch => '搜索对话';
 
   @override
+  String get chatMarkdown => '原始 Markdown';
+
+  @override
+  String get chatMarkdownEmpty => '暂无对话内容';
+
+  @override
   String get searchInChat => '搜索消息内容';
 
   @override

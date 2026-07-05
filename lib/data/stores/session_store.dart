@@ -85,6 +85,16 @@ class SessionStore {
     return doc;
   }
 
+  /// 直接读取 session.md 原始文本，不做解析。
+  ///
+  /// 用于"查看原始 Markdown"场景，文件不存在时返回空字符串。
+  Future<String> readSessionRaw(String nodeId) async {
+    final path = await getSessionPathForNode(nodeId);
+    final file = File(path);
+    if (!await file.exists()) return '';
+    return file.readAsString();
+  }
+
   Future<void> appendUserMessage({
     required String nodeId,
     required String content,

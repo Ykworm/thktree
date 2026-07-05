@@ -681,6 +681,8 @@
   "thinkingCollisionNoKeywords": "暂无关键词，请先在关键词排行榜中分析",
   "chatOutline": "对话目录",
   "chatSearch": "搜索对话",
+  "chatMarkdown": "原始 Markdown",
+  "chatMarkdownEmpty": "暂无对话内容",
   "searchInChat": "搜索消息内容",
   "noUserMessages": "暂无用户消息",
   "noSearchResults": "没有找到匹配的结果"

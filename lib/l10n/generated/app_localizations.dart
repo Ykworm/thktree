@@ -2132,6 +2132,18 @@ abstract class AppLocalizations {
   /// **'Search Chat'**
   String get chatSearch;
 
+  /// Title for the sheet showing raw session.md content
+  ///
+  /// In en, this message translates to:
+  /// **'Raw Markdown'**
+  String get chatMarkdown;
+
+  /// Empty state when the session has no content
+  ///
+  /// In en, this message translates to:
+  /// **'No chat content yet'**
+  String get chatMarkdownEmpty;
+
   /// Placeholder for chat search input
   ///
   /// In en, this message translates to:

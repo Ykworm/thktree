@@ -26,6 +26,7 @@ import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
+import 'package:thk_tree/ui/features/chat/widgets/chat_markdown_sheet.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
@@ -672,6 +673,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onPressed: () => unawaited(_onCreateBranchFromMenu(context)),
         ),
         GridAction(
+          label: l10n.chatMarkdown,
+          icon: AppIcons.document,
+          color: CupertinoColors.systemTeal,
+          onPressed: () {
+            showChatMarkdownSheet(context, widget.nodeId);
+          },
+        ),
+        GridAction(
           label: l10n.viewTree,
           icon: AppIcons.accountTree,
           color: CupertinoColors.systemIndigo,
@@ -773,7 +782,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final selected = _currentSelectedText;
     debugPrint('[ChatScreen] _onCreateBranchFromMenu: selectedText=${selected?.length ?? 'null'} chars');
 
-    final mode = await showBranchModeSheet(context);
+    final mode = await showBranchModeSheet(
+      context,
+      selectedText: selected,
+    );
     if (mode == null) return;
     if (!context.mounted) return;
 

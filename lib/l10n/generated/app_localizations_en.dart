@@ -1156,6 +1156,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatSearch => 'Search Chat';
 
   @override
+  String get chatMarkdown => 'Raw Markdown';
+
+  @override
+  String get chatMarkdownEmpty => 'No chat content yet';
+
+  @override
   String get searchInChat => 'Search message content';
 
   @override
