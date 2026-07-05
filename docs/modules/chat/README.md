@@ -34,12 +34,13 @@
   - iOS 权限：`NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription`
 - 消息时间戳（2026-07-04）：assistant 消息气泡上方显示人类可读时间，`formatMessageTime` 支持 4 级格式（今天 `HH:mm` / 昨天 / 月日 / 跨年全日期）
 - Chat-to-Note（2026-07-04）：assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote` 回调），自动用当前主题创建笔记并跳转 `NoteEditorScreen`
+- 查看原始 Markdown（2026-07-05）：更多菜单入口，底部 sheet 展示当前对话的 `session.md` 原始文件内容（等宽字体），支持一键复制到剪贴板
 
 ## 代码文件
 
 | 文件 | 角色 | 行数 |
 |------|------|------|
-| `lib/ui/features/chat/chat_screen.dart` | 对话页主屏幕（消息列表 + 输入框） | 419 |
+| `lib/ui/features/chat/chat_screen.dart` | 对话页主屏幕（消息列表 + 输入框） | 930 |
 | `lib/ui/features/chat/chat_controller.dart` | UI 同步层 StateNotifier：watch Riverpod state / 绑定 Widget / 发送触发委托给 ChatTaskService | 重构后缩减 |
 | `lib/ui/features/chat/chat_screen_launch_params.dart` | 启动参数（autoTriggerReply 等） | 16 |
 | `lib/ui/features/chat/widgets/model_selector_panel.dart` | 模型选择抽屉 | - |
@@ -48,6 +49,7 @@
 | `ios/Runner/BackgroundTaskHandler.swift` | Swift MethodChannel handler + `UIApplication.beginBackgroundTask` 调用 + `expirationHandler` 释放 | 新增 |
 | `lib/ui/core/shared/chat_composer.dart` | 底部输入框（文本输入 + 发送/停止 + 模型选择 + 联网搜索开关 + 图片按钮 + 图片预览） | - |
 | `lib/ui/core/shared/message_bubble.dart` | 消息气泡（user + assistant，GptMarkdown 渲染 + LaTeX 注入 + 每张表格独立工具栏：复制/全屏按钮） | 388 |
+| `lib/ui/features/chat/widgets/chat_markdown_sheet.dart` | 查看原始 Markdown 底部 sheet（展示 session.md 内容 + 复制按钮） | 135 |
 | `lib/ui/core/shared/markdown_builders.dart` | GptMarkdown 自定义构建器（含 `buildLatex`——`FittedBox(scaleDown)` 包裹 `Math.tex`） | 61 |
 | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支流式结束后后台补 title：3 次重试（指数退避 1s/2s/4s）+ 调 LLM + 写 DB + refresh tree；`ref.keepAlive()` 保活（2026-06-29 新增） | 新增 |
 | `integration_test/chat_async_recovery_test.dart` | 后台中断恢复集成测试（4 个 testWidgets：findInterrupted / resumeInterrupted / cancelResumeQueue / bridge.begin-end 配对） | 新增 |
