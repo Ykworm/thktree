@@ -23,6 +23,19 @@ final _looseTableSepPattern = RegExp(
 );
 final _htmlBreakPattern = RegExp(r'<br\s*/?>', caseSensitive: false);
 
+/// 全角标点 → 半角映射（仅 markdown 语法相关字符）
+const _fullWidthToHalf = <String, String>{
+  '\uff0a': '*', // ＊
+  '\uff03': '#', // ＃
+  '\uff40': '`', // ｀
+  '\uff1e': '>', // ＞
+  '\uff0d': '-', // －
+  '\uff5c': '|', // ｜
+  '\uff3f': '_', // ＿
+  '\uff5e': '~', // ～
+  '\uff1d': '=', // ＝
+};
+
 bool _hasMarkdownTable(String text) {
   final lines = text.split('\n');
   for (var i = 0; i < lines.length - 1; i++) {
@@ -35,30 +48,46 @@ bool _hasMarkdownTable(String text) {
   return false;
 }
 
-String _sanitizeMarkdown(String text) {
+String _sanitizeMarkdown(String text, {bool stripThinkTags = false}) {
   var result = text.replaceAll('\r\n', '\n');
-  result = result.replaceAll(
-    RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false),
-    '',
-  );
-  result = result.replaceAll(RegExp(r'<think>[\s\S]*$', caseSensitive: false), '');
-  result = result.replaceAll('\uff0a', '*').replaceAll('\uff03', '#');
+
+  if (stripThinkTags) {
+    result = result.replaceAll(
+      RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false),
+      '',
+    );
+    result = result.replaceAll(
+      RegExp(r'<think>[\s\S]*$', caseSensitive: false),
+      '',
+    );
+  }
 
   final lines = result.split('\n');
-  final expandedLines = <String>[];
+  final convertedLines = <String>[];
   var inCodeFence = false;
   for (final raw in lines) {
     final line = raw.trimRight();
     final leftTrimmed = line.trimLeft();
     if (leftTrimmed.startsWith('```')) {
       inCodeFence = !inCodeFence;
+      convertedLines.add(line);
+      continue;
+    }
+    convertedLines.add(
+      inCodeFence ? line : _convertFullWidthOutsideInlineCode(line),
+    );
+  }
+
+  final expandedLines = <String>[];
+  inCodeFence = false;
+  for (final line in convertedLines) {
+    final leftTrimmed = line.trimLeft();
+    if (leftTrimmed.startsWith('```')) {
+      inCodeFence = !inCodeFence;
       expandedLines.add(line);
       continue;
     }
-    if (!inCodeFence &&
-        line.contains('||') &&
-        line.contains('|') &&
-        line.contains('-')) {
+    if (!inCodeFence && _shouldSplitDoublePipe(line)) {
       expandedLines.addAll(line.replaceAll('||', '|\n|').split('\n'));
       continue;
     }
@@ -86,8 +115,9 @@ String _sanitizeMarkdown(String text) {
         final normalizedHeader = _ensureRowPipes(headerRow);
         final cols = _countColumns(normalizedHeader);
         if (cols >= 2) {
+          final alignments = _parseColumnAlignments(sep, cols);
           normalizedLines.add(normalizedHeader);
-          normalizedLines.add(_buildSeparatorRow(cols));
+          normalizedLines.add(_buildSeparatorRow(cols, alignments));
           i++;
 
           while (i + 1 < expandedLines.length) {
@@ -96,6 +126,11 @@ String _sanitizeMarkdown(String text) {
             final candidateLeft = candidate.trimLeft();
             if (candidateLeft.startsWith('```')) break;
             if (!candidate.contains('|')) break;
+            // 跳过额外的 separator 行（LLM 可能在数据行之间或末尾重复输出）
+            if (_looseTableSepPattern.hasMatch(candidate.trim())) {
+              i++;
+              continue;
+            }
 
             final (rowPrefix, rowBody) = _splitLeadingTextAndRow(candidate);
             if (rowPrefix.isNotEmpty) normalizedLines.add(rowPrefix);
@@ -126,6 +161,61 @@ String _sanitizeMarkdown(String text) {
   return cleaned.join('\n');
 }
 
+/// 在行内 code span（反引号对）外部执行全角→半角转换。
+/// code span 内部的字符保持原样，避免误伤代码字面量。
+String _convertFullWidthOutsideInlineCode(String line) {
+  final buf = StringBuffer();
+  var inInlineCode = false;
+  for (var i = 0; i < line.length; i++) {
+    final ch = line[i];
+    if (ch == '`') {
+      inInlineCode = !inInlineCode;
+      buf.write(ch);
+      continue;
+    }
+    if (inInlineCode) {
+      buf.write(ch);
+    } else {
+      buf.write(_fullWidthToHalf[ch] ?? ch);
+    }
+  }
+  return buf.toString();
+}
+
+/// 判断一行是否需要做 `||` → `|\\n|` 拆分。
+/// 只有当 `||` 分割后的某个片段本身是合法的表格分隔行时才拆分，
+/// 避免误伤普通文本中同时出现 `|`、`-`、`||` 的情况。
+bool _shouldSplitDoublePipe(String line) {
+  if (!line.contains('||')) return false;
+  final segments = line.split('||');
+  return segments.any((seg) => _looseTableSepPattern.hasMatch(seg.trim()));
+}
+
+/// 解析表格分隔行中每一列的对齐方式（`:` 位置）。
+/// 返回长度为 [colCount] 的列表，每列为 'left' / 'center' / 'right'。
+List<String> _parseColumnAlignments(String sepRow, int colCount) {
+  final trimmed = sepRow.trim();
+  var body = trimmed;
+  if (body.startsWith('|')) body = body.substring(1);
+  if (body.endsWith('|')) body = body.substring(0, body.length - 1);
+
+  final cells = body.split('|').map((s) => s.trim()).toList();
+  final alignments = List<String>.filled(colCount, 'left');
+  for (var i = 0; i < colCount && i < cells.length; i++) {
+    final cell = cells[i];
+    final leftColon = cell.startsWith(':');
+    final rightColon = cell.endsWith(':');
+    if (leftColon && rightColon) {
+      alignments[i] = 'center';
+    } else if (rightColon) {
+      alignments[i] = 'right';
+    } else {
+      alignments[i] = 'left';
+    }
+  }
+  return alignments;
+}
+
 (String, String) _splitLeadingTextAndRow(String line) {
   final idx = line.indexOf('|');
   if (idx <= 0) return ('', line);
@@ -146,8 +236,15 @@ int _countColumns(String row) {
   return parts.length;
 }
 
-String _buildSeparatorRow(int columnCount) {
-  final cells = List.filled(columnCount, '---');
+String _buildSeparatorRow(int columnCount, List<String> alignments) {
+  final cells = List<String>.generate(columnCount, (i) {
+    final align = i < alignments.length ? alignments[i] : 'left';
+    return switch (align) {
+      'center' => ':---:',
+      'right' => '---:',
+      _ => '---',
+    };
+  });
   return '|${cells.join('|')}|';
 }
 
@@ -297,7 +394,10 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         : AppColors.surface;
 
     final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
-    final sanitizedBody = _sanitizeMarkdown(body);
+    final sanitizedBody = _sanitizeMarkdown(
+      body,
+      stripThinkTags: !isUser,
+    );
     final reasoning = widget.message.reasoning?.trim();
     final shouldExpandReasoning =
         _showReasoning || (reasoning != null && reasoning.isNotEmpty && widget.message.body.trim().isEmpty);
@@ -540,7 +640,7 @@ class _ReasoningSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final sanitizedReasoning = _sanitizeMarkdown(reasoning);
+    final sanitizedReasoning = _sanitizeMarkdown(reasoning, stripThinkTags: true);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
@@ -740,7 +840,7 @@ class _TableExpandedView extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: GptMarkdown(
-            _sanitizeMarkdown(content),
+            _sanitizeMarkdown(content, stripThinkTags: true),
             style: baseStyle,
             codeBuilder: _buildCodeBlock,
             tableBuilder: (
@@ -812,12 +912,14 @@ class _MarkdownTableView extends StatelessWidget {
                   children: row.fields.map((cell) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: SelectableText(
+                      child: GptMarkdown(
                         _normalizeTableCellText(cell.data),
                         style: row.isHeader
                             ? textStyle.copyWith(fontWeight: FontWeight.w600)
                             : textStyle,
                         textAlign: cell.alignment,
+                        latexBuilder: buildLatex,
+                        useDollarSignsForLatex: true,
                       ),
                     );
                   }).toList(),
