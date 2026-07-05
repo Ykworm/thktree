@@ -643,9 +643,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       orElse: () => <SessionMessage>[],
     );
 
-    ThkGridBottomSheet.show(
+    // 用 Overlay 直接画"更多"菜单，不走 Navigator 路由栈 —— 这样不会触发
+    // primary focus 转移，底层 SelectionArea 的选区高亮得以保持。
+    unawaited(_showOverlayMoreActions(
       context: context,
-      showCancel: false,
       actions: [
         if (widget.isDocSplit)
           GridAction(
@@ -697,7 +698,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           },
         ),
       ],
-    );
+    ));
+  }
+
+  /// 用 [OverlayEntry] 直接在 Overlay 上画"更多"菜单，避免 [showModalBottomSheet]
+  /// 抢焦点导致 [SelectionArea] 的选区被清掉。
+  ///
+  /// 行为对齐 [ThkGridBottomSheet.show]：
+  /// - 点 action → 先移除 overlay，再异步执行 [GridAction.onPressed]
+  /// - 点背景/外部 → 移除 overlay 并 complete（无 action）
+  Future<void> _showOverlayMoreActions({
+    required BuildContext context,
+    required List<GridAction> actions,
+  }) async {
+    final completer = Completer<void>();
+    OverlayEntry? entry;
+    var dismissed = false;
+
+    void dismiss([VoidCallback? followUp]) {
+      if (dismissed) return;
+      dismissed = true;
+      entry?.remove();
+      // 在 overlay 移除后再执行后续动作（典型场景：pop 当前页面并 push 新页面）。
+      // 用 microtask 让 overlay 的移除先排到事件队列，避免 widget tree 中
+      // entry 与被 pop 的页面同时存在造成状态混乱。
+      if (followUp != null) {
+        Future.microtask(followUp);
+      }
+      if (!completer.isCompleted) completer.complete();
+    }
+
+    entry = OverlayEntry(builder: (ctx) {
+      return _MoreActionsOverlayPanel(
+        actions: actions,
+        onPicked: (action) => dismiss(action.onPressed),
+        onDismiss: () => dismiss(),
+      );
+    });
+
+    Overlay.of(context, rootOverlay: true).insert(entry);
+    return completer.future;
   }
 
   Future<void> _onOpenOutline(BuildContext context, List<SessionMessage> messages) async {
@@ -888,6 +928,161 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+}
+
+/// "更多"菜单的 Overlay 浮层 —— 用 [OverlayEntry] 直接画，不走 Navigator 路由栈，
+/// 避免 [showModalBottomSheet] 抢焦点导致 [SelectionArea] 的选区被清掉。
+///
+/// 视觉与 [ThkGridBottomSheet] 保持一致（圆角顶部 + 网格布局 + 半透明背景）。
+class _MoreActionsOverlayPanel extends StatelessWidget {
+  const _MoreActionsOverlayPanel({
+    required this.actions,
+    required this.onPicked,
+    required this.onDismiss,
+  });
+
+  final List<GridAction> actions;
+  final void Function(GridAction action) onPicked;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final bottomSafeGap = bottomInset > 0 ? 8.0 : 4.0;
+
+    return Stack(
+      children: [
+        // 半透明背景：点击关闭（与 modal sheet 的 barrier 行为一致）
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onDismiss,
+            child: const ColoredBox(color: Color(0x80000000)),
+          ),
+        ),
+        // 底部菜单本体
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: _MoreActionsOverlayGrid(
+                    actions: actions,
+                    onPicked: onPicked,
+                  ),
+                ),
+                // 替代默认 SafeArea 的全量 bottomInset，避免与 home indicator 重叠
+                SizedBox(height: bottomSafeGap),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "更多"菜单的网格布局 —— 复用 [ThkGridBottomSheet] 的 4 列 Wrap 算法。
+class _MoreActionsOverlayGrid extends StatelessWidget {
+  const _MoreActionsOverlayGrid({
+    required this.actions,
+    required this.onPicked,
+  });
+
+  final List<GridAction> actions;
+  final void Function(GridAction action) onPicked;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 与 _ActionGrid 保持一致：4 列，spacing=12，每项宽度 clamp 到 [80, 84]
+        final maxFourColumnWidth =
+            (constraints.maxWidth - 12 * (4 - 1)) / 4;
+        final itemWidth = maxFourColumnWidth.clamp(80.0, 84.0);
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              for (final action in actions)
+                SizedBox(
+                  width: itemWidth,
+                  child: _MoreActionsOverlayItem(
+                    action: action,
+                    onPicked: onPicked,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// "更多"菜单的单个 item —— 圆形 tint 图标 + 文字标签，点击触发 [onPicked]。
+class _MoreActionsOverlayItem extends StatelessWidget {
+  const _MoreActionsOverlayItem({
+    required this.action,
+    required this.onPicked,
+  });
+
+  final GridAction action;
+  final void Function(GridAction action) onPicked;
+
+  @override
+  Widget build(BuildContext context) {
+    // 10% opacity tint for icon background（与 ThkGridBottomSheet 保持一致）
+    final tintColor = action.color.withAlpha(25);
+
+    return GestureDetector(
+      onTap: () => onPicked(action),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: tintColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              action.icon,
+              size: 22,
+              color: action.color,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            action.label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.15,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ContextUsageBar extends StatelessWidget {
