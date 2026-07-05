@@ -59,8 +59,16 @@ List<LlmProviderConfig> createPresetProviders() {
       id: 'preset_mimo',
       type: LlmProviderType.mimo,
       name: 'MIMO',
-      baseUrl: 'https://api.stepfun.com/v1',
-      defaultBaseUrl: 'https://api.stepfun.com/v1',
+      baseUrl: 'https://api.xiaomimimo.com/v1',
+      defaultBaseUrl: 'https://api.xiaomimimo.com/v1',
+      isOpenAiCompatible: true,
+    ),
+    LlmProviderConfig(
+      id: 'preset_doubao',
+      type: LlmProviderType.doubao,
+      name: '豆包',
+      baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+      defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
       isOpenAiCompatible: true,
     ),
   ];

@@ -497,6 +497,8 @@
   "@selectModel": {
     "description": "Title for model selection panel"
   },
+  "searchModels": "Search models...",
+  "noModelsFound": "No matching models found",
   "currentModel": "Current Model",
   "@currentModel": {
     "description": "Label showing the currently selected model"

@@ -121,6 +121,7 @@ final llmConfigStoreProvider = Provider<LlmConfigStore>((ref) {
 final llmProvidersProvider = FutureProvider<List<LlmProviderConfig>>((ref) async {
   final store = ref.watch(llmConfigStoreProvider);
   await store.initializeIfNeeded();
+  await store.migrateMissingPresets();
   return store.loadAll();
 });
 

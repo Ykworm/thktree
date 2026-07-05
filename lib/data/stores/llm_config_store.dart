@@ -156,4 +156,24 @@ class LlmConfigStore {
     await _saveAll(presets);
   }
 
+  /// 增量迁移：将缺失的预置提供商追加到已有配置中。
+  ///
+  /// 每次 APP 升级新增预置提供商后调用此方法，
+  /// 已有提供商不受影响，仅补齐缺失项。
+  Future<void> migrateMissingPresets() async {
+    if (!await isInitialized()) {
+      debugPrint('[LlmConfigStore] migrateMissingPresets: not initialized, skip');
+      return;
+    }
+    final existing = await loadAll();
+    final existingIds = existing.map((p) => p.id).toSet();
+    final presets = createPresetProviders();
+    final missing = presets.where((p) => !existingIds.contains(p.id)).toList();
+    debugPrint('[LlmConfigStore] migrateMissingPresets: existing=${existingIds.length}, missing=${missing.map((p) => p.id).toList()}');
+    if (missing.isEmpty) return;
+    final updated = List<LlmProviderConfig>.from(existing)..addAll(missing);
+    await _saveAll(updated);
+    debugPrint('[LlmConfigStore] migrateMissingPresets: added ${missing.length} presets');
+  }
+
 }

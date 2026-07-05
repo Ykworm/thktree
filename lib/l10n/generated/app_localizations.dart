@@ -752,6 +752,18 @@ abstract class AppLocalizations {
   /// **'Select Model'**
   String get selectModel;
 
+  /// No description provided for @searchModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Search models...'**
+  String get searchModels;
+
+  /// No description provided for @noModelsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching models found'**
+  String get noModelsFound;
+
   /// Label showing the currently selected model
   ///
   /// In en, this message translates to:

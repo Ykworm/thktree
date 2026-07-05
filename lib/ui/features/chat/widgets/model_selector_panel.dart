@@ -8,10 +8,11 @@ import 'package:thk_tree/data/models/llm_provider_config.dart';
 
 /// 模型选择面板，采用上推布局（面板出现时对话内容上推）。
 ///
+/// 支持按模型名/提供商名搜索过滤。
 /// 点击 panel 外部（消息列表 / context bar / 输入框 / 模型按钮 / panel 内
 /// 标题栏空白）会关闭 panel，panel 内部 tap 由 panel 自身消化，不会触发
 /// 外部 dismiss 行为。panel 不再提供关闭按钮，依靠外部点击完成 dismiss。
-class ModelSelectorPanel extends ConsumerWidget {
+class ModelSelectorPanel extends ConsumerStatefulWidget {
   const ModelSelectorPanel({
     super.key,
     required this.currentProviderId,
@@ -24,38 +25,53 @@ class ModelSelectorPanel extends ConsumerWidget {
   final void Function(String providerId, String modelId) onModelSelected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ModelSelectorPanel> createState() => _ModelSelectorPanelState();
+}
+
+class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final providersAsync = ref.watch(llmProvidersProvider);
 
     return providersAsync.when(
       data: (providers) {
         // 只显示已配置好的提供商：有模型列表或有已选中的模型
-        final configuredProviders = providers
+        var configuredProviders = providers
             .where((p) =>
                 p.models.isNotEmpty ||
                 (p.selectedModelId != null &&
                     p.selectedModelId!.isNotEmpty))
             .toList();
 
-        if (configuredProviders.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                l10n.pleaseFetchModels,
-                textAlign: TextAlign.center,
-                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          );
+        // 搜索过滤
+        if (_query.isNotEmpty) {
+          final q = _query.toLowerCase();
+          configuredProviders = configuredProviders.map((p) {
+            final matchedModels = p.models
+                .where((m) =>
+                    m.name.toLowerCase().contains(q) ||
+                    m.id.toLowerCase().contains(q))
+                .toList();
+            return (provider: p, matchedModels: matchedModels);
+          }).where((e) =>
+              e.matchedModels.isNotEmpty ||
+              e.provider.name.toLowerCase().contains(q)).toList()
+              .map((e) => e.provider).toList();
         }
 
         return ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.35,
+            maxHeight: MediaQuery.of(context).size.height * 0.45,
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -69,7 +85,7 @@ class ModelSelectorPanel extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 标题栏（无关闭按钮，依靠外部 tap 关闭）
+                // 标题栏
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: Text(
@@ -77,26 +93,48 @@ class ModelSelectorPanel extends ConsumerWidget {
                     style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
                   ),
                 ),
+                // 搜索栏（始终挂载，避免无结果时被卸载导致焦点跳到输入框）
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: CupertinoSearchTextField(
+                    controller: _searchController,
+                    placeholder: l10n.searchModels,
+                    style: CupertinoTheme.of(context).textTheme.textStyle,
+                    onChanged: (value) => setState(() => _query = value),
+                  ),
+                ),
                 Container(
-                  height: 1,
+                  height: 0.5,
                   color: AppColors.border,
                 ),
-                // 模型列表
+                // 模型列表 / 空状态
                 Flexible(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    shrinkWrap: true,
-                    itemCount: configuredProviders.length,
-                    itemBuilder: (context, index) {
-                      final provider = configuredProviders[index];
-                      return _ProviderGroup(
-                        provider: provider,
-                        currentProviderId: currentProviderId,
-                        currentModelId: currentModelId,
-                        onModelSelected: onModelSelected,
-                      );
-                    },
-                  ),
+                  child: configuredProviders.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                          child: Text(
+                            _query.isEmpty ? l10n.pleaseFetchModels : l10n.noModelsFound,
+                            textAlign: TextAlign.center,
+                            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          shrinkWrap: true,
+                          itemCount: configuredProviders.length,
+                          itemBuilder: (context, index) {
+                            final provider = configuredProviders[index];
+                            return _ProviderGroup(
+                              provider: provider,
+                              currentProviderId: widget.currentProviderId,
+                              currentModelId: widget.currentModelId,
+                              onModelSelected: widget.onModelSelected,
+                              query: _query,
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -115,16 +153,35 @@ class _ProviderGroup extends StatelessWidget {
     required this.currentProviderId,
     required this.currentModelId,
     required this.onModelSelected,
+    required this.query,
   });
 
   final LlmProviderConfig provider;
   final String? currentProviderId;
   final String? currentModelId;
   final void Function(String providerId, String modelId) onModelSelected;
+  final String query;
 
   @override
   Widget build(BuildContext context) {
-    final hasModels = provider.models.isNotEmpty;
+    var models = provider.models;
+    if (query.isNotEmpty) {
+      final q = query.toLowerCase();
+      models = models
+          .where((m) =>
+              m.name.toLowerCase().contains(q) ||
+              m.id.toLowerCase().contains(q))
+          .toList();
+    }
+
+    final hasModels = models.isNotEmpty;
+    // 没有 models 但有 selectedModelId 时，搜索时也需匹配
+    final hasSelectedModel = provider.selectedModelId != null &&
+        provider.selectedModelId!.isNotEmpty &&
+        (query.isEmpty ||
+            provider.selectedModelId!.toLowerCase().contains(query.toLowerCase()));
+
+    if (!hasModels && !hasSelectedModel) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,8 +199,7 @@ class _ProviderGroup extends StatelessWidget {
           ),
         ),
         if (hasModels)
-          // 模型列表项
-          for (final model in provider.models)
+          for (final model in models)
             _ModelItem(
               providerId: provider.id,
               model: model,
@@ -153,7 +209,6 @@ class _ProviderGroup extends StatelessWidget {
               onTap: () => onModelSelected(provider.id, model.id),
             )
         else
-          // 没有 models 但有 selectedModelId，显示该模型
           _ModelItem(
             providerId: provider.id,
             model: LlmModelConfig(

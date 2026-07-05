@@ -163,6 +163,8 @@
   },
   "apiKeyInvalid": "API Key 无效或已过期",
   "selectModel": "选择模型",
+  "searchModels": "搜索模型...",
+  "noModelsFound": "未找到匹配的模型",
   "currentModel": "当前模型",
   "noModelSelected": "未选择模型",
   "contextUsagePercent": "上下文：{percent}%",

@@ -391,6 +391,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectModel => 'Select Model';
 
   @override
+  String get searchModels => 'Search models...';
+
+  @override
+  String get noModelsFound => 'No matching models found';
+
+  @override
   String get currentModel => 'Current Model';
 
   @override

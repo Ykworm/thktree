@@ -9,6 +9,7 @@ enum LlmProviderType {
   kimi,
   minimax,
   mimo,
+  doubao,
   custom;
 
   String get displayName {
@@ -27,6 +28,8 @@ enum LlmProviderType {
         return 'Minimax';
       case LlmProviderType.mimo:
         return 'MIMO';
+      case LlmProviderType.doubao:
+        return '豆包';
       case LlmProviderType.custom:
         return '自定义';
     }
@@ -48,6 +51,7 @@ const Set<LlmProviderType> visibleProviderTypes = {
   LlmProviderType.minimax,
   LlmProviderType.mimo,
   LlmProviderType.deepseek,
+  LlmProviderType.doubao,
 };
 
 /// 各提供商的联网搜索支持状态
@@ -58,6 +62,7 @@ const Map<LlmProviderType, WebSearchSupport> webSearchSupportMap = {
   LlmProviderType.minimax: WebSearchSupport.supported,
   LlmProviderType.mimo: WebSearchSupport.supported,
   LlmProviderType.deepseek: WebSearchSupport.supported,
+  LlmProviderType.doubao: WebSearchSupport.unsupported,
 };
 
 /// LLM 提供商配置

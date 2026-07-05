@@ -34,6 +34,14 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   // MIMO (Xiaomi) 多模态模型
   'mimo-v2.5': {ModelCapability.text, ModelCapability.vision},
   'mimo-v2-omni': {ModelCapability.text, ModelCapability.vision},
+
+  // 豆包 (Doubao) Seed 系列 — 深度思考 + 多模态模型
+  'doubao-seed-2-1-pro': {ModelCapability.text, ModelCapability.vision},
+  'doubao-seed-2-1-turbo': {ModelCapability.text, ModelCapability.vision},
+  'doubao-seed-2-0-lite': {ModelCapability.text, ModelCapability.vision},
+  // 旧版/通用豆包关键词（兼容 ep-* endpoint ID）
+  'doubao': {ModelCapability.text, ModelCapability.vision},
+  'ep-': {ModelCapability.text, ModelCapability.vision},
 };
 
 /// 根据模型 ID 推断模型能力

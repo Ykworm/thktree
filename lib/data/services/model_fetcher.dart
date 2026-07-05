@@ -15,6 +15,29 @@ const List<String> _nonChatKeywords = [
   'dall-e',
 ];
 
+/// 豆包（火山方舟 ARK）白名单模型
+///
+/// 豆包模型数量庞大，只展示经过验证支持深度思考 + 多模态的模型。
+/// modelId 为火山方舟官方 Model ID（非 Endpoint ID），可直接通过
+/// OpenAI 兼容接口调用。
+const List<Map<String, dynamic>> _doubaoWhitelist = [
+  {
+    'id': 'doubao-seed-2-1-pro-260628',
+    'name': 'Doubao-Seed-2.1-pro',
+    'contextWindow': 256000,
+  },
+  {
+    'id': 'doubao-seed-2-1-turbo-260628',
+    'name': 'Doubao-Seed-2.1-turbo',
+    'contextWindow': 256000,
+  },
+  {
+    'id': 'doubao-seed-2-0-lite-250528',
+    'name': 'Doubao-Seed-2.0-lite',
+    'contextWindow': 256000,
+  },
+];
+
 /// 从 LLM 提供商 API 获取可用模型列表
 class ModelFetcher {
   ModelFetcher({Dio? dio})
@@ -47,10 +70,30 @@ class ModelFetcher {
         return _fetchAnthropicModels(baseUrl, apiKey);
       case LlmProviderType.gemini:
         return _fetchGeminiModels(baseUrl, apiKey);
+      case LlmProviderType.doubao:
+        return _fetchDoubaoModels();
       default:
         // OpenAI 兼容（openai, deepseek, kimi, minimax, mimo, custom）
         return _fetchOpenAiCompatibleModels(baseUrl, apiKey);
     }
+  }
+
+  // ─── 豆包（火山方舟 ARK）白名单 ──────────────────────────────────────
+
+  /// 豆包使用白名单模型列表，不从 /models API 获取。
+  ///
+  /// 火山方舟 /models 返回大量 endpoint（ep-*）和各类模型，用户体验差。
+  /// 我们只展示经过验证的支持深度思考 + 多模态的 Seed 系列模型。
+  List<LlmModelConfig> _fetchDoubaoModels() {
+    return _doubaoWhitelist.map((m) {
+      final id = m['id'] as String;
+      return LlmModelConfig(
+        id: id,
+        name: m['name'] as String,
+        contextWindow: m['contextWindow'] as int,
+        capabilities: inferCapabilities(id),
+      );
+    }).toList();
   }
 
   // ─── OpenAI 兼容接口 ────────────────────────────────────────────────

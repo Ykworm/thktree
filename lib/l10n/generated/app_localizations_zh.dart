@@ -374,6 +374,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectModel => '选择模型';
 
   @override
+  String get searchModels => '搜索模型...';
+
+  @override
+  String get noModelsFound => '未找到匹配的模型';
+
+  @override
   String get currentModel => '当前模型';
 
   @override
