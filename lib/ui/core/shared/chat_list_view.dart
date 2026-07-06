@@ -11,10 +11,14 @@ class ChatListView extends StatefulWidget {
     super.key,
     required this.messages,
     required this.messageBuilder,
+    this.onScrollPositionChanged,
   });
 
   final List<SessionMessage> messages;
   final MessageBuilder messageBuilder;
+
+  /// 当滚动位置变化时回调，参数 `isNearBottom` 表示是否接近底部。
+  final ValueChanged<bool>? onScrollPositionChanged;
 
   @override
   ChatListViewState createState() => ChatListViewState();
@@ -26,11 +30,29 @@ class ChatListViewState extends State<ChatListView> {
   final _scrollController = ScrollController();
   final _itemKeys = <String, GlobalKey>{};
   bool _stickToBottom = true;
+  bool _isNearBottom = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final nearBottom = position.extentAfter <= _bottomTolerance;
+    if (nearBottom != _isNearBottom) {
+      _isNearBottom = nearBottom;
+      widget.onScrollPositionChanged?.call(nearBottom);
+    }
   }
 
   /// 滚动到指定消息（通过 msgId 定位）。
@@ -143,7 +165,7 @@ class ChatListViewState extends State<ChatListView> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (_stickToBottom) _scrollToBottom();
+      if (_stickToBottom) scrollToBottom();
     });
 
     return NotificationListener<ScrollNotification>(
@@ -193,7 +215,8 @@ class ChatListViewState extends State<ChatListView> {
     );
   }
 
-  void _scrollToBottom() {
+  /// 滚动到列表底部（最新消息）。
+  void scrollToBottom() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
     final max = position.maxScrollExtent;
@@ -202,6 +225,18 @@ class ChatListViewState extends State<ChatListView> {
     _scrollController.animateTo(
       max,
       duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+    );
+  }
+
+  /// 滚动到列表顶部（最早消息）。
+  void scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    final distance = _scrollController.position.pixels.abs();
+    if (distance < 4) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
   }

@@ -633,7 +633,10 @@ Future<String?> showTitleSuggestion(
 /// 时返回 null。
 ///
 /// 被 chat_screen / note_detail / theme_detail 复用。
-Future<BranchMode?> showBranchModeSheet(BuildContext context) {
+Future<BranchMode?> showBranchModeSheet(
+  BuildContext context, {
+  String? selectedText,
+}) {
   BranchMode? selected;
   return showCupertinoModalPopup<BranchMode>(
     context: context,
@@ -641,6 +644,9 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
       return StatefulBuilder(
         builder: (ctx, setState) {
           final l10n = AppLocalizations.of(ctx)!;
+          final selectionPreview = selectedText?.trim();
+          final hasSelectionPreview =
+              selectionPreview != null && selectionPreview.isNotEmpty;
           // 显式给 sheet 套不透明背景 + 顶圆角，
           // 避免 showCupertinoModalPopup 默认半透明 surface 透出下层对话。
           // 背景色跟随 CupertinoApp 主题（light/dark 自适应）。
@@ -656,7 +662,7 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                     child: Text(
                       l10n.branchModeSheetTitle,
                       textAlign: TextAlign.center,
@@ -666,6 +672,51 @@ Future<BranchMode?> showBranchModeSheet(BuildContext context) {
                       ),
                     ),
                   ),
+                  if (hasSelectionPreview)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.titleSourceSelection,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  MediaQuery.of(ctx).size.height * 0.38,
+                            ),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.border
+                                      .withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: SingleChildScrollView(
+                                child: Text(
+                                  selectionPreview,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   _BranchModeOption(
                     key: const ValueKey('branch_mode_summarize_option'),
                     label: l10n.branchModeSummarize,
@@ -1231,4 +1282,3 @@ Future<String?> _summarizeWithLifecycleAndRetry({
 // LlmErrorCard 统一取代。
 
 /// Model selector sheet for choosing which model to use for title generation
-

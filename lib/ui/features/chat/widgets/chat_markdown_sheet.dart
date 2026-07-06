@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show SelectableText, SelectionArea;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
 
 /// 查看当前对话的原始 Markdown（session.md 文件内容），支持复制。
 void showChatMarkdownSheet(BuildContext context, String nodeId) {
@@ -27,10 +29,52 @@ class _ChatMarkdownPageState extends ConsumerState<_ChatMarkdownPage> {
   String? _content;
   bool _copied = false;
 
+  final _scrollController = ScrollController();
+  bool _isNearTop = true;
+  bool _isNearBottom = true;
+
+  static const _scrollTolerance = 48.0;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final nearTop = position.extentBefore <= _scrollTolerance;
+    final nearBottom = position.extentAfter <= _scrollTolerance;
+    if (nearTop != _isNearTop) setState(() => _isNearTop = nearTop);
+    if (nearBottom != _isNearBottom) {
+      setState(() => _isNearBottom = nearBottom);
+    }
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   Future<void> _load() async {
@@ -135,19 +179,85 @@ class _ChatMarkdownPageState extends ConsumerState<_ChatMarkdownPage> {
         ),
       );
     }
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: AppColors.surface,
-      child: SingleChildScrollView(
-        child: Text(
-          content,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: AppColors.textPrimary,
-            height: 1.4,
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          color: AppColors.surface,
+          child: SelectionArea(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.only(bottom: 48),
+              child: SelectableText(
+                content,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: AppColors.textPrimary,
+                  height: 1.4,
+                ),
+              ),
+            ),
           ),
+        ),
+        // 浮动到顶部按钮
+        if (!_isNearTop)
+          Positioned(
+            right: 12,
+            bottom: _isNearBottom ? 32 : 76,
+            child: _ScrollFloatingButton(
+              icon: AppIcons.chevronUp,
+              onTap: _scrollToTop,
+            ),
+          ),
+        // 浮动到底部按钮
+        if (!_isNearBottom)
+          Positioned(
+            right: 12,
+            bottom: 32,
+            child: _ScrollFloatingButton(
+              icon: AppIcons.chevronDown,
+              onTap: _scrollToBottom,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Markdown 预览浮层中的浮动圆形滚动按钮。
+class _ScrollFloatingButton extends StatelessWidget {
+  const _ScrollFloatingButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: CupertinoColors.black.withValues(alpha: 0.12),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: AppColors.textSecondary,
         ),
       ),
     );

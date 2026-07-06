@@ -8,8 +8,10 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/ui/core/shared/markdown_builders.dart';
+import 'package:thk_tree/ui/core/shared/markdown_rehydrate.dart';
 import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
@@ -389,15 +391,55 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         l10n.errorStatus(widget.message.errorCode ?? l10n.errorUnknown),
     };
 
+    // 解析模型显示名（仅 assistant 消息）
+    String? modelDisplayName;
+    final modelId = widget.message.modelId;
+    if (modelId != null && !isUser) {
+      final providers = ref.watch(llmProvidersProvider).value;
+      if (providers != null) {
+        for (final p in providers) {
+          for (final m in p.models) {
+            if (m.id == modelId) {
+              modelDisplayName = m.name;
+              break;
+            }
+          }
+          if (modelDisplayName != null) break;
+        }
+        // 兜底：找不到时直接显示 modelId
+        modelDisplayName ??= modelId;
+      }
+    }
+
+    // 组装标题：助手 · gpt-4o · streaming
+    final titleParts = <String>[title];
+    if (modelDisplayName != null) titleParts.add(modelDisplayName);
+    if (statusText != null) titleParts.add(statusText);
+    final displayTitle = titleParts.join(' · ');
+
     final backgroundColor = isUser
         ? AppColors.accentLight
         : AppColors.surface;
 
     final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
-    final sanitizedBody = _sanitizeMarkdown(
-      body,
-      stripThinkTags: !isUser,
-    );
+    // DeepSeek 的流式 token 可能丢 \n，导致 markdown 块级结构被压平
+    // （"---\nxxx" 变成 "---xxx" 一坨）。在 sanitize 之前先 rehydrate 重建结构。
+    // 已有 \n 或非 DeepSeek 模型 → no-op，不动。
+    // DEBUG: 确认 rehydrate 是否被调到，issue 排查
+    debugPrint('[REHYDRATE-DEBUG] modelId=${widget.message.modelId}, '
+        'body.length=${body.length}, body.contains(---)=${body.contains('---')}, '
+        'body.contains(\\n)=${body.contains('\n')}');
+    final rehydratedBody = widget.message.modelId?.startsWith('deepseek') == true
+        ? rehydrateMarkdown(body)
+        : body;
+    debugPrint('[REHYDRATE-DEBUG] output.length=${rehydratedBody.length}, '
+        'changed=${rehydratedBody != body}, '
+        'output.newlines=${'\n'.allMatches(rehydratedBody).length}');
+    // final sanitizedBody = _sanitizeMarkdown(
+    //   rehydratedBody,
+    //   stripThinkTags: !isUser,
+    // );
+    final sanitizedBody = rehydratedBody;
     final reasoning = widget.message.reasoning?.trim();
     final shouldExpandReasoning =
         _showReasoning || (reasoning != null && reasoning.isNotEmpty && widget.message.body.trim().isEmpty);
@@ -449,7 +491,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                         children: [
                           Expanded(
                             child: Text(
-                              statusText == null ? title : '$title · $statusText',
+                              displayTitle,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -1062,3 +1104,4 @@ class _ImageFullScreen extends StatelessWidget {
     );
   }
 }
+
