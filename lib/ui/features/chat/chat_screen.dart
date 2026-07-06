@@ -7,6 +7,8 @@ import 'package:flutter/material.dart' show SelectionArea;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/data/services/doc_split_service.dart';
+import 'package:thk_tree/data/models/llm_model_config.dart';
+import 'package:thk_tree/data/models/model_capabilities.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -78,6 +80,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _autoModelSaved = false;
   String? _panelProviderId;
   String? _panelModelId;
+
+  /// 滚动位置：是否接近底部（控制浮动按钮显隐）。
+  bool _isNearBottom = true;
+
+  /// 当前对话的深度思考开关（per-session in-memory，
+  /// 切换模型时重置为 false，避免新模型不支持时还保留开启状态）。
+  bool _deepThinkingEnabled = false;
 
   @override
   void initState() {
@@ -278,31 +287,45 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final webSearchEnabled = webSearchSupported &&
         (settings?.isWebSearchEnabled(currentProviderType.name) ?? true);
 
+    // 深度思考状态：当前模型命中白名单才显示可点击的 chip，
+    // 否则显示灰色的 "不支持深度思考"。
+    //
+    // 注意：「始终开启」（豆包）优先级最高——它跟「用户可控 toggle」互斥，
+    // UI 上只显示一个 chip，要么是只读的 "深度思考（默认）"，要么是可点击的 toggle，
+    // 不会同时出现。
+    final deepThinkingSupported =
+        _isDeepThinkingSupported(effectiveProviderId, effectiveModelId);
+    final alwaysThinking =
+        _isAlwaysThinking(effectiveProviderId, effectiveModelId);
+
     final modelSubtitle = _resolveModelSubtitle(effectiveProviderId, effectiveModelId);
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: '',
-        middle: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _displayedTitle ?? widget.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (modelSubtitle != null)
+        middle: GestureDetector(
+          onDoubleTap: () => _chatListKey.currentState?.scrollToTop(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(
-                modelSubtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                _displayedTitle ?? widget.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-          ],
+              if (modelSubtitle != null)
+                Text(
+                  modelSubtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
         ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -354,6 +377,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       child: ChatListView(
                         key: _chatListKey,
                         messages: messages,
+                        onScrollPositionChanged: (nearBottom) {
+                          if (_isNearBottom != nearBottom) {
+                            setState(() => _isNearBottom = nearBottom);
+                          }
+                        },
                         messageBuilder: (context, message) {
                           final isLastAssistant = message.role == SessionRole.assistant &&
                               message.status != SessionMessageStatus.streaming &&
@@ -478,6 +506,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           );
                         }
                       : null,
+                  deepThinkingEnabled: _deepThinkingEnabled,
+                  deepThinkingSupported: deepThinkingSupported,
+                  onDeepThinkingToggle: (deepThinkingSupported && !alwaysThinking)
+                      ? () {
+                          final next = !_deepThinkingEnabled;
+                          setState(() => _deepThinkingEnabled = next);
+                          // 同步到底层 controller（用于 build 下一帧决定是否传 thinking 参数）
+                          ref.read(chatControllerProvider(_args).notifier).setDeepThinking(next);
+                        }
+                      : null,
+                  alwaysThinking: alwaysThinking,
                   onImagePick: () => _showImagePicker(context),
                   imageSupported: _isImageSupported(currentProviderId, currentModelId),
                   selectedImageData: _selectedImageData,
@@ -502,12 +541,47 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       await ref.read(chatControllerProvider(_args).notifier).switchModel(providerId, modelId);
                       _panelProviderId = providerId;
                       _panelModelId = modelId;
-                      if (mounted) setState(() => _showModelPanel = false);
+                      if (mounted) {
+                        setState(() {
+                          _showModelPanel = false;
+                          // 模型变了，深度思考状态重置（保守默认：新模型可能不支持）
+                          _deepThinkingEnabled = false;
+                        });
+                      }
                     },
                   ),
                 ),
             ],
           ),
+          // 浮动滚动按钮：离开底部时显示，点击回到底部
+          if (!_isNearBottom)
+            Positioned(
+              right: 16,
+              bottom: 110,
+              child: GestureDetector(
+                onTap: () => _chatListKey.currentState?.scrollToBottom(),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.black.withValues(alpha: 0.12),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    AppIcons.chevronDown,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -528,6 +602,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final model = provider.models.where((m) => m.id == modelId).firstOrNull;
     if (model == null) return false;
     return model.supportsVision;
+  }
+
+  /// 当前模型是否支持深度思考（基于 model id 关键词匹配白名单）
+  bool _isDeepThinkingSupported(String? providerId, String? modelId) {
+    if (modelId == null) return false;
+    return inferCapabilities(modelId).contains(ModelCapability.deepThinking);
+  }
+
+  /// 当前模型是否默认开启深度思考且用户无法关闭（豆包 Seed 系列）。
+  /// 与 [ModelCapability.deepThinking]（用户可控 toggle）互斥——豆包不会有 toggle chip。
+  bool _isAlwaysThinking(String? providerId, String? modelId) {
+    if (modelId == null) return false;
+    return inferCapabilities(modelId).contains(ModelCapability.alwaysThinking);
   }
 
   /// 显示图片选择器

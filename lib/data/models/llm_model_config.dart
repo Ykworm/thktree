@@ -5,6 +5,8 @@ enum ModelCapability {
   text, // 纯文本
   vision, // 支持图片
   audio, // 支持音频（未来）
+  deepThinking, // 支持深度思考，由用户在聊天页 toggle 启用（DeepSeek V4 / MiniMax-M3）
+  alwaysThinking, // 模型默认开启深度思考，用户无法关闭（豆包 Seed 2.x 系列）
 }
 
 /// LLM 模型配置

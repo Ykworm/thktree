@@ -95,6 +95,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     required SessionStore sessionStore,
     AppLogger? logger,
     bool webSearch = false,
+    bool deepThinking = false,
     Uint8List? imageData,
     String? imageMimeType,
   }) async {
@@ -106,7 +107,9 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     unawaited(_bridge.begin());
 
     final cancelToken = CancelToken();
-    final handle = await sessionStore.beginAssistantMessage(nodeId: nodeId);
+    print('[DEBUG-CHAT-TASK] before beginAssistantMessage, model=$model, nodeId=$nodeId');
+    final handle = await sessionStore.beginAssistantMessage(nodeId: nodeId, modelId: model);
+    print('[DEBUG-CHAT-TASK] beginAssistantMessage done, handle.msgId=${handle.msgId}');
     final generation = DateTime.now().millisecondsSinceEpoch;
 
     final messages = _buildMessages(history, systemPrompt, imageData: imageData, imageMimeType: imageMimeType);
@@ -116,6 +119,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
       messages: messages,
       cancelToken: cancelToken,
       webSearch: webSearch,
+      deepThinking: deepThinking,
     );
 
     final streamSub = stream.listen(

@@ -24,7 +24,7 @@ class ContentPart {
   final String? mimeType;
 }
 
-abstract class LlmClient {
+  abstract class LlmClient {
   const LlmClient();
 
   Stream<LlmResponseDelta> streamChatCompletion({
@@ -33,6 +33,7 @@ abstract class LlmClient {
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
     bool webSearch = false,
+    bool deepThinking = false,
   });
 
   /// 构建多模态消息内容（支持文本+图片）
@@ -63,8 +64,11 @@ abstract class LlmClient {
   /// 根据 LlmProviderConfig 创建客户端实例。
   ///
   /// 对于 OpenAI 兼容的提供商（包括 custom），使用 [ConfigBasedOpenAiCompatibleClient]；
-  /// 对于 anthropic 类型使用 [ClaudeClient]；
+  /// 对于 anthropic / deepseek 类型使用 [ClaudeClient]；
   /// 对于 gemini 类型使用 [GeminiClient]。
+  ///
+  /// DeepSeek 自 2026-07 起全量切到 Anthropic 兼容协议（ADR-020），
+  /// preset 的 baseUrl 直接是 Anthropic 端点，不再在工厂里拼接路径。
   factory LlmClient.forConfig(
     LlmProviderConfig config, {
     bool webSearch = false,
@@ -73,16 +77,9 @@ abstract class LlmClient {
       'LlmClient.forConfig: type=${config.type}, webSearch=$webSearch, baseUrl=${config.baseUrl}, name=${config.name}',
       name: 'llm_client',
     );
-    // DeepSeek 联网搜索需要走 Anthropic 兼容接口
-    if (config.type == LlmProviderType.deepseek && webSearch) {
-      // 去掉可能的 /v1 后缀，再拼 /anthropic/v1
-      var base = config.baseUrl;
-      if (base.endsWith('/v1')) {
-        base = base.substring(0, base.length - 3);
-      }
-      final url = '$base/anthropic/v1';
-      dev.log('DeepSeek web search → ClaudeClient.withBaseUrl($url)', name: 'llm_client');
-      return ClaudeClient.withBaseUrl(url);
+    // DeepSeek 全量走 Anthropic 兼容协议（preset baseUrl 已是 Anthropic 端点）
+    if (config.type == LlmProviderType.deepseek) {
+      return ClaudeClient.withBaseUrl(config.baseUrl);
     }
     if (config.isOpenAiCompatible) {
       return ConfigBasedOpenAiCompatibleClient(
@@ -169,6 +166,7 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
     bool webSearch = false,
+    bool deepThinking = false,
   }) async* {
     final currentMessages = List<Map<String, Object?>>.from(messages);
     final effectiveBaseUrl = baseUrl.endsWith('/')
@@ -176,7 +174,7 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
         : baseUrl;
 
     dev.log(
-      'streamChatCompletion: provider=$providerName, model=$model, webSearch=$webSearch, baseUrl=$effectiveBaseUrl',
+      'streamChatCompletion: provider=$providerName, model=$model, webSearch=$webSearch, deepThinking=$deepThinking, baseUrl=$effectiveBaseUrl',
       name: 'llm_client',
     );
 
@@ -195,6 +193,15 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
           (providerName.toLowerCase().contains('kimi') ||
            providerName.toLowerCase().contains('moonshot'))) {
         body['thinking'] = {'type': 'disabled'};
+      }
+
+      // 深度思考（OpenAI 兼容协议下走 MiniMax-M3 的 `thinking: true` 布尔参数）；
+      // - 豆包（火山方舟）：服务端默认开启，无法关闭，不发参数；
+      // - Claude/Anthropic 官方：走 ClaudeClient 不进这里。
+      // 上游 chat_controller 已用 `inferCapabilities()` 二次校验 deepThinking
+      // cap，未在白名单的模型根本不会传 true 进来。
+      if (deepThinking && providerName.toLowerCase().contains('minimax')) {
+        body['thinking'] = true;
       }
 
       dev.log(
@@ -425,12 +432,13 @@ class ClaudeClient extends LlmClient {
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
     bool webSearch = false,
+    bool deepThinking = false,
   }) async* {
     final effectiveBaseUrl = baseUrl ?? 'https://api.anthropic.com/v1';
     final dio = Dio(BaseOptions(baseUrl: effectiveBaseUrl));
 
     dev.log(
-      'ClaudeClient.streamChatCompletion: baseUrl=$effectiveBaseUrl, model=$model, webSearch=$webSearch',
+      'ClaudeClient.streamChatCompletion: baseUrl=$effectiveBaseUrl, model=$model, webSearch=$webSearch, deepThinking=$deepThinking',
       name: 'llm_client',
     );
 
@@ -473,6 +481,10 @@ class ClaudeClient extends LlmClient {
             'max_uses': 3,
           },
         ],
+      // 深度思考：Anthropic 协议要求 thinking + max_tokens > budget_tokens。
+      // 当前 hardcoded max_tokens = 4096，所以 budget_tokens 默认留空让服务端
+      // 自己定（DeepSeek 忽略 budget_tokens；Claude 官方需要时由调用方负责设置）。
+      if (deepThinking) 'thinking': {'type': 'enabled'},
     };
 
     if (systemMessages.isNotEmpty) {
@@ -584,6 +596,7 @@ class GeminiClient extends LlmClient {
     required List<Map<String, Object?>> messages,
     CancelToken? cancelToken,
     bool webSearch = false,
+    bool deepThinking = false,
   }) async* {
     final dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'https://generativelanguage.googleapis.com/v1beta'));
 
@@ -693,18 +706,38 @@ LlmResponseDelta? _extractClaudeDelta(String jsonLine) {
     if (type == 'content_block_delta') {
       final delta = decoded['delta'];
       if (delta is Map) {
-        final text = delta['text'] as String?;
-        if (text != null && text.isNotEmpty) {
-          return LlmResponseDelta(content: text);
+        final deltaType = delta['type'] as String?;
+        // Anthropic 兼容协议（DeepSeek / Claude）的思维链事件：
+        //   delta.type == 'thinking_delta'，字段是 delta.thinking
+        if (deltaType == 'thinking_delta') {
+          final thinking = delta['thinking'] as String?;
+          if (thinking != null && thinking.isNotEmpty) {
+            return LlmResponseDelta(reasoning: thinking);
+          }
+        } else if (deltaType == null || deltaType == 'text_delta') {
+          // delta.type 缺省（旧实现兼容）或显式 text_delta
+          final text = delta['text'] as String?;
+          if (text != null && text.isNotEmpty) {
+            return LlmResponseDelta(content: text);
+          }
         }
+        // 其他 delta 类型（input_json_delta 等）不产出
       }
     }
     if (type == 'content_block_start') {
       final block = decoded['content_block'];
       if (block is Map) {
-        final text = block['text'] as String?;
-        if (text != null && text.isNotEmpty) {
-          return LlmResponseDelta(content: text);
+        // 思维链块的初始 thinking 字段（通常为空，少数实现会预填首段）
+        if (block['type'] == 'thinking') {
+          final thinking = block['thinking'] as String?;
+          if (thinking != null && thinking.isNotEmpty) {
+            return LlmResponseDelta(reasoning: thinking);
+          }
+        } else {
+          final text = block['text'] as String?;
+          if (text != null && text.isNotEmpty) {
+            return LlmResponseDelta(content: text);
+          }
         }
       }
     }

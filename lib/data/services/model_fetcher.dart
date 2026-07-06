@@ -20,6 +20,9 @@ const List<String> _nonChatKeywords = [
 /// 豆包模型数量庞大，只展示经过验证支持深度思考 + 多模态的模型。
 /// modelId 为火山方舟官方 Model ID（非 Endpoint ID），可直接通过
 /// OpenAI 兼容接口调用。
+///
+/// 2026-07-06: 移除 `doubao-seed-2-0-lite-250528`——该 Lite 模型在用户账户上
+/// 不可用（Ark 接口返回错误），仅保留 Pro / Turbo 两个。
 const List<Map<String, dynamic>> _doubaoWhitelist = [
   {
     'id': 'doubao-seed-2-1-pro-260628',
@@ -29,11 +32,6 @@ const List<Map<String, dynamic>> _doubaoWhitelist = [
   {
     'id': 'doubao-seed-2-1-turbo-260628',
     'name': 'Doubao-Seed-2.1-turbo',
-    'contextWindow': 256000,
-  },
-  {
-    'id': 'doubao-seed-2-0-lite-250528',
-    'name': 'Doubao-Seed-2.0-lite',
     'contextWindow': 256000,
   },
 ];
@@ -68,12 +66,16 @@ class ModelFetcher {
     switch (type) {
       case LlmProviderType.anthropic:
         return _fetchAnthropicModels(baseUrl, apiKey);
+      case LlmProviderType.deepseek:
+        // DeepSeek 自 2026-07 起全量走 Anthropic 兼容协议（ADR-020），
+        // baseUrl 已是 Anthropic 端点（/anthropic/v1）。
+        return _fetchAnthropicModels(baseUrl, apiKey);
       case LlmProviderType.gemini:
         return _fetchGeminiModels(baseUrl, apiKey);
       case LlmProviderType.doubao:
         return _fetchDoubaoModels();
       default:
-        // OpenAI 兼容（openai, deepseek, kimi, minimax, mimo, custom）
+        // OpenAI 兼容（openai, kimi, minimax, mimo, custom）
         return _fetchOpenAiCompatibleModels(baseUrl, apiKey);
     }
   }

@@ -21,6 +21,13 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   // DeepSeek 多模态模型
   'deepseek-vl': {ModelCapability.text, ModelCapability.vision},
 
+  // DeepSeek 推理模型（支持深度思考，2026-07 ADR-020 后走 Anthropic 兼容路径，
+  // 服务端自动在响应里带 thinking_delta 事件，client 端靠 thinking 请求参数触发）
+  'deepseek-v4-pro': {ModelCapability.text, ModelCapability.deepThinking},
+  'deepseek-v4-flash': {ModelCapability.text, ModelCapability.deepThinking},
+  // 兼容老 ID（V4 发布前的 deepseek-reasoner = V4-Flash 思考模式）
+  'deepseek-reasoner': {ModelCapability.text, ModelCapability.deepThinking},
+
   // KIMI (Moonshot) 多模态模型
   'kimi-k2.6': {ModelCapability.text, ModelCapability.vision},
   'kimi-k2.5': {ModelCapability.text, ModelCapability.vision},
@@ -28,17 +35,21 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   'moonshot-v1-32k-vision-preview': {ModelCapability.text, ModelCapability.vision},
   'moonshot-v1-128k-vision-preview': {ModelCapability.text, ModelCapability.vision},
 
-  // Minimax 多模态模型
-  'minimax-m3': {ModelCapability.text, ModelCapability.vision},
+  // Minimax 多模态 + 推理模型（M3 通过 body.thinking=true 启用 CoT，
+  // 响应通过 reasoning_content 流式回传）
+  'minimax-m3': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
 
   // MIMO (Xiaomi) 多模态模型
   'mimo-v2.5': {ModelCapability.text, ModelCapability.vision},
   'mimo-v2-omni': {ModelCapability.text, ModelCapability.vision},
 
   // 豆包 (Doubao) Seed 系列 — 深度思考 + 多模态模型
-  'doubao-seed-2-1-pro': {ModelCapability.text, ModelCapability.vision},
-  'doubao-seed-2-1-turbo': {ModelCapability.text, ModelCapability.vision},
-  'doubao-seed-2-0-lite': {ModelCapability.text, ModelCapability.vision},
+  // 服务端默认开启 thinking，用户无法关闭；聊天页用只读 chip 提示默认状态。
+  // 注意：不要加 deepThinking（用户可控 toggle），应只加 alwaysThinking。
+  // 2026-07-06: 移除 lite 关键词，对应 model id (`doubao-seed-2-0-lite-250528`)
+  // 在用户账户上不可用，已从 `_doubaoWhitelist` 一并剔除。
+  'doubao-seed-2-1-pro': {ModelCapability.text, ModelCapability.vision, ModelCapability.alwaysThinking},
+  'doubao-seed-2-1-turbo': {ModelCapability.text, ModelCapability.vision, ModelCapability.alwaysThinking},
   // 旧版/通用豆包关键词（兼容 ep-* endpoint ID）
   'doubao': {ModelCapability.text, ModelCapability.vision},
   'ep-': {ModelCapability.text, ModelCapability.vision},

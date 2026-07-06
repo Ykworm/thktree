@@ -5,7 +5,9 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
+import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
+import 'package:thk_tree/data/models/model_capabilities.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/chat_task_service.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -42,8 +44,11 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   String? _modelId;
   LlmProviderType? _providerType;
 
+  // 当前对话的深度思考开关（per-session in-memory，默认关）
+  bool _deepThinkingEnabled = false;
+
   /// 缓存当前对话的 system prompt
-  String _systemPrompt = 'You are a helpful assistant. Reply in Markdown.';
+  String _systemPrompt = 'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.';
 
   /// 当前对话关联的 providerId（可为 null 表示使用全局设置）
   String? get providerId => _providerId;
@@ -53,6 +58,20 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
 
   /// 当前对话关联的提供商类型（用于联网搜索等判断）
   LlmProviderType? get providerType => _providerType;
+
+  /// 当前深度思考开关状态（per-session in-memory，UI 调用 [setDeepThinking] 切换）
+  bool get deepThinkingEnabled => _deepThinkingEnabled;
+
+  /// 设置深度思考开关。注意：调用方（chat_screen）在切换按钮被按下时应同步 setState
+  /// 来触发 rebuild；本方法不直接触发 Riverpod state 重建，因为 UI 状态本身已在屏幕层持有。
+  void setDeepThinking(bool value) {
+    if (_deepThinkingEnabled == value) return;
+    _deepThinkingEnabled = value;
+    _trace(
+      'chat_controller.set_deep_thinking',
+      attrs: {'value': value, 'modelId': _modelId ?? '', 'providerType': _providerType?.name ?? ''},
+    );
+  }
 
   void _trace(String message, {Map<String, Object?>? attrs}) {
     dev.log(message);
@@ -149,7 +168,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       _providerId = null;
       _modelId = null;
       _providerType = null;
-      _systemPrompt = 'You are a helpful assistant. Reply in Markdown.';
+      _systemPrompt = 'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.';
     }
   }
 
@@ -187,6 +206,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           body: m.body,
           status: SessionMessageStatus.done,
           reasoning: m.reasoning,
+          modelId: m.modelId,
         );
       }
       return m;
@@ -216,6 +236,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
               body: m.body,
               status: SessionMessageStatus.done,
               reasoning: m.reasoning,
+              modelId: m.modelId,
             );
           }
           return m;
@@ -260,6 +281,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           reasoning: m.reasoning,
           imageData: mem.imageData,
           imageMimeType: mem.imageMimeType,
+          modelId: m.modelId,
         );
       }
       return m;
@@ -312,7 +334,8 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   }
 
   /// Retry / Regenerate the last assistant message.
-  /// Removes the last assistant message (done or error) and re-sends the preceding user message.
+  /// Removes the last assistant message (done or error) and re-triggers the LLM stream
+  /// against the existing preceding user message — does NOT re-append the user message.
   Future<void> retryLastMessage() async {
     final messages = state.value ?? [];
     if (messages.isEmpty) return;
@@ -329,28 +352,24 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
 
     if (lastAssistantIdx == -1) return;
 
-    // Find the last user message before the assistant
-    int lastUserIdx = -1;
-    for (int i = lastAssistantIdx - 1; i >= 0; i--) {
-      if (messages[i].role == SessionRole.user) {
-        lastUserIdx = i;
-        break;
-      }
-    }
+    // Sanity check: there should be a user message just before the assistant.
+    // (avoid sending to LLM without user input)
+    if (lastAssistantIdx == 0) return;
+    if (messages[lastAssistantIdx - 1].role != SessionRole.user) return;
 
-    if (lastUserIdx == -1) return;
+    // 1. 取消当前流（同步，不阻塞）—— 防止并发
+    _cancelCurrentStream();
 
-    final userMessage = messages[lastUserIdx].body;
-
-    // Remove the assistant message from session.md
+    // 2. 从 session.md 删除最后一条 assistant
     final sessionStore = await ref.read(sessionStoreProvider.future);
     await sessionStore.removeLastAssistantMessage(nodeId: nodeId);
 
-    // Re-read state
-    state = AsyncData(await _read());
+    // 3. 重新从磁盘读取 state（state 现在反映删除后的对话，去掉了 assistant 条目）
+    final reloaded = await _read();
+    state = AsyncData(reloaded);
 
-    // Re-send the user message (this will append a new assistant message)
-    await sendUserMessage(userMessage);
+    // 4. 不再追加 user 消息 —— 它已经在磁盘上。直接触发 LLM 流。
+    await _triggerLlmStream(messagesForLlm: reloaded);
   }
 
   Future<void> sendUserMessage(
@@ -391,77 +410,99 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       // - try-catch 包裹：异常静默吞掉，仅记录 trace，不阻塞 LLM 流式回复
       unawaited(_markStaleIfAnalyzed());
 
-      // 判断使用对话级模型还是全局设置
-      final sessionProviderId = _providerId;
-      final sessionModelId = _modelId;
-
-      if (sessionProviderId != null && sessionModelId != null) {
-        final configStore = ref.read(llmConfigStoreProvider);
-        final provider = await configStore.getProvider(sessionProviderId);
-        if (provider == null) {
-          _trace('chat_controller.provider_not_found', attrs: {'providerId': sessionProviderId});
-          await sessionStore.appendAssistantMessage(
-            nodeId: nodeId,
-            content: '[提供商未找到] providerId=$sessionProviderId 对应的提供商配置不存在，请切换模型。',
-          );
-          state = AsyncData(await _read());
-          return;
-        }
-        final apiKey = await configStore.readApiKey(sessionProviderId);
-        if (apiKey.isEmpty) {
-          await sessionStore.appendAssistantMessage(
-            nodeId: nodeId,
-            content: '[未配置 API Key] 请为 ${provider.name} 配置 API Key。',
-          );
-          state = AsyncData(await _read());
-          return;
-        }
-        await _startStreamingWithConfig(
-          providerConfig: provider,
-          apiKey: apiKey,
-          model: sessionModelId,
-          imageData: imageData,
-          imageMimeType: imageMimeType,
-          currentMessages: messagesForLlm,
-        );
-      } else {
-        final configStore = ref.read(llmConfigStoreProvider);
-        final providers = await configStore.loadAll();
-        String? fallbackApiKey;
-        String? fallbackModel;
-        LlmProviderConfig? fallbackProvider;
-        for (final p in providers) {
-          final key = await configStore.readApiKey(p.id);
-          if (key.isNotEmpty && p.models.isNotEmpty) {
-            fallbackApiKey = key;
-            fallbackModel = p.models.first.id;
-            fallbackProvider = p;
-            break;
-          }
-        }
-        if (fallbackApiKey != null && fallbackApiKey.isNotEmpty) {
-          await _startStreamingWithConfig(
-            providerConfig: fallbackProvider!,
-            apiKey: fallbackApiKey,
-            model: fallbackModel!,
-            imageData: imageData,
-            imageMimeType: imageMimeType,
-            currentMessages: messagesForLlm,
-          );
-        } else {
-          await sessionStore.appendAssistantMessage(
-            nodeId: nodeId,
-            content: '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。',
-          );
-          state = AsyncData(await _read());
-          return;
-        }
-      }
+      // 5. 触发 LLM 流
+      await _triggerLlmStream(
+        messagesForLlm: messagesForLlm,
+        imageData: imageData,
+        imageMimeType: imageMimeType,
+      );
     } catch (e, st) {
       final logger = await ref.read(appLoggerProvider.future);
       await logger.error(e, st, hint: 'sendUserMessage', attrs: {'nodeId': nodeId, 'title': title});
       state = AsyncError(e, st);
       rethrow;
+    }
+  }
+
+  /// 触发 LLM 流式回复。
+  ///
+  /// 入口要求：
+  /// - [messagesForLlm] 已经包含所有要发给 LLM 的历史消息（包括最后一条 user）。
+  ///   - 新消息场景：[sendUserMessage] 已把 user 消息 append 到 state 与磁盘。
+  ///   - 重试场景：[retryLastMessage] 已从磁盘删 assistant 并 reload state，
+  ///     user 消息仍然存在。
+  ///
+  /// 本方法不修改 state.value，不写磁盘，只启动 ChatTaskService。
+  Future<void> _triggerLlmStream({
+    required List<SessionMessage> messagesForLlm,
+    Uint8List? imageData,
+    String? imageMimeType,
+  }) async {
+    final sessionStore = await ref.read(sessionStoreProvider.future);
+    final sessionProviderId = _providerId;
+    final sessionModelId = _modelId;
+
+    if (sessionProviderId != null && sessionModelId != null) {
+      final configStore = ref.read(llmConfigStoreProvider);
+      final provider = await configStore.getProvider(sessionProviderId);
+      if (provider == null) {
+        _trace('chat_controller.provider_not_found', attrs: {'providerId': sessionProviderId});
+        await sessionStore.appendAssistantMessage(
+          nodeId: nodeId,
+          content: '[提供商未找到] providerId=$sessionProviderId 对应的提供商配置不存在，请切换模型。',
+        );
+        state = AsyncData(await _read());
+        return;
+      }
+      final apiKey = await configStore.readApiKey(sessionProviderId);
+      if (apiKey.isEmpty) {
+        await sessionStore.appendAssistantMessage(
+          nodeId: nodeId,
+          content: '[未配置 API Key] 请为 ${provider.name} 配置 API Key。',
+        );
+        state = AsyncData(await _read());
+        return;
+      }
+      await _startStreamingWithConfig(
+        providerConfig: provider,
+        apiKey: apiKey,
+        model: sessionModelId,
+        imageData: imageData,
+        imageMimeType: imageMimeType,
+        currentMessages: messagesForLlm,
+      );
+    } else {
+      final configStore = ref.read(llmConfigStoreProvider);
+      final providers = await configStore.loadAll();
+      String? fallbackApiKey;
+      String? fallbackModel;
+      LlmProviderConfig? fallbackProvider;
+      for (final p in providers) {
+        final key = await configStore.readApiKey(p.id);
+        if (key.isNotEmpty && p.models.isNotEmpty) {
+          fallbackApiKey = key;
+          fallbackModel = p.models.first.id;
+          fallbackProvider = p;
+          break;
+        }
+      }
+      if (fallbackApiKey != null && fallbackApiKey.isNotEmpty) {
+        await _startStreamingWithConfig(
+          providerConfig: fallbackProvider!,
+          apiKey: fallbackApiKey,
+          model: fallbackModel!,
+          imageData: imageData,
+          imageMimeType: imageMimeType,
+          currentMessages: messagesForLlm,
+        );
+      } else {
+        await sessionStore.appendAssistantMessage(
+          nodeId: nodeId,
+          content: '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。',
+        );
+        state = AsyncData(await _read());
+        return;
+      }
     }
   }
 
@@ -541,6 +582,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       sessionStore: sessionStore,
       logger: logger,
       webSearch: webSearch,
+      deepThinking: _resolveDeepThinking(model),
       imageData: imageData,
       imageMimeType: imageMimeType,
     );
@@ -569,6 +611,22 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     final enabled = settings.isWebSearchEnabled(providerType.name);
     dev.log('_resolveWebSearch: $providerType enabled=$enabled', name: 'chat_controller');
     return enabled;
+  }
+
+  /// 解析当前模型是否应该开启深度思考：
+  /// 1. 用户在 chat_screen toggle 了开关 → 才进入这里
+  /// 2. 当前模型必须在 `ModelCapability.deepThinking` 白名单内
+  ///    否则不发 `thinking` 参数（避免给不支持的模型传未识别字段导致 400）
+  ///
+  /// 注意：capability 判断基于 model id 的关键字匹配（与 [inferCapabilities] 一致），
+  /// 不依赖 provider 元信息——所以即使 session 用全局默认模型也能正常判断。
+  bool _resolveDeepThinking(String modelId) {
+    if (!_deepThinkingEnabled) return false;
+    final caps = inferCapabilities(modelId);
+    final supported = caps.contains(ModelCapability.deepThinking);
+    dev.log('_resolveDeepThinking: model=$modelId enabled=$supported',
+        name: 'chat_controller');
+    return supported;
   }
 }
 
