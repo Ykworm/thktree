@@ -182,11 +182,32 @@ updatedAt: "2026-05-25T12:01:00.000Z"
 规则：
 - 该标记必须是块内最后一行（除换行外）
 - 流结束后必须删除该行，文件最终态不含该行
-- 若崩溃停留在 streaming：解析器视该块 `status=streaming`，UI 可提示“未完成，可重试”
+- 若崩溃停留在 streaming：解析器视该块 `status=streaming`，UI 可提示"未完成，可重试"
 
-**作为后台恢复入口**：该标记同时承担“后台中断恢复”的角色。`SessionStore.findInterrupted()` 扫描磁盘 session.md 列表，以 `<!-- streaming -->` 标记为“未完成”判定依据。切回前台 / 冷启动 / App 从挂起恢复时调用，结果作为 `ChatTaskService.resumeInterrupted()` 的入参。具体策略见 [ADR-015](../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界)。
+**作为后台恢复入口**：该标记同时承担"后台中断恢复"的角色。`SessionStore.findInterrupted()` 扫描磁盘 session.md 列表，以 `<!-- streaming -->` 标记为"未完成"判定依据。切回前台 / 冷启动 / App 从挂起恢复时调用，结果作为 `ChatTaskService.resumeInterrupted()` 的入参。具体策略见 [ADR-015](../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界)。
 
-**与错误态区分**：仅 `<!-- streaming -->` 是“未完成 / 可恢复”，`<!-- error: <code> -->` 属于“已结束 / 不可恢复”，不进入 `findInterrupted()` 扫描结果。
+**与错误态区分**：仅 `<!-- streaming -->` 是"未完成 / 可恢复"，`<!-- error: <code> -->` 属于"已结束 / 不可恢复"，不进入 `findInterrupted()` 扫描结果。
+
+### 4.4.1 推理内容（reasoning，2026-07-06 起支持）
+
+当 assistant 消息来自支持深度思考的模型（详见 [ADR-022](../DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)），且产生了可读的推理 / 思维链内容时，正文按以下结构组织：
+
+```markdown
+<!-- reasoning:start -->
+让模型先想想这道题该怎么解……
+<!-- reasoning:end -->
+
+这里是模型最终生成给用户的回答正文。
+```
+
+规则（必须）：
+- 推理内容块必须从标题行下一行开始，依次为 `<!-- reasoning:start -->` → 推理正文（多行 Markdown）→ `<!-- reasoning:end -->`，独占一行分别位于块首尾。
+- 推理块与正文块之间空一行（Markdown paragraph 间距）。
+- 三个 marker **必须独占一行**，不得缩进、不得前后拼接其他字符。
+- 旧消息无 reasoning 标记块时解析为 `reasoning: null`，向后兼容。
+- 解析器（`session_markdown.dart::_extractReasoningAndBody`）按顺序剥外层 marker，提取 reasoning 与 body 两条独立的文本字段。
+- 重建（`serializeSessionMessageBody`）按 `reasoning != null` 决定是否插入 marker 块；body 为空时不写入 `<空正文>` 哨兵，直接结尾换行。
+- UI 端 `MessageBubble` 渲染折叠的"思考过程"展开块（已有功能，由 `SessionMessage.reasoning` 字段驱动）。
 
 ### 4.5 错误态（必须）
 

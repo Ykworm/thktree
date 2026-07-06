@@ -25,12 +25,18 @@
 - 联网搜索开关（`ChatComposer`）：输入框区域新增联网搜索按钮，位于模型选择器和发送按钮之间
   - 参数：`webSearchEnabled`（bool，当前开关状态）、`webSearchSupported`（bool，当前模型是否支持）、`onWebSearchToggle`（VoidCallback?，null 时不显示按钮）
   - 图标：地球图标，开启时蓝色、关闭时灰色；不支持时灰色不可点击，tooltip 提示"当前模型不支持联网搜索"
+- 深度思考开关（`ChatComposer`，2026-07-06）：与联网搜索 chip 完全镜像的模式，紧挨在联网搜索右侧。两种形态互斥显示：
+  - **opt-in**（`ModelCapability.deepThinking`）：显示可点击的"深度思考"chip，离散色 + sparkle icon，点开变紫。命中模型：DeepSeek V4-Pro / V4-Flash / `deepseek-reasoner` / MiniMax-M3。M3 必须显式传 `thinking: true`（MiniMax-M3 默认**不**输出 `reasoning_content`，user 不开 toggle 就看不到思考）。
+  - **always-on**（`ModelCapability.alwaysThinking`）：服务端锁定默认开，user 关不掉。UI 显示只读灰色"深度思考（默认）"chip，按下无响应。命中模型：豆包 Seed 2.1-pro / 2.1-turbo（方舟 ARK 服务端默认开启 thinking 且无法关闭）。
+  - 不支持 toggle 的模型（gpt-4o / claude-3 / claude-3.5 / kimi / mimo / gemini / custom）chip 不显示——既不浪费横向空间也不误导用户以为"关掉了"实际根本没开。
+  - 协议层：OpenAI 兼容路径按 provider 走不同 `thinking` 字段形态（豆包 `{type: 'enabled'}` / MiniMax `true` 布尔 / 其他不发）；Claude / Anthropic 路径（DeepSeek）走 `ClaudeClient`，body 注入 `thinking: {type: 'enabled'}`。stream 解析端 `_extractClaudeDelta` 显式判断 `delta.type` 分支：`thinking_delta` 读 `delta.thinking` 进 `reasoning`、`text_delta` 读 `delta.text`、`content_block_start` 同步处理 `type=thinking` block（见 [ADR-021](DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) 与 [ADR-022](DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。
+  - 状态：per-session in-memory、**不持久化**——关闭聊天页或切换模型自动重置为 false。
 - 图片上传（`ChatComposer`，2026-07-05）：输入框底部图片按钮，支持的模型显示蓝色图标+文字，不支持变灰不可点击
   - 参数：`onImagePick`（VoidCallback?，null 时不显示）、`imageSupported`（bool，模型是否支持 vision）、`selectedImageData`/`selectedImageMimeType`（已选图片）
   - 点击弹出 CupertinoActionSheet：拍照（`ImageSource.camera`）/ 从相册选择（`ImageSource.gallery`）
   - 选中后输入框上方显示 80x80 缩略图预览条（`_ImagePreview`），支持移除
   - 发送时 `imageData`/`imageMimeType` 随消息传入 `ChatController.sendUserMessage` → `ChatTaskService.startTask` → `_buildMessages` 构建多模态 content（base64 `image_url`）
-  - 模型 vision 能力自动检测：`ModelCapability.vision` + `model_capabilities.dart` 推断（gpt-4o / claude-3 / gemini / kimi-k2.5 / mimo-v2.5 / doubao-seed-2-1-pro / doubao-seed-2-1-turbo / doubao-seed-2-0-lite 等）
+  - 模型 vision 能力自动检测：`ModelCapability.vision` + `model_capabilities.dart` 推断（gpt-4o / claude-3 / gemini / kimi-k2.5 / mimo-v2.5 / doubao-seed-2-1-pro / doubao-seed-2-1-turbo 等）
   - iOS 权限：`NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription`
 - 消息时间戳（2026-07-04）：assistant 消息气泡上方显示人类可读时间，`formatMessageTime` 支持 4 级格式（今天 `HH:mm` / 昨天 / 月日 / 跨年全日期）
 - Chat-to-Note（2026-07-04）：assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote` 回调），自动用当前主题创建笔记并跳转 `NoteEditorScreen`
@@ -92,3 +98,4 @@
 - 2026-06-22：`ChatController` 重构为 UI 同步层（移除流式状态机）+ `ChatTaskService` 服务层承担后台中断恢复（iOS only）——参见 [ADR-015](../../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) + [集成测试 spec](../../_shared/integration-testing/chat-async-recovery.md)
 - 2026-06-29：`AutoTitleController` 上线（`lib/ui/features/chat/auto_title_controller.dart`，246 行）—— 空白分支流式结束后自动 LLM 补 title 并持久化，与 widget 生命周期解耦（`ref.keepAlive()`），user 提前 back 回 tree 也能后台完成。3 层守卫防 LLM 覆盖手动 title。集成测试 case 9.4 (DB check) / 9.5 (E2E) / 9.6 (提前 pop 后台完成) 加到 [branch-creation](../../_shared/integration-testing/branch-creation.md) § 3.5。详见 [ADR-018](../../DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [war-story](../../war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) + [CHANGELOG/2026-06-29](../../CHANGELOG/2026-06-29-auto-title-persistence.md)。
 - 2026-07-06：模型名显示——`SessionMessage` 新增 `modelId` 字段，`session.md` 消息头扩展可选 `· modelId`，`MessageBubble` 从 `llmProvidersProvider` 查模型名并显示在 assistant 标题后。详见 [CHANGELOG/2026-07-06](../../CHANGELOG/2026-07-06-chat-model-in-bubble.md)。
+- 2026-07-06：DeepSeek / MiniMax 思维链输出 + Per-session 深度思考开关 + 重发 bug 修复——`_extractClaudeDelta` 补全 `thinking_delta` 解析（修复 DeepSeek-reasoner / V4 等看不见 thinking 的零回报 bug，见 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析)）；新增 `ModelCapability.deepThinking` / `ModelCapability.alwaysThinking` 双 cap 区分（opt-in / 服务端锁定默认开），ChatComposer 加深度思考 chip 镜像 web search 模式；`retryLastMessage` 抽 `_triggerLlmStream` helper，**重发不再重复追加 user 消息**（修复 session.md 每次重发多一份 user 的 bug，见 [ADR-023](../../DECISIONS.md#adr-023-retrylastmessage-重构避免重发重复追加-user-消息)）。详见 [CHANGELOG/2026-07-06](../../CHANGELOG/2026-07-06-deepthinking-toggle.md)。

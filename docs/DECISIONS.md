@@ -195,3 +195,36 @@ iOS-first 项目的硬性决定。ThkTree 是为 iPhone 设计的笔记/聊天 a
 影响范围：`lib/data/models/preset_providers.dart`、`lib/data/services/llm_client.dart`、`lib/data/services/model_fetcher.dart`、`lib/data/stores/llm_config_store.dart`、`lib/ui/core/app_services.dart`。集成测试里 DeepSeek 相关 fixture 的 `baseUrl` 不依赖具体协议端点（用的是 `preset_deepseek` 的字段，迁移后自动跟随），不受影响。模型 ID（`deepseek-chat` 等）保持不变。
 
 ADR-019 是本决策的前置与子集：本决策把"仅 web search 切"扩展到"全量切"，原 ADR-019 的拼接逻辑被本决策吸收并废弃，`LlmClient.forConfig` 不再需要 `webSearch` 参数驱动的路径分支。联网搜索工具类型（`web_search_20260209`）由 `ClaudeClient` 在 `webSearch: true` 时透传，与之前保持一致。
+
+## ADR-021: ClaudeClient 流式响应补全 `thinking_delta` 解析
+
+2026-07-06 决定。ADR-020 把 DeepSeek 全量切到 Anthropic 协议后，`_extractClaudeDelta` 仍只读 `delta['text']` 字段——Anthropic 的 `content_block_delta` 事件还有另外两个分支：`type: 'thinking_delta'`（字段名 `delta.thinking`）与 `type: 'input_json_delta'`（tool use）。DeepSeek 的推理模型（`deepseek-reasoner` / `deepseek-v4-pro` / `deepseek-v4-flash`）以及 Anthropic Claude reasoning 系列（opus / sonnet thinking 模式）服务端都按 Anthropic 协议发 thinking 事件，前端解析只丢了它，导致 UI 上 `SessionMessage.reasoning` 永远是空串、折叠展开的「思考过程」永远看不到。
+
+决策：在 `_extractClaudeDelta` 显式判断 `delta.type` 分支——`thinking_delta` 读 `delta.thinking` 进 `LlmResponseDelta.reasoning`；`text_delta` 或 `delta.type` 缺省时（兼容旧实现）继续读 `delta.text`；其他类型（`input_json_delta` 等）忽略。`content_block_start` 同步处理：`content_block.type == 'thinking'` 读 `block.thinking`（少数实现会在 block_start 预填首段，其他走 `text`）。Anthropic 协议是事件驱动——`delta` 字段名因 `type` 而异，**不能**用宽松 `delta['text']` 统一处理，必须按 type 分支。
+
+影响范围：`lib/data/services/llm_client.dart` `_extractClaudeDelta` 函数（约 30 行扩展）。属 ADR-020 自然延续（同一份协议迁移代码），不需要新增端点或新文件。验证路径：deepseek-reasoner 在 streaming 响应里会先发 `content_block_start(type=thinking)`、再发多个 `content_block_delta(type=thinking_delta)` 累计 reasoning、`content_block_stop` 关闭、然后切到普通 text 块；解析器必须按顺序正确切分。
+
+## ADR-022: Per-session 深度思考开关 + 双 `ModelCapability` 区分
+
+2026-07-06 决定。用户对 LLM 思考过程默认不可见的体验提出诉求——希望能在 UI 上控制"这轮要不要思考"，同时希望"模型如果不支持思考，能看出来"。各服务商的「是否支持思考 + 是否允许关闭」语义不一致：DeepSeek V4 / `deepseek-reasoner` / MiniMax-M3 是 **opt-in**（默认关，user 显式开启）；豆包 Seed 2.x 服务端**默认开**且 user 关不掉；其他（gpt-4o、claude-3 / claude-3.5、kimi、mimo、gemini、custom 等）目前不支持，无法 toggle。
+
+决策：双 capability 区分两种语义。
+
+- `ModelCapability.deepThinking` —— **用户可控 toggle**。命中后聊天页底部输入区显示"深度思考"chip（与既有的"联网搜索"chip 镜像同一组件模式），灰色可点击、点开变紫。
+- `ModelCapability.alwaysThinking` —— **服务端锁定默认开**。命中后 chip 改为只读灰色"深度思考（默认）"，按下无响应（明示"你关不掉"），UI 上不向用户暴露"我能不能关"的歧义。
+
+ChatComposer 渲染优先级：`alwaysThinking` > toggle chip > 不显示。LlmClient 上游由 `chat_controller._resolveDeepThinking` 用 `inferCapabilities(modelId)` 二次校验——能力不足的模型 deepThinking 参数**根本不会传 true**，避免发到不支持的 endpoint 触发 400。OpenAI 兼容路径的 `thinking` 参数 shape 按 provider 走不同形态：豆包是 `{type: 'enabled'}` 对象、火山方舟 ARK 要求；MiniMax-M3 是 `true` 布尔（字符串 `"true"` 会 400）；Claude / Anthropic 路径走 `ClaudeClient`，body 注入 `thinking: {type: 'enabled'}`（DeepSeek 服务端忽略 `budget_tokens`，通用形态即可）。状态 per-session in-memory、**不持久化**——关闭聊天页或切换模型时重置。
+
+影响范围：`lib/data/models/llm_model_config.dart`（新增两个 enum 值）、`lib/data/models/model_capabilities.dart`（白名单 + 删兜底 `m3` 关键字匹配）、`lib/data/services/llm_client.dart`（OpenAI 兼容路径按 provider 分支 + Claude 路径加 thinking 参数）、`lib/data/services/chat_task_service.dart`（透传 deepThinking）、`lib/ui/features/chat/chat_controller.dart`（per-session state + `_resolveDeepThinking` 校验 + `_triggerLlmStream` helper 同时修复重发复制 bug，见 ADR-023）、`lib/ui/core/shared/chat_composer.dart`（`_AlwaysThinkingIndicator` + `_DeepThinkingToggle` 两个 widget，镜像 `_WebSearchToggle`）、`lib/ui/features/chat/chat_screen.dart`（chip 接线 + 模型切换时重置 toggle）。
+
+实施要点：每加一个 opt-in 模型必须在三层都更新——capability 白名单 + protocol 分支（按 provider 走不同 shape）+ UI 端 chip 显示逻辑。provider 名关键字（`minimax` / `doubao`）与 capability 白名单独立——前者决定参数 shape，后者决定 toggle 是否显示。添加 Anthropic 官方 Claude reasoning 模型时需注意：Anthropic API 要求 `budget_tokens` 与 `max_tokens` 协调，当前客户端 `max_tokens` 硬编码 `4096`，所以传递 `thinking: {type: 'enabled', budget_tokens: 1024}` 是安全的；当前未在白名单里加 Claude reasoning 留待后续 UX 验证。
+
+## ADR-023: `retryLastMessage` 重构——避免重发重复追加 user 消息
+
+2026-07-06 决定。`ChatController.retryLastMessage()` 本意是"删除最后一条 assistant 消息并重新触发 LLM"，但实现里它直接 `await sendUserMessage(userMessage)`——而 `sendUserMessage` 是"新消息入口"，会乐观追加 user 消息到 state 并 `sessionStore.appendUserMessage(...)` 写盘。结果是：每次点重发按钮，用户同名同内容的 user 消息在 session.md 和 in-memory state 里都被复制一份。UI 上看是"同一句问题发了 N 次"，搜索关键词（关键词榜分析）和文档链接（每条 user msg 都贡献一个 msgId）都受污染。
+
+决策：把 `sendUserMessage` 里的"判断 provider + 读 apiKey + fallback + `_startStreamingWithConfig`"逻辑抽出来成 `_triggerLlmStream({required messagesForLlm, imageData, imageMimeType})` helper。`sendUserMessage` 先 append user + 写盘再调 helper；`retryLastMessage` 先 `removeLastAssistantMessage` + reload state 再调 helper（**不再 append user**）。retry 路径不重新生成 user msg 的 `timestamp` 也不重新分配 `msgId`——这意味着 user 的 msgId 保持稳定，向后兼容：旧功能（搜索命中、引用、关键词榜 stale 判定、NoteStore 链源）都依赖 user msgId 不变的语义。
+
+影响范围：`lib/ui/features/chat/chat_controller.dart`（refactor `sendUserMessage` + `retryLastMessage` + 新增 `_triggerLlmStream` 私有方法）。回归测：发一条 → 等回复完成 → 点重发 → 看 session.md user 消息条数应保持不变（之前每次 +1）。
+
+放弃方案：给 `sendUserMessage` 加 `existingUserMsgId` 参数判断"已存在就不 append"——但这把"是否新消息"的认知负担推到调用方，且 retry 与新发两条路径不一致更难懂；不如用 helper 抽出"哪些步骤共享 / 哪些步骤调用方自己负责"。

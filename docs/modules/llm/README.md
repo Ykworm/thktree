@@ -86,6 +86,28 @@ enum WebSearchSupport {
 | MIMO | ✅ | Chat Completions API + `web_search` 工具声明 |
 | DeepSeek | ✅ | Anthropic 兼容 Messages API + `web_search_20260209` 工具（**全量**走 Anthropic 协议，不仅 web search） |
 
+## 深度思考支持（per-session toggle，2026-07-06）
+
+> 详细设计见 [DECISIONS.md ADR-022](../../DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)
+
+各提供商"是否支持思考 + 是否允许关闭"语义不一致，客户端按 capability 区分两种状态。OpenAI 兼容路径按 provider 走不同的 `thinking` 请求参数形态；Anthropic 兼容路径（DeepSeek）由 `ClaudeClient` 统一处理。
+
+| 模型 / Provider | 推理类型 | 客户端处理 | 协议层参数 shape |
+|---|---|---|---|
+| DeepSeek V4-Pro / V4-Flash / `deepseek-reasoner` | opt-in（user 可 toggle） | ClaudeClient（Anthropic 兼容路径） | `thinking: {type: 'enabled'}` |
+| MiniMax-M3（任意变体） | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | `thinking: true`（**布尔**，字符串"true"会 400） |
+| 豆包 Seed 2.1-pro / 2.1-turbo | 服务端锁定默认开 | `ConfigBasedOpenAiCompatibleClient` | 服务端默认开，**不**传参数 |
+| 其他（gpt-4o / claude-3 / claude-3.5 / kimi / mimo / gemini / custom） | 不支持 | — | 不发 `thinking` 参数；chip 不显示 |
+
+`LlmClient.streamChatCompletion` 新增 `deepThinking: bool = false` 参数（默认关）。OpenAI 兼容路径 `if (deepThinking)` 按 provider name 决定参数形态；ClaudeClient 路径无条件注入 `thinking: {type: 'enabled'}`。chat_controller 上游用 `inferCapabilities(modelId)` 二次校验——能力不足的模型 deepThinking 参数**根本不会传 true**，避免发到不支持的 endpoint 触发 400。
+
+stream 解析端 `_extractClaudeDelta`（Anthropic 协议）在 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) 后支持完整的事件分支：
+- `content_block_delta.type == 'thinking_delta'` → 读 `delta.thinking` 进 `reasoning`
+- `content_block_delta.type == 'text_delta'` 或 `delta.type` 缺省（兼容） → 读 `delta.text` 进 `content`
+- `content_block_start.content_block.type == 'thinking'` → 读 `block.thinking` 进 `reasoning`（少数实现在 block_start 预填首段）
+
+OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持（豆包 / DeepSeek 原生 Chat Completions 路径）。
+
 ## 维护要点
 
 - 改 LLM 配置前必读 [DECISIONS.md ADR-006](../../DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage)（SSE 流式 + Key 存储）
@@ -107,3 +129,4 @@ enum WebSearchSupport {
 - 2026-07：联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）
 - 2026-07-05：豆包模型白名单（`_fetchDoubaoModels` + `_doubaoWhitelist`，只返回 3 个 Seed 系列模型，不再走 /models API）+ Seed 模型 vision 能力精确映射
 - 2026-07-06：DeepSeek 全量切到 Anthropic 兼容协议（ADR-020），preset baseUrl 改为 `/anthropic/v1`，老用户自动迁移
+- 2026-07-06：Per-session 深度思考开关上线——`LlmClient.streamChatCompletion` 新增 `deepThinking` 参数；OpenAI 兼容路径按 provider 分支（豆包 `{type: 'enabled'}` / MiniMax-M3 `true`）/ Claude 路径注入 `{type: 'enabled'}`；`ModelCapability` 加 `deepThinking` + `alwaysThinking` 双 cap 区分（详见 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) + [ADR-022](../../DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。`doubao-seed-2-0-lite-250528` 从豆包 whitelist 移除（方舟端不可达，留着会引导到死路径）

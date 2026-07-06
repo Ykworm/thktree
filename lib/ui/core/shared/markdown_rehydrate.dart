@@ -73,12 +73,29 @@ String _applyRehydratePatterns(String body) {
   // （修复 DeepSeek 整块回复以 #/---/1./-/``` 开头时不换行的问题）。
 
   // ═══════════════════════════════════════════════════════════════
-  // PASS 0: 表格重建（必须最先做！）
-  // 表格分隔行 `:---` 里有 `---`，会被后面的 HR 规则切碎。
-  // 所以先识别整块表格，把行与行之间的 \n 补齐，
-  // 让后续规则能正确识别表格边界、不再误伤分隔行。
+  // PASS 0: 表格重建 + 保护（必须最先做！）
+  //
+  // 1. 先识别并重建表格（补上行间换行）
+  // 2. 再把表格用占位符保护起来，避免后续的列表/标题/HR 规则
+  //    误伤表格内容里的 `-`、`#`、`**` 等字符
+  // 3. 所有其他规则跑完后，再还原表格
   // ═══════════════════════════════════════════════════════════════
   s = _rehydrateTables(s);
+
+  // 用占位符保护已重建的表格
+  final tablePlaceholders = <String, String>{};
+  var tableCounter = 0;
+  // 匹配已重建好的表格块：表头行 + 分隔行 + (可选)数据行
+  // 每行以 | 开头和结尾，中间是 :--- 分隔行
+  final tableBlockPattern = RegExp(
+    r'^\|.+\|\n\|[\s　]*:?-{2,}:?[\s　]*(\|[\s　]*:?-{2,}:?[\s　]*)+\|(\n\|.+\|)*$',
+    multiLine: true,
+  );
+  s = s.replaceAllMapped(tableBlockPattern, (m) {
+    final placeholder = '\u0000TABLE_${tableCounter++}\u0000';
+    tablePlaceholders[placeholder] = m.group(0)!;
+    return placeholder;
+  });
 
   // 围栏代码块 ``` 前补 \n（让 ``` 独立成行）
   s = s.replaceAllMapped(
@@ -177,6 +194,11 @@ String _applyRehydratePatterns(String body) {
     (m) => '\n- ${m[2]!}',
   );
 
+  // 还原被占位符保护的表格
+  for (final entry in tablePlaceholders.entries) {
+    s = s.replaceFirst(entry.key, entry.value);
+  }
+
   return s.trimLeft();
 }
 
@@ -187,7 +209,7 @@ String _applyRehydratePatterns(String body) {
 /// 从压扁的文本中识别 markdown 表格，补上行间换行。
 ///
 /// **识别思路**：以表格分隔行（包含 `|:---|` 这类模式）为锚点，
-/// 向前找表头行、向后找数据行，每行必须以 `|` 开头并以 `|` 结尾（或至少含 2 个 `|`）。
+/// 向前找表头行、向后找数据行，每行必须有相同数量的 `|`。
 ///
 /// 为什么要最先做？因为表格分隔行 `:---` 里有 `---`，
 /// 会被后续的 HR（水平分割线）规则误切成独立段落。
@@ -195,8 +217,7 @@ String _rehydrateTables(String text) {
   if (!text.contains('|')) return text;
   if (!RegExp(r':---').hasMatch(text)) return text;
 
-  // 先找所有疑似"表格分隔行"的位置：连续的 |:---|:---|... 模式
-  // 一个完整分隔行长这样：|:---|:---|:---|
+  // 分隔行模式：连续的 |:---|:---|...
   final separatorPattern = RegExp(
     r'\|[\s　]*:?-{2,}:?[\s　]*(\|[\s　]*:?-{2,}:?[\s　]*)+\|',
   );
@@ -204,168 +225,139 @@ String _rehydrateTables(String text) {
   final matches = separatorPattern.allMatches(text).toList();
   if (matches.isEmpty) return text;
 
-  // 从右向左替换，避免位置偏移
-  final buf = StringBuffer();
-  var cursor = text.length;
+  // 从左向右构建结果
+  final result = StringBuffer();
+  var cursor = 0;
 
-  for (final sepMatch in matches.reversed) {
+  for (final sepMatch in matches) {
     final sepStart = sepMatch.start;
     final sepEnd = sepMatch.end;
+    final separatorText = sepMatch.group(0)!;
+    final pipeCount = separatorText.split('').where((c) => c == '|').length;
 
-    // 向前找表头行：从 sepStart 往前找，找到第一个 | 开头的位置
-    // 表头行的特征：以 | 开头，中间有多个 |，以 | 结尾（或后面紧接分隔行）
-    final headerEnd = sepStart;
-    var headerStart = headerEnd;
-    // 向前回溯到上一个 |，再继续往前直到遇到非表格字符
-    // 简单策略：从分隔行开头向前找，找到一个 | 之后，
-    // 再继续向前找，直到遇到不是表格内容的字符（换行、行首、非 | 开头的文本等）
-    //
-    // 更稳妥的做法：从 sepStart 向前扫描，找到最近一个 "|" 且后面是表格内容，
-    // 然后一直扫描到行首（或非表格起始符）作为表头起点。
-
-    // 从分隔行起点向前找"上一个 |"的位置，作为表头行右边界的候选
-    // 其实表头行就是分隔行之前、以 | 结尾的一段文本。
-    // 简化：从 sepStart 向左扫描，跳过空白，找到 |，然后继续向左扫描
-    // 直到遇到换行 / 字符串开头 / 非表格起始字符。
-
-    // 先向左跳过空白
-    var p = sepStart - 1;
-    while (p >= 0 && (text[p] == ' ' || text[p] == '\t' || text[p] == '　')) {
-      p--;
+    // 向左找表头最后一个 |
+    var headerEndIdx = sepStart - 1;
+    while (headerEndIdx > cursor &&
+        (text[headerEndIdx] == ' ' ||
+            text[headerEndIdx] == '\t' ||
+            text[headerEndIdx] == '　')) {
+      headerEndIdx--;
     }
-    if (p < 0 || text[p] != '|') {
-      // 分隔行前面不是 | → 不是有效表格，跳过
-      buf.insert(0, text.substring(sepEnd, cursor));
-      cursor = sepStart;
+    if (headerEndIdx < cursor || text[headerEndIdx] != '|') {
+      // 分隔行前面没有 | → 不是表格，原样写入
+      result.write(text.substring(cursor, sepEnd));
+      cursor = sepEnd;
       continue;
     }
 
-    // 找到表头行的右边界（|），继续向左找表头行起点
-    var headerRight = p;
-    // 向左扫描，直到遇到 \n 或 字符串开头 或 非表格字符
-    // 表格行的判断：以 | 开头（允许前面有空白）
-    // 这里简化：一直向左找到换行或开头，看那一段是否以 | 开头
-    // 先找到行首
-    var lineStart = p;
-    while (lineStart > 0 && text[lineStart - 1] != '\n') {
-      lineStart--;
+    // 从 headerEndIdx 向左数 pipeCount 个 |，遇到换行就停（表格不跨行）
+    var headerStartIdx = headerEndIdx;
+    var pipesLeft = pipeCount;
+    var hitNewline = false;
+    while (headerStartIdx >= cursor && pipesLeft > 0) {
+      if (text[headerStartIdx] == '\n') {
+        hitNewline = true;
+        break;
+      }
+      if (text[headerStartIdx] == '|') {
+        pipesLeft--;
+        if (pipesLeft == 0) break;
+      }
+      headerStartIdx--;
     }
-    // 从行首向右跳过空白
-    var contentStart = lineStart;
-    while (contentStart < headerRight &&
-        (text[contentStart] == ' ' ||
-            text[contentStart] == '\t' ||
-            text[contentStart] == '　')) {
-      contentStart++;
-    }
-    if (contentStart >= headerRight || text[contentStart] != '|') {
-      // 这一行不是以 | 开头 → 不是表头
-      buf.insert(0, text.substring(sepEnd, cursor));
-      cursor = sepStart;
+
+    if (pipesLeft > 0 || headerStartIdx < cursor || hitNewline) {
+      // 没找齐，或跨行了 → 不是表格
+      result.write(text.substring(cursor, sepEnd));
+      cursor = sepEnd;
       continue;
     }
 
-    // 表头行起点 = 行首（保留前面的空白/换行上下文）
-    headerStart = lineStart;
-
-    // 向后找数据行：从 sepEnd 向后，找以 | 开头以 | 结尾的行
-    var dataEnd = sepEnd;
-    // 从 sepEnd 开始，逐行扫描
-    var pos = sepEnd;
-    // 跳过紧接的空白
-    while (pos < text.length &&
-        (text[pos] == ' ' || text[pos] == '\t' || text[pos] == '　')) {
-      pos++;
-    }
-    // 如果后面直接是 \n 或 字符串结束，就没有数据行（异常情况）
-    if (pos < text.length && text[pos] == '|') {
-      // 从 | 开始扫描，直到遇到 \n 或 非表格行
-      // 简化：扫描到下一个 \n 作为第一行数据的结尾，
-      // 然后继续判断下一行是否也是表格行
-      var lineEnd = pos;
-      while (lineEnd < text.length && text[lineEnd] != '\n') {
-        lineEnd++;
-      }
-      // 检查这一行是否以 | 结尾（允许尾部空白）
-      var trail = lineEnd - 1;
-      while (trail > pos &&
-          (text[trail] == ' ' ||
-              text[trail] == '\t' ||
-              text[trail] == '　')) {
-        trail--;
-      }
-      if (trail > pos && text[trail] == '|') {
-        dataEnd = lineEnd;
-        // 继续找下一行
-        // 这里简化处理：只识别第一行数据，避免过度匹配
-        // （流式输出时表格通常就几行，第一行能识别到就够了）
-        //
-        // 实际上还可以继续向下找更多数据行，但为了安全起见，
-        // 我们只保证表头+分隔行+第一行数据的结构正确，
-        // 后续行如果也粘在一起，会在后续 token 到达时逐步被重建。
-      }
+    // 向右找数据行（可能多行，压扁时行与行之间直接用 | 连）
+    var dataStartIdx = sepEnd;
+    while (dataStartIdx < text.length &&
+        (text[dataStartIdx] == ' ' ||
+            text[dataStartIdx] == '\t' ||
+            text[dataStartIdx] == '　')) {
+      dataStartIdx++;
     }
 
-    // 整段表格范围：[headerStart, dataEnd)
-    // 需要在表头行末尾、分隔行末尾各补一个 \n（如果没有的话）
-    //
-    // 构造重建后的表格块
-    final tableBlock = text.substring(headerStart, dataEnd);
-    final rebuilt = _rebuildTableBlock(tableBlock);
+    // 用 | 计数方式判断有多少行数据：
+    // 每 pipeCount 个 | 为一行，连续匹配直到不够一行为止
+    // （压扁的表格里行与行之间没有换行，只有 || 连接）
+    var dataEndIdx = sepEnd;
+    if (dataStartIdx < text.length && text[dataStartIdx] == '|') {
+      var pos = dataStartIdx;
+      var pipesFound = 0;
+      var totalRowPipes = 0; // 累计匹配到的 | 数量
+      while (pos < text.length) {
+        if (text[pos] == '|') {
+          pipesFound++;
+          totalRowPipes++;
+          if (pipesFound == pipeCount) {
+            // 完成一行
+            dataEndIdx = pos + 1; // 包含最后这个 |
+            pipesFound = 0;
+            // 继续看下一个字符是不是 |（下一行的开始）
+            pos++;
+            if (pos >= text.length || text[pos] != '|') {
+              break; // 下一个不是 |，表格数据行结束
+            }
+            // 跳过行首空白（如果有的话）
+            // 其实压扁时一般没有空白，直接继续
+            continue;
+          }
+        }
+        if (text[pos] == '\n') break; // 遇到换行就停（说明表格后面有正常文本）
+        pos++;
+      }
+      // 如果一行都没匹配全，dataEndIdx 保持 sepEnd
+      if (totalRowPipes < pipeCount) {
+        dataEndIdx = sepEnd;
+      }
+    }
 
-    // 写入 [cursor 之前, dataEnd) → 替换为 [headerStart 之前, dataEnd)
-    // 因为从右向左处理：
-    buf.insert(0, text.substring(dataEnd, cursor)); // 表格后到上一段
-    buf.insert(0, rebuilt); // 重建后的表格
+    // 写入：[cursor, headerStartIdx) + 重建的表格
+    result.write(text.substring(cursor, headerStartIdx));
 
-    cursor = headerStart;
+    // 重建表格：前面空一行 + 表头\n分隔行\n数据行(每行)
+    // 表格最后也加一个换行，确保和后续内容分开（便于占位符匹配）
+    final headerLine = text.substring(headerStartIdx, headerEndIdx + 1);
+    result.writeln(); // 表格前空一行
+    result.writeln(headerLine);
+    if (dataEndIdx > sepEnd) {
+      result.writeln(separatorText);
+      // 数据行按 pipeCount 个 | 为一行，逐行写入
+      final dataText = text.substring(dataStartIdx, dataEndIdx);
+      var dataPos = 0;
+      var firstRow = true;
+      while (dataPos < dataText.length) {
+        var rowPipes = 0;
+        var rowStart = dataPos;
+        while (dataPos < dataText.length && rowPipes < pipeCount) {
+          if (dataText[dataPos] == '|') {
+            rowPipes++;
+          }
+          dataPos++;
+        }
+        if (rowPipes == pipeCount) {
+          if (!firstRow) result.writeln();
+          result.write(dataText.substring(rowStart, dataPos));
+          firstRow = false;
+        } else {
+          break; // 不够一行，丢弃
+        }
+      }
+      result.writeln(); // 表格最后一行后加换行
+    } else {
+      result.writeln(separatorText); // 分隔行后也加换行
+    }
+
+    cursor = dataEndIdx;
   }
 
-  // 最后补上最前面一段
-  buf.insert(0, text.substring(0, cursor));
-
-  return buf.toString();
-}
-
-/// 把一整段压扁的表格文本（表头+分隔行+(可选)数据行）重建为标准 markdown 表格。
-///
-/// 输入是一段包含至少一个 `|:---|` 分隔行、前面跟着表头、后面可能跟着数据行的文本。
-/// 输出是每行独立、以 \n 分隔的标准表格。
-String _rebuildTableBlock(String block) {
-  // 先找分隔行的位置
-  final sepMatch = RegExp(
-    r'\|[\s　]*:?-{2,}:?[\s　]*(\|[\s　]*:?-{2,}:?[\s　]*)+\|',
-  ).firstMatch(block);
-  if (sepMatch == null) return block;
-
-  final sepStart = sepMatch.start;
-  final sepEnd = sepMatch.end;
-
-  // 表头行：从开头到 sepStart
-  var header = block.substring(0, sepStart).trim();
-  // 确保表头以 | 开头和结尾
-  if (!header.startsWith('|')) header = '|$header';
-  if (!header.endsWith('|')) header = '$header|';
-
-  // 分隔行
-  final separator = sepMatch.group(0)!;
-
-  // 数据行：从 sepEnd 到结尾
-  var data = block.substring(sepEnd).trim();
-  final hasData = data.isNotEmpty;
-  if (hasData && !data.startsWith('|')) data = '|$data';
-  if (hasData && !data.endsWith('|')) data = '$data|';
-
-  // 组合：表头 + \n + 分隔行 + (\n + 数据行)?
-  // 前面再加一个 \n\n 让表格和前面的文本分开（如果前面有文本的话）
-  final result = StringBuffer();
-  result.writeln(); // 表格前空一行
-  result.writeln(header);
-  result.write(separator);
-  if (hasData) {
-    result.writeln();
-    result.write(data);
-  }
+  // 写入剩余部分
+  result.write(text.substring(cursor));
 
   return result.toString();
 }
