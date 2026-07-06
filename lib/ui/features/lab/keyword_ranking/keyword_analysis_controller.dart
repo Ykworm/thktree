@@ -196,15 +196,15 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
     ));
 
     try {
-      final appPaths = ref.read(appPathsProvider).requireValue;
+      final appPaths = await ref.read(appPathsProvider.future);
       final llmConfig = ref.read(llmConfigStoreProvider);
       final extractionService = ref.read(keywordExtractionServiceProvider);
       final aggregationService = ref.read(keywordAggregationServiceProvider);
       final globalStorage =
-          ref.read(keywordGlobalStorageProvider).requireValue;
+          await ref.read(keywordGlobalStorageProvider.future);
       final categoryStorage =
-          ref.read(keywordCategoryStorageProvider).requireValue;
-      final nodeStore = ref.read(nodeStoreProvider).requireValue;
+          await ref.read(keywordCategoryStorageProvider.future);
+      final nodeStore = await ref.read(nodeStoreProvider.future);
 
       // 加载 LLM 配置，找到第一个有 API Key + 模型的 provider
       final providers = await llmConfig.loadAll();

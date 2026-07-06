@@ -442,7 +442,7 @@
   "@apiKeyNotConfigured": {
     "description": "API key is not configured"
   },
-  "modelCount": "{count} models",
+  "modelCount": "{count} providers",
   "@modelCount": {
     "description": "Shows the number of models available for a provider",
     "placeholders": {
@@ -451,7 +451,7 @@
       }
     }
   },
-  "noModels": "No models",
+  "noModels": "No providers",
   "@noModels": {
     "description": "No models available for a provider"
   },

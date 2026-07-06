@@ -396,6 +396,8 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     final settings = ref.read(settingsControllerProvider).value;
     final providers = ref.read(llmProvidersProvider).value;
     final resolved = resolveChatModel(
+      lastUsedChatProviderId: settings?.lastUsedChatProviderId,
+      lastUsedChatModelId: settings?.lastUsedChatModelId,
       chatDefaultProviderId: settings?.chatDefaultProviderId,
       chatDefaultModelId: settings?.chatDefaultModelId,
       providers: providers,

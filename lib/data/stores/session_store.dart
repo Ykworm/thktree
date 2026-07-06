@@ -175,6 +175,25 @@ class SessionStore {
     return AssistantStreamHandle(nodeId: nodeId, msgId: msgId);
   }
 
+  /// 流式追加 assistant delta。
+  ///
+  /// 直接在 markdown 原始字符串中做插入（不走 parse→rebuild 循环），
+  /// 避免 trimRight 反复裁掉尾部换行符导致段落合并。
+  ///
+  /// session.md 中 streaming 消息的结构（由 serializeSessionMessageBody 保证）：
+  ///
+  ///   ## assistant · ... · msg_id · model
+  ///   <!-- reasoning:start -->
+  ///   (reasoning text)
+  ///   <!-- reasoning:end -->
+  ///
+  ///   (content text)
+  ///   <!-- streaming -->
+  ///
+  /// 插入策略：
+  ///   - reasoningDelta：插在 `<!-- reasoning:end -->` 之前；
+  ///     如果还没有 reasoning 块，则在 header 后插入完整块框架。
+  ///   - contentDelta：插在 `<!-- streaming -->` 之前。
   Future<void> appendAssistantDelta({
     required AssistantStreamHandle handle,
     String contentDelta = '',
@@ -184,33 +203,67 @@ class SessionStore {
     await _queue.run(handle.nodeId, () async {
       final path = await getSessionPathForNode(handle.nodeId);
       final file = File(path);
-      final content = await file.readAsString();
-      final (withoutMarker, found) = _stripStreamingMarker(content);
-      if (!found) {
-        return;
+      final raw = await file.readAsString();
+
+      // 找到 streaming marker 位置；找不到说明消息已经 finish 了
+      final streamingIdx = raw.lastIndexOf(_streamingMarker);
+      if (streamingIdx < 0) return;
+
+      // streaming marker 之前就是当前消息体的末尾，delta 插在这里
+      var insertPos = streamingIdx;
+      var updated = raw;
+
+      // ── 处理 reasoningDelta ──
+      if (reasoningDelta.isNotEmpty) {
+        const reasoningEndMarker = '<!-- reasoning:end -->';
+        const reasoningStartMarker = '<!-- reasoning:start -->';
+        final endIdx = updated.lastIndexOf(reasoningEndMarker, insertPos);
+        if (endIdx >= 0 && endIdx < insertPos) {
+          // reasoning 块已存在，在 end marker 前插入 delta。
+          // 不加尾部 \n——_stripTrailingNewlines 已去掉每个 token 的尾 \n，
+          // end marker 本身在 beginAssistantMessage 中已独占一行。
+          updated = updated.substring(0, endIdx) +
+              reasoningDelta +
+              updated.substring(endIdx);
+          insertPos += reasoningDelta.length;
+        } else {
+          // 还没有 reasoning 块，在 header 行末之后插入完整块
+          // serializeSessionMessageBody 的输出格式：
+          //   <!-- reasoning:start -->\n<reasoning>\n<!-- reasoning:end -->\n\n
+          final headerStart = updated.lastIndexOf('\n## ', insertPos);
+          final headerEnd = headerStart >= 0
+              ? updated.indexOf('\n', headerStart + 1)
+              : -1;
+          final afterHeader = headerEnd >= 0 ? headerEnd + 1 : 0;
+          final reasoningBlock =
+              '$reasoningStartMarker\n$reasoningDelta\n$reasoningEndMarker\n\n';
+          updated = updated.substring(0, afterHeader) +
+              reasoningBlock +
+              updated.substring(afterHeader);
+          insertPos += reasoningBlock.length;
+        }
       }
-      final doc = parseSessionMarkdown(withoutMarker);
-      final updatedMessages = doc.messages.toList(growable: true);
-      final messageIndex = updatedMessages.lastIndexWhere(
-        (message) => message.msgId == handle.msgId,
-      );
-      if (messageIndex < 0) return;
-      final message = updatedMessages[messageIndex];
-      updatedMessages[messageIndex] = SessionMessage(
-        role: message.role,
-        timestampUtcIso8601: message.timestampUtcIso8601,
-        msgId: message.msgId,
-        body: message.body + contentDelta,
-        status: SessionMessageStatus.streaming,
-        reasoning: (message.reasoning ?? '') + reasoningDelta,
-        modelId: message.modelId, // 关键：从 beginAssistantMessage 写入的 header 读出来，append 时必须保留
-      );
-      final frontmatter = _extractFrontmatter(withoutMarker);
-      final updated = _rebuildSessionMarkdown(
-        frontmatter,
-        updatedMessages,
-        streamingMsgId: handle.msgId,
-      );
+
+      // ── 处理 contentDelta ──
+      // 在 streaming marker 前直接插入
+      // 注意：如果之前还没有内容（header 后直接是 <!-- streaming -->），
+      // 需要确保有一个 \n 分隔。实际上 beginAssistantMessage 已经写了
+      // header\n\n<!-- streaming -->，所以 header 后有一个空行，
+      // contentDelta 直接插在 <!-- streaming --> 前即可。
+      //
+      // 但要注意：如果刚插入了 reasoning 块，此时 <!-- streaming --> 之前
+      // 可能已经有 \n\n，直接插入即可；如果只有 reasoningDelta 而没有 contentDelta，
+      // 这一步跳过。
+      if (contentDelta.isNotEmpty) {
+        // 重新定位 streaming marker（因为 reasoningDelta 可能改变了位置）
+        final newStreamingIdx = updated.lastIndexOf(_streamingMarker);
+        if (newStreamingIdx >= 0) {
+          updated = updated.substring(0, newStreamingIdx) +
+              contentDelta +
+              updated.substring(newStreamingIdx);
+        }
+      }
+
       await _atomicWriteString(path, updated);
     });
   }

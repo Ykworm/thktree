@@ -695,13 +695,13 @@ abstract class AppLocalizations {
   /// Shows the number of models available for a provider
   ///
   /// In en, this message translates to:
-  /// **'{count} models'**
+  /// **'{count} providers'**
   String modelCount(int count);
 
   /// No models available for a provider
   ///
   /// In en, this message translates to:
-  /// **'No models'**
+  /// **'No providers'**
   String get noModels;
 
   /// Button to delete a provider

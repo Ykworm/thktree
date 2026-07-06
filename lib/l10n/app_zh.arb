@@ -132,7 +132,7 @@
   "providerApiKey": "API 密钥",
   "apiKeyConfigured": "已配置",
   "apiKeyNotConfigured": "未配置",
-  "modelCount": "{count} 个模型",
+  "modelCount": "{count} 个提供商",
   "@modelCount": {
     "placeholders": {
       "count": {
@@ -140,7 +140,7 @@
       }
     }
   },
-  "noModels": "暂无模型",
+  "noModels": "暂无提供商",
   "deleteProvider": "删除提供商",
   "deleteProviderConfirm": "确定要删除该提供商吗？",
   "fetchModels": "获取模型列表",

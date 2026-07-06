@@ -339,11 +339,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String modelCount(int count) {
-    return '$count 个模型';
+    return '$count 个提供商';
   }
 
   @override
-  String get noModels => '暂无模型';
+  String get noModels => '暂无提供商';
 
   @override
   String get deleteProvider => '删除提供商';

@@ -12,6 +12,8 @@ class AppSettings {
     this.summaryModelModelId,
     this.chatDefaultProviderId,
     this.chatDefaultModelId,
+    this.lastUsedChatProviderId,
+    this.lastUsedChatModelId,
     this.ttsVoiceId,
     this.webSearchEnabledMap = const {},
   });
@@ -25,6 +27,8 @@ class AppSettings {
   final String? summaryModelModelId;
   final String? chatDefaultProviderId;
   final String? chatDefaultModelId;
+  final String? lastUsedChatProviderId;
+  final String? lastUsedChatModelId;
   final String? ttsVoiceId;
 
   /// 各提供商的联网搜索开关状态（key: providerType name, value: enabled）
@@ -40,6 +44,8 @@ class AppSettings {
     String? summaryModelModelId,
     String? chatDefaultProviderId,
     String? chatDefaultModelId,
+    String? lastUsedChatProviderId,
+    String? lastUsedChatModelId,
     String? ttsVoiceId,
     Map<String, bool>? webSearchEnabledMap,
   }) {
@@ -53,6 +59,8 @@ class AppSettings {
       summaryModelModelId: summaryModelModelId ?? this.summaryModelModelId,
       chatDefaultProviderId: chatDefaultProviderId ?? this.chatDefaultProviderId,
       chatDefaultModelId: chatDefaultModelId ?? this.chatDefaultModelId,
+      lastUsedChatProviderId: lastUsedChatProviderId ?? this.lastUsedChatProviderId,
+      lastUsedChatModelId: lastUsedChatModelId ?? this.lastUsedChatModelId,
       ttsVoiceId: ttsVoiceId ?? this.ttsVoiceId,
       webSearchEnabledMap: webSearchEnabledMap ?? this.webSearchEnabledMap,
     );
@@ -85,6 +93,8 @@ class SettingsStore {
   static const _keySummaryModelModelId = 'summary_model_model_id';
   static const _keyChatDefaultProviderId = 'chat_default_provider_id';
   static const _keyChatDefaultModelId = 'chat_default_model_id';
+  static const _keyLastUsedChatProviderId = 'last_used_chat_provider_id';
+  static const _keyLastUsedChatModelId = 'last_used_chat_model_id';
   static const _keyTtsVoiceId = 'tts_voice_id';
   static const _keyWebSearchPrefix = 'web_search_enabled_';
   static final _webSearchKeys =
@@ -105,6 +115,8 @@ class SettingsStore {
     final summaryModelModelId = await _secureStorage.read(key: _keySummaryModelModelId);
     final chatDefaultProviderId = await _secureStorage.read(key: _keyChatDefaultProviderId);
     final chatDefaultModelId = await _secureStorage.read(key: _keyChatDefaultModelId);
+    final lastUsedChatProviderId = await _secureStorage.read(key: _keyLastUsedChatProviderId);
+    final lastUsedChatModelId = await _secureStorage.read(key: _keyLastUsedChatModelId);
     final ttsVoiceId = await _secureStorage.read(key: _keyTtsVoiceId);
 
     final webSearchMap = <String, bool>{};
@@ -125,6 +137,8 @@ class SettingsStore {
       summaryModelModelId: summaryModelModelId,
       chatDefaultProviderId: chatDefaultProviderId,
       chatDefaultModelId: chatDefaultModelId,
+      lastUsedChatProviderId: lastUsedChatProviderId,
+      lastUsedChatModelId: lastUsedChatModelId,
       ttsVoiceId: ttsVoiceId,
       webSearchEnabledMap: webSearchMap,
     );
@@ -173,6 +187,16 @@ class SettingsStore {
     } else {
       await _secureStorage.write(key: _keyChatDefaultProviderId, value: providerId);
       await _secureStorage.write(key: _keyChatDefaultModelId, value: modelId);
+    }
+  }
+
+  Future<void> saveLastUsedChatModel({String? providerId, String? modelId}) async {
+    if (providerId == null || modelId == null) {
+      await _secureStorage.delete(key: _keyLastUsedChatProviderId);
+      await _secureStorage.delete(key: _keyLastUsedChatModelId);
+    } else {
+      await _secureStorage.write(key: _keyLastUsedChatProviderId, value: providerId);
+      await _secureStorage.write(key: _keyLastUsedChatModelId, value: modelId);
     }
   }
 

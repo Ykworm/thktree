@@ -355,11 +355,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String modelCount(int count) {
-    return '$count models';
+    return '$count providers';
   }
 
   @override
-  String get noModels => 'No models';
+  String get noModels => 'No providers';
 
   @override
   String get deleteProvider => 'Delete Provider';

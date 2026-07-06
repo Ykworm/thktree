@@ -262,6 +262,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final resolved = resolveChatModel(
       sessionProviderId: currentProviderId,
       sessionModelId: currentModelId,
+      lastUsedChatProviderId: settings?.lastUsedChatProviderId,
+      lastUsedChatModelId: settings?.lastUsedChatModelId,
       chatDefaultProviderId: settings?.chatDefaultProviderId,
       chatDefaultModelId: settings?.chatDefaultModelId,
       providers: providers,
@@ -628,6 +630,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final resolved = resolveChatModel(
       sessionProviderId: chatCtrl.providerId,
       sessionModelId: chatCtrl.modelId,
+      lastUsedChatProviderId: settings?.lastUsedChatProviderId,
+      lastUsedChatModelId: settings?.lastUsedChatModelId,
       chatDefaultProviderId: settings?.chatDefaultProviderId,
       chatDefaultModelId: settings?.chatDefaultModelId,
       providers: providers,
@@ -965,6 +969,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final resolved = resolveChatModel(
         sessionProviderId: chatCtrl.providerId,
         sessionModelId: chatCtrl.modelId,
+        lastUsedChatProviderId: settings?.lastUsedChatProviderId,
+        lastUsedChatModelId: settings?.lastUsedChatModelId,
         chatDefaultProviderId: settings?.chatDefaultProviderId,
         chatDefaultModelId: settings?.chatDefaultModelId,
         providers: branchProviders,

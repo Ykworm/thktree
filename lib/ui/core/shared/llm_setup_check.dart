@@ -230,11 +230,14 @@ Future<(LlmProviderConfig, String, String)?> resolveModelForSummary(
 ///
 /// 优先级：
 ///   1. 会话自带的 [sessionProviderId] / [sessionModelId]
-///   2. [chatDefaultProviderId] / [chatDefaultModelId]（全局默认）
-///   3. 遍历 providers 找第一个有 model 的
+///   2. [lastUsedChatProviderId] / [lastUsedChatModelId]（最后使用的模型）
+///   3. [chatDefaultProviderId] / [chatDefaultModelId]（全局默认）
+///   4. 遍历 providers 找第一个有 model 的
 (String providerId, String modelId) resolveChatModel({
   String? sessionProviderId,
   String? sessionModelId,
+  String? lastUsedChatProviderId,
+  String? lastUsedChatModelId,
   String? chatDefaultProviderId,
   String? chatDefaultModelId,
   List<LlmProviderConfig>? providers,
@@ -242,13 +245,19 @@ Future<(LlmProviderConfig, String, String)?> resolveModelForSummary(
   String? providerId = sessionProviderId;
   String? modelId = sessionModelId;
 
-  // 2. chatDefault（全局默认）
+  // 2. lastUsed（最后使用的模型）
+  if (providerId == null || modelId == null) {
+    providerId ??= lastUsedChatProviderId;
+    modelId ??= lastUsedChatModelId;
+  }
+
+  // 3. chatDefault（全局默认）
   if (providerId == null || modelId == null) {
     providerId ??= chatDefaultProviderId;
     modelId ??= chatDefaultModelId;
   }
 
-  // 3. 兜底：第一个有 model 的 provider
+  // 4. 兜底：第一个有 model 的 provider
   if (providerId == null || modelId == null) {
     if (providers != null) {
       for (final p in providers) {

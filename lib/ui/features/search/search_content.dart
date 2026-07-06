@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:developer' as dev;
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:thk_tree/data/services/search_service.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -195,9 +198,18 @@ class _SearchBoxState extends State<SearchBox> {
 /// Live results list driven by [queryNotifier].
 /// Performs a debounced (300ms) full-text search via [searchServiceProvider].
 class SearchResults extends ConsumerStatefulWidget {
-  const SearchResults({super.key, required this.queryNotifier});
+  const SearchResults({
+    super.key,
+    required this.queryNotifier,
+    this.scrollable = true,
+  });
 
   final ValueNotifier<String> queryNotifier;
+
+  /// Whether the list should scroll itself.
+  /// Set to `false` when placed inside a [SliverToBoxAdapter] or other
+  /// scrollable parent that handles scrolling.
+  final bool scrollable;
 
   @override
   ConsumerState<SearchResults> createState() => _SearchResultsState();
@@ -247,15 +259,24 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
             _loading = false;
           });
         }
-      } catch (e) {
+        // Record successful search to history (fire-and-forget, don't block UI).
+        unawaited(addRecentSearch(query));
+      } on DatabaseException catch (e, st) {
+        dev.log('[SearchResults] DatabaseException: $e\n$st');
+        if (mounted) {
+          setState(() {
+            _results = [];
+            _loading = false;
+          });
+          showSearchRepairDialog(context, () => _runRepair());
+        }
+      } catch (e, st) {
+        dev.log('[SearchResults] Unexpected error: $e\n$st');
         if (mounted) {
           setState(() {
             _error = e.toString();
             _loading = false;
           });
-          if (e is DatabaseException) {
-            showSearchRepairDialog(context, () => _runRepair());
-          }
         }
       }
     });
@@ -344,8 +365,10 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
       );
     }
     return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: !widget.scrollable,
+      physics: widget.scrollable
+          ? const AlwaysScrollableScrollPhysics()
+          : const NeverScrollableScrollPhysics(),
       itemCount: _results.length,
       itemBuilder: (context, index) {
         final result = _results[index];
@@ -384,9 +407,261 @@ class _SearchContentState extends State<SearchContent> {
           child: SearchBox(queryNotifier: _queryNotifier),
         ),
         Expanded(
-          child: SearchResults(queryNotifier: _queryNotifier),
+          child: ValueListenableBuilder<String>(
+            valueListenable: _queryNotifier,
+            builder: (context, query, _) {
+              if (query.trim().isEmpty) {
+                return RecentSearchTags(
+                  onTagTap: (tag) => _queryNotifier.value = tag,
+                );
+              }
+              return SearchResults(queryNotifier: _queryNotifier);
+            },
+          ),
         ),
       ],
+    );
+  }
+}
+
+/// SharedPreferences key for recent search history.
+const _kRecentSearchesKey = 'recent_searches';
+const _kMaxRecentSearches = 10;
+
+/// Read recent searches from SharedPreferences.
+Future<List<String>> _readRecentSearches() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_kRecentSearchesKey);
+  if (raw == null || raw.isEmpty) return [];
+  try {
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list.cast<String>();
+  } catch (_) {
+    return [];
+  }
+}
+
+/// Write recent searches to SharedPreferences.
+Future<void> _writeRecentSearches(List<String> searches) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kRecentSearchesKey, jsonEncode(searches));
+}
+
+/// Add a query to recent searches (dedup + move to front + cap at 10).
+Future<void> addRecentSearch(String query) async {
+  final trimmed = query.trim();
+  if (trimmed.isEmpty) return;
+  final list = await _readRecentSearches();
+  list.remove(trimmed);
+  list.insert(0, trimmed);
+  if (list.length > _kMaxRecentSearches) {
+    list.removeLast();
+  }
+  await _writeRecentSearches(list);
+}
+
+/// Remove a single recent search.
+Future<void> removeRecentSearch(String query) async {
+  final list = await _readRecentSearches();
+  list.remove(query);
+  await _writeRecentSearches(list);
+}
+
+/// Clear all recent searches.
+Future<void> clearRecentSearches() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_kRecentSearchesKey);
+}
+
+/// Tag cloud of recent searches. Shown when search box is empty.
+class RecentSearchTags extends StatelessWidget {
+  const RecentSearchTags({
+    super.key,
+    required this.onTagTap,
+  });
+
+  final ValueChanged<String> onTagTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return FutureBuilder<List<String>>(
+      future: _readRecentSearches(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CupertinoActivityIndicator());
+        }
+
+        final tags = snapshot.data ?? [];
+
+        if (tags.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(CupertinoIcons.search, size: 40, color: AppColors.textTertiary),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.searchEmpty,
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return _RecentSearchTagsBody(
+          tags: tags,
+          onTagTap: onTagTap,
+        );
+      },
+    );
+  }
+}
+
+class _RecentSearchTagsBody extends StatefulWidget {
+  const _RecentSearchTagsBody({
+    required this.tags,
+    required this.onTagTap,
+  });
+
+  final List<String> tags;
+  final ValueChanged<String> onTagTap;
+
+  @override
+  State<_RecentSearchTagsBody> createState() => _RecentSearchTagsBodyState();
+}
+
+class _RecentSearchTagsBodyState extends State<_RecentSearchTagsBody> {
+  late List<String> _tags;
+
+  @override
+  void initState() {
+    super.initState();
+    _tags = widget.tags;
+  }
+
+  @override
+  void didUpdateWidget(covariant _RecentSearchTagsBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tags != oldWidget.tags) {
+      setState(() {
+        _tags = widget.tags;
+      });
+    }
+  }
+
+  Future<void> _remove(String tag) async {
+    await removeRecentSearch(tag);
+    final updated = await _readRecentSearches();
+    if (mounted) {
+      setState(() {
+        _tags = updated;
+      });
+    }
+  }
+
+  Future<void> _clearAll() async {
+    await clearRecentSearches();
+    if (mounted) {
+      setState(() {
+        _tags = [];
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '最近搜索',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              onPressed: _clearAll,
+              child: Text(
+                '清除全部',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: CupertinoColors.destructiveRed,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _tags.map((tag) {
+            return _RecentSearchTag(
+              label: tag,
+              onTap: () => widget.onTagTap(tag),
+              onRemove: () => _remove(tag),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentSearchTag extends StatelessWidget {
+  const _RecentSearchTag({
+    required this.label,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.border.withAlpha(30),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 0, 6),
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ),
+          CupertinoButton(
+            padding: const EdgeInsets.fromLTRB(4, 6, 8, 6),
+            minimumSize: Size.zero,
+            onPressed: onRemove,
+            child: Icon(
+              CupertinoIcons.xmark,
+              size: 12,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

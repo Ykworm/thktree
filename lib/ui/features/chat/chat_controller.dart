@@ -187,6 +187,12 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     final configStore = ref.read(llmConfigStoreProvider);
     final config = await configStore.getProvider(providerId);
     _providerType = config?.type;
+    // 更新最后使用的模型（全局设置）
+    final settingsController = ref.read(settingsControllerProvider.notifier);
+    await settingsController.saveLastUsedChatModel(
+      providerId: providerId,
+      modelId: modelId,
+    );
     // 通知 UI 刷新
     state = AsyncData(await _read());
   }

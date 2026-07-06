@@ -538,7 +538,20 @@ class _InMemorySettingsStore implements SettingsStore {
   }
 
   @override
+  Future<void> saveLastUsedChatModel({String? providerId, String? modelId}) async {
+    _settings = _settings.copyWith(
+      lastUsedChatProviderId: providerId,
+      lastUsedChatModelId: modelId,
+    );
+  }
+
+  @override
   Future<void> saveTtsVoiceId(String? voiceId) async {
     _settings = _settings.copyWith(ttsVoiceId: voiceId);
+  }
+
+  @override
+  Future<void> saveWebSearchEnabled(String providerType, bool enabled) async {
+    // No-op for in-memory store
   }
 }

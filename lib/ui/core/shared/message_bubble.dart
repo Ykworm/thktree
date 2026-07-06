@@ -8,7 +8,6 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/ui/core/shared/markdown_builders.dart';
-import 'package:thk_tree/ui/core/shared/markdown_rehydrate.dart';
 import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -422,24 +421,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         : AppColors.surface;
 
     final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
-    // DeepSeek 的流式 token 可能丢 \n，导致 markdown 块级结构被压平
-    // （"---\nxxx" 变成 "---xxx" 一坨）。在 sanitize 之前先 rehydrate 重建结构。
-    // 已有 \n 或非 DeepSeek 模型 → no-op，不动。
-    // DEBUG: 确认 rehydrate 是否被调到，issue 排查
-    debugPrint('[REHYDRATE-DEBUG] modelId=${widget.message.modelId}, '
-        'body.length=${body.length}, body.contains(---)=${body.contains('---')}, '
-        'body.contains(\\n)=${body.contains('\n')}');
-    final rehydratedBody = widget.message.modelId?.startsWith('deepseek') == true
-        ? rehydrateMarkdown(body)
-        : body;
-    debugPrint('[REHYDRATE-DEBUG] output.length=${rehydratedBody.length}, '
-        'changed=${rehydratedBody != body}, '
-        'output.newlines=${'\n'.allMatches(rehydratedBody).length}');
-    // final sanitizedBody = _sanitizeMarkdown(
-    //   rehydratedBody,
-    //   stripThinkTags: !isUser,
-    // );
-    final sanitizedBody = rehydratedBody;
+    final sanitizedBody = body;
     final reasoning = widget.message.reasoning?.trim();
     final shouldExpandReasoning =
         _showReasoning || (reasoning != null && reasoning.isNotEmpty && widget.message.body.trim().isEmpty);

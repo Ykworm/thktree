@@ -60,6 +60,7 @@ dependencies:
   archive: ^3.6.1
   file_picker: ^8.0.0
   image_picker: ^1.1.2
+  shared_preferences: ^2.5.0
 
 dev_dependencies:
   integration_test:

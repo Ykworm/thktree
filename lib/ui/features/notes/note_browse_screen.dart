@@ -130,7 +130,10 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
                 return _buildGroupedBody(l10n);
               }
               return SliverToBoxAdapter(
-                child: SearchResults(queryNotifier: _queryNotifier),
+                child: SearchResults(
+                  queryNotifier: _queryNotifier,
+                  scrollable: false,
+                ),
               );
             },
           ),

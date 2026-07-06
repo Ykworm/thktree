@@ -59,6 +59,9 @@ class SearchService {
     if (sanitized.isEmpty) return [];
 
     try {
+      // Ensure search_index table exists before querying.
+      await _ensureSearchIndexTable();
+
       // Flat query — FTS5 helper functions (snippet/bm25) cannot be invoked
       // inside a subquery that is wrapped by GROUP BY at the outer level;
       // the engine rejects them with "unable to use function X in the
@@ -110,7 +113,8 @@ class SearchService {
       return results;
     } on DatabaseException catch (e, st) {
       dev.log('[SearchService.search] FTS5 query failed: $e\n$st');
-      rethrow;
+      // Return empty results instead of crashing the UI when index is missing/corrupt.
+      return [];
     }
   }
 
@@ -307,6 +311,26 @@ class SearchService {
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------
+
+  /// Ensure the FTS5 search_index virtual table exists.
+  /// Creates it if missing (e.g., after a corrupted migration or fresh install).
+  Future<void> _ensureSearchIndexTable() async {
+    try {
+      await db.rawQuery('SELECT 1 FROM search_index LIMIT 1');
+    } catch (_) {
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
+          entityType,
+          entityId,
+          themeId,
+          themeTitle UNINDEXED,
+          entityTitle,
+          content,
+          updatedAt UNINDEXED
+        )
+      ''');
+    }
+  }
 
   /// Recursively scan nodes/ directories for session.md files.
   Future<void> _scanNodesForRebuild({

@@ -25,11 +25,7 @@
 ///
 /// **Scope**：调用方应只在 `modelId` 命中 DeepSeek 时调用，
 /// 避免对其他 LLM（已知正常）产生不必要的工作。
-import 'dart:developer' as dev;
-
 String rehydrateMarkdown(String body) {
-  dev.log('[REHYDRATE-IN] length=${body.length}, '
-      'hasNewline=${body.contains('\n')}');
   if (body.isEmpty) return body;
 
   // 安全门：必须至少有一种疑似 markdown token 才重建
@@ -51,15 +47,10 @@ String rehydrateMarkdown(String body) {
       RegExp(r'[A-Za-z]-\s+[A-Z一-龥]').hasMatch(body) ||
       RegExp(r'[A-Za-z]-[一-龥]').hasMatch(body);
   if (!hasAnyToken) {
-    dev.log('[REHYDRATE-IN] early-return: no markdown token detected');
     return body;
   }
-  dev.log('[REHYDRATE-IN] proceeding to _applyRehydratePatterns');
 
   final out = _applyRehydratePatterns(body);
-  dev.log('[REHYDRATE-IN] output.length=${out.length}, '
-      'output.newlines=${'\n'.allMatches(out).length}, '
-      'changed=${out != body}');
   return out;
 }
 

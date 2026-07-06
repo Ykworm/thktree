@@ -1,7 +1,4 @@
 import 'dart:convert';
-import 'package:yaml/yaml.dart';
-
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:yaml/yaml.dart';
 
@@ -85,7 +82,8 @@ const _reasoningStartMarker = '<!-- reasoning:start -->';
 const _reasoningEndMarker = '<!-- reasoning:end -->';
 
 SessionDocument parseSessionMarkdown(String content) {
-  final normalized = content.replaceAll('\r\n', '\n');
+  // 统一行结束符：\r\n → \n，剩余 \r → \n（防御豆包/ARK 等使用 CRLF 的服务端）
+  final normalized = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
   final (frontmatter, bodyStartIndex) = _parseFrontmatter(normalized);
   final body = normalized.substring(bodyStartIndex);
   // Fallback：消息 header 里没写 modelId 时（老 session / 之前 streaming 漏写的），
@@ -235,12 +233,37 @@ List<SessionMessage> _parseMessages(
     return (null, lines);
   }
 
-  final endIndex = lines.indexWhere((line) => line.trim() == _reasoningEndMarker);
+  // 查找 end marker：先按行精确匹配，fallback 到包含匹配。
+  // 流式追加时 reasoning delta 末尾可能不带 \n，导致 end marker
+  // 和最后一个字符在同一行（如"内容<!-- reasoning:end -->"），
+  // 此时 line.trim() != endMarker，需要 fallback。
+  var endIndex = lines.indexWhere(
+    (line) => line.trim() == _reasoningEndMarker,
+  );
+  if (endIndex < 0) {
+    endIndex = lines.indexWhere(
+      (line) => line.contains(_reasoningEndMarker),
+    );
+  }
   if (endIndex <= 0) {
     return (null, lines);
   }
 
   final reasoningLines = lines.sublist(1, endIndex);
+
+  // 如果 end marker 所在行包含 reasoning 文本（如"内容<!-- reasoning:end -->"），
+  // 提取 end marker 之前的文本作为 reasoning 的最后一行。
+  final endLine = lines[endIndex];
+  if (endLine.trim() != _reasoningEndMarker && endLine.contains(_reasoningEndMarker)) {
+    final beforeEnd = endLine.substring(
+      0,
+      endLine.indexOf(_reasoningEndMarker),
+    );
+    if (beforeEnd.trim().isNotEmpty) {
+      reasoningLines.add(beforeEnd);
+    }
+  }
+
   final bodyLines = lines.sublist(endIndex + 1).toList(growable: true);
   while (bodyLines.isNotEmpty && bodyLines.first.trim().isEmpty) {
     bodyLines.removeAt(0);
@@ -307,7 +330,7 @@ String updateSessionFrontmatter(
   String fileContent,
   Map<String, Object?> updates,
 ) {
-  final normalized = fileContent.replaceAll('\r\n', '\n');
+  final normalized = fileContent.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
   final (frontmatter, bodyStartIndex) = _parseFrontmatter(normalized);
   final body = normalized.substring(bodyStartIndex);
 

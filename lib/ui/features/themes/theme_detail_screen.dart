@@ -839,6 +839,8 @@ Future<void> _showBranchFlow(
     final resolved = resolveChatModel(
       sessionProviderId: providerId,
       sessionModelId: modelId,
+      lastUsedChatProviderId: settings?.lastUsedChatProviderId,
+      lastUsedChatModelId: settings?.lastUsedChatModelId,
       chatDefaultProviderId: settings?.chatDefaultProviderId,
       chatDefaultModelId: settings?.chatDefaultModelId,
       providers: providers,

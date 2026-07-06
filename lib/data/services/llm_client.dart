@@ -7,6 +7,24 @@ import 'package:dio/dio.dart';
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 
+/// SSE 规范 §7.1：将 \r\n 和孤立 \r 统一替换为 \n。
+/// 解析 SSE 流之前必须做的行结束符规范化，否则使用 CRLF 的服务端
+/// （如豆包/火山方舟 ARK）会导致事件边界匹配失败、content 中的换行被 \r 污染。
+String _normalizeNewlines(String text) {
+  return text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+}
+
+/// 豆包（火山方舟）的 reasoning_content 字段每个 token 后面都带一个 `\n`，
+/// 导致累积后每个字独占一行。去掉尾部多余的换行。
+String _stripTrailingNewlines(String text) {
+  if (!text.endsWith('\n')) return text;
+  var end = text.length;
+  while (end > 0 && text.codeUnitAt(end - 1) == 0x0A) {
+    end--;
+  }
+  return text.substring(0, end);
+}
+
 /// 多模态消息内容部分
 class ContentPart {
   const ContentPart.text(this.text)
@@ -125,6 +143,10 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
   final String baseUrl;
   final String providerName;
 
+  /// MiniMax-M3 等模型在 content 里嵌入 `<think>...</think>` 标签输出思维链，
+  /// 用状态机跨 delta 追踪：true 表示当前处于 think 块内。
+  bool _thinkOpen = false;
+
   /// 构建联网搜索的 tools 声明
   ///
   /// KIMI 使用 builtin_function.$web_search，其他使用 function web_search。
@@ -168,6 +190,7 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
     bool webSearch = false,
     bool deepThinking = false,
   }) async* {
+    _thinkOpen = false; // 每次新对话重置 think 标签状态机
     final currentMessages = List<Map<String, Object?>>.from(messages);
     final effectiveBaseUrl = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
@@ -243,13 +266,21 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
           responseBody.stream.cast<List<int>>().transform(utf8.decoder);
       final buffer = StringBuffer();
 
+      // DEBUG: 累积每次 SSE 事件的 data 字符串（JSON.parse 之前），
+      // 用于排查 LLM 是否在 content 里发 newline。stream 结束后一次性 log。
+      final rawDataLog = <String>[];
+
       // 收集 tool_calls（用于多轮交互）
       final toolCallsMap = <int, Map<String, Object?>>{};
       String? finishReason;
+      bool doneReceived = false;
+      final pendingDeltas = <LlmResponseDelta>[];
 
-      await for (final chunk in stream) {
-        buffer.write(chunk);
-        while (true) {
+      // SSE 解析循环（提取为局部函数，chunk 到达时和流结束时都可调用）
+      // SSE 规范 §7.1：必须在写入 buffer 前将 \r\n 和单个 \r 统一为 \n。
+      // 这里由调用方在 buffer.write 前做 _normalizeNewlines，解析时只需以 \n 为分隔符即可。
+      void parseBuffer() {
+        while (!doneReceived) {
           final text = buffer.toString();
           final idx = text.indexOf('\n\n');
           if (idx < 0) break;
@@ -266,19 +297,20 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
             if (!trimmed.startsWith('data:')) continue;
             final data = trimmed.substring('data:'.length).trimLeft();
             if (data == '[DONE]') {
-              break;
+              doneReceived = true;
+              finishReason = finishReason ?? 'stop';
+              return;
             }
+            rawDataLog.add(data);
             final parsed = _parseJsonSafe(data);
             if (parsed == null) continue;
             final choices = parsed['choices'] as List?;
             if (choices == null || choices.isEmpty) continue;
             final choice = choices.first as Map<String, Object?>;
 
-            // 记录 finish_reason
             final fr = choice['finish_reason'] as String?;
             if (fr != null) finishReason = fr;
 
-            // 收集 tool_calls 增量
             final delta = choice['delta'] as Map<String, Object?>?;
             if (delta != null) {
               final toolCalls = delta['tool_calls'] as List?;
@@ -298,9 +330,7 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
                   if (fn != null) {
                     final existingFn =
                         existing['function'] as Map<String, Object?>;
-                    if (fn['name'] != null) {
-                      existingFn['name'] = fn['name'];
-                    }
+                    if (fn['name'] != null) existingFn['name'] = fn['name'];
                     if (fn['arguments'] != null) {
                       existingFn['arguments'] =
                           '${existingFn['arguments']}${fn['arguments']}';
@@ -315,18 +345,41 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
               }
             }
 
-            // 提取 content/reasoning delta
+            // delta 已在 chunk 写入 buffer 前做过 \r→\n 规范化，这里无需重复处理
             final deltaContent = _extractDeltaFromMap(delta);
             if (deltaContent != null && !deltaContent.isEmpty) {
-              yield deltaContent;
+              pendingDeltas.add(deltaContent);
             }
           }
         }
       }
 
+      await for (final chunk in stream) {
+        // SSE 规范：写入 buffer 前统一行结束符（\r\n → \n，剩余 \r → \n）
+        buffer.write(_normalizeNewlines(chunk));
+        parseBuffer();
+        for (final d in pendingDeltas) {
+          yield d;
+        }
+        pendingDeltas.clear();
+      }
+      // 流结束后 flush buffer 中可能残留的最后一个事件
+      parseBuffer();
+      for (final d in pendingDeltas) {
+        yield d;
+      }
+      pendingDeltas.clear();
+
       dev.log(
         'Round $round done: finishReason=$finishReason, toolCalls=${toolCallsMap.length}',
         name: 'llm_client',
+      );
+
+      // DEBUG: stream 结束（这一轮 LLM 输出完），一次性 log 累积的 raw data
+      // ignore: avoid_print
+      print(
+        '[RAW-DATA-OAI round=$round] event_count=${rawDataLog.length}\n'
+        '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
       );
 
       // 如果没有 tool_calls，结束循环
@@ -376,15 +429,66 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
     }
   }
 
-  static LlmResponseDelta? _extractDeltaFromMap(Map<String, Object?>? delta) {
+  /// 从 OpenAI 兼容 delta JSON 中提取 content + reasoning。
+  ///
+  /// - 先处理 `reasoning_content` 字段（豆包/ARK、MiniMax-M3 原生字段）
+  /// - 如果原生字段为空但 content 中有 `<think>...</think>`（MiniMax-M3 部分端点），
+  ///   用状态机跨 delta 提取：`<think>` 进入 thinking，`</think>` 回到 content。
+  ///   流式输出中标签可能跨 100+ 个 delta，`_thinkOpen` 跨调用保持状态。
+  /// - 对 content 和 reasoning 内部做 \r\n → \n 规范化（豆包 ARK 用 CRLF）。
+  LlmResponseDelta? _extractDeltaFromMap(Map<String, Object?>? delta) {
     if (delta == null) return null;
-    final content = delta['content'] as String? ?? '';
-    final reasoningContent =
-        delta['reasoning_content'] as String? ?? '';
-    if (content.isEmpty && reasoningContent.isEmpty) return null;
+    final rawContent = _normalizeNewlines(delta['content'] as String? ?? '');
+    final nativeReasoning =
+        _normalizeNewlines(delta['reasoning_content'] as String? ?? '');
+
+    // 原生 reasoning 字段有值（豆包/ARK），直接用，不走 think 标签解析
+    if (nativeReasoning.isNotEmpty) {
+      if (rawContent.isEmpty && nativeReasoning.isEmpty) return null;
+      return LlmResponseDelta(
+        content: rawContent,
+        reasoning: _stripTrailingNewlines(nativeReasoning),
+      );
+    }
+
+    // 走 think 标签状态机（MiniMax-M3 等）
+    if (rawContent.isEmpty) return null;
+    final reasoningBuf = StringBuffer();
+    final contentBuf = StringBuffer();
+    var i = 0;
+    while (i < rawContent.length) {
+      if (_thinkOpen) {
+        // 在 think 块内，找 </think>
+        final endIdx = rawContent.indexOf('</think>', i);
+        if (endIdx < 0) {
+          // 没找到闭合标签，整个剩余都是 thinking
+          reasoningBuf.write(rawContent.substring(i));
+          i = rawContent.length;
+        } else {
+          reasoningBuf.write(rawContent.substring(i, endIdx));
+          _thinkOpen = false;
+          i = endIdx + 8; // 跳过 </think>
+        }
+      } else {
+        // 在 content 中，找 <think>
+        final startIdx = rawContent.indexOf('<think>', i);
+        if (startIdx < 0) {
+          // 没有开标签，整个剩余都是 content
+          contentBuf.write(rawContent.substring(i));
+          i = rawContent.length;
+        } else {
+          contentBuf.write(rawContent.substring(i, startIdx));
+          _thinkOpen = true;
+          i = startIdx + 7; // 跳过 <think>
+        }
+      }
+    }
+    final content = contentBuf.toString();
+    final reasoning = reasoningBuf.toString();
+    if (content.isEmpty && reasoning.isEmpty) return null;
     return LlmResponseDelta(
       content: content,
-      reasoning: reasoningContent,
+      reasoning: _stripTrailingNewlines(reasoning),
     );
   }
 }
@@ -528,8 +632,12 @@ class ClaudeClient extends LlmClient {
     final stream = body.stream.cast<List<int>>().transform(utf8.decoder);
     final buffer = StringBuffer();
 
-    await for (final chunk in stream) {
-      buffer.write(chunk);
+    // DEBUG: 累积每次 SSE 事件的 data 字符串（JSON.parse 之前），
+    // 用于排查 LLM 是否在 content 里发 newline。stream 结束后一次性 log。
+    final rawDataLog = <String>[];
+    final pendingDeltas = <LlmResponseDelta>[];
+
+    void parseClaudeBuffer() {
       while (true) {
         final text = buffer.toString();
         final idx = text.indexOf('\n\n');
@@ -541,15 +649,45 @@ class ClaudeClient extends LlmClient {
           ..write(rest);
 
         for (final line in event.split('\n')) {
-          if (!line.startsWith('data:')) continue;
-          final data = line.substring('data:'.length).trimLeft();
+          final trimmed = line.trimRight();
+          if (trimmed.isEmpty) continue;
+          if (trimmed.startsWith(':')) continue;
+          if (!trimmed.startsWith('data:')) continue;
+          final data = trimmed.substring('data:'.length).trimLeft();
+          rawDataLog.add(data);
           final delta = _extractClaudeDelta(data);
           if (delta != null && !delta.isEmpty) {
-            yield delta;
+            pendingDeltas.add(LlmResponseDelta(
+              content: _normalizeNewlines(delta.content),
+              reasoning: _stripTrailingNewlines(
+                  _normalizeNewlines(delta.reasoning)),
+            ));
           }
         }
       }
     }
+
+    await for (final chunk in stream) {
+      buffer.write(_normalizeNewlines(chunk));
+      parseClaudeBuffer();
+      for (final d in pendingDeltas) {
+        yield d;
+      }
+      pendingDeltas.clear();
+    }
+    // 流结束后 flush buffer
+    parseClaudeBuffer();
+    for (final d in pendingDeltas) {
+      yield d;
+    }
+    pendingDeltas.clear();
+
+    // DEBUG: stream 结束（LLM 输出完），一次性 log 累积的 raw data
+    // ignore: avoid_print
+    print(
+      '[RAW-DATA-CLAUDE] event_count=${rawDataLog.length}\n'
+      '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
+    );
   }
 }
 
@@ -673,8 +811,12 @@ class GeminiClient extends LlmClient {
     final stream = body.stream.cast<List<int>>().transform(utf8.decoder);
     final buffer = StringBuffer();
 
-    await for (final chunk in stream) {
-      buffer.write(chunk);
+    // DEBUG: 累积每次 SSE 事件的 data 字符串（JSON.parse 之前），
+    // 用于排查 LLM 是否在 content 里发 newline。stream 结束后一次性 log。
+    final rawDataLog = <String>[];
+    final pendingDeltas = <LlmResponseDelta>[];
+
+    void parseGeminiBuffer() {
       while (true) {
         final text = buffer.toString();
         final idx = text.indexOf('\n\n');
@@ -686,15 +828,45 @@ class GeminiClient extends LlmClient {
           ..write(rest);
 
         for (final line in event.split('\n')) {
-          if (!line.startsWith('data:')) continue;
-          final data = line.substring('data:'.length).trimLeft();
+          final trimmed = line.trimRight();
+          if (trimmed.isEmpty) continue;
+          if (trimmed.startsWith(':')) continue;
+          if (!trimmed.startsWith('data:')) continue;
+          final data = trimmed.substring('data:'.length).trimLeft();
+          rawDataLog.add(data);
           final delta = _extractGeminiDelta(data);
           if (delta != null && !delta.isEmpty) {
-            yield delta;
+            pendingDeltas.add(LlmResponseDelta(
+              content: _normalizeNewlines(delta.content),
+              reasoning: _stripTrailingNewlines(
+                  _normalizeNewlines(delta.reasoning)),
+            ));
           }
         }
       }
     }
+
+    await for (final chunk in stream) {
+      buffer.write(_normalizeNewlines(chunk));
+      parseGeminiBuffer();
+      for (final d in pendingDeltas) {
+        yield d;
+      }
+      pendingDeltas.clear();
+    }
+    // 流结束后 flush buffer
+    parseGeminiBuffer();
+    for (final d in pendingDeltas) {
+      yield d;
+    }
+    pendingDeltas.clear();
+
+    // DEBUG: stream 结束（LLM 输出完），一次性 log 累积的 raw data
+    // ignore: avoid_print
+    print(
+      '[RAW-DATA-GEMINI] event_count=${rawDataLog.length}\n'
+      '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
+    );
   }
 }
 
