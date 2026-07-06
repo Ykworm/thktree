@@ -51,6 +51,9 @@ class AppIcons {
   /// Icons.chevron_left
   static const IconData chevronLeft = SFIcons.sf_chevron_left;
 
+  /// Icons.keyboard_arrow_down（scroll-to-bottom 浮按钮）
+  static const IconData chevronDown = SFIcons.sf_chevron_down;
+
   // ── 通信 / 聊天 ──
 
   /// Icons.send (iOS 风格发送)

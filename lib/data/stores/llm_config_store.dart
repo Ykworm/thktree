@@ -176,4 +176,45 @@ class LlmConfigStore {
     debugPrint('[LlmConfigStore] migrateMissingPresets: added ${missing.length} presets');
   }
 
+  /// 迁移：DeepSeek 全量切到 Anthropic 兼容协议（ADR-020，2026-07-06）。
+  ///
+  /// 升级前老用户已存的 `preset_deepseek` baseUrl 是
+  /// `https://api.deepseek.com/v1`（OpenAI 兼容端点），
+  /// 新协议需要 `/anthropic/v1` 端点。此方法把 type=deepseek 且 baseUrl
+  /// 不含 `/anthropic/` 的 provider 统一迁移到 Anthropic 端点，
+  /// 并把 `isOpenAiCompatible` 设为 false。API Key 不受影响。
+  Future<void> migrateDeepSeekToAnthropic() async {
+    if (!await isInitialized()) {
+      debugPrint('[LlmConfigStore] migrateDeepSeekToAnthropic: not initialized, skip');
+      return;
+    }
+    final existing = await loadAll();
+    var changed = false;
+    final updated = existing.map((p) {
+      if (p.type != LlmProviderType.deepseek) return p;
+      if (p.baseUrl.contains('/anthropic/')) return p; // 已经是新端点，跳过
+      // 老 baseUrl 形如 https://api.deepseek.com/v1 或 https://api.deepseek.com
+      // 去掉可能的 /v1 后缀，拼 /anthropic/v1
+      var base = p.baseUrl;
+      if (base.endsWith('/v1')) {
+        base = base.substring(0, base.length - 3);
+      }
+      base = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+      final newBaseUrl = '$base/anthropic/v1';
+      debugPrint(
+        '[LlmConfigStore] migrateDeepSeekToAnthropic: ${p.id} '
+        'baseUrl ${p.baseUrl} -> $newBaseUrl, isOpenAiCompatible -> false',
+      );
+      changed = true;
+      return p.copyWith(
+        baseUrl: newBaseUrl,
+        defaultBaseUrl: newBaseUrl,
+        isOpenAiCompatible: false,
+      );
+    }).toList();
+    if (!changed) return;
+    await _saveAll(updated);
+    debugPrint('[LlmConfigStore] migrateDeepSeekToAnthropic: migrated DeepSeek providers');
+  }
+
 }

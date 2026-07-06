@@ -157,15 +157,19 @@ class SessionStore {
 
   Future<AssistantStreamHandle> beginAssistantMessage({
     required String nodeId,
+    String? modelId,
   }) async {
     final timestamp = DateTime.now().toUtc().toIso8601String();
     final msgId = newMsgId();
+    dev.log('[SessionStore.beginAssistantMessage] nodeId=$nodeId, modelId=$modelId, msgId=$msgId');
     await _queue.run(nodeId, () async {
       final path = await getSessionPathForNode(nodeId);
       final file = File(path);
       final content = await file.readAsString();
+      final header = formatMessageHeader(role: SessionRole.assistant, timestampUtcIso8601: timestamp, msgId: msgId, modelId: modelId);
+      dev.log('[SessionStore.beginAssistantMessage] header="$header"');
       final updated =
-          '${_ensureEndsWithNewline(content)}${formatMessageHeader(role: SessionRole.assistant, timestampUtcIso8601: timestamp, msgId: msgId)}\n$_streamingMarker';
+          '${_ensureEndsWithNewline(content)}${header}\n$_streamingMarker';
       await _atomicWriteString(path, updated);
     });
     return AssistantStreamHandle(nodeId: nodeId, msgId: msgId);
@@ -199,6 +203,7 @@ class SessionStore {
         body: message.body + contentDelta,
         status: SessionMessageStatus.streaming,
         reasoning: (message.reasoning ?? '') + reasoningDelta,
+        modelId: message.modelId, // 关键：从 beginAssistantMessage 写入的 header 读出来，append 时必须保留
       );
       final frontmatter = _extractFrontmatter(withoutMarker);
       final updated = _rebuildSessionMarkdown(
@@ -350,6 +355,7 @@ String _rebuildSessionMarkdown(
       role: msg.role,
       timestampUtcIso8601: msg.timestampUtcIso8601,
       msgId: msg.msgId,
+      modelId: msg.modelId,
     );
     buffer.writeln(header);
     final serializedBody = serializeSessionMessageBody(msg);
@@ -367,3 +373,4 @@ String _rebuildSessionMarkdown(
   
   return buffer.toString();
 }
+

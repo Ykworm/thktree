@@ -35,9 +35,11 @@ List<LlmProviderConfig> createPresetProviders() {
       id: 'preset_deepseek',
       type: LlmProviderType.deepseek,
       name: 'DeepSeek',
-      baseUrl: 'https://api.deepseek.com/v1',
-      defaultBaseUrl: 'https://api.deepseek.com/v1',
-      isOpenAiCompatible: true,
+      // DeepSeek 全量切到 Anthropic 兼容协议（ADR-020），端点为
+      // https://api.deepseek.com/anthropic/v1/messages。
+      baseUrl: 'https://api.deepseek.com/anthropic/v1',
+      defaultBaseUrl: 'https://api.deepseek.com/anthropic/v1',
+      isOpenAiCompatible: false,
     ),
     LlmProviderConfig(
       id: 'preset_kimi',

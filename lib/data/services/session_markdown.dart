@@ -29,6 +29,7 @@ class SessionMessage {
     this.imagePath,
     this.imageData,
     this.imageMimeType,
+    this.modelId,
   });
 
   final SessionRole role;
@@ -50,6 +51,9 @@ class SessionMessage {
 
   /// 是否包含图片
   bool get hasImage => imagePath != null || imageData != null;
+
+  /// 回复该消息的 LLM 模型 ID（仅 assistant 消息）
+  final String? modelId;
 }
 
 class SessionDocument {
@@ -70,11 +74,11 @@ class SessionDocument {
   /// 对话的自定义 system prompt（可为 null，兼容旧文件，fallback 到默认值）
   String get systemPrompt =>
       (frontmatter['systemPrompt'] as String?) ??
-          'You are a helpful assistant. Reply in Markdown.';
+          'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.';
 }
 
 final _messageHeader = RegExp(
-  r'^## (user|assistant|system) · ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z) · (msg_[0-9A-Z]{26})$',
+  r'^## (user|assistant|system) · ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z) · (msg_[0-9A-Z]{26})(?: · (.+))?$',
   caseSensitive: false,
 );
 const _reasoningStartMarker = '<!-- reasoning:start -->';
@@ -84,7 +88,10 @@ SessionDocument parseSessionMarkdown(String content) {
   final normalized = content.replaceAll('\r\n', '\n');
   final (frontmatter, bodyStartIndex) = _parseFrontmatter(normalized);
   final body = normalized.substring(bodyStartIndex);
-  final messages = _parseMessages(body);
+  // Fallback：消息 header 里没写 modelId 时（老 session / 之前 streaming 漏写的），
+  // 用 frontmatter 的 modelId 兜底，让 rehydrate 这类依赖 modelId 的逻辑能跑起来。
+  final fallbackModelId = frontmatter['modelId'] as String?;
+  final messages = _parseMessages(body, fallbackModelId: fallbackModelId);
   return SessionDocument(frontmatter: frontmatter, messages: messages);
 }
 
@@ -131,7 +138,10 @@ Object? _yamlToDart(Object? value) {
   return value;
 }
 
-List<SessionMessage> _parseMessages(String body) {
+List<SessionMessage> _parseMessages(
+  String body, {
+  String? fallbackModelId,
+}) {
   final lines = body.split('\n');
 
   final messages = <SessionMessage>[];
@@ -139,6 +149,7 @@ List<SessionMessage> _parseMessages(String body) {
   SessionRole? currentRole;
   String? currentTimestamp;
   String? currentMsgId;
+  String? currentModelId;
 
   void flushMessage(int endLineExclusive) {
     if (currentHeaderLineIndex == null) return;
@@ -161,6 +172,7 @@ List<SessionMessage> _parseMessages(String body) {
         status: status,
         errorCode: errorCode,
         reasoning: reasoning,
+        modelId: currentModelId,
       ),
     );
   }
@@ -180,6 +192,8 @@ List<SessionMessage> _parseMessages(String body) {
     };
     currentTimestamp = match.group(2);
     currentMsgId = match.group(3);
+    // 优先用 header 里的 modelId，缺失时 fallback 到 frontmatter 的
+    currentModelId = match.group(4) ?? fallbackModelId;
   }
 
   flushMessage(lines.length);
@@ -240,6 +254,7 @@ String formatMessageHeader({
   required SessionRole role,
   required String timestampUtcIso8601,
   required String msgId,
+  String? modelId,
 }) {
   final roleStr = switch (role) {
     SessionRole.user => 'user',
@@ -247,7 +262,8 @@ String formatMessageHeader({
     SessionRole.system => 'system',
   };
 
-  return '## $roleStr · $timestampUtcIso8601 · $msgId';
+  final modelSuffix = modelId != null ? ' · $modelId' : '';
+  return '## $roleStr · $timestampUtcIso8601 · $msgId$modelSuffix';
 }
 
 /// 将 frontmatter Map 序列化为 YAML 文本（不含 --- 分隔符）
