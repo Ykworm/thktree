@@ -51,9 +51,13 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 ### LlmClient 接口变更
 
 - `streamChatCompletion` 新增 `webSearch` 参数（`bool`，默认 `false`），调用方按需启用联网
-- `LlmClient.forConfig` 新增 `webSearch` 命名参数；工厂方法内部根据参数和 provider 类型自动路由：
-  - **DeepSeek + webSearch** → 自动切换到 `ClaudeClient`（Anthropic 兼容 Messages API），端点 `${config.baseUrl}/anthropic/v1`，认证改用 `x-api-key`
-  - **其他 provider** → 继续走 `ConfigBasedOpenAiCompatibleClient`（OpenAI 兼容 Chat Completions API）
+- `LlmClient.forConfig` 新增 `webSearch` 命名参数；工厂方法内部根据 provider 类型自动路由：
+  - **DeepSeek** → 走 `ClaudeClient`（Anthropic 兼容 Messages API），端点直接使用 `config.baseUrl`（preset 已是 `https://api.deepseek.com/anthropic/v1`），认证改用 `x-api-key`
+  - **Anthropic** → `ClaudeClient.withBaseUrl(config.baseUrl)`
+  - **Gemini** → `GeminiClient.withBaseUrl(config.baseUrl)`
+  - **其他 provider**（OpenAI / KIMI / MiniMax / MIMO / 豆包 / 自定义）→ 继续走 `ConfigBasedOpenAiCompatibleClient`（OpenAI 兼容 Chat Completions API）
+
+> DeepSeek 自 2026-07 起**全量**走 Anthropic 兼容协议（不仅 web search）。决策详见 [DECISIONS.md ADR-020](../../DECISIONS.md#adr-020-deepseek-全量切换到-anthropic-兼容协议)。
 
 ### ConfigBasedOpenAiCompatibleClient 变更
 
@@ -80,7 +84,7 @@ enum WebSearchSupport {
 | KIMI | ✅ | Chat Completions API + `builtin_function.$web_search` + tool_calls 多轮 |
 | MiniMax | ✅（待定） | Assistants API 架构差异大，暂未实现 |
 | MIMO | ✅ | Chat Completions API + `web_search` 工具声明 |
-| DeepSeek | ✅ | Anthropic 兼容 Messages API + `web_search_20260209` 工具 |
+| DeepSeek | ✅ | Anthropic 兼容 Messages API + `web_search_20260209` 工具（**全量**走 Anthropic 协议，不仅 web search） |
 
 ## 维护要点
 
@@ -102,3 +106,4 @@ enum WebSearchSupport {
 - 2026-06-24：统一 LLM 错误处理与重试（LlmError + LlmErrorCard + 4 场景接入 + 5 个集成测试）
 - 2026-07：联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）
 - 2026-07-05：豆包模型白名单（`_fetchDoubaoModels` + `_doubaoWhitelist`，只返回 3 个 Seed 系列模型，不再走 /models API）+ Seed 模型 vision 能力精确映射
+- 2026-07-06：DeepSeek 全量切到 Anthropic 兼容协议（ADR-020），preset baseUrl 改为 `/anthropic/v1`，老用户自动迁移

@@ -157,12 +157,13 @@ updatedAt: "2026-05-25T12:01:00.000Z"
 标题行语法（必须从行首开始）：
 
 ```
-## <role> · <timestamp> · <msgId>
+## <role> · <timestamp> · <msgId>[ · <modelId>]
 ```
 
 - role：枚举 `user` | `assistant` | `system`
 - timestamp：见 2.2
 - msgId：见 2.3
+- modelId：**可选**（仅 assistant 消息）；记录回复该消息的 LLM 模型 ID（如 `gpt-4o`、`deepseek-chat`）。向后兼容：旧消息无此字段时解析为 `null`
 
 分隔符必须是：空格 + `·` + 空格（即 ` ␠·␠`）。
 
@@ -219,7 +220,7 @@ updatedAt: "2026-05-25T12:01:03.120Z"
 ## user · 2026-05-25T12:01:00.000Z · msg_01J8Z90Z5H7H7G1W5Q2QH1B9Y8
 你好，帮我设计一下数据格式。
 
-## assistant · 2026-05-25T12:01:03.120Z · msg_01J8Z9128M0X0Z8XJ2A1C4D3E5
+## assistant · 2026-05-25T12:01:03.120Z · msg_01J8Z9128M0X0Z8XJ2A1C4D3E5 · gpt-4o
 好的，我们先确定目录结构……
 ```
 

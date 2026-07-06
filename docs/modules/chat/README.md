@@ -35,6 +35,7 @@
 - 消息时间戳（2026-07-04）：assistant 消息气泡上方显示人类可读时间，`formatMessageTime` 支持 4 级格式（今天 `HH:mm` / 昨天 / 月日 / 跨年全日期）
 - Chat-to-Note（2026-07-04）：assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote` 回调），自动用当前主题创建笔记并跳转 `NoteEditorScreen`
 - 查看原始 Markdown（2026-07-05）：更多菜单入口，底部 sheet 展示当前对话的 `session.md` 原始文件内容（等宽字体），支持一键复制到剪贴板
+- 模型名显示（2026-07-06）：assistant 消息气泡标题显示 LLM 模型名（如 `助手 · gpt-4o`），同对话内切换模型后每条回复标注实际使用的模型；`session.md` 消息头新增可选 `· modelId` 字段，向后兼容旧消息
 
 ## 代码文件
 
@@ -90,3 +91,4 @@
 - 2026-06：消息编辑/重试功能上线
 - 2026-06-22：`ChatController` 重构为 UI 同步层（移除流式状态机）+ `ChatTaskService` 服务层承担后台中断恢复（iOS only）——参见 [ADR-015](../../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) + [集成测试 spec](../../_shared/integration-testing/chat-async-recovery.md)
 - 2026-06-29：`AutoTitleController` 上线（`lib/ui/features/chat/auto_title_controller.dart`，246 行）—— 空白分支流式结束后自动 LLM 补 title 并持久化，与 widget 生命周期解耦（`ref.keepAlive()`），user 提前 back 回 tree 也能后台完成。3 层守卫防 LLM 覆盖手动 title。集成测试 case 9.4 (DB check) / 9.5 (E2E) / 9.6 (提前 pop 后台完成) 加到 [branch-creation](../../_shared/integration-testing/branch-creation.md) § 3.5。详见 [ADR-018](../../DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [war-story](../../war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) + [CHANGELOG/2026-06-29](../../CHANGELOG/2026-06-29-auto-title-persistence.md)。
+- 2026-07-06：模型名显示——`SessionMessage` 新增 `modelId` 字段，`session.md` 消息头扩展可选 `· modelId`，`MessageBubble` 从 `llmProvidersProvider` 查模型名并显示在 assistant 标题后。详见 [CHANGELOG/2026-07-06](../../CHANGELOG/2026-07-06-chat-model-in-bubble.md)。

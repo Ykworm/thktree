@@ -55,6 +55,7 @@
 | 图片上传 | chat | ✅ 完成 | 2026-07-05 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/chat_composer.dart` + `lib/ui/features/chat/chat_screen.dart` + `lib/ui/features/chat/chat_controller.dart` | 聊天输入框底部图片按钮，支持拍照/相册选择，image_picker 集成；vision 模型自动检测 |
 | 消息时间戳 | chat | ✅ 完成 | 2026-07-04 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/message_bubble.dart` | assistant 消息气泡上方显示人类可读时间（今天 HH:mm / 昨天 / 月日 / 跨年） |
 | 查看原始 Markdown | chat | ✅ 完成 | 2026-07-05 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/widgets/chat_markdown_sheet.dart` + `lib/data/stores/session_store.dart` | 更多菜单入口，底部 sheet 展示 session.md 原始内容 + 复制 |
+| 滚动到顶/底 | chat | ✅ 完成 | 2026-07-06 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/chat_list_view.dart` + `lib/ui/features/chat/chat_screen.dart` | 浮动箭头按钮（离开底部时出现，点击回到底部）+ 双击 nav bar 标题区跳到顶部（iOS 原生行为） |
 
 ### 联网搜索
 
@@ -63,7 +64,7 @@ KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实�
 各提供商实现方式：
 - KIMI：`builtin_function.$web_search` 工具（自动禁用 thinking）
 - MIMO：`web_search` function 工具
-- DeepSeek：Anthropic 兼容接口 `web_search_20260209` 工具
+- DeepSeek：Anthropic 兼容接口 `web_search_20260209` 工具（**全量走 Anthropic 协议**，不仅 web search）
 
 用户偏好持久化在 FlutterSecureStorage（key: `web_search_enabled_{providerType}`）。
 
