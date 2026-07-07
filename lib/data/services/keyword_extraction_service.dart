@@ -151,7 +151,7 @@ new_category 说明：
     required int contextWindow,
     CancelToken? cancelToken,
   }) async {
-    final client = LlmClient.forConfig(provider);
+    final client = LlmClient.forConfig(provider, model: modelId);
     final catalogJson = jsonEncode(_buildCatalogJson(catalog));
 
     final messages = <Map<String, Object?>>[

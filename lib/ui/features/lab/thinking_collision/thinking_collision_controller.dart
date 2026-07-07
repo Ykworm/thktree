@@ -161,7 +161,7 @@ class ThinkingCollisionController extends Notifier<ThinkingCollisionState> {
 
     if (provider == null || apiKey == null || selectedModel == null) return;
 
-    final client = LlmClient.forConfig(provider);
+    final client = LlmClient.forConfig(provider, model: selectedModel.id);
 
     for (final pair in pairs) {
       try {

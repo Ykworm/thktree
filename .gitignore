@@ -50,3 +50,7 @@ app.*.map.json
 # IDE runtime
 .project/
 ui-ux-pro-max-skill/
+
+# WorkBuddy agent state (memory, skills, session data)
+.workbuddy/
+.superpowers/

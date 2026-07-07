@@ -1525,5 +1525,38 @@
   "noSearchResults": "No matching results found",
   "@noSearchResults": {
     "description": "Empty state when search yields no results"
+  },
+  "clearModels": "Clear Models",
+  "@clearModels": {
+    "description": "Clear fetched model list"
+  },
+  "clearModelsConfirm": "Clear the model list for {providerName}? API Key will not be deleted.",
+  "@clearModelsConfirm": {
+    "description": "Confirm clearing model list dialog content",
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Clear button label"
+  },
+  "aboutTitle": "About",
+  "@aboutTitle": {
+    "description": "About page title"
+  },
+  "aboutContactEmail": "Contact Email",
+  "@aboutContactEmail": {
+    "description": "About page contact email label"
+  },
+  "menuSettings": "Settings",
+  "@menuSettings": {
+    "description": "Settings option in the search page menu"
+  },
+  "menuAbout": "About",
+  "@menuAbout": {
+    "description": "About option in the search page menu"
   }
 }

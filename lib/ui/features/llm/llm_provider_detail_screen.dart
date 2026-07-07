@@ -268,6 +268,12 @@ class _LlmProviderDetailScreenState
       );
 
       if (!mounted) return;
+      // ignore: avoid_print
+      print('[FETCH-MODELS] provider=${type.name}, count=${models.length}');
+      for (final m in models) {
+        // ignore: avoid_print
+        print('  id=${m.id}  name=${m.name}  context=${m.contextWindow}  caps=${m.capabilities}');
+      }
       // 出现上下文未知的模型时不再弹窗，默认填上 1M（在 LlmModelConfig.fromJson 中处理）。
       setState(() {
         _fetchedModels = models;

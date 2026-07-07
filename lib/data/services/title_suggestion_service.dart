@@ -153,7 +153,7 @@ class TitleSuggestionService {
     required int contextWindow,
     CancelToken? cancelToken,
   }) async {
-    final client = LlmClient.forConfig(provider);
+    final client = LlmClient.forConfig(provider, model: modelId);
     
     // 对内容应用截断（如果超长）
     final truncatedContent = _truncateByMessages(content, contextWindow);
@@ -192,7 +192,7 @@ class TitleSuggestionService {
     required int contextWindow,
     CancelToken? cancelToken,
   }) async {
-    final client = LlmClient.forConfig(provider);
+    final client = LlmClient.forConfig(provider, model: modelId);
     
     // 对对话内容应用截断（如果超长）
     final truncatedTranscript = _truncateByMessages(transcript, contextWindow);

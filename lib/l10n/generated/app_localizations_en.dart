@@ -1178,4 +1178,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noSearchResults => 'No matching results found';
+
+  @override
+  String get clearModels => 'Clear Models';
+
+  @override
+  String clearModelsConfirm(String providerName) {
+    return 'Clear the model list for $providerName? API Key will not be deleted.';
+  }
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String get aboutContactEmail => 'Contact Email';
+
+  @override
+  String get menuSettings => 'Settings';
+
+  @override
+  String get menuAbout => 'About';
 }

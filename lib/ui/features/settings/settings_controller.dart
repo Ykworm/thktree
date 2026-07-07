@@ -68,6 +68,26 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     await store.saveWebSearchEnabled(providerType, enabled);
     state = AsyncData(await store.load());
   }
+
+  Future<void> saveBackupReminderEnabled(bool enabled) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveBackupReminderEnabled(enabled);
+    state = AsyncData(await store.load());
+  }
+
+  Future<void> saveNextBackupReminderDate(DateTime? date) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveNextBackupReminderDate(date);
+    state = AsyncData(await store.load());
+  }
+
+  /// Dev 调试：将下次提醒日期设为昨天，方便测试横幅显示
+  Future<void> triggerBackupReminderDebug() async {
+    final store = ref.read(settingsStoreProvider);
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    await store.saveNextBackupReminderDate(yesterday);
+    state = AsyncData(await store.load());
+  }
 }
 
 final settingsControllerProvider =

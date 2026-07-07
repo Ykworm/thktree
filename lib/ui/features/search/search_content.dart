@@ -2,18 +2,23 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:thk_tree/data/services/export_service.dart';
 import 'package:thk_tree/data/services/search_service.dart';
+import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/notes/note_detail_screen.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Public version of the result-row widget (was private _SearchResultItem).
 class SearchResultItem extends ConsumerWidget {
@@ -402,6 +407,7 @@ class _SearchContentState extends State<SearchContent> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        const _BackupReminderBanner(),
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: SearchBox(queryNotifier: _queryNotifier),
@@ -420,6 +426,175 @@ class _SearchContentState extends State<SearchContent> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 备份提醒横幅，显示在搜索页面顶部。
+class _BackupReminderBanner extends ConsumerStatefulWidget {
+  const _BackupReminderBanner();
+
+  @override
+  ConsumerState<_BackupReminderBanner> createState() => _BackupReminderBannerState();
+}
+
+class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
+  bool _dismissed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final settingsAsync = ref.watch(settingsControllerProvider);
+
+    // 如果用户已手动关闭，本次会话不再显示
+    if (_dismissed) return const SizedBox.shrink();
+
+    final settings = settingsAsync.asData?.value;
+    if (settings == null) return const SizedBox.shrink();
+
+    if (!_shouldShow(settings)) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(CupertinoIcons.archivebox, size: 18, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '建议定期备份数据以保护您的内容',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                onPressed: _onDismiss,
+                child: Icon(
+                  CupertinoIcons.xmark,
+                  size: 16,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            minimumSize: Size.zero,
+            color: AppColors.accent,
+            borderRadius: BorderRadius.circular(8),
+            onPressed: () => _onBackup(context, l10n),
+            child: const Text(
+              '立即备份',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _shouldShow(AppSettings settings) {
+    if (!settings.backupReminderEnabled) return false;
+    if (settings.nextBackupReminderDate == null) return true;
+    return DateTime.now().isAfter(settings.nextBackupReminderDate!);
+  }
+
+  void _onDismiss() {
+    final nextDate = _computeNextDate();
+    ref.read(settingsControllerProvider.notifier).saveNextBackupReminderDate(nextDate);
+    setState(() => _dismissed = true);
+  }
+
+  DateTime _computeNextDate() {
+    final days = 3 + Random().nextInt(5); // 3,4,5,6,7
+    return DateTime.now().add(Duration(days: days));
+  }
+
+  Future<void> _onBackup(BuildContext context, AppLocalizations l10n) async {
+    final paths = await ref.read(appPathsProvider.future);
+    if (!context.mounted) return;
+
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    // 显示进度对话框
+    unawaited(
+      showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(l10n.backupInProgress),
+          content: const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: CupertinoActivityIndicator(),
+          ),
+        ),
+      ).then((_) {}).catchError((_) {}),
+    );
+
+    File? zipFile;
+    Object? exportError;
+    try {
+      final exportService = ExportService(rootDir: paths.rootDir);
+      zipFile = await exportService.exportFull(
+        appVersion: '1.0.0',
+      );
+    } catch (e) {
+      exportError = e;
+    } finally {
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+    }
+
+    if (exportError != null) {
+      if (context.mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: Text(l10n.error),
+            content: Text(exportError.toString()),
+            actions: [
+              CupertinoDialogAction(
+                child: Text(l10n.ok),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    // 备份成功，计算下次提醒日期
+    final nextDate = _computeNextDate();
+    await ref.read(settingsControllerProvider.notifier).saveNextBackupReminderDate(nextDate);
+    if (mounted) {
+      setState(() => _dismissed = true);
+    }
+
+    // 分享备份文件
+    await Share.shareXFiles(
+      [XFile(zipFile!.path)],
+      sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
     );
   }
 }

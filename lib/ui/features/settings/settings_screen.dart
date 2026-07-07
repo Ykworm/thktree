@@ -52,11 +52,12 @@ class SettingsScreen extends ConsumerWidget {
             _TtsEntry(),
           ],
         ),
-        ThkListSection(
-          children: [
-            _KeywordScorePromptEntry(),
-          ],
-        ),
+        // 屏蔽 keyword score prompt 入口
+        // ThkListSection(
+        //   children: [
+        //     _KeywordScorePromptEntry(),
+        //   ],
+        // ),
         ThkListSection(
           children: [
             _FaceIdToggle(),
@@ -65,6 +66,7 @@ class SettingsScreen extends ConsumerWidget {
         ThkListSection(
           header: l10n.backupAndRestore,
           children: [
+            _BackupReminderToggle(),
             _BackupEntry(),
             _RestoreEntry(),
           ],
@@ -74,20 +76,23 @@ class SettingsScreen extends ConsumerWidget {
             header: 'Dev Tools',
             children: [
               _DarkModeToggle(),
+              _BackupReminderDebugEntry(),
             ],
           ),
         ],
-        loggerAsync.when(
-          data: (logger) => ThkListSection(
-            children: _buildLogTiles(context, logger, l10n),
+        if (kDebugMode) ...[
+          loggerAsync.when(
+            data: (logger) => ThkListSection(
+              children: _buildLogTiles(context, logger, l10n),
+            ),
+            error: (e, st) => ThkListSection(
+              children: [ThkListTile(title: e.toString(), trailing: null)],
+            ),
+            loading: () => ThkListSection(
+              children: [ThkListTile(title: l10n.loadingLogger, trailing: null)],
+            ),
           ),
-          error: (e, st) => ThkListSection(
-            children: [ThkListTile(title: e.toString(), trailing: null)],
-          ),
-          loading: () => ThkListSection(
-            children: [ThkListTile(title: l10n.loadingLogger, trailing: null)],
-          ),
-        ),
+        ],
         pathsAsync.when(
           data: (paths) => ThkListSection(
             children: [
@@ -265,13 +270,6 @@ class _LlmSettingsEntry extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final providersAsync = ref.watch(llmProvidersProvider);
-
-    final subtitle = providersAsync.when(
-      data: (providers) => l10n.modelCount(providers.length),
-      loading: () => l10n.loadingSettings,
-      error: (_, _) => l10n.noModels,
-    );
 
     return ThkListTile(
       leading: const Padding(
@@ -279,7 +277,6 @@ class _LlmSettingsEntry extends ConsumerWidget {
         child: Icon(AppIcons.cloud),
       ),
       title: l10n.llmSettings,
-      subtitle: subtitle,
       onTap: () {
         Navigator.of(context).push(
           CupertinoPageRoute(
@@ -417,6 +414,48 @@ class _FaceIdToggle extends ConsumerWidget {
           ref.read(settingsControllerProvider.notifier).saveFaceIdEnabled(value);
         },
       ),
+    );
+  }
+}
+
+class _BackupReminderToggle extends ConsumerWidget {
+  const _BackupReminderToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final enabled = settingsAsync.whenOrNull(data: (s) => s.backupReminderEnabled) ?? true;
+
+    return ThkListTile(
+      leading: const Padding(
+        padding: EdgeInsets.only(top: 0.5),
+        child: Icon(CupertinoIcons.archivebox),
+      ),
+      title: '备份提醒',
+      subtitle: '每 3-7 天提醒一次',
+      trailing: CupertinoSwitch(
+        value: enabled,
+        onChanged: (value) {
+          ref.read(settingsControllerProvider.notifier).saveBackupReminderEnabled(value);
+        },
+      ),
+    );
+  }
+}
+
+class _BackupReminderDebugEntry extends ConsumerWidget {
+  const _BackupReminderDebugEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ThkListTile(
+      leading: const Icon(CupertinoIcons.bell),
+      title: 'Trigger Backup Reminder',
+      subtitle: 'Set next reminder to yesterday',
+      onTap: () {
+        ref.read(settingsControllerProvider.notifier).triggerBackupReminderDebug();
+      },
     );
   }
 }

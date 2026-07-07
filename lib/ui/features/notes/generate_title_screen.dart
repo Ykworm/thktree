@@ -11,6 +11,7 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart'
     show resolveModelForTitleCore;
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/features/settings/default_model_picker_screen.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -95,11 +96,12 @@ class _GenerateTitleScreenState extends ConsumerState<GenerateTitleScreen> {
         _candidates = candidates;
         _selectedTitle = candidates.isNotEmpty ? candidates.first : null;
         _loading = false;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = 'apiError:$e';
         _loading = false;
       });
     }
@@ -164,22 +166,57 @@ class _GenerateTitleScreenState extends ConsumerState<GenerateTitleScreen> {
               const SizedBox(height: 12),
               Text(
                 _error == 'noModel'
-                    ? l10n.noMessagesYet
-                    : 'Failed to generate titles',
+                    ? l10n.pleaseConfigureTitleModel
+                    : (_error?.startsWith('apiError:') ?? false)
+                        ? (_error!.substring(9))
+                        : 'Failed to generate titles',
                 style: TextStyle(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              CupertinoButton.filled(
-                onPressed: () {
-                  setState(() {
-                    _loading = true;
-                    _error = null;
-                  });
-                  _generate();
-                },
-                child: Text(l10n.retry),
-              ),
+              if (_error == 'noModel')
+                CupertinoButton.filled(
+                  onPressed: () async {
+                    final settings = ref.read(settingsControllerProvider).value;
+                    final result = await Navigator.of(context).push<bool>(
+                      CupertinoPageRoute(
+                        builder: (_) => DefaultModelPickerScreen(
+                          title: l10n.titleModelTitle,
+                          currentProviderId: settings?.titleModelProviderId,
+                          currentModelId: settings?.titleModelModelId,
+                          onSelected: (providerId, modelId) async {
+                            await ref
+                                .read(settingsControllerProvider.notifier)
+                                .saveTitleModel(
+                                  providerId: providerId,
+                                  modelId: modelId,
+                                );
+                          },
+                        ),
+                      ),
+                    );
+                    // 从模型选择页返回后，如果用户已配置，重新尝试生成
+                    if (result == true && mounted) {
+                      setState(() {
+                        _loading = true;
+                        _error = null;
+                      });
+                      _generate();
+                    }
+                  },
+                  child: Text(l10n.titleModelTitle),
+                )
+              else
+                CupertinoButton.filled(
+                  onPressed: () {
+                    setState(() {
+                      _loading = true;
+                      _error = null;
+                    });
+                    _generate();
+                  },
+                  child: Text(l10n.retry),
+                ),
             ],
           ),
         ),

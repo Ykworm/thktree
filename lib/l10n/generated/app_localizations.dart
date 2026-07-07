@@ -2179,6 +2179,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matching results found'**
   String get noSearchResults;
+
+  /// Clear fetched model list
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Models'**
+  String get clearModels;
+
+  /// Confirm clearing model list dialog content
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the model list for {providerName}? API Key will not be deleted.'**
+  String clearModelsConfirm(String providerName);
+
+  /// Clear button label
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// About page title
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutTitle;
+
+  /// About page contact email label
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Email'**
+  String get aboutContactEmail;
+
+  /// Settings option in the search page menu
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get menuSettings;
+
+  /// About option in the search page menu
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get menuAbout;
 }
 
 class _AppLocalizationsDelegate

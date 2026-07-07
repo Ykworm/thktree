@@ -137,7 +137,7 @@ class UserInputSummaryService {
     required int contextWindow,
     CancelToken? cancelToken,
   }) async {
-    final client = LlmClient.forConfig(provider);
+    final client = LlmClient.forConfig(provider, model: modelId);
 
     final messages = <Map<String, Object?>>[
       {'role': 'system', 'content': _summarySystemPrompt},

@@ -688,5 +688,38 @@
   "chatMarkdownEmpty": "暂无对话内容",
   "searchInChat": "搜索消息内容",
   "noUserMessages": "暂无用户消息",
-  "noSearchResults": "没有找到匹配的结果"
+  "noSearchResults": "没有找到匹配的结果",
+  "clearModels": "清除模型",
+  "@clearModels": {
+    "description": "清除已获取的模型列表"
+  },
+  "clearModelsConfirm": "确定要清除 {providerName} 的模型列表吗？API Key 不会被删除。",
+  "@clearModelsConfirm": {
+    "description": "清除模型确认对话框内容",
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "clear": "清除",
+  "@clear": {
+    "description": "清除按钮文案"
+  },
+  "aboutTitle": "关于",
+  "@aboutTitle": {
+    "description": "关于页面标题"
+  },
+  "aboutContactEmail": "联系邮箱",
+  "@aboutContactEmail": {
+    "description": "关于页面联系邮箱标签"
+  },
+  "menuSettings": "设置",
+  "@menuSettings": {
+    "description": "搜索页右上角菜单中的设置选项"
+  },
+  "menuAbout": "关于",
+  "@menuAbout": {
+    "description": "搜索页右上角菜单中的关于选项"
+  }
 }

@@ -23,6 +23,7 @@ import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_screen.dart';
+import 'package:thk_tree/ui/features/about/about_screen.dart';
 import 'package:thk_tree/ui/features/search/search_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -182,6 +183,13 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       pageBuilder: (context, state) => CupertinoPage(
         child: LlmProvidersScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/about',
+      parentNavigatorKey: _rootNavigatorKey,
+      pageBuilder: (context, state) => CupertinoPage(
+        child: const AboutScreen(),
       ),
     ),
   ],

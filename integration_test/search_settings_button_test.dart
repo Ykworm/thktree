@@ -1,11 +1,12 @@
 // 搜索页 → 设置入口 集成测试。
 //
 // 覆盖 1 个关键场景：
-//   Case 1: 启动 → 搜索 tab 默认展示 → 顶栏右上角齿轮按钮 → 点击 push 进入 settings 页
+//   Case 1: 启动 → 搜索 tab 默认展示 → 顶栏左上角 ≡ 菜单按钮 → 从左滑出半屏面板 → 点击「设置」→ push 进入 settings 页
 //
 // 验收点：
-// - 齿轮按钮存在并可点击
-// - 点击后 SettingsScreen 显示（settingsTitle 出现在 NavBar/CupertinoNavigationBar 中）
+// - ≡ 菜单按钮存在并可点击
+// - 点击后从左滑出半屏面板（含「设置」和「关于」选项）
+// - 点击「设置」后 SettingsScreen 显示（settingsTitle 出现在 NavBar/CupertinoNavigationBar 中）
 // - 返回按钮存在（push 而非 replace）
 //
 // 备注：
@@ -21,7 +22,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    '搜索页齿轮按钮 → push 进入 settings 页',
+    '搜索页 ≡ 菜单 → sheet → 设置',
     (tester) async {
       final app = await createTestApp(locale: const Locale('zh'));
       await tester.pumpWidget(app);
@@ -30,24 +31,35 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('zh'));
 
       // ── 默认应在搜索页 ────────────────────────────────────────────────────
-      // 顶栏标题 = 搜索（l10n.searchTabLabel）
       expect(find.text(l10n.searchTabLabel), findsWidgets,
           reason: '默认应在搜索 tab，顶栏标题应可见');
 
-      // ── 齿轮按钮存在 ────────────────────────────────────────────────────────
-      final settingsBtn = find.byKey(const ValueKey('settings_button'));
-      expect(settingsBtn, findsOneWidget,
-          reason: '搜索页顶栏右上角应显示齿轮按钮');
+      // ── ≡ 菜单按钮存在 ──────────────────────────────────────────────────────
+      final menuBtn = find.byKey(const ValueKey('menu_button'));
+      expect(menuBtn, findsOneWidget,
+          reason: '搜索页顶栏左上角应显示 ≡ 菜单按钮');
 
-      // ── 点击齿轮 push 进入 settings ────────────────────────────────────────
-      await tester.tap(settingsBtn);
+      // ── 点击 ≡ 从左滑出半屏面板 ────────────────────────────────────────
+      await tester.tap(menuBtn);
       await tester.pumpAndSettle();
 
-      // SettingsScreen 的 ThkLargeTitlePage 标题（出现在大标题区）
+      // 面板中应有「设置」选项
+      expect(find.text(l10n.menuSettings), findsOneWidget,
+          reason: '点击 ≡ 后应从左滑出面板，含「设置」选项');
+
+      // 面板中应有「关于」选项
+      expect(find.text(l10n.menuAbout), findsOneWidget,
+          reason: '点击 ≡ 后应从左滑出面板，含「关于」选项');
+
+      // ── 点击「设置」push 进入 settings ────────────────────────────────────
+      await tester.tap(find.text(l10n.menuSettings));
+      await tester.pumpAndSettle();
+
+      // SettingsScreen 的标题
       expect(find.text(l10n.settingsTitle), findsWidgets,
           reason: 'push 后应显示 SettingsScreen 标题');
 
-      // settings 页里至少有"语言"section header 出现，说明确实是 settings 页
+      // settings 页里至少有"语言"section header 出现
       expect(find.text(l10n.language), findsWidgets,
           reason: 'settings 页应显示"语言" section');
 

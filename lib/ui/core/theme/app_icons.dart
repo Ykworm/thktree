@@ -136,6 +136,9 @@ class AppIcons {
   /// AI / 模型选择（iOS 18+ AI 风格闪光图标）
   static const IconData sparkles = SFIcons.sf_sparkles;
 
+  /// 深度思考 / 推理（reasoning），与模型选择的 sparkles 区分
+  static const IconData brain = SFIcons.sf_brain;
+
   /// 文档拆分 / 结构切分
   static const IconData docSplit = SFIcons.sf_square_split_2x1;
 

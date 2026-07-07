@@ -1,8 +1,8 @@
-// 笔记标题必填验证
+// 笔记标题自动提取与必填验证
 //
-// 覆盖 NoteEditorScreen ✓ 按钮的空标题校验：
-// - 完全空字符串
-// - 纯空格（trim 后为空）
+// 覆盖 NoteEditorScreen ✓ 按钮的标题逻辑：
+// - 标题空 + 正文有内容 → 自动取正文前 8 字符（去掉 Markdown 标记）作为标题
+// - 标题空 + 正文空 → 弹 alert 拦截
 // - 标题非空：正常放行
 // - alert 关闭：alert 上"确定"能正常消失
 // - alert 关闭后：编辑器仍在（没 pop）
@@ -17,7 +17,7 @@ import 'test_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('笔记标题必填：5 个场景', (tester) async {
+  testWidgets('笔记标题自动提取与必填：6 个场景', (tester) async {
     final app = await createTestApp(locale: const Locale('zh'));
     await tester.pumpWidget(app);
     await tester.pumpAndSettle();
@@ -68,76 +68,120 @@ void main() {
         reason: 'alert 关闭后 body 输入框应仍在');
 
     // ────────────────────────────────────────────────────────────────
-    // Case 3: 纯空格标题 + 点 ✓ → 弹 alert（trim().isEmpty 必须拦截）
+    // Case 3: 标题空 + 正文有内容 → 自动取正文前 8 字符作为标题
     // ────────────────────────────────────────────────────────────────
-    await tester.enterText(titleInput, '   ');
+    await tester.enterText(titleInput, '');
     await tester.pump();
-    // body 也填一段内容，确保"有内容"也不能蒙混过关
-    await tester.enterText(bodyInput, '有内容但标题是空格');
+    await tester.enterText(bodyInput, '这是一段测试正文内容');
     await tester.pump();
 
     await tester.tap(checkBtn);
     await tester.pumpAndSettle();
 
-    expect(find.text(cannotEmpty), findsOneWidget,
-        reason: '纯空格标题点 ✓ 也应被拦截');
+    // 不应弹 alert，应正常保存并退出
+    expect(find.text(cannotEmpty), findsNothing,
+        reason: '有正文时空标题应自动提取，不应弹 alert');
+    expect(find.byKey(const ValueKey('note_title_input')), findsNothing,
+        reason: '自动提取标题后应 pop 回列表');
 
-    // 关闭 alert 进入下一个 case
-    await _dismissAlert(tester, '确定');
+    // ────────────────────────────────────────────────────────────────
+    // Case 4: 标题空 + 正文空 → 弹 alert 拦截
+    // ────────────────────────────────────────────────────────────────
+    // 从 ThemeNoteListScreen 返回 NoteBrowseScreen，再进入新编辑器
+    // 使用 back 按钮返回
+    final backBtn = find.byIcon(AppIcons.back);
+    if (backBtn.evaluate().isNotEmpty) {
+      await tester.tap(backBtn.first);
+      await tester.pumpAndSettle();
+    }
+    await _enterEditorWithFreshTheme(tester, '${themeTitle}_2');
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final titleInput2 = find.byKey(const ValueKey('note_title_input'));
+    final bodyInput2 = find.byKey(const ValueKey('note_body_input'));
+    final checkBtn2 = find.byIcon(AppIcons.check);
+
+    // 不输入标题，也不输入正文
+    await tester.enterText(titleInput2, '');
+    await tester.pump();
+    await tester.enterText(bodyInput2, '');
+    await tester.pump();
+
+    await tester.tap(checkBtn2);
     await tester.pumpAndSettle();
 
+    expect(find.text(cannotEmpty), findsOneWidget,
+        reason: '标题和正文都为空时应弹 alert 拦截');
+
+    // 关闭 alert 后，直接在同一个编辑器里测试 Case 5 和 Case 6
     // ────────────────────────────────────────────────────────────────
-    // Case 4: 正常标题 → 正常退出（对照组）
+    // Case 5: 正常标题 → 正常退出（对照组）
     // ────────────────────────────────────────────────────────────────
     const validTitle = '有效标题A';
-    await tester.enterText(titleInput, validTitle);
+    await tester.enterText(titleInput2, validTitle);
+    await tester.pump();
+    await tester.enterText(bodyInput2, '一些正文内容');
     await tester.pump();
     // 等自动保存 debounce
     await tester.pump(const Duration(milliseconds: 600));
 
-    await tester.tap(checkBtn);
+    await tester.tap(checkBtn2);
     await tester.pumpAndSettle();
 
     expect(find.text(cannotEmpty), findsNothing,
         reason: '有有效标题时不应弹 alert');
+    // 验证已返回到 ThemeNoteListScreen（通过查找大标题页的 trailing + 按钮）
+    // NoteEditorScreen 的 check 按钮和 ThemeNoteListScreen 的 add 按钮都用 AppIcons.check / AppIcons.add
+    // 用 page bg 差异或导航栏标题判断更可靠，这里简化：直接等待并检查编辑器 key 消失
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('note_title_input')), findsNothing,
         reason: '点 ✓ 后应 pop 回列表（编辑器消失）');
 
     // ────────────────────────────────────────────────────────────────
-    // Case 5: 再次进入编辑器 → 标题清空 → 弹 alert → 关闭 → 编辑器仍在
+    // Case 6: 再次进入编辑器 → 标题清空 + 正文清空 → 弹 alert → 关闭 → 编辑器仍在
     //   验证 alert 多次触发的稳定性 + 不残留状态
     // ────────────────────────────────────────────────────────────────
-    // 当前应在主题笔记列表中，可点击笔记再次进入编辑器
-    // 注：编辑器对已有笔记会 load 现有标题，"再次进入 + 清空 + 拦截"是更接近真实场景的复测
-    await waitForText(tester, validTitle, timeout: const Duration(seconds: 10));
-    await tester.tap(find.text(validTitle));
-    await tester.pumpAndSettle();
+    // 从 ThemeNoteListScreen 返回 NoteBrowseScreen
+    final backBtn2 = find.byIcon(AppIcons.back);
+    if (backBtn2.evaluate().isNotEmpty) {
+      await tester.tap(backBtn2.first);
+      await tester.pumpAndSettle();
+    }
 
-    // 进入编辑模式（NoteDetailScreen 的 edit 按钮）
-    final editBtn = find.byKey(const ValueKey('note_edit_button'));
-    expect(editBtn, findsOneWidget, reason: '详情页应展示编辑按钮');
-    await tester.tap(editBtn);
-    await tester.pumpAndSettle();
+    // 重新进入编辑器（新笔记）
+    await _enterEditorWithFreshTheme(tester, '${themeTitle}_3');
+    await tester.pump(const Duration(milliseconds: 500));
 
-    // title 应预填旧值，全部清空再点 ✓
-    final editTitleInput = find.byKey(const ValueKey('note_title_input'));
-    expect(editTitleInput, findsOneWidget, reason: '编辑模式应展示标题输入框');
-    await tester.enterText(editTitleInput, '');
+    final titleInput3 = find.byKey(const ValueKey('note_title_input'));
+    final bodyInput3 = find.byKey(const ValueKey('note_body_input'));
+    final checkBtn3 = find.byIcon(AppIcons.check);
+
+    // 先输入一些内容，然后清空，再点 ✓
+    await tester.enterText(titleInput3, '临时标题');
+    await tester.pump();
+    await tester.enterText(bodyInput3, '临时正文');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    // 清空 title 和 body
+    await tester.enterText(titleInput3, '');
+    await tester.pump();
+    await tester.enterText(bodyInput3, '');
     await tester.pump();
 
-    final editCheckBtn = find.byIcon(AppIcons.check);
-    await tester.tap(editCheckBtn);
+    await tester.tap(checkBtn3);
     await tester.pumpAndSettle();
 
     expect(find.text(cannotEmpty), findsOneWidget,
-        reason: '编辑模式下空标题也应弹 alert');
+        reason: '标题和正文都空时应弹 alert');
     expect(find.byKey(const ValueKey('note_title_input')), findsOneWidget,
         reason: '弹 alert 后编辑器应仍在');
 
     await _dismissAlert(tester, '确定');
     await tester.pumpAndSettle();
     expect(find.text(cannotEmpty), findsNothing, reason: '重复触发 alert 也能正常关闭');
-  }, timeout: const Timeout(Duration(seconds: 90)));
+  }, timeout: const Timeout(Duration(seconds: 120)));
 }
 
 // ---------------------------------------------------------------------------

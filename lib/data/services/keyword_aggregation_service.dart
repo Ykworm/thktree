@@ -110,7 +110,7 @@ keyword (string), cross_theme_count (int), cross_leaf_count (int), depth_avg (nu
   }) async {
     if (inputs.isEmpty) return const [];
 
-    final client = LlmClient.forConfig(provider);
+    final client = LlmClient.forConfig(provider, model: modelId);
     final systemPrompt = _systemPrefix + scorePrompt + _systemSuffix;
     final inputJson = jsonEncode(inputs.map((i) => i.toJson()).toList());
 

@@ -1125,4 +1125,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noSearchResults => '没有找到匹配的结果';
+
+  @override
+  String get clearModels => '清除模型';
+
+  @override
+  String clearModelsConfirm(String providerName) {
+    return '确定要清除 $providerName 的模型列表吗？API Key 不会被删除。';
+  }
+
+  @override
+  String get clear => '清除';
+
+  @override
+  String get aboutTitle => '关于';
+
+  @override
+  String get aboutContactEmail => '联系邮箱';
+
+  @override
+  String get menuSettings => '设置';
+
+  @override
+  String get menuAbout => '关于';
 }

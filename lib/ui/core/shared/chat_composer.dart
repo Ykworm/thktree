@@ -15,7 +15,6 @@ class ChatComposer extends StatefulWidget {
     required this.onSend,
     required this.onStopStreaming,
     this.enabled = true,
-    this.onModelSelectorTap,
     this.webSearchEnabled = false,
     this.webSearchSupported = false,
     this.onWebSearchToggle,
@@ -35,9 +34,6 @@ class ChatComposer extends StatefulWidget {
   final bool enabled;
   final Future<void> Function(String text, {Uint8List? imageData, String? imageMimeType}) onSend;
   final Future<void> Function() onStopStreaming;
-
-  /// 点击模型选择按钮的回调（可选，向后兼容）
-  final VoidCallback? onModelSelectorTap;
 
   /// 联网搜索是否开启
   final bool webSearchEnabled;
@@ -197,69 +193,54 @@ class _ChatComposerState extends State<ChatComposer> {
                   ),
                 ),
               ),
-              if (widget.onModelSelectorTap != null) ...[
-                const SizedBox(width: 4),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: CupertinoButton(
-                    padding: const EdgeInsets.all(8),
-                    onPressed:
-                        widget.isStreaming ? null : widget.onModelSelectorTap,
-                    child: Icon(
-                      AppIcons.sparkles,
-                      size: 20,
-                      color: widget.isStreaming
-                          ? AppColors.textTertiary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
-          // 联网搜索、深度思考和图片按钮（输入框下方）
+          // 联网搜索、深度思考和图片：统一底边栏（单一 surface 容器 + 分隔线）
           if (widget.onWebSearchToggle != null ||
               widget.onDeepThinkingToggle != null ||
               widget.alwaysThinking ||
               widget.onImagePick != null) ...[
             const SizedBox(height: 4),
-            Row(
-              children: [
-                if (widget.onWebSearchToggle != null) ...[
-                  _WebSearchToggle(
-                    enabled: widget.webSearchEnabled,
-                    supported: widget.webSearchSupported,
-                    isStreaming: widget.isStreaming,
-                    onToggle: widget.onWebSearchToggle!,
-                  ),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                children: [
+                  if (widget.onWebSearchToggle != null) ...[
+                    _WebSearchToggle(
+                      enabled: widget.webSearchEnabled,
+                      supported: widget.webSearchSupported,
+                      isStreaming: widget.isStreaming,
+                      onToggle: widget.onWebSearchToggle!,
+                    ),
+                    if (widget.alwaysThinking ||
+                        widget.onDeepThinkingToggle != null ||
+                        widget.onImagePick != null)
+                      _barDivider,
+                  ],
+                  if (widget.alwaysThinking) ...[
+                    _AlwaysThinkingIndicator(isStreaming: widget.isStreaming),
+                    if (widget.onImagePick != null) _barDivider,
+                  ] else if (widget.onDeepThinkingToggle != null) ...[
+                    _DeepThinkingToggle(
+                      enabled: widget.deepThinkingEnabled,
+                      supported: widget.deepThinkingSupported,
+                      isStreaming: widget.isStreaming,
+                      onToggle: widget.onDeepThinkingToggle!,
+                    ),
+                    if (widget.onImagePick != null) _barDivider,
+                  ],
+                  if (widget.onImagePick != null)
+                    _ImageButton(
+                      supported: widget.imageSupported,
+                      isStreaming: widget.isStreaming,
+                      onPick: widget.onImagePick!,
+                    ),
                 ],
-                if (widget.alwaysThinking) ...[
-                  if (widget.onWebSearchToggle != null) const SizedBox(width: 8),
-                  _AlwaysThinkingIndicator(isStreaming: widget.isStreaming),
-                ] else if (widget.onDeepThinkingToggle != null) ...[
-                  if (widget.onWebSearchToggle != null) const SizedBox(width: 8),
-                  _DeepThinkingToggle(
-                    enabled: widget.deepThinkingEnabled,
-                    supported: widget.deepThinkingSupported,
-                    isStreaming: widget.isStreaming,
-                    onToggle: widget.onDeepThinkingToggle!,
-                  ),
-                ],
-                if (widget.onImagePick != null) ...[
-                  if (widget.onWebSearchToggle != null ||
-                      widget.onDeepThinkingToggle != null ||
-                      widget.alwaysThinking)
-                    const SizedBox(width: 8),
-                  _ImageButton(
-                    supported: widget.imageSupported,
-                    isStreaming: widget.isStreaming,
-                    onPick: widget.onImagePick!,
-                  ),
-                ],
-              ],
+              ),
             ),
           ],
         ],
@@ -322,6 +303,15 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 }
 
+/// 统一底边栏内部的分隔线
+final Widget _barDivider = SizedBox(
+  width: 1,
+  height: 20,
+  child: DecoratedBox(
+    decoration: BoxDecoration(color: AppColors.border),
+  ),
+);
+
 /// 联网搜索开关（紧凑横条，放在输入框下方）
 class _WebSearchToggle extends StatelessWidget {
   const _WebSearchToggle({
@@ -342,35 +332,25 @@ class _WebSearchToggle extends StatelessWidget {
         ? (enabled ? AppColors.accent : AppColors.textTertiary)
         : AppColors.textTertiary.withValues(alpha: 0.5);
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: CupertinoButton(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          minSize: 0,
-          onPressed: supported && !isStreaming ? onToggle : null,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                enabled ? AppIcons.globe : AppIcons.globeSlash,
-                size: 14,
-                color: color,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                supported
-                    ? (enabled ? '联网搜索' : '联网搜索')
-                    : '不支持联网',
-                style: TextStyle(fontSize: 12, color: color),
-              ),
-            ],
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      onPressed: supported && !isStreaming ? onToggle : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            enabled ? AppIcons.globe : AppIcons.globeSlash,
+            size: 14,
+            color: color,
           ),
-        ),
+          const SizedBox(width: 4),
+          Text(
+            supported
+                ? (enabled ? '联网搜索' : '联网搜索')
+                : '不支持联网',
+            style: TextStyle(fontSize: 12, color: color),
+          ),
+        ],
       ),
     );
   }
@@ -379,8 +359,8 @@ class _WebSearchToggle extends StatelessWidget {
 /// 深度思考开关（联网搜索右边，UI 与 web search 镜像）
 ///
 /// 与 `_WebSearchToggle` 的核心区别是文案/icon：
-/// - enabled：紫色 + 灯泡 icon + "深度思考"
-/// - disabled (但 supported)：灰色 + 灯泡 icon 暗淡 + "深度思考"
+/// - enabled：紫色 + 大脑 icon + "深度思考"
+/// - disabled (但 supported)：灰色 + 大脑 icon 暗淡 + "深度思考"
 /// - 不支持当前模型：灰色 "不支持深度思考"，按下不响应
 class _AlwaysThinkingIndicator extends StatelessWidget {
   const _AlwaysThinkingIndicator({required this.isStreaming});
@@ -392,33 +372,23 @@ class _AlwaysThinkingIndicator extends StatelessWidget {
     // 始终开启（不可点击），弱化色让用户知道这是只读状态而非可操作控件
     final color = AppColors.textTertiary.withValues(alpha: 0.5);
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: CupertinoButton(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          minSize: 0,
-          onPressed: null, // 只读，永远 disabled
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                AppIcons.sparkles,
-                size: 14,
-                color: color,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '深度思考（默认）',
-                style: TextStyle(fontSize: 12, color: color),
-              ),
-            ],
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      onPressed: null, // 只读，永远 disabled
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            AppIcons.brain,
+            size: 14,
+            color: color,
           ),
-        ),
+          const SizedBox(width: 4),
+          Text(
+            '深度思考（默认）',
+            style: TextStyle(fontSize: 12, color: color),
+          ),
+        ],
       ),
     );
   }
@@ -443,35 +413,25 @@ class _DeepThinkingToggle extends StatelessWidget {
         ? (enabled ? AppColors.accent : AppColors.textTertiary)
         : AppColors.textTertiary.withValues(alpha: 0.5);
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: CupertinoButton(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          minSize: 0,
-          onPressed: supported && !isStreaming ? onToggle : null,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                AppIcons.sparkles, // 与"AI / 思考"相关的 icon（与模型选择入口共用语义）
-                size: 14,
-                color: color,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                supported
-                    ? (enabled ? '深度思考' : '深度思考')
-                    : '不支持深度思考',
-                style: TextStyle(fontSize: 12, color: color),
-              ),
-            ],
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      onPressed: supported && !isStreaming ? onToggle : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            AppIcons.brain,
+            size: 14,
+            color: color,
           ),
-        ),
+          const SizedBox(width: 4),
+          Text(
+            supported
+                ? (enabled ? '深度思考' : '深度思考')
+                : '不支持深度思考',
+            style: TextStyle(fontSize: 12, color: color),
+          ),
+        ],
       ),
     );
   }
@@ -549,30 +509,23 @@ class _ImageButton extends StatelessWidget {
         ? AppColors.accent
         : AppColors.textTertiary.withValues(alpha: 0.5);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: CupertinoButton(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        minSize: 0,
-        onPressed: supported && !isStreaming ? onPick : null,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              AppIcons.image,
-              size: 14,
-              color: color,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              supported ? '添加图片' : '不支持图片',
-              style: TextStyle(fontSize: 12, color: color),
-            ),
-          ],
-        ),
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      onPressed: supported && !isStreaming ? onPick : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            AppIcons.image,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            supported ? '添加图片' : '不支持图片',
+            style: TextStyle(fontSize: 12, color: color),
+          ),
+        ],
       ),
     );
   }

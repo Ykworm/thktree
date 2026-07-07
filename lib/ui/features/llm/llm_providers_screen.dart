@@ -8,6 +8,7 @@ import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/llm/llm_provider_detail_screen.dart';
 
+
 /// LLM 提供商列表页面
 class LlmProvidersScreen extends ConsumerWidget {
   const LlmProvidersScreen({super.key});
@@ -89,6 +90,42 @@ class LlmProvidersScreen extends ConsumerWidget {
                         ref.invalidate(llmProvidersProvider);
                       }
                     },
+                    onClearModels: provider.models.isNotEmpty
+                        ? () async {
+                            final confirmed = await showCupertinoDialog<bool>(
+                              context: context,
+                              builder: (ctx) {
+                                return CupertinoAlertDialog(
+                                  title: Text(l10n.clearModels),
+                                  content: Text(
+                                    l10n.clearModelsConfirm(provider.name),
+                                  ),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
+                                      child: Text(l10n.cancel),
+                                    ),
+                                    CupertinoDialogAction(
+                                      isDestructiveAction: true,
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
+                                      child: Text(l10n.clear),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            if (confirmed == true) {
+                              final configStore =
+                                  ref.read(llmConfigStoreProvider);
+                              await configStore.updateModels(provider.id, []);
+                              if (context.mounted) {
+                                ref.invalidate(llmProvidersProvider);
+                              }
+                            }
+                          }
+                        : null,
                   );
                 },
               ),
@@ -110,10 +147,12 @@ class _ProviderTile extends StatelessWidget {
   const _ProviderTile({
     required this.provider,
     required this.onTap,
+    this.onClearModels,
   });
 
   final LlmProviderConfig provider;
   final VoidCallback onTap;
+  final VoidCallback? onClearModels;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +165,17 @@ class _ProviderTile extends StatelessWidget {
       title: provider.name,
       subtitle: modelText,
       leading: null,
+      trailing: onClearModels != null
+          ? CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: onClearModels,
+              child: Icon(
+                AppIcons.delete,
+                color: CupertinoColors.destructiveRed,
+                size: 20,
+              ),
+            )
+          : null,
       onTap: onTap,
     );
   }
