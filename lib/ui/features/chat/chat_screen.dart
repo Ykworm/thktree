@@ -26,6 +26,7 @@ import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
+import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_markdown_sheet.dart';
@@ -393,12 +394,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               );
 
                           String? userQuestion;
+                          Uint8List? userQuestionImage;
                           if (message.role == SessionRole.assistant) {
                             final idx = messages.indexOf(message);
                             if (idx > 0) {
                               for (var i = idx - 1; i >= 0; i--) {
                                 if (messages[i].role == SessionRole.user) {
                                   userQuestion = messages[i].body;
+                                  userQuestionImage = messages[i].imageData;
                                   break;
                                 }
                               }
@@ -415,10 +418,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
                                 : null,
                             userQuestion: userQuestion,
+                            userQuestionImage: userQuestionImage,
                             onSaveToNote: message.role == SessionRole.assistant &&
                                     message.status == SessionMessageStatus.done
                                 ? () => _saveMessageAsNote(message)
                                 : null,
+                            onShareEntireChat: () => _shareEntireChat(messages),
                           );
                         },
                       ),
@@ -747,18 +752,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onPressed: () => unawaited(_onSubmitDocSplit()),
           ),
         GridAction(
-          label: l10n.chatOutline,
-          icon: AppIcons.document,
-          color: AppColors.accent,
-          onPressed: () => _onOpenOutline(context, messages),
-        ),
-        GridAction(
-          label: l10n.chatSearch,
-          icon: AppIcons.search,
-          color: CupertinoColors.systemOrange,
-          onPressed: () => _onOpenSearch(context, messages),
-        ),
-        GridAction(
           label: l10n.swipeBranch,
           icon: AppIcons.branch,
           color: AppColors.accent,
@@ -1019,6 +1012,94 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       },
       orElse: () => '',
     );
+  }
+
+  Future<void> _shareEntireChat(List<SessionMessage> messages) async {
+    if (messages.isEmpty) return;
+
+    // 补全本地图片字节（磁盘有 imagePath 但内存无 imageData 的情况）
+    final loaded = await _loadShareImages(messages);
+
+    // 构造分享消息列表（保留每条消息的图片）
+    final shareMessages = loaded.map((m) {
+      return ShareMessage(
+        role: m.role,
+        text: m.body,
+        image: m.imageData,
+      );
+    }).toList();
+
+    if (shareMessages.isEmpty) return;
+
+    print('分享整个聊天: 消息数量=${messages.length}');
+
+    // 获取屏幕中心作为分享锚点
+    final size = MediaQuery.of(context).size;
+    final origin = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: 1,
+      height: 1,
+    );
+
+    try {
+      await ShareService.shareAsImage(
+        context: context,
+        messages: shareMessages,
+        sharePositionOrigin: origin,
+      );
+    } catch (e, stackTrace) {
+      print('分享整个聊天失败: $e');
+      print('堆栈: $stackTrace');
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: '内容过多，无法保存为图片',
+      );
+    }
+  }
+
+  /// 对仅有 [SessionMessage.imagePath]（本地路径）但无 [SessionMessage.imageData]
+  /// 的消息，从磁盘读取图片字节补回，供分享卡片渲染。
+  Future<List<SessionMessage>> _loadShareImages(
+    List<SessionMessage> messages,
+  ) async {
+    final needLoad =
+        messages.where((m) => m.imagePath != null && m.imageData == null).toList();
+    if (needLoad.isEmpty) return messages;
+
+    try {
+      final nodeStore = await ref.read(nodeStoreProvider.future);
+      final themeId = await nodeStore.getThemeIdByNodeId(widget.nodeId);
+      if (themeId == null) return messages;
+      final paths = await ref.read(appPathsProvider.future);
+      final imagesDir =
+          '${paths.themesDir.path}/$themeId/${widget.nodeId}/images';
+
+      return messages.map((m) {
+        if (m.imagePath == null || m.imageData != null) return m;
+        final fileName = m.imagePath!.split('/').last;
+        var file = File('$imagesDir/$fileName');
+        // fallback：pending_ 文件已被 rename 为 msgId.jpg（旧 bug）
+        if (!file.existsSync() && fileName.startsWith('pending_')) {
+          file = File('$imagesDir/${m.msgId}.jpg');
+        }
+        if (!file.existsSync()) return m;
+        return SessionMessage(
+          role: m.role,
+          timestampUtcIso8601: m.timestampUtcIso8601,
+          msgId: m.msgId,
+          body: m.body,
+          status: m.status,
+          reasoning: m.reasoning,
+          imageData: file.readAsBytesSync(),
+          imageMimeType: m.imageMimeType,
+          imagePath: m.imagePath,
+          modelId: m.modelId,
+        );
+      }).toList();
+    } catch (_) {
+      return messages;
+    }
   }
 
 }

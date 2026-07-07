@@ -5,21 +5,20 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/ui/core/shared/share_card_widget.dart';
 
 /// 分享问答对为图片
 ///
 /// 流程：构建 ShareCardWidget → offscreen 渲染 → toImage → 写临时文件 → 系统分享
 class ShareService {
-  /// 将问答对生成图片并调起系统分享面板。
+  /// 将一组消息生成图片并调起系统分享面板。
   ///
-  /// [userQuestion] 可为 null（仅分享 AI 回答）。
-  /// [assistantAnswer] 不能为空。
+  /// [messages] 按时间顺序排列；每条消息可携带本地已加载的图片字节（[ShareMessage.image]）。
   /// [sharePositionOrigin] iPad 上分享弹窗的锚点位置（必传，否则 iPad 会崩溃）。
   static Future<void> shareAsImage({
     required BuildContext context,
-    required String? userQuestion,
-    required String assistantAnswer,
+    required List<ShareMessage> messages,
     Rect? sharePositionOrigin,
   }) async {
     final boundary = GlobalKey();
@@ -35,8 +34,7 @@ class ShareService {
         child: RepaintBoundary(
           key: boundary,
           child: ShareCardWidget(
-            userQuestion: userQuestion,
-            assistantAnswer: assistantAnswer,
+            messages: messages,
           ),
         ),
       ),

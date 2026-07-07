@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 
@@ -9,15 +10,11 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 class ShareCardWidget extends StatelessWidget {
   const ShareCardWidget({
     super.key,
-    this.userQuestion,
-    required this.assistantAnswer,
+    required this.messages,
   });
 
-  /// 用户提问（可选，可能为 null 或空）
-  final String? userQuestion;
-
-  /// AI 回答
-  final String assistantAnswer;
+  /// 按时间顺序排列的待分享消息（每条可携带本地图片字节）
+  final List<ShareMessage> messages;
 
   static const double _cardWidth = 400;
   static const double _padding = 20;
@@ -25,8 +22,11 @@ class ShareCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasQuestion =
-        userQuestion != null && userQuestion!.trim().isNotEmpty;
+    final blocks = <Widget>[];
+    for (var i = 0; i < messages.length; i++) {
+      blocks.add(_buildMessageBlock(messages[i]));
+      if (i < messages.length - 1) blocks.add(const SizedBox(height: 16));
+    }
 
     return Container(
       width: _cardWidth,
@@ -71,39 +71,9 @@ class ShareCardWidget extends StatelessWidget {
               ],
             ),
 
-            // ── 用户问题 ──
-            if (hasQuestion) ...[
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  userQuestion!,
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1.5,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 6,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-
-            // ── AI 回答 ──
+            // ── 消息列表 ──
             const SizedBox(height: 16),
-            GptMarkdown(
-              assistantAnswer,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            ...blocks,
 
             // ── 底部分隔线 ──
             const SizedBox(height: 20),
@@ -121,6 +91,56 @@ class ShareCardWidget extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBlock(ShareMessage m) {
+    if (m.role == SessionRole.user) {
+      final hasText = m.text.trim().isNotEmpty;
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceMuted,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (m.image != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.memory(
+                  m.image!,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              if (hasText) const SizedBox(height: 8),
+            ],
+            if (hasText)
+              Text(
+                m.text,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    // ── 助手消息 ──
+    return GptMarkdown(
+      m.text,
+      style: TextStyle(
+        fontSize: 15,
+        height: 1.6,
+        color: AppColors.textPrimary,
       ),
     );
   }

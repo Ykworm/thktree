@@ -53,6 +53,23 @@ class SessionMessage {
   final String? modelId;
 }
 
+/// 单条待分享消息。
+///
+/// [role] 决定渲染样式（用户 / 助手）。
+/// [text] 为消息正文（助手消息会被 [GptMarkdown] 渲染）。
+/// [image] 为已加载到内存的本地图片字节，可为 null。
+class ShareMessage {
+  const ShareMessage({
+    required this.role,
+    required this.text,
+    this.image,
+  });
+
+  final SessionRole role;
+  final String text;
+  final Uint8List? image;
+}
+
 class SessionDocument {
   SessionDocument({
     required this.frontmatter,

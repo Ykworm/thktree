@@ -310,8 +310,10 @@ class MessageBubble extends ConsumerStatefulWidget {
     required this.message,
     this.onRetry,
     this.userQuestion,
+    this.userQuestionImage,
     this.onSaveToNote,
     this.showTimestamp = false,
+    this.onShareEntireChat,
   });
 
   final SessionMessage message;
@@ -320,11 +322,17 @@ class MessageBubble extends ConsumerStatefulWidget {
   /// 配对的用户提问（可选，用于分享图片）
   final String? userQuestion;
 
+  /// 配对的用户提问中的图片数据（可选，用于分享图片）
+  final Uint8List? userQuestionImage;
+
   /// 点击"存为笔记"按钮时的回调
   final VoidCallback? onSaveToNote;
 
   /// 是否在气泡上方显示时间戳
   final bool showTimestamp;
+
+  /// 分享整个聊天的回调
+  final VoidCallback? onShareEntireChat;
 
   @override
   ConsumerState<MessageBubble> createState() => _MessageBubbleState();
@@ -334,6 +342,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
   bool _copied = false;
   bool _sharing = false;
   bool _showReasoning = false;
+  String? _selectedText;
   final _shareButtonKey = GlobalKey();
 
   Future<void> _copyToClipboard() async {
@@ -347,6 +356,36 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     }
   }
 
+  void _showShareSheet() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text('分享'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _shareAsImage();
+            },
+            child: Text('分享当前对话'),
+          ),
+          if (widget.onShareEntireChat != null)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                widget.onShareEntireChat!();
+              },
+              child: Text('分享整个聊天'),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: Text('取消'),
+        ),
+      ),
+    );
+  }
+
   Future<void> _shareAsImage() async {
     if (_sharing || widget.message.body.isEmpty) return;
     setState(() => _sharing = true);
@@ -358,10 +397,31 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         origin = offset & renderBox.size;
       }
 
+      // 如果用户选中了文本，只对选中文本生成图片
+      final answer = (_selectedText != null && _selectedText!.trim().isNotEmpty)
+          ? _selectedText!
+          : widget.message.body;
+
+      final shareMessages = <ShareMessage>[];
+      final hasUser = (widget.userQuestion != null &&
+              widget.userQuestion!.trim().isNotEmpty) ||
+          widget.userQuestionImage != null;
+      if (hasUser) {
+        shareMessages.add(
+          ShareMessage(
+            role: SessionRole.user,
+            text: widget.userQuestion ?? '',
+            image: widget.userQuestionImage,
+          ),
+        );
+      }
+      shareMessages.add(
+        ShareMessage(role: SessionRole.assistant, text: answer),
+      );
+
       await ShareService.shareAsImage(
         context: context,
-        userQuestion: widget.userQuestion,
-        assistantAnswer: widget.message.body,
+        messages: shareMessages,
         sharePositionOrigin: origin,
       );
     } catch (e) {
@@ -523,21 +583,31 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                 widget.message.body.trim().isNotEmpty)
                               const SizedBox(height: 8),
                             if (widget.message.body.trim().isNotEmpty)
-                              GptMarkdown(
-                                sanitizedBody,
-                                style: baseStyle,
-                                tableBuilder: (ctx, rows, style, cfg) {
-                                  final tableMarkdown = _tableRowsToMarkdown(rows);
-                                  return _TableWithActions(
-                                    tableRows: rows,
-                                    textStyle: style,
-                                    onCopy: () => _copyTextToClipboard(tableMarkdown),
-                                    onExpand: () => _showExpanded(ctx, tableMarkdown),
-                                  );
+                              SelectionArea(
+                                onSelectionChanged: (value) {
+                                  final text = value?.plainText;
+                                  setState(() {
+                                    _selectedText = (text != null && text.trim().isNotEmpty)
+                                        ? text
+                                        : null;
+                                  });
                                 },
-                                codeBuilder: _buildCodeBlock,
-                                latexBuilder: buildLatex,
-                                useDollarSignsForLatex: true,
+                                child: GptMarkdown(
+                                  sanitizedBody,
+                                  style: baseStyle,
+                                  tableBuilder: (ctx, rows, style, cfg) {
+                                    final tableMarkdown = _tableRowsToMarkdown(rows);
+                                    return _TableWithActions(
+                                      tableRows: rows,
+                                      textStyle: style,
+                                      onCopy: () => _copyTextToClipboard(tableMarkdown),
+                                      onExpand: () => _showExpanded(ctx, tableMarkdown),
+                                    );
+                                  },
+                                  codeBuilder: _buildCodeBlock,
+                                  latexBuilder: buildLatex,
+                                  useDollarSignsForLatex: true,
+                                ),
                               ),
                           ],
                         ),
@@ -570,7 +640,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                               key: _shareButtonKey,
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,
-                              onPressed: _sharing ? null : _shareAsImage,
+                              onPressed: _sharing ? null : _showShareSheet,
                               child: _sharing
                                   ? const CupertinoActivityIndicator(radius: 8)
                                   : Icon(
@@ -704,24 +774,26 @@ class _ReasoningSection extends StatelessWidget {
           ),
           if (isExpanded) ...[
             const SizedBox(height: 8),
-            GptMarkdown(
-              sanitizedReasoning,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
+            SelectionArea(
+              child: GptMarkdown(
+                sanitizedReasoning,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textSecondary,
+                ),
+                tableBuilder: (ctx, rows, style, cfg) {
+                  final tableMarkdown = _tableRowsToMarkdown(rows);
+                  return _TableWithActions(
+                    tableRows: rows,
+                    textStyle: style,
+                    onCopy: () => _copyTextToClipboard(tableMarkdown),
+                    onExpand: () => onExpandTable(ctx, tableMarkdown),
+                  );
+                },
+                codeBuilder: _buildCodeBlock,
+                latexBuilder: buildLatex,
+                useDollarSignsForLatex: true,
               ),
-              tableBuilder: (ctx, rows, style, cfg) {
-                final tableMarkdown = _tableRowsToMarkdown(rows);
-                return _TableWithActions(
-                  tableRows: rows,
-                  textStyle: style,
-                  onCopy: () => _copyTextToClipboard(tableMarkdown),
-                  onExpand: () => onExpandTable(ctx, tableMarkdown),
-                );
-              },
-              codeBuilder: _buildCodeBlock,
-              latexBuilder: buildLatex,
-              useDollarSignsForLatex: true,
             ),
           ],
         ],
