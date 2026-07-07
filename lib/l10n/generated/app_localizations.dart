@@ -1472,6 +1472,24 @@ abstract class AppLocalizations {
   /// **'View Tree'**
   String get viewTree;
 
+  /// No description provided for @myQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'My Questions'**
+  String get myQuestions;
+
+  /// No description provided for @myQuestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions I Asked'**
+  String get myQuestionsTitle;
+
+  /// No description provided for @myQuestionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No questions yet'**
+  String get myQuestionsEmpty;
+
   /// Title for rename dialog
   ///
   /// In en, this message translates to:

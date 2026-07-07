@@ -794,6 +794,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewTree => 'View Tree';
 
   @override
+  String get myQuestions => 'My Questions';
+
+  @override
+  String get myQuestionsTitle => 'Questions I Asked';
+
+  @override
+  String get myQuestionsEmpty => 'No questions yet';
+
+  @override
   String get renameNode => 'Rename Node';
 
   @override

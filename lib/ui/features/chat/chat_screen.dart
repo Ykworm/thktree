@@ -30,6 +30,7 @@ import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_markdown_sheet.dart';
+import 'package:thk_tree/ui/features/chat/user_questions.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
@@ -777,6 +778,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   themeId: widget.themeId,
                   currentNodeId: widget.nodeId,
                 ),
+              ),
+            );
+          },
+        ),
+        GridAction(
+          label: l10n.myQuestions,
+          icon: AppIcons.chat,
+          color: CupertinoColors.systemOrange,
+          onPressed: () {
+            Navigator.of(context).push(
+              CupertinoPageRoute(
+                builder: (_) => UserQuestionsListPage(args: _args),
               ),
             );
           },
