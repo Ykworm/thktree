@@ -75,7 +75,7 @@ class SessionDocument {
 }
 
 final _messageHeader = RegExp(
-  r'^## (user|assistant|system) · ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z) · (msg_[0-9A-Z]{26})(?: · (.+))?$',
+  r'^## (user|assistant|system) · ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z) · (msg_[0-9A-Z]{26})(?: · (?!image:)(.+?))?(?: · image:(.+))?$',
   caseSensitive: false,
 );
 const _reasoningStartMarker = '<!-- reasoning:start -->';
@@ -148,6 +148,7 @@ List<SessionMessage> _parseMessages(
   String? currentTimestamp;
   String? currentMsgId;
   String? currentModelId;
+  String? currentImagePath;
 
   void flushMessage(int endLineExclusive) {
     if (currentHeaderLineIndex == null) return;
@@ -171,6 +172,7 @@ List<SessionMessage> _parseMessages(
         errorCode: errorCode,
         reasoning: reasoning,
         modelId: currentModelId,
+        imagePath: currentImagePath,
       ),
     );
   }
@@ -190,8 +192,13 @@ List<SessionMessage> _parseMessages(
     };
     currentTimestamp = match.group(2);
     currentMsgId = match.group(3);
-    // 优先用 header 里的 modelId，缺失时 fallback 到 frontmatter 的
-    currentModelId = match.group(4) ?? fallbackModelId;
+    // 只有 assistant 消息才允许用 frontmatter 的 modelId 兜底：
+    // user/system 消息本就不带模型标签，若用当前 session 模型兜底，会在
+    // 重建（removeLastAssistantMessage）时被原样写回磁盘，污染历史消息头。
+    currentModelId = currentRole == SessionRole.assistant
+        ? (match.group(4) ?? fallbackModelId)
+        : match.group(4);
+    currentImagePath = match.group(5);
   }
 
   flushMessage(lines.length);
@@ -278,6 +285,7 @@ String formatMessageHeader({
   required String timestampUtcIso8601,
   required String msgId,
   String? modelId,
+  String? imagePath,
 }) {
   final roleStr = switch (role) {
     SessionRole.user => 'user',
@@ -286,8 +294,15 @@ String formatMessageHeader({
   };
 
   final modelSuffix = modelId != null ? ' · $modelId' : '';
-  return '## $roleStr · $timestampUtcIso8601 · $msgId$modelSuffix';
+  final imageSuffix = imagePath != null ? ' · image:$imagePath' : '';
+  return '## $roleStr · $timestampUtcIso8601 · $msgId$modelSuffix$imageSuffix';
 }
+
+/// 判断一行是否为 session 消息头（`## user/assistant/system · ...`）。
+bool isMessageHeaderLine(String line) => _messageHeader.hasMatch(line);
+
+/// 从消息头行提取角色（`user` / `assistant` / `system`），非消息头返回 null。
+String? messageHeaderRole(String line) => _messageHeader.firstMatch(line)?.group(1);
 
 /// 将 frontmatter Map 序列化为 YAML 文本（不含 --- 分隔符）
 String _serializeFrontmatter(Map<String, Object?> fm) {

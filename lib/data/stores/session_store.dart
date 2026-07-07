@@ -95,13 +95,15 @@ class SessionStore {
     return file.readAsString();
   }
 
-  Future<void> appendUserMessage({
+  Future<String> appendUserMessage({
     required String nodeId,
     required String content,
+    String? imagePath,
   }) async {
     final timestamp = DateTime.now().toUtc().toIso8601String();
     final msgId = newMsgId();
-    await _appendMessage(nodeId, role: SessionRole.user, timestamp: timestamp, msgId: msgId, body: content);
+    await _appendMessage(nodeId, role: SessionRole.user, timestamp: timestamp, msgId: msgId, body: content, imagePath: imagePath);
+    return msgId;
   }
 
   /// 更新 session.md frontmatter 中的 providerId 和 modelId
@@ -302,30 +304,84 @@ class SessionStore {
   }
 
   /// Remove the last assistant message from session.md (used for retry).
+  ///
+  /// 实现方式：**截断文件到最后一个 assistant 消息头之前**，而非 parse → rebuild。
+  ///
+  /// 原因：旧实现走 `parseSessionMarkdown` + `_rebuildSessionMarkdown` 重新序列化，
+  /// 会丢消息头里的 `· image:...` 后缀（图片路径全失），并把 frontmatter 的当前
+  /// session modelId 回填到没有显式 modelId 的消息（user 消息）再写回磁盘，污染历史
+  /// 消息头。直接截断原始文本则完整保留 frontmatter 与前序消息的所有 header 信息，
+  /// 只删掉最后一条 assistant 及其 body / streaming marker。
+  ///
+  /// 语义与旧实现一致：仅当最后一条消息是 assistant 时才删除（最后一条是 user/system
+  /// 时原实现本就不删，这里同样不删）。
   Future<void> removeLastAssistantMessage({required String nodeId}) async {
     await _queue.run(nodeId, () async {
       final path = await getSessionPathForNode(nodeId);
       final file = File(path);
       if (!await file.exists()) return;
-      
+
       final content = await file.readAsString();
-      final doc = parseSessionMarkdown(content);
-      
-      // Find and remove the last assistant message
-      final updatedMessages = <SessionMessage>[];
-      for (int i = 0; i < doc.messages.length; i++) {
-        final msg = doc.messages[i];
-        // Keep all messages except the last assistant message
-        if (msg.role == SessionRole.assistant && i == doc.messages.length - 1) {
-          continue; // Skip the last assistant message
+      final lines = content.split('\n');
+
+      // 从后往前找最后一条消息头（任意角色）
+      int? lastHeaderLine;
+      for (int i = lines.length - 1; i >= 0; i--) {
+        if (isMessageHeaderLine(lines[i])) {
+          lastHeaderLine = i;
+          break;
         }
-        updatedMessages.add(msg);
       }
-      
-      // Rebuild session.md without the last assistant message
-      final frontmatter = _extractFrontmatter(content);
-      final rebuilt = _rebuildSessionMarkdown(frontmatter, updatedMessages);
-      await _atomicWriteString(path, rebuilt);
+      if (lastHeaderLine == null) return; // 没有任何消息，无需处理
+
+      // 仅当最后一条消息是 assistant 时才删除
+      final lastRole = messageHeaderRole(lines[lastHeaderLine]);
+      if (lastRole != 'assistant') return;
+
+      // 计算该消息头行首的字符偏移，截断到它之前（保留其前面的 \n）
+      var truncateAt = 0;
+      for (int i = 0; i < lastHeaderLine; i++) {
+        truncateAt += lines[i].length + 1; // +1 为该行的 \n
+      }
+      final truncated = content.substring(0, truncateAt);
+      if (truncated.isEmpty) return;
+
+      // 去掉末尾多余空行，保留单个结尾换行，与 _appendMessage 产物一致
+      final normalized = '${truncated.trimRight()}\n';
+      await _atomicWriteString(path, normalized);
+    });
+  }
+
+  /// 更新指定消息的 imagePath（用于图片持久化后回写）。
+  Future<void> updateMessageImagePath({
+    required String nodeId,
+    required String msgId,
+    required String imagePath,
+  }) async {
+    await _queue.run(nodeId, () async {
+      final path = await getSessionPathForNode(nodeId);
+      final file = File(path);
+      if (!await file.exists()) return;
+      final content = await file.readAsString();
+      // 找到包含 msgId 的 header 行，替换或追加 image:path
+      final lines = content.split('\n');
+      var changed = false;
+      for (var i = 0; i < lines.length; i++) {
+        if (!lines[i].startsWith('## ') || !lines[i].contains(msgId)) continue;
+        final imgIdx = lines[i].indexOf('· image:');
+        if (imgIdx >= 0) {
+          // 已有 · image:，替换路径部分
+          lines[i] = '${lines[i].substring(0, imgIdx)}· image:$imagePath';
+        } else {
+          // 没有 · image:，追加
+          lines[i] = '${lines[i]} · image:$imagePath';
+        }
+        changed = true;
+        break;
+      }
+      if (changed) {
+        await _atomicWriteString(path, lines.join('\n'));
+      }
     });
   }
 
@@ -335,6 +391,7 @@ class SessionStore {
     required String timestamp,
     required String msgId,
     required String body,
+    String? imagePath,
   }) async {
     await _queue.run(nodeId, () async {
       final path = await getSessionPathForNode(nodeId);
@@ -342,7 +399,7 @@ class SessionStore {
       final file = File(path);
       final content = await file.readAsString();
       final updated =
-          '${_ensureEndsWithNewline(content)}${formatMessageHeader(role: role, timestampUtcIso8601: timestamp, msgId: msgId)}\n${body.trimRight()}\n';
+          '${_ensureEndsWithNewline(content)}${formatMessageHeader(role: role, timestampUtcIso8601: timestamp, msgId: msgId, imagePath: imagePath)}\n${body.trimRight()}\n';
       dev.log('[SessionStore._appendMessage] writing ${updated.length} chars to $path');
       await _atomicWriteString(path, updated);
       dev.log('[SessionStore._appendMessage] written OK, nodeId=$nodeId');
@@ -386,44 +443,4 @@ Future<void> _atomicWriteString(String filePath, String content) async {
 }
 
 
-String _extractFrontmatter(String content) {
-  if (!content.startsWith('---')) return '';
-  final endIdx = content.indexOf('\n---', 3);
-  if (endIdx == -1) return '';
-  return content.substring(0, endIdx + 4);
-}
-
-String _rebuildSessionMarkdown(
-  String frontmatter,
-  List<SessionMessage> messages,
-  {String? streamingMsgId}
-) {
-  final buffer = StringBuffer(frontmatter);
-  if (buffer.isNotEmpty && !buffer.toString().endsWith('\n')) {
-    buffer.writeln();
-  }
-  
-  for (final msg in messages) {
-    final header = formatMessageHeader(
-      role: msg.role,
-      timestampUtcIso8601: msg.timestampUtcIso8601,
-      msgId: msg.msgId,
-      modelId: msg.modelId,
-    );
-    buffer.writeln(header);
-    final serializedBody = serializeSessionMessageBody(msg);
-    if (serializedBody.isNotEmpty) {
-      buffer.writeln(serializedBody);
-    }
-    if (msg.status == SessionMessageStatus.streaming &&
-        msg.msgId == streamingMsgId) {
-      buffer.writeln('<!-- streaming -->');
-    } else if (msg.status == SessionMessageStatus.error &&
-        msg.errorCode != null) {
-      buffer.writeln('<!-- error: ${msg.errorCode} -->');
-    }
-  }
-  
-  return buffer.toString();
-}
 

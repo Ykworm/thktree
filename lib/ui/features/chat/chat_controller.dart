@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as dev;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/models/model_capabilities.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/chat_task_service.dart';
+import 'package:thk_tree/data/services/image_service.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 class ChatControllerParams {
@@ -252,7 +254,10 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       }
 
       // 合并 in-memory state 中的图片数据（磁盘不存储二进制图片）
-      return _mergeImageData(diskMessages, state.value);
+      final merged = _mergeImageData(diskMessages, state.value);
+
+      // 从磁盘加载有 imagePath 但无 imageData 的消息
+      return _loadImagesFromDisk(merged);
     } catch (e, st) {
       try {
         final logger = await ref.read(appLoggerProvider.future);
@@ -287,11 +292,63 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
           reasoning: m.reasoning,
           imageData: mem.imageData,
           imageMimeType: mem.imageMimeType,
+          imagePath: mem.imagePath ?? m.imagePath,  // 内存路径优先（重命名后的最新值）
           modelId: m.modelId,
         );
       }
       return m;
     }).toList();
+  }
+
+  /// 从磁盘加载有 imagePath 但无 imageData 的消息的图片字节。
+  List<SessionMessage> _loadImagesFromDisk(List<SessionMessage> messages) {
+    final needLoad = messages.where((m) => m.imagePath != null && m.imageData == null).toList();
+    if (needLoad.isEmpty) return messages;
+
+    // 异步加载，完成后更新 state
+    () async {
+      try {
+        final nodeStore = await ref.read(nodeStoreProvider.future);
+        final themeId = await nodeStore.getThemeIdByNodeId(nodeId);
+        if (themeId == null) return;
+        final paths = await ref.read(appPathsProvider.future);
+        final imagesDir = '${paths.themesDir.path}/$themeId/$nodeId/images';
+
+        var changed = false;
+        final updated = messages.map((m) {
+          if (m.imagePath == null || m.imageData != null) return m;
+          final fileName = m.imagePath!.split('/').last;
+          File file = File('$imagesDir/$fileName');
+          var exists = file.existsSync();
+          // fallback: pending_ 文件已被 rename 为 msgId.jpg（旧 bug）
+          if (!exists && fileName.startsWith('pending_')) {
+            final fallbackPath = '$imagesDir/${m.msgId}.jpg';
+            file = File(fallbackPath);
+            exists = file.existsSync();
+          }
+          if (exists) {
+            changed = true;
+            return SessionMessage(
+              role: m.role,
+              timestampUtcIso8601: m.timestampUtcIso8601,
+              msgId: m.msgId,
+              body: m.body,
+              status: m.status,
+              reasoning: m.reasoning,
+              imageData: file.readAsBytesSync(),
+              imageMimeType: m.imageMimeType,
+              imagePath: m.imagePath,
+              modelId: m.modelId,
+            );
+          }
+          return m;
+        }).toList();
+
+        if (changed) state = AsyncData(updated);
+      } catch (_) {}
+    }();
+
+    return messages;
   }
 
   /// 在 build() 完成后由 [ChatControllerParams.autoTriggerReply] 调度执行。
@@ -388,10 +445,64 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       // 允许只发图片不发文本
       if (trimmed.isEmpty && imageData == null) return;
 
+      // 防御：非视觉模型拒绝带图发送。
+      // 即使 UI 的图片按钮（bug C）在某些情况下未禁用，也避免把图片发给
+      // 不支持视觉的模型导致失败，进而触发 retry → 重建连锁损坏历史消息。
+      if (imageData != null) {
+        final visionSupported = await _currentModelSupportsVision();
+        if (!visionSupported) {
+          throw Exception('当前模型不支持图片，请切换到支持视觉的模型后再上传图片。');
+        }
+      }
+
       // 1. 取消当前流（同步，不阻塞）
       _cancelCurrentStream();
 
-      // 2. 乐观追加用户消息到 state（不读磁盘）
+      // 2. 图片处理：压缩用于持久化，LLM 按需压缩
+      String? savedImagePath;
+      Uint8List? llmImageData = imageData;
+      if (imageData != null) {
+        // 2a. 压缩用于磁盘持久化（预览用，始终压缩）
+        final compressedForDisk = await ChatImageService.compress(
+          rawBytes: imageData,
+          maxLongSide: 1024,
+          quality: 80,
+        );
+
+        // 2b. 保存到磁盘
+        try {
+          final nodeStore = await ref.read(nodeStoreProvider.future);
+          final themeId = await nodeStore.getThemeIdByNodeId(nodeId);
+          if (themeId != null) {
+            final paths = await ref.read(appPathsProvider.future);
+            final imagesDir = '${paths.themesDir.path}/$themeId/$nodeId/images';
+            // 先写磁盘拿 msgId，但 msgId 此时还是 pending
+            // 所以先用 timestamp 命名，后面替换
+            savedImagePath = 'chat_images/pending_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            await ChatImageService.saveToDisk(
+              bytes: compressedForDisk,
+              dirPath: imagesDir,
+              fileName: savedImagePath.split('/').last,
+            );
+          }
+        } catch (_) {
+          // 持久化失败不阻塞发送
+          savedImagePath = null;
+        }
+
+        // 2c. LLM 路径：原图 < 4MB 直接发，否则压缩
+        const llmMaxBytes = 4 * 1024 * 1024;
+        if (imageData.length > llmMaxBytes) {
+          llmImageData = await ChatImageService.compress(
+            rawBytes: imageData,
+            maxLongSide: 1024,
+            quality: 80,
+            maxBytes: llmMaxBytes,
+          );
+        }
+      }
+
+      // 3. 乐观追加用户消息到 state（不读磁盘）
       final timestamp = DateTime.now().toUtc().toIso8601String();
       final userMsg = SessionMessage(
         role: SessionRole.user,
@@ -401,25 +512,76 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
         status: SessionMessageStatus.done,
         imageData: imageData,
         imageMimeType: imageMimeType,
+        imagePath: savedImagePath,
       );
       final current = state.value ?? [];
       state = AsyncData([...current, userMsg]);
+
+      // 4. 磁盘写入（异步，不阻塞 UI），拿到真实 msgId
+      final sessionStore = await ref.read(sessionStoreProvider.future);
+      final realMsgId = await sessionStore.appendUserMessage(
+        nodeId: nodeId,
+        content: trimmed,
+        imagePath: savedImagePath,
+      );
+
+      // 4.1 如果保存了图片，用真实 msgId 重命名文件
+      if (savedImagePath != null) {
+        try {
+          final nodeStore = await ref.read(nodeStoreProvider.future);
+          final themeId = await nodeStore.getThemeIdByNodeId(nodeId);
+          if (themeId != null) {
+            final paths = await ref.read(appPathsProvider.future);
+            final imagesDir = '${paths.themesDir.path}/$themeId/$nodeId/images';
+            final oldFileName = savedImagePath.split('/').last;
+            final oldFile = File('$imagesDir/$oldFileName');
+            final newFileName = '$realMsgId.jpg';
+            final newFile = File('$imagesDir/$newFileName');
+            if (await oldFile.exists()) {
+              await oldFile.rename(newFile.path);
+            }
+            savedImagePath = 'chat_images/$newFileName';
+            // 更新 session.md 中的 imagePath
+            await sessionStore.updateMessageImagePath(
+              nodeId: nodeId,
+              msgId: realMsgId,
+              imagePath: savedImagePath,
+            );
+          }
+        } catch (e, st) {
+          final logger = await ref.read(appLoggerProvider.future);
+          await logger.error(e, st, hint: 'sendUserMessage.renameImage', attrs: {'nodeId': nodeId});
+        }
+      }
+
+      // 4.2 将内存 state 中的 pending msgId 替换为真实 msgId + imagePath
+      state = AsyncData((state.value ?? []).map((m) {
+        if (m.msgId == 'pending' && m.role == SessionRole.user) {
+          final updated = SessionMessage(
+            role: m.role,
+            timestampUtcIso8601: m.timestampUtcIso8601,
+            msgId: realMsgId,
+            body: m.body,
+            status: m.status,
+            imageData: m.imageData,
+            imageMimeType: m.imageMimeType,
+            imagePath: savedImagePath,
+          );
+          return updated;
+        }
+        return m;
+      }).toList());
+
+      // 4.3 重新捕获 state（含真实 msgId + imageData + imagePath），传给 LLM
       final messagesForLlm = state.value!;
 
-      // 3. 磁盘写入（异步，不阻塞 UI）
-      final sessionStore = await ref.read(sessionStoreProvider.future);
-      await sessionStore.appendUserMessage(nodeId: nodeId, content: trimmed);
-
-      // 4. 触发关键词榜 stale 检测（fire-and-forget，不阻塞主流程）
-      // - 方案：通过 NodeStore.getThemeIdByNodeId 反查 themeId
-      //   （避免改 ChatControllerParams 签名）
-      // - try-catch 包裹：异常静默吞掉，仅记录 trace，不阻塞 LLM 流式回复
+      // 5. 触发关键词榜 stale 检测（fire-and-forget）
       unawaited(_markStaleIfAnalyzed());
 
-      // 5. 触发 LLM 流
+      // 6. 触发 LLM 流（使用可能压缩过的 llmImageData）
       await _triggerLlmStream(
         messagesForLlm: messagesForLlm,
-        imageData: imageData,
+        imageData: llmImageData,
         imageMimeType: imageMimeType,
       );
     } catch (e, st) {
@@ -572,7 +734,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
 
     // 解析联网搜索状态
     final webSearch = _resolveWebSearch(providerConfig.type);
-    final client = LlmClient.forConfig(providerConfig, webSearch: webSearch);
+    final client = LlmClient.forConfig(providerConfig, webSearch: webSearch, model: model);
 
     // 更新 UI 状态（显示开始）
     state = AsyncData(history);
@@ -633,6 +795,39 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     dev.log('_resolveDeepThinking: model=$modelId enabled=$supported',
         name: 'chat_controller');
     return supported;
+  }
+
+  /// 判断当前对话解析出的模型是否支持视觉（图片）。
+  ///
+  /// 解析链与 [_triggerLlmStream] 一致：对话级 provider/model →
+  /// 第一个有 key 且有模型的 provider。优先用 provider 配置里的权威
+  /// capabilities（`model.supportsVision`），缺失时回退到关键词推断。
+  Future<bool> _currentModelSupportsVision() async {
+    String? providerId = _providerId;
+    String? modelId = _modelId;
+
+    if (providerId == null || modelId == null) {
+      final configStore = ref.read(llmConfigStoreProvider);
+      final providers = await configStore.loadAll();
+      for (final p in providers) {
+        final key = await configStore.readApiKey(p.id);
+        if (key.isNotEmpty && p.models.isNotEmpty) {
+          providerId = p.id;
+          modelId = p.models.first.id;
+          break;
+        }
+      }
+    }
+    if (modelId == null) return false;
+
+    if (providerId != null) {
+      final configStore = ref.read(llmConfigStoreProvider);
+      final provider = await configStore.getProvider(providerId);
+      final model = provider?.models.where((m) => m.id == modelId).firstOrNull;
+      if (model != null) return model.supportsVision;
+    }
+    // fallback：关键词推断（与 model.supportsVision 的来源一致）
+    return inferCapabilities(modelId).contains(ModelCapability.vision);
   }
 }
 
