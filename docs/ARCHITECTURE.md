@@ -93,12 +93,18 @@ lib/
       themes/                # ThemeListScreen, ThemeDetailScreen（主题列表 + 树视图）
       chat/                  # ChatScreen, ChatController（对话 + 流式回复）
       notes/                 # NoteBrowseScreen, NoteEditorScreen, NoteDetailScreen, NoteSelectScreen, NodeLocationPicker, GenerateTitleScreen（笔记）
+      lab/                   # LabPlaceholderScreen + KeywordRanking + ThinkingCollision + UserInputSummary（实验室功能）
       llm/                   # LlmProvidersScreen, LlmProviderDetailScreen（LLM 配置）
-      settings/              # SettingsScreen, SettingsController（设置页）
+      settings/              # SettingsScreen（设置页，通过搜索页齿轮按钮进入，非 tab）
       search/                # SearchScreen（全文搜索）
+      doc_split/             # DocSplitInputScreen（文档拆分工具，独立入口）
   l10n/
     generated/               # 自动生成的国际化文件
 ```
+
+### Tab 结构（4 tab）
+
+底部 tab bar 共 4 项：搜索 / 主题 / 笔记 / Lab。Settings 从 tab 移至搜索页顶栏右上角齿轮按钮（`context.push('/settings')`），作为外层 `GoRoute` 与 `/llm-providers` 同层。
 
 ### 模块职责（精简版，详细见 `docs/modules/<name>/README.md`）
 
@@ -111,9 +117,11 @@ lib/
 | Themes | `lib/ui/features/themes/` | `docs/modules/themes/` | 主题列表 + 树视图 |
 | Chat | `lib/ui/features/chat/` | `docs/modules/chat/` | 对话 + 流式回复 |
 | Notes | `lib/ui/features/notes/` | `docs/modules/notes/` | 笔记浏览/编辑/详情 |
+| Lab | `lib/ui/features/lab/` | `docs/modules/lab/` | 实验室功能（关键词排行榜、输入摘要等） |
 | LLM | `lib/ui/features/llm/` | `docs/modules/llm/` | LLM Provider 配置 |
-| Settings | `lib/ui/features/settings/` | `docs/modules/settings/` | 设置页 |
+| Settings | `lib/ui/features/settings/` | `docs/modules/settings/` | 设置页（通过搜索页齿轮进入，非 tab） |
 | Search | `lib/ui/features/search/` | `docs/modules/search/` | 全文搜索 |
+| DocSplit | `lib/ui/features/doc_split/` | (无) | 文档拆分工具（独立入口） |
 
 ### 关键类型
 

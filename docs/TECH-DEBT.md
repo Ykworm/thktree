@@ -6,14 +6,11 @@
 | 项目 | 严重程度 | 说明 | 记录日期 |
 |------|----------|------|----------|
 | `appPathsProvider` 未就绪时笔记列表短暂空态 | 中 | 笔记模块 CHANGELOG § 5 已记；`_loadThemeNotes` 已改为 `await ref.read(appPathsProvider.future)`，但未完成前页面会闪一下空列表 | 2026-06-07 |
-| `BiometricService` 已实现但 `AuthGate` 未接线 | 中 | settings 模块 feature 表"生物认证（Face ID）"标 🔨 进行中；服务在但启动时的鉴权门未完成 | 2026-06-07 |
-| `ShareService` + `ShareCardWidget` 存在但分享流程未闭环 | 中 | settings 模块 feature 表"分享功能"标 🔨 部分实现，缺触发入口/分享内容生成 | 2026-06-07 |
-| 标题自动建议触发时机未集成 | 中 | chat 模块 `TitleSuggestionService` 已写，但"何时调用"（首次进入/对话超过 N 轮/手动按钮）决策未定 | 2026-06-07 |
-| LLM 模型列表刷新 UI 未完成 | 低 | `ModelFetcher` 存在但模型列表手动刷新的入口/UI 未实现 | 2026-06-07 |
-| 全文搜索结果准确性未做对比测试 | 低 | SQLite FTS5 + BM25 已上线，无 query 质量基线，5 套配色方案行高 56px 的实际体验数据未收集 | 2026-06-07 |
+| `ShareService` + `ShareCardWidget` 存在但分享流程未闭环 | 中 | settings 模块 feature 表“分享功能”标 🔨 部分实现，缺触发入口/分享内容生成 | 2026-06-07 |
 | `docs/_tmp/` 集成测试 report 缺定期清理机制 | 低 | 收尾流程已补充 planning doc 清理（步骤 5），但 report 文件（如 `step-timer-report.md`）保留策略未定：保留多少份、何时归档或删除、是否需要索引。需制定方案避免 `_tmp` 目录无限膨胀 | 2026-06-22 |
 | `autoTitleControllerProvider` 内存常驻 | 低 | 用 `ref.keepAlive()`（ADR-018）后 Notifier 实例永不被自动 dispose。每个 chat nodeId 一次任务完成后保留一个 AutoTitleController 实例（实测 ~100B/instance）。当前估算单次会话 1-2 个实例完全可接受。后续可考虑 WeakReference + 定时清理（暂不实施，待 keepAlive 任务累计超 1000 个再 review） | 2026-06-29 |
-| MiniMax 联网搜索未实现 | 中 | MiniMax 联网搜索需走 Assistants API（创建 Assistant → Thread → Run），与当前 `LlmClient` 接口（基于 Chat Completions API）架构差异较大。当前 MiniMax 在 `webSearchSupportMap` 中标为"支持"，但实际未实现 tool_calls 流程——用户开启联网开关后 MiniMax 请求不会携带搜索工具定义，返回结果无网页引用。需评估三个方案：方案 A 为 MiniMax 单独实现 Assistants API 客户端（工程量大，需新建 `MiniMaxAssistantClient`，引入 Assistant/Thread/Run 三阶段生命周期管理）；方案 B 调研 MiniMax Chat Completions API 是否也支持 `web_search` 类似能力（若有则可复用 `LlmClient` 现有架构，代价最小）；方案 C 暂时将 MiniMax 从 `webSearchSupportMap` 中移除，避免 UI 显示"支持"但实际无效的误导。建议优先尝试方案 B | 2026-07-04 |
+| MiniMax 联网搜索未实现 | 中 | MiniMax 联网搜索需走 Assistants API（创建 Assistant → Thread → Run），与当前 `LlmClient` 接口（基于 Chat Completions API）架构差异较大。当前 MiniMax 在 `webSearchSupportMap` 中标为“支持”，但实际未实现 tool_calls 流程——用户开启联网开关后 MiniMax 请求不会携带搜索工具定义，返回结果无网页引用。需评估三个方案：方案 A 为 MiniMax 单独实现 Assistants API 客户端（工程量大，需新建 `MiniMaxAssistantClient`，引入 Assistant/Thread/Run 三阶段生命周期管理）；方案 B 调研 MiniMax Chat Completions API 是否也支持 `web_search` 类似能力（若有则可复用 `LlmClient` 现有架构，代价最小）；方案 C 暂时将 MiniMax 从 `webSearchSupportMap` 中移除，避免 UI 显示“支持”但实际无效的误导。建议优先尝试方案 B | 2026-07-04 |
+| release 模式本地日志未禁用 | 低 | AppLogger._append 在 release 模式仍写本地文件，长期累积占存储。已修复：release 模式跳过本地文件写入 + 启动时清理 3 天前日志 + Settings 页 release 模式隐藏日志入口 | 2026-07-07 |
 
 ---
 
@@ -36,4 +33,8 @@
 | 缺少 expand all / collapse all | 低 | 复杂树结构无批量折叠/展开操作。可在 NavBar trailing 加按钮或长按弹 action sheet | 2026-06-11 |
 | RepaintBoundary 隔离 | 低 | 每个 _TreeRowView 都是 DragTarget，hover 时 setState 触发整棵树重绘。4 层深度上限后 widget 数量可控，暂不处理 | 2026-06-11 |
 | `getSessionPathForNode` 全量 reindex 导致嵌套事务崩溃 | 统一 disk-first 写入顺序 + 启动轻量 syncFromDisk（见 [DECISIONS.md ADR-014](DECISIONS.md#adr-014-db-一致性保障统一-disk-first-写入顺序--启动轻量同步)） | 2026-06-22 |
+| BiometricService + AuthGate 已完成 | AuthGate 已接线 main.dart，Face ID 验证功能正常运行 | 2026-07-07 |
+| 标题自动建议触发时机已集成 | AutoTitleController + TitleSuggestionScreen + 三层 LLM 配置守卫，空白分支自动 title 已实现 | 2026-07-07 |
+| LLM 模型列表刷新 UI | Preset 模式固定厂商，无需手动刷新列表；LlmProviderDetailScreen 的 fetchModels 按钮满足首次配置需求 | 2026-07-07 |
+| release 模式本地日志堆积 | release 模式跳过本地文件写入 + 启动时清理 3 天前日志 + Settings 页 release 模式隐藏日志入口 | 2026-07-07 |
 

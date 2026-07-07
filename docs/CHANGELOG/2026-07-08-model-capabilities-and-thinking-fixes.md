@@ -90,3 +90,35 @@
   - DeepSeek 模型下图片按钮消失（符合「公开 API 不支持视觉」预期）。
   - **豆包 Seed-2.1-turbo / 2.1-pro** → 只发图片不写文字，自动填充"描述这张图片"，不再 400。
 - 代码改动随本文档一并 commit；未执行 ctsync（用户确认不需）。
+
+---
+
+## Seed-2.0-pro 模型 ID 修正（2026-07-08 补丁）
+
+### 问题
+
+`doubao-seed-2-0-pro`（无日期后缀）在火山方舟 ARK API 上调用失败。ARK 实际要求带日期后缀的 Model ID（如 `doubao-seed-2-0-pro-260215`），无后缀的旧 ID 已不可用。
+
+### 改动
+
+**1. 白名单 ID 修正**（`lib/data/services/model_fetcher.dart`）
+
+- `_doubaoWhitelist` 中 `'doubao-seed-2-0-pro'` → `'doubao-seed-2-0-pro-260215'`
+- 显示名保持 `Doubao-Seed-2.0-pro` 不变
+
+**2. `isModelWebSearchUnsupported` 逻辑修正**（`lib/data/models/llm_provider_config.dart`）
+
+原逻辑：只要模型 ID 包含 `doubao-seed-2-0-pro` 就返回 `true`（不支持联网），会误伤带日期后缀的新模型。
+
+修正后：先匹配 `doubao-seed-2-0-pro` 子串，再检查是否有 `-\d{6}$` 日期后缀。有后缀 → 支持联网（`false`）；无后缀 → 不支持（`true`）。
+
+**3. `webSearchSupportMap` 豆包条目**（`lib/data/models/llm_provider_config.dart`）
+
+- `LlmProviderType.doubao: WebSearchSupport.unsupported` → `supported`
+- 联网判断从 provider 级粗粒度切换到 `isModelWebSearchUnsupported` 模型级精确判定
+
+### 连带效果
+
+- 新模型 `doubao-seed-2-0-pro-260215` 命中 `_doubaoSupportsResponsesApi`（260215 ≥ 250615），走 **Responses API**（`DoubaoResponsesClient`），不再走 legacy Chat Completions
+- 联网搜索对新模型可用（`isModelWebSearchUnsupported` 返回 `false`）
+- 无后缀的旧模型 ID 仍兼容（`inferCapabilities` 基于子串匹配），但网络搜索被禁用

@@ -35,7 +35,7 @@
 │                                                      │
 │  ┌─────────────────────────────────────────────────┐ │
 │  │ ChatComposer（输入框）                           │ │
-│  │ [消息输入...                    ] [模型] [发送↑] │ │
+│  │ [消息输入...                    ] [发送↑] │ │
 │  └─────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
                     │
@@ -119,14 +119,14 @@ CupertinoPageScaffold(
 
 ## 3. ChatComposer
 
-底部输入框，包含文本输入 + 发送/停止按钮 + 模型选择入口。
+底部输入框，包含文本输入 + 发送/停止按钮（模型选择入口已移至导航栏 middle）。
 
 | 元素 | 行为 |
 |------|------|
 | 输入框 | `ThkTextField`，placeholder 由 `hintText` 控制 |
 | 发送按钮 | `AppIcons.send`，`onSend(text)` 回调 |
 | 停止按钮 | `AppIcons.stop`，`isStreaming` 为 true 时替换发送按钮 |
-| 模型选择 | `AppIcons.modelSelector`，点击弹出 `ModelSelectorPanel` |
+| 模型选择 | 导航栏 middle（当前模型名 + ▾）点击弹出 `ModelSelectorPanel` |
 | 键盘 | 点击消息列表区域 `FocusScope.unfocus()` 收起键盘 |
 
 ---
@@ -151,7 +151,7 @@ CupertinoPageScaffold(
 
 | 属性 | 值 |
 |------|-----|
-| 触发 | ChatComposer 中模型选择按钮 |
+| 触发 | 导航栏 middle（当前模型名）点击 |
 | 内容 | Provider 分组，每组下列出模型列表 |
 | 选择 | 点击模型 → 更新当前对话的 providerId + modelId |
 | 显示 | 当前选中模型高亮 |
@@ -161,7 +161,7 @@ CupertinoPageScaffold(
 
 - 外部 tap：消息列表 / context bar / ChatComposer 区域 / 标题栏空白 → 关闭 panel
 - 内部 tap：模型项 → 选中并关闭 panel（已有逻辑）
-- 模型按钮再次点击：切换 panel 显隐（已有逻辑）
+- 导航栏 middle 再次点击：切换 panel 显隐（已有逻辑）
 - 输入框 tap：用 `Listener(onPointerDown)` 拦截，避免与 TextField 的 `TapGestureRecognizer` 在 arena 中冲突导致外层 GestureDetector 失效
 - 透明遮罩：`Positioned.fill(GestureDetector(behavior: translucent))`，子节点 `_ModelItem` 的 `GestureDetector(opaque)` 在 arena 中胜出
 

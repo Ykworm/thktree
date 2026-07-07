@@ -16,20 +16,20 @@
 
 - 流式对话（SSE）：打字机效果逐字渲染 LLM 回复
 - 多消息分支：单节点内可编辑/重试生成新回复
-- 模型选择：对话页内切换 LLM（panel 抽屉）
+- 模型选择：对话页内切换 LLM（panel 抽屉），从导航栏 middle（当前模型名 + ▾）点击触发
 - 自动续聊：从笔记节点跳入对话时，自动用笔记内容作为上下文发起新对话
 - 消息编辑：编辑用户消息后重发，仅影响当前节点
 - 消息复制：长按复制单条消息
 - **空白分支自动 title 持久化**（2026-06-29）：空白分支（A 模式）chat 流式结束后由 `AutoTitleController`（`lib/ui/features/chat/auto_title_controller.dart`，按 `nodeId` family）自动 LLM 生成 title 并写入 DB + refresh tree；`ref.keepAlive()` 保活，user 提前 pop 也能后台跑完（详见 [ADR-018](../../DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式)）
 - iOS 后台中断恢复：App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队（仅 iOS，详见 [ADR-015](../../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界)）
-- 联网搜索开关（`ChatComposer`）：输入框区域新增联网搜索按钮，位于模型选择器和发送按钮之间
+- 联网搜索开关（`ChatComposer`）：输入框下方统一底边栏中的联网搜索按钮，与深度思考、图片按钮并列
   - 参数：`webSearchEnabled`（bool，当前开关状态）、`webSearchSupported`（bool，当前模型是否支持）、`onWebSearchToggle`（VoidCallback?，null 时不显示按钮）
   - 图标：地球图标，开启时蓝色、关闭时灰色；不支持时灰色不可点击，tooltip 提示"当前模型不支持联网搜索"
 - 深度思考开关（`ChatComposer`，2026-07-06）：与联网搜索 chip 完全镜像的模式，紧挨在联网搜索右侧。两种形态互斥显示：
-  - **opt-in**（`ModelCapability.deepThinking`）：显示可点击的"深度思考"chip，离散色 + sparkle icon，点开变紫。命中模型：DeepSeek V4-Pro / V4-Flash / `deepseek-reasoner` / MiniMax-M3。M3 必须显式传 `thinking: true`（MiniMax-M3 默认**不**输出 `reasoning_content`，user 不开 toggle 就看不到思考）。
+  - **opt-in**（`ModelCapability.deepThinking`）：显示可点击的"深度思考"chip，离散色 + brain icon (AppIcons.brain)，点开变紫。命中模型：DeepSeek V4-Pro / V4-Flash / `deepseek-reasoner` / KIMI k2.6 / k2.5 / MiniMax-M3。M3 必须显式传 `thinking: true`（MiniMax-M3 默认**不**输出 `reasoning_content`，user 不开 toggle 就看不到思考）；KIMI 关闭时显式发 `thinking: {type: 'disabled'}`。
   - **always-on**（`ModelCapability.alwaysThinking`）：服务端锁定默认开，user 关不掉。UI 显示只读灰色"深度思考（默认）"chip，按下无响应。命中模型：豆包 Seed 2.1-pro / 2.1-turbo（方舟 ARK 服务端默认开启 thinking 且无法关闭）。
-  - 不支持 toggle 的模型（gpt-4o / claude-3 / claude-3.5 / kimi / mimo / gemini / custom）chip 不显示——既不浪费横向空间也不误导用户以为"关掉了"实际根本没开。
-  - 协议层：OpenAI 兼容路径按 provider 走不同 `thinking` 字段形态（豆包 `{type: 'enabled'}` / MiniMax `true` 布尔 / 其他不发）；Claude / Anthropic 路径（DeepSeek）走 `ClaudeClient`，body 注入 `thinking: {type: 'enabled'}`。stream 解析端 `_extractClaudeDelta` 显式判断 `delta.type` 分支：`thinking_delta` 读 `delta.thinking` 进 `reasoning`、`text_delta` 读 `delta.text`、`content_block_start` 同步处理 `type=thinking` block（见 [ADR-021](DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) 与 [ADR-022](DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。
+  - 不支持 toggle 的模型（gpt-4o / claude-3 / claude-3.5 / mimo / gemini / custom）chip 不显示——既不浪费横向空间也不误导用户以为"关掉了"实际根本没开。
+  - 协议层：OpenAI 兼容路径 `deepThinking && !hasImage` 时按 provider 走不同 `thinking` 字段形态（豆包 `{type: 'enabled'}` / MiniMax `true` 布尔 / KIMI `{type: 'enabled'}`）；关闭时 KIMI 显式下发 `{type: 'disabled'}`；Claude / Anthropic 路径（DeepSeek）走 `ClaudeClient`，开启注入 `{type: 'enabled'}`、关闭显式注入 `{type: 'disabled'}`。**思考与图片互斥**：含图片的请求自动关 thinking（图片优先），避免 MiniMax-M3 / KIMI 思考+图片同请求 4xx。stream 解析端 `_extractClaudeDelta` 显式判断 `delta.type` 分支：`thinking_delta` 读 `delta.thinking` 进 `reasoning`、`text_delta` 读 `delta.text`、`content_block_start` 同步处理 `type=thinking` block（见 [ADR-021](DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) 与 [ADR-022](DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。
   - 状态：per-session in-memory、**不持久化**——关闭聊天页或切换模型自动重置为 false。
 - 图片上传（`ChatComposer`，2026-07-05）：输入框底部图片按钮，支持的模型显示蓝色图标+文字，不支持变灰不可点击
   - 参数：`onImagePick`（VoidCallback?，null 时不显示）、`imageSupported`（bool，模型是否支持 vision）、`selectedImageData`/`selectedImageMimeType`（已选图片）
@@ -37,7 +37,7 @@
   - 选中后输入框上方显示 80x80 缩略图预览条（`_ImagePreview`），支持移除
   - 发送时 `imageData`/`imageMimeType` 随消息传入 `ChatController.sendUserMessage` → `ChatTaskService.startTask` → `_buildMessages` 构建多模态 content（按 client 类型生成对应协议格式：OpenAI `image_url` / Anthropic `image` / 豆包 Responses `input_image`）
   - 空文本兜底：只发图片不写文字时，`sendUserMessage` 自动填充默认提示 `'描述这张图片'`；`buildMultimodalContent` 也做同样兜底，避免豆包等模型因空 `input_text` 返回 400
-  - 模型 vision 能力自动检测：`ModelCapability.vision` + `model_capabilities.dart` 推断（gpt-4o / claude-3 / gemini / kimi-k2.5 / mimo-v2.5 / doubao-seed-2-1-pro / doubao-seed-2-1-turbo 等）
+  - 模型 vision 能力自动检测：`ModelCapability.vision` + `model_capabilities.dart` 推断（gpt-4o / claude-3 / gemini / kimi-k2.5 / kimi-k2.6 / minimax-m3 / mimo-v2.5 / doubao-seed-2-1-pro / doubao-seed-2-1-turbo 等）；UI 与发送侧均有 `inferCapabilities` fallback，**DeepSeek V4 公开 API 不支持视觉**，不在 vision 列表内
   - iOS 权限：`NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription`
 - 消息时间戳（2026-07-04）：assistant 消息气泡上方显示人类可读时间，`formatMessageTime` 支持 4 级格式（今天 `HH:mm` / 昨天 / 月日 / 跨年全日期）
 - Chat-to-Note（2026-07-04）：assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote` 回调），自动用当前主题创建笔记并跳转 `NoteEditorScreen`
@@ -55,7 +55,7 @@
 | `lib/data/services/chat_task_service.dart` | 服务层调度器：串行重发 queue + generation token + bridge.begin/end 包裹 + resumeInterrupted / cancelResumeQueue 入口 | 新增 |
 | `lib/data/services/background_task_bridge.dart` | iOS `beginBackgroundTask` MethodChannel 客户端（`begin()` / `end(taskId)`），可注入 | 新增 |
 | `ios/Runner/BackgroundTaskHandler.swift` | Swift MethodChannel handler + `UIApplication.beginBackgroundTask` 调用 + `expirationHandler` 释放 | 新增 |
-| `lib/ui/core/shared/chat_composer.dart` | 底部输入框（文本输入 + 发送/停止 + 模型选择 + 联网搜索开关 + 图片按钮 + 图片预览） | - |
+| `lib/ui/core/shared/chat_composer.dart` | 底部输入框（文本输入 + 发送/停止 + 联网搜索开关 + 深度思考开关 + 图片按钮 + 图片预览） | - |
 | `lib/ui/core/shared/message_bubble.dart` | 消息气泡（user + assistant，GptMarkdown 渲染 + LaTeX 注入 + 每张表格独立工具栏：复制/全屏按钮） | 388 |
 | `lib/ui/features/chat/widgets/chat_markdown_sheet.dart` | 查看原始 Markdown 底部 sheet（展示 session.md 内容 + 复制按钮） | 135 |
 | `lib/ui/core/shared/markdown_builders.dart` | GptMarkdown 自定义构建器（含 `buildLatex`——`FittedBox(scaleDown)` 包裹 `Math.tex`） | 61 |
@@ -100,3 +100,5 @@
 - 2026-06-29：`AutoTitleController` 上线（`lib/ui/features/chat/auto_title_controller.dart`，246 行）—— 空白分支流式结束后自动 LLM 补 title 并持久化，与 widget 生命周期解耦（`ref.keepAlive()`），user 提前 back 回 tree 也能后台完成。3 层守卫防 LLM 覆盖手动 title。集成测试 case 9.4 (DB check) / 9.5 (E2E) / 9.6 (提前 pop 后台完成) 加到 [branch-creation](../../_shared/integration-testing/branch-creation.md) § 3.5。详见 [ADR-018](../../DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [war-story](../../war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) + [CHANGELOG/2026-06-29](../../CHANGELOG/2026-06-29-auto-title-persistence.md)。
 - 2026-07-06：模型名显示——`SessionMessage` 新增 `modelId` 字段，`session.md` 消息头扩展可选 `· modelId`，`MessageBubble` 从 `llmProvidersProvider` 查模型名并显示在 assistant 标题后。详见 [CHANGELOG/2026-07-06](../../CHANGELOG/2026-07-06-chat-model-in-bubble.md)。
 - 2026-07-06：DeepSeek / MiniMax 思维链输出 + Per-session 深度思考开关 + 重发 bug 修复——`_extractClaudeDelta` 补全 `thinking_delta` 解析（修复 DeepSeek-reasoner / V4 等看不见 thinking 的零回报 bug，见 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析)）；新增 `ModelCapability.deepThinking` / `ModelCapability.alwaysThinking` 双 cap 区分（opt-in / 服务端锁定默认开），ChatComposer 加深度思考 chip 镜像 web search 模式；`retryLastMessage` 抽 `_triggerLlmStream` helper，**重发不再重复追加 user 消息**（修复 session.md 每次重发多一份 user 的 bug，见 [ADR-023](../../DECISIONS.md#adr-023-retrylastmessage-重构避免重发重复追加-user-消息)）。详见 [CHANGELOG/2026-07-06](../../CHANGELOG/2026-07-06-deepthinking-toggle.md)。
+- 2026-07-08：模型能力集中校正——KIMI k2.6/k2.5 加入深度思考（关闭显式 `disabled`）；DeepSeek 关闭思考显式发 `disabled`；MiniMax-M3 / KIMI 思考+图片互斥（`!hasImage` 守卫）；KIMI 白名单收窄到 k2.6/k2.5、MiniMax 到 M3；Seed-2.0-pro 联网模型级屏蔽；UI/发送侧 vision 加 `inferCapabilities` fallback；DeepSeek V4 公开 API 不支持视觉已回退视觉代码。详见 [CHANGELOG/2026-07-08](../../CHANGELOG/2026-07-08-model-capabilities-and-thinking-fixes.md)。
+- 2026-07-08（补丁）：Seed-2.0-pro 模型 ID 修正——白名单 `doubao-seed-2-0-pro` → `doubao-seed-2-0-pro-260215`（ARK API 要求带日期后缀，旧 ID 调用失败）；`isModelWebSearchUnsupported` 改为仅屏蔽无日期后缀的旧模型（有后缀的 `260215` 版本支持联网）；新模型走 Responses API（`DoubaoResponsesClient`）而非 legacy Chat Completions。

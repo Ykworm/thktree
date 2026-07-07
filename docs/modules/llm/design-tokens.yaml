@@ -98,6 +98,7 @@ constraints:
   - "ConfigBasedOpenAiCompatibleClient 支持 tool_calls 多轮交互（联网搜索场景）"
   - "KIMI 使用 builtin_function.$web_search 工具声明 + 自动禁用 thinking；其他 provider 使用 function web_search"
   - "WebSearchSupport 枚举（supported / unsupported）+ webSearchSupportMap 硬编码映射"
+  - "isModelWebSearchUnsupported(modelId) 模型级联网判断——豆包 doubao-seed-2-0-pro 无日期后缀返回 true（不支持联网），有后缀（如 -260215）返回 false"
   - "visibleProviderTypes 过滤设置页提供商列表（只显示 KIMI / MiniMax / MIMO / DeepSeek）"
 
 # ============================================================
@@ -110,3 +111,4 @@ history:
   - "2026-05: API key 改用 Keychain 加密"
   - "2026-06: 模型预置 + 默认参数功能"
   - "2026-07: 联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）"
+  - "2026-07-08: Seed-2.0-pro 模型 ID 修正（doubao-seed-2-0-pro → doubao-seed-2-0-pro-260215）+ isModelWebSearchUnsupported 模型级联网判断 + webSearchSupportMap 豆包改 supported"

@@ -77,7 +77,8 @@ enum WebSearchSupport {
 ```
 
 - **`visibleProviderTypes`**：设置页面只显示 KIMI、MiniMax、MIMO、DeepSeek 四个提供商（OpenAI / Anthropic / Gemini / 自定义暂不发布）
-- **`webSearchSupportMap`**：硬编码各提供商联网支持状态（当前四家全部 `supported`，新模型接入时更新此映射）
+- **`webSearchSupportMap`**：硬编码各提供商联网支持状态（当前五家全部 `supported`，新模型接入时更新此映射）
+- **`isModelWebSearchUnsupported(modelId)`**：模型级联网判断——豆包 `doubao-seed-2-0-pro` 无日期后缀返回 `true`（legacy Chat Completions 不支持联网），有后缀（如 `-260215`）返回 `false`（走 Responses API 支持联网）
 
 | 提供商 | 联网搜索 | 实现方式 |
 |--------|---------|---------|
@@ -85,6 +86,7 @@ enum WebSearchSupport {
 | MiniMax | ✅（待定） | Assistants API 架构差异大，暂未实现 |
 | MIMO | ✅ | Chat Completions API + `web_search` 工具声明 |
 | DeepSeek | ✅ | Anthropic 兼容 Messages API + `web_search_20260209` 工具（**全量**走 Anthropic 协议，不仅 web search） |
+| 豆包 | ✅（模型级） | Responses API 内置 `web_search`（仅 250615+ 版本模型）；`isModelWebSearchUnsupported` 屏蔽无后缀旧模型 |
 
 ## 深度思考支持（per-session toggle，2026-07-06）
 
@@ -94,12 +96,13 @@ enum WebSearchSupport {
 
 | 模型 / Provider | 推理类型 | 客户端处理 | 协议层参数 shape |
 |---|---|---|---|
-| DeepSeek V4-Pro / V4-Flash / `deepseek-reasoner` | opt-in（user 可 toggle） | ClaudeClient（Anthropic 兼容路径） | `thinking: {type: 'enabled'}` |
-| MiniMax-M3（任意变体） | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | `thinking: true`（**布尔**，字符串"true"会 400） |
+| DeepSeek V4-Pro / V4-Flash / `deepseek-reasoner` | opt-in（user 可 toggle） | ClaudeClient（Anthropic 兼容路径） | 开：`thinking: {type: 'enabled'}`；**关：显式 `thinking: {type: 'disabled'}`**（DeepSeek 服务端默认 enabled，不传字段等于开，故关闭必须显式 disabled） |
+| KIMI k2.6 / k2.5 | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | 开：`thinking: {type: 'enabled'}`；关：`thinking: {type: 'disabled'}` |
+| MiniMax-M3 | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | 开：`thinking: true`（**布尔**，字符串"true"会 400）；**含图片时自动放弃 thinking（`!hasImage` 守卫）** |
 | 豆包 Seed 2.1-pro / 2.1-turbo | 服务端锁定默认开 | `ConfigBasedOpenAiCompatibleClient` | 服务端默认开，**不**传参数 |
-| 其他（gpt-4o / claude-3 / claude-3.5 / kimi / mimo / gemini / custom） | 不支持 | — | 不发 `thinking` 参数；chip 不显示 |
+| 其他（gpt-4o / claude-3 / claude-3.5 / mimo / gemini / custom） | 不支持 | — | 不发 `thinking` 参数；chip 不显示 |
 
-`LlmClient.streamChatCompletion` 新增 `deepThinking: bool = false` 参数（默认关）。OpenAI 兼容路径 `if (deepThinking)` 按 provider name 决定参数形态；ClaudeClient 路径无条件注入 `thinking: {type: 'enabled'}`。chat_controller 上游用 `inferCapabilities(modelId)` 二次校验——能力不足的模型 deepThinking 参数**根本不会传 true**，避免发到不支持的 endpoint 触发 400。
+`LlmClient.streamChatCompletion` 新增 `deepThinking: bool = false` 参数（默认关）。OpenAI 兼容路径 `if (deepThinking && !hasImage)` 按 provider name 决定参数形态；关闭时（`!webSearch && !hasImage && kimi/moonshot && caps.contains(deepThinking)`）下发 `{type:'disabled'}`；ClaudeClient 路径对 DeepSeek 推理模型在关闭时显式注入 `thinking: {type: 'disabled'}`。**思考与图片互斥**：`ConfigBasedOpenAiCompatibleClient` 新增 `_messagesContainImage` 判断，含图片的请求不传 thinking/webSearch（图片优先），避免 MiniMax-M3 / KIMI 同请求开启思考+图片触发 4xx。chat_controller 上游用 `inferCapabilities(modelId)` 二次校验——能力不足的模型 deepThinking 参数**根本不会传 true**，避免发到不支持的 endpoint 触发 400。
 
 stream 解析端 `_extractClaudeDelta`（Anthropic 协议）在 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) 后支持完整的事件分支：
 - `content_block_delta.type == 'thinking_delta'` → 读 `delta.thinking` 进 `reasoning`
@@ -120,6 +123,11 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 
 **空文本兜底**：`buildMultimodalContent` 检测到 `text.isEmpty && imageData != null` 时自动填充 `'描述这张图片'`，避免豆包等模型因空 `input_text` 块返回 400。
 
+## 视觉能力（vision）
+
+- `ModelCapability.vision` 由 `model_capabilities.dart` 的 `inferCapabilities(modelId)` 关键词映射推断；UI（`chat_screen._isImageSupported`）与发送侧（`chat_controller._currentModelSupportsVision`）均加了 `inferCapabilities` 实时 fallback：缓存的 `provider.models` 里 `supportsVision` 为 false 时回退到关键词映射，改能力映射后**热重启即生效**，无需重新拉模型列表。
+- **DeepSeek V4 公开 API 不支持视觉/图片输入**（仅文本/Thinking/工具/JSON/FIM）；网页版 D-Chat 识图是独立管线，不走公开 API。故 `deepseek-v4-pro/flash` 在 capability 映射中**无 vision**，UI 不显示图片按钮、发送在 capability 层即被拦。`forConfig` 不为 DeepSeek 图片走 OpenAI 端点（继续走 Anthropic 兼容路径，图片请求本就不该到达）。`chat_task_service._buildMessages` 将图片 content 构造委托给 `client.buildMultimodalContent`，由各 client 决定 OpenAI `image_url` / Anthropic `image` 格式。
+
 ## 维护要点
 
 - 改 LLM 配置前必读 [DECISIONS.md ADR-006](../../DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage)（SSE 流式 + Key 存储）
@@ -128,7 +136,8 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 - Provider 删除是软删除（标记 isDeleted），避免历史对话失去模型引用
 - 注意 Provider 配置变更后，正在进行的对话不会被中断（chat 已缓存当时的 client）
 - Provider 列表页的标题、副标题和 chevron 是核心信息；厂商图标仅在拿到可信品牌资产时再加
-- 联网搜索：新增提供商时同步更新 `webSearchSupportMap` + `visibleProviderTypes`
+- 联网搜索：新增提供商时同步更新 `webSearchSupportMap` + `visibleProviderTypes`；模型级联网屏蔽用 `isModelWebSearchUnsupported`（如 `doubao-seed-2-0-pro` 无后缀旧 ID）
+- 模型清单过滤：KIMI 只保留 `k2.6`/`k2.5`、MiniMax 只保留 `M3`（白名单在 `model_fetcher._kimiWhitelist` / `_minimaxWhitelist`，与豆包同构）；新增模型白名单在 `model_fetcher` 维护
 
 ## 相关历史
 
@@ -144,3 +153,4 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 - 2026-07-06：Per-session 深度思考开关上线——`LlmClient.streamChatCompletion` 新增 `deepThinking` 参数；OpenAI 兼容路径按 provider 分支（豆包 `{type: 'enabled'}` / MiniMax-M3 `true`）/ Claude 路径注入 `{type: 'enabled'}`；`ModelCapability` 加 `deepThinking` + `alwaysThinking` 双 cap 区分（详见 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) + [ADR-022](../../DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。`doubao-seed-2-0-lite-250528` 从豆包 whitelist 移除（方舟端不可达，留着会引导到死路径）
 - 2026-07-08：Seed-2.0-pro 模型 ID 修正——`doubao-seed-2-0-pro`（无日期后缀）在 ARK API 调用失败，白名单改为 `doubao-seed-2-0-pro-260215`；`isModelWebSearchUnsupported` 改为仅屏蔽无后缀的旧模型；`webSearchSupportMap` 豆包条目改 `supported`，联网判断收敛到模型级
 - 2026-07-08：豆包 Responses API 图片格式修正——`DoubaoResponsesClient.buildMultimodalContent` 图片类型从 `image_url` 改为 `input_image`，`image_url` 从对象改为直接字符串；空文本时自动填充默认提示；`chat_controller.sendUserMessage` 同步处理
+- 2026-07-08：模型能力集中校正（CHANGELOG [2026-07-08](../CHANGELOG/2026-07-08-model-capabilities-and-thinking-fixes.md)）——KIMI k2.6/k2.5 加入 `deepThinking`（OpenAI 路径 `thinking:{type:enabled}`、关闭显式 `disabled`）；DeepSeek 关闭思考显式发 `disabled`；MiniMax-M3 / KIMI **思考+图片互斥**（`!hasImage` 守卫，含图请求自动放弃 thinking/webSearch）；KIMI 白名单收窄到 k2.6/k2.5、MiniMax 到 M3；Seed-2.0-pro 联网由 `isModelWebSearchUnsupported` 模型级屏蔽；UI/发送侧 vision 判定加 `inferCapabilities` fallback；**DeepSeek V4 公开 API 不支持视觉**，回退所有 DeepSeek 视觉代码
