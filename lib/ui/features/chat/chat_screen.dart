@@ -287,7 +287,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // 联网搜索状态
     final currentProviderType = chatCtrl.providerType;
     final webSearchSupported = currentProviderType != null &&
-        webSearchSupportMap[currentProviderType] == WebSearchSupport.supported;
+        webSearchSupportMap[currentProviderType] == WebSearchSupport.supported &&
+        !isModelWebSearchUnsupported(currentModelId ?? '');
     final webSearchEnabled = webSearchSupported &&
         (settings?.isWebSearchEnabled(currentProviderType.name) ?? true);
 
@@ -304,12 +305,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     final modelSubtitle = _resolveModelSubtitle(effectiveProviderId, effectiveModelId);
 
+    // 模型选择面板切换逻辑：原绑定输入栏 sparkles 按钮，现挂到导航栏 middle
+    final toggleModelPanel = () {
+      if (isStreaming) return;
+      FocusScope.of(context).unfocus();
+      var nextProviderId = currentProviderId;
+      var nextModelId = currentModelId;
+      if (nextProviderId == null || nextModelId == null) {
+        final providers = ref.read(llmProvidersProvider).value;
+        if (providers != null) {
+          for (final p in providers) {
+            if (p.models.isNotEmpty) {
+              nextProviderId = p.id;
+              nextModelId = p.models.first.id;
+              break;
+            }
+          }
+        }
+      }
+      if (!_showModelPanel && nextProviderId != null && nextModelId != null) {
+        _panelProviderId = nextProviderId;
+        _panelModelId = nextModelId;
+        if (chatCtrl.providerId == null || chatCtrl.modelId == null) {
+          ref.read(chatControllerProvider(_args).notifier).switchModel(nextProviderId!, nextModelId!);
+        }
+      }
+      setState(() => _showModelPanel = !_showModelPanel);
+    };
+
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: '',
         middle: GestureDetector(
-          onDoubleTap: () => _chatListKey.currentState?.scrollToTop(),
+          onTap: toggleModelPanel,
+          behavior: HitTestBehavior.opaque,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -319,14 +349,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               if (modelSubtitle != null)
-                Text(
-                  modelSubtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      modelSubtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      AppIcons.chevronDown,
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
                 ),
             ],
           ),
@@ -478,32 +519,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   onStopStreaming: () async {
                     await ref.read(chatControllerProvider(_args).notifier).stopStreaming();
                   },
-                  onModelSelectorTap: () {
-                    if (isStreaming) return;
-                    FocusScope.of(context).unfocus();
-                    var nextProviderId = currentProviderId;
-                    var nextModelId = currentModelId;
-                    if (nextProviderId == null || nextModelId == null) {
-                      final providers = ref.read(llmProvidersProvider).value;
-                      if (providers != null) {
-                        for (final p in providers) {
-                          if (p.models.isNotEmpty) {
-                            nextProviderId = p.id;
-                            nextModelId = p.models.first.id;
-                            break;
-                          }
-                        }
-                      }
-                    }
-                    if (!_showModelPanel && nextProviderId != null && nextModelId != null) {
-                      _panelProviderId = nextProviderId;
-                      _panelModelId = nextModelId;
-                      if (chatCtrl.providerId == null || chatCtrl.modelId == null) {
-                        ref.read(chatControllerProvider(_args).notifier).switchModel(nextProviderId!, nextModelId!);
-                      }
-                    }
-                    setState(() => _showModelPanel = !_showModelPanel);
-                  },
                   webSearchEnabled: webSearchEnabled,
                   webSearchSupported: webSearchSupported,
                   onWebSearchToggle: webSearchSupported
@@ -608,8 +623,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final provider = providers.where((p) => p.id == providerId).firstOrNull;
     if (provider == null) return false;
     final model = provider.models.where((m) => m.id == modelId).firstOrNull;
-    if (model == null) return false;
-    return model.supportsVision;
+    // 优先用持久化的权威 capabilities；命中且为 true 直接返回，
+    // 否则回退到关键词实时推断（与 [_isDeepThinkingSupported] 逻辑保持一致），
+    // 避免改了能力映射表后必须重新拉取模型列表才生效。
+    if (model?.supportsVision ?? false) return true;
+    return inferCapabilities(modelId).contains(ModelCapability.vision);
   }
 
   /// 当前模型是否支持深度思考（基于 model id 关键词匹配白名单）

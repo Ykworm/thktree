@@ -445,6 +445,12 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       // 允许只发图片不发文本
       if (trimmed.isEmpty && imageData == null) return;
 
+      // 如果只有图片没有文本，添加默认提示
+      String effectiveText = trimmed;
+      if (effectiveText.isEmpty && imageData != null) {
+        effectiveText = '描述这张图片';
+      }
+
       // 防御：非视觉模型拒绝带图发送。
       // 即使 UI 的图片按钮（bug C）在某些情况下未禁用，也避免把图片发给
       // 不支持视觉的模型导致失败，进而触发 retry → 重建连锁损坏历史消息。
@@ -508,7 +514,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
         role: SessionRole.user,
         timestampUtcIso8601: timestamp,
         msgId: 'pending',
-        body: trimmed,
+        body: effectiveText,
         status: SessionMessageStatus.done,
         imageData: imageData,
         imageMimeType: imageMimeType,
@@ -521,7 +527,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       final sessionStore = await ref.read(sessionStoreProvider.future);
       final realMsgId = await sessionStore.appendUserMessage(
         nodeId: nodeId,
-        content: trimmed,
+        content: effectiveText,
         imagePath: savedImagePath,
       );
 
@@ -733,7 +739,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     final history = currentMessages ?? await _read();
 
     // 解析联网搜索状态
-    final webSearch = _resolveWebSearch(providerConfig.type);
+    final webSearch = _resolveWebSearch(providerConfig.type, model);
     final client = LlmClient.forConfig(providerConfig, webSearch: webSearch, model: model);
 
     // 更新 UI 状态（显示开始）
@@ -761,9 +767,13 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   }
 
   /// 解析当前提供商的联网搜索是否应该开启
-  bool _resolveWebSearch(LlmProviderType? providerType) {
+  bool _resolveWebSearch(LlmProviderType? providerType, String modelId) {
     if (providerType == null) {
       dev.log('_resolveWebSearch: providerType=null → false', name: 'chat_controller');
+      return false;
+    }
+    if (isModelWebSearchUnsupported(modelId)) {
+      dev.log('_resolveWebSearch: model=$modelId unsupported → false', name: 'chat_controller');
       return false;
     }
     final support = webSearchSupportMap[providerType];
@@ -801,7 +811,9 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   ///
   /// 解析链与 [_triggerLlmStream] 一致：对话级 provider/model →
   /// 第一个有 key 且有模型的 provider。优先用 provider 配置里的权威
-  /// capabilities（`model.supportsVision`），缺失时回退到关键词推断。
+  /// capabilities（`model.supportsVision`）；命中且为 true 直接返回，
+  /// 否则回退到关键词实时推断（与 UI 侧 [_isImageSupported] 逻辑保持一致），
+  /// 避免改了能力映射表后必须重新拉取模型列表才生效。
   Future<bool> _currentModelSupportsVision() async {
     String? providerId = _providerId;
     String? modelId = _modelId;
@@ -824,9 +836,12 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       final configStore = ref.read(llmConfigStoreProvider);
       final provider = await configStore.getProvider(providerId);
       final model = provider?.models.where((m) => m.id == modelId).firstOrNull;
-      if (model != null) return model.supportsVision;
+      // 优先用持久化的权威 capabilities；命中且为 true 直接返回，
+      // 否则回退到关键词实时推断（与 UI 侧 [_isImageSupported] 逻辑保持一致），
+      // 避免改了能力映射表后必须重新拉取模型列表才生效。
+      if (model?.supportsVision ?? false) return true;
     }
-    // fallback：关键词推断（与 model.supportsVision 的来源一致）
+    // fallback：关键词实时推断（与 model.supportsVision 的来源一致）
     return inferCapabilities(modelId).contains(ModelCapability.vision);
   }
 }

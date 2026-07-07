@@ -62,8 +62,21 @@ const Map<LlmProviderType, WebSearchSupport> webSearchSupportMap = {
   LlmProviderType.minimax: WebSearchSupport.supported,
   LlmProviderType.mimo: WebSearchSupport.supported,
   LlmProviderType.deepseek: WebSearchSupport.supported,
-  LlmProviderType.doubao: WebSearchSupport.unsupported,
+  LlmProviderType.doubao: WebSearchSupport.supported,
 };
+
+/// 某些具体模型虽属于「支持联网」的提供商，但该模型自身走 legacy 路径，
+/// 实际无法联网搜索。在 UI 可见性与发送侧统一排除，避免显示无效按钮。
+///
+/// 例：豆包 Seed-2.0-pro（旧版，无日期后缀）走 legacy Chat Completions API，
+/// 火山方舟联网搜索需 250615+ 版本，故不可联网。
+bool isModelWebSearchUnsupported(String modelId) {
+  final lower = modelId.toLowerCase();
+  if (!lower.contains('doubao-seed-2-0-pro')) return false;
+  // 如果有日期后缀（如 -260215），则支持网络搜索
+  final datePattern = RegExp(r'-\d{6}$');
+  return !datePattern.hasMatch(lower);
+}
 
 /// LLM 提供商配置
 class LlmProviderConfig {

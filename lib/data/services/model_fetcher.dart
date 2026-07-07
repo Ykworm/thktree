@@ -34,6 +34,60 @@ const List<Map<String, dynamic>> _doubaoWhitelist = [
     'name': 'Doubao-Seed-2.1-turbo',
     'contextWindow': 256000,
   },
+  {
+    'id': 'doubao-seed-2-0-pro-260215',
+    'name': 'Doubao-Seed-2.0-pro',
+    'contextWindow': 256000,
+  },
+];
+
+/// KIMI（Moonshot）白名单模型
+///
+/// KIMI 模型数量较多，只展示经过验证的多模态模型。
+/// kimi-k2.6 / kimi-k2.5 均为 256K context，支持视觉。
+const List<Map<String, dynamic>> _kimiWhitelist = [
+  {
+    'id': 'kimi-k2.6',
+    'name': 'KIMI K2.6',
+    'contextWindow': 262144,
+  },
+  {
+    'id': 'kimi-k2.5',
+    'name': 'KIMI K2.5',
+    'contextWindow': 262144,
+  },
+];
+
+/// MiniMax 白名单模型
+///
+/// MiniMax 模型数量较多，只展示经过验证的 M3 多模态+推理模型。
+const List<Map<String, dynamic>> _minimaxWhitelist = [
+  {
+    'id': 'minimax-m3',
+    'name': 'MiniMax-M3',
+    'contextWindow': 1000000,
+  },
+];
+
+/// DeepSeek 白名单模型
+///
+/// DeepSeek Anthropic 兼容 API 不提供 `/models` 列表端点，
+/// 故使用白名单返回可用聊天模型（ADR-020）。
+/// 两个模型均为 1M context，支持 thinking / non-thinking 模式。
+///
+/// 2026-07-24 起 deepseek-chat / deepseek-reasoner 将废弃
+/// （分别映射为 v4-flash non-thinking / thinking），此处暂不加入。
+const List<Map<String, dynamic>> _deepseekWhitelist = [
+  {
+    'id': 'deepseek-v4-pro',
+    'name': 'DeepSeek V4 Pro',
+    'contextWindow': 1000000,
+  },
+  {
+    'id': 'deepseek-v4-flash',
+    'name': 'DeepSeek V4 Flash',
+    'contextWindow': 1000000,
+  },
 ];
 
 /// 从 LLM 提供商 API 获取可用模型列表
@@ -67,13 +121,17 @@ class ModelFetcher {
       case LlmProviderType.anthropic:
         return _fetchAnthropicModels(baseUrl, apiKey);
       case LlmProviderType.deepseek:
-        // DeepSeek 自 2026-07 起全量走 Anthropic 兼容协议（ADR-020），
-        // baseUrl 已是 Anthropic 端点（/anthropic/v1）。
-        return _fetchAnthropicModels(baseUrl, apiKey);
+        // DeepSeek Anthropic 兼容 API 不提供 /models 列表端点，
+        // 使用白名单返回可用聊天模型（ADR-020）。
+        return _fetchDeepseekModels();
       case LlmProviderType.gemini:
         return _fetchGeminiModels(baseUrl, apiKey);
       case LlmProviderType.doubao:
-        return _fetchDoubaoModels();
+        return _fetchDoubaoModels(baseUrl, apiKey);
+      case LlmProviderType.kimi:
+        return _fetchKimiModels();
+      case LlmProviderType.minimax:
+        return _fetchMinimaxModels();
       default:
         // OpenAI 兼容（openai, kimi, minimax, mimo, custom）
         return _fetchOpenAiCompatibleModels(baseUrl, apiKey);
@@ -84,10 +142,82 @@ class ModelFetcher {
 
   /// 豆包使用白名单模型列表，不从 /models API 获取。
   ///
-  /// 火山方舟 /models 返回大量 endpoint（ep-*）和各类模型，用户体验差。
-  /// 我们只展示经过验证的支持深度思考 + 多模态的 Seed 系列模型。
-  List<LlmModelConfig> _fetchDoubaoModels() {
+  /// 2026-07-07: 同时调用真实 API 并打印全量模型（debug 用）。
+  List<LlmModelConfig> _fetchDoubaoModels(
+    String baseUrl,
+    String apiKey,
+  ) {
+    // ignore: avoid_print
+    print('[DOUBAO-FETCH] calling GET $baseUrl/models ...');
+    _sendRequest(
+      url: '$baseUrl/models',
+      headers: {'Authorization': 'Bearer $apiKey'},
+    ).then((response) {
+      final data = response['data'] as List<dynamic>? ?? [];
+      // ignore: avoid_print
+      print('[DOUBAO-FETCH] API returned ${data.length} models (raw, unfiltered):');
+      for (final item in data) {
+        final map = item as Map<String, dynamic>;
+        final id = map['id'] as String? ?? '';
+        final ownedBy = map['owned_by'] as String? ?? '';
+        // ignore: avoid_print
+        print('  id=$id  owned_by=$ownedBy');
+      }
+    }).catchError((e) {
+      // ignore: avoid_print
+      print('[DOUBAO-FETCH] API call failed: $e');
+    });
+
+    // 同时返回白名单（UI 正常显示不受影响）
     return _doubaoWhitelist.map((m) {
+      final id = m['id'] as String;
+      return LlmModelConfig(
+        id: id,
+        name: m['name'] as String,
+        contextWindow: m['contextWindow'] as int,
+        capabilities: inferCapabilities(id),
+      );
+    }).toList();
+  }
+
+  // ─── DeepSeek（Anthropic 兼容，白名单） ──────────────────────────
+
+  /// DeepSeek 使用白名单模型列表。
+  ///
+  /// DeepSeek 的 Anthropic 兼容 API 不提供 `/models` 列表端点，
+  /// 故采用白名单方式返回可用聊天模型（与豆包同理）。
+  List<LlmModelConfig> _fetchDeepseekModels() {
+    return _deepseekWhitelist.map((m) {
+      final id = m['id'] as String;
+      return LlmModelConfig(
+        id: id,
+        name: m['name'] as String,
+        contextWindow: m['contextWindow'] as int,
+        capabilities: inferCapabilities(id),
+      );
+    }).toList();
+  }
+
+  // ─── KIMI（Moonshot，白名单）─────────────────────────────────────
+
+  /// KIMI 使用白名单模型列表（只保留 k2.6 / k2.5）。
+  List<LlmModelConfig> _fetchKimiModels() {
+    return _kimiWhitelist.map((m) {
+      final id = m['id'] as String;
+      return LlmModelConfig(
+        id: id,
+        name: m['name'] as String,
+        contextWindow: m['contextWindow'] as int,
+        capabilities: inferCapabilities(id),
+      );
+    }).toList();
+  }
+
+  // ─── MiniMax（白名单）──────────────────────────────────────────
+
+  /// MiniMax 使用白名单模型列表（只保留 M3）。
+  List<LlmModelConfig> _fetchMinimaxModels() {
+    return _minimaxWhitelist.map((m) {
       final id = m['id'] as String;
       return LlmModelConfig(
         id: id,

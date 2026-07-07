@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
@@ -112,7 +111,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     print('[DEBUG-CHAT-TASK] beginAssistantMessage done, handle.msgId=${handle.msgId}');
     final generation = DateTime.now().millisecondsSinceEpoch;
 
-    final messages = _buildMessages(history, systemPrompt, imageData: imageData, imageMimeType: imageMimeType);
+    final messages = _buildMessages(history, systemPrompt, client, imageData: imageData, imageMimeType: imageMimeType);
     final stream = client.streamChatCompletion(
       apiKey: apiKey,
       model: model,
@@ -363,7 +362,8 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
 
 List<Map<String, Object?>> _buildMessages(
   List<SessionMessage> history,
-  String systemPrompt, {
+  String systemPrompt,
+  LlmClient client, {
   Uint8List? imageData,
   String? imageMimeType,
 }) {
@@ -371,26 +371,40 @@ List<Map<String, Object?>> _buildMessages(
     {'role': 'system', 'content': systemPrompt},
   ];
 
-  for (final msg in history) {
+  // 找到最后一条 user 消息（当前正在发送的），其图片用 base64
+  int lastUserIdx = -1;
+  for (int i = history.length - 1; i >= 0; i--) {
+    if (history[i].role == SessionRole.user) {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  for (int i = 0; i < history.length; i++) {
+    final msg = history[i];
     final role = switch (msg.role) {
       SessionRole.user => 'user',
       SessionRole.assistant => 'assistant',
       SessionRole.system => 'system',
     };
 
-    // 处理用户消息中的图片
-    if (msg.role == SessionRole.user && msg.imageData != null) {
-      // 构建多模态消息
-      final content = <Map<String, Object?>>[
-        if (msg.body.trim().isNotEmpty) {'type': 'text', 'text': msg.body},
-        {
-          'type': 'image_url',
-          'image_url': {
-            'url': 'data:${msg.imageMimeType ?? 'image/jpeg'};base64,${base64Encode(msg.imageData!)}',
-          },
-        },
-      ];
+    // 当前消息的图片：按 client 类型生成对应协议格式。
+    // ClaudeClient → Anthropic 的 {type:'image', source:{type:'base64'}}；
+    // 其他 → OpenAI 的 image_url。修复 DeepSeek 走 Anthropic 协议时收到
+    // OpenAI 格式 image_url 被端点拒收的 bug。
+    if (i == lastUserIdx && msg.role == SessionRole.user && imageData != null) {
+      final content = client.buildMultimodalContent(
+        text: msg.body,
+        imageData: imageData,
+        imageMimeType: imageMimeType ?? msg.imageMimeType,
+      );
       messages.add({'role': role, 'content': content});
+    } else if (msg.role == SessionRole.user && msg.imagePath != null) {
+      // 历史消息的图片：只传文本提示，省 token
+      final textParts = <String>[];
+      if (msg.body.trim().isNotEmpty) textParts.add(msg.body);
+      textParts.add('[图片: ${msg.imagePath}]');
+      messages.add({'role': role, 'content': textParts.join('\n')});
     } else {
       // 纯文本消息
       if (msg.body.trim().isEmpty) continue;

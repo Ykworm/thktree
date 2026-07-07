@@ -22,15 +22,19 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   'deepseek-vl': {ModelCapability.text, ModelCapability.vision},
 
   // DeepSeek 推理模型（支持深度思考，2026-07 ADR-020 后走 Anthropic 兼容路径，
-  // 服务端自动在响应里带 thinking_delta 事件，client 端靠 thinking 请求参数触发）
+  // 服务端自动在响应里带 thinking_delta 事件，client 端靠 thinking 请求参数触发）。
+  // 注意：DeepSeek V4 公开 API **不支持视觉/图片输入**（官方文档仅列
+  // 文本/Thinking/工具/JSON/FIM；网页版 D-Chat 的识图是专属管线，非公开 API）。
+  // 故此处不含 vision，避免 UI 显示图片按钮却永远发不出去。
   'deepseek-v4-pro': {ModelCapability.text, ModelCapability.deepThinking},
   'deepseek-v4-flash': {ModelCapability.text, ModelCapability.deepThinking},
   // 兼容老 ID（V4 发布前的 deepseek-reasoner = V4-Flash 思考模式）
   'deepseek-reasoner': {ModelCapability.text, ModelCapability.deepThinking},
 
-  // KIMI (Moonshot) 多模态模型
-  'kimi-k2.6': {ModelCapability.text, ModelCapability.vision},
-  'kimi-k2.5': {ModelCapability.text, ModelCapability.vision},
+  // KIMI (Moonshot) 多模态 + 推理模型（k2.5/k2.6 通过 thinking.type 启用/禁用 CoT，
+  // 默认 enabled；响应通过 reasoning_content 流式回传，与 MiniMax-M3 同构）
+  'kimi-k2.6': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
+  'kimi-k2.5': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
   'moonshot-v1-8k-vision-preview': {ModelCapability.text, ModelCapability.vision},
   'moonshot-v1-32k-vision-preview': {ModelCapability.text, ModelCapability.vision},
   'moonshot-v1-128k-vision-preview': {ModelCapability.text, ModelCapability.vision},
@@ -50,6 +54,8 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   // 在用户账户上不可用，已从 `_doubaoWhitelist` 一并剔除。
   'doubao-seed-2-1-pro': {ModelCapability.text, ModelCapability.vision, ModelCapability.alwaysThinking},
   'doubao-seed-2-1-turbo': {ModelCapability.text, ModelCapability.vision, ModelCapability.alwaysThinking},
+  // Seed 2.0 Pro：多模态模型
+  'doubao-seed-2-0-pro': {ModelCapability.text, ModelCapability.vision},
   // 旧版/通用豆包关键词（兼容 ep-* endpoint ID）
   'doubao': {ModelCapability.text, ModelCapability.vision},
   'ep-': {ModelCapability.text, ModelCapability.vision},
