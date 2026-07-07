@@ -54,12 +54,12 @@ dependencies:
   # Math.tex() 来自定义 LaTeX 渲染，所以在这里也声明为直接依赖（不锁版本，跟随
   # gpt_markdown 的解析结果）。
   flutter_math_fork: any
-  alibabacloud_rum_flutter_plugin: ^2.3.1
   local_auth: ^2.3.0
   share_plus: ^10.0.0
   archive: ^3.6.1
   file_picker: ^8.0.0
   image_picker: ^1.1.2
+  image: ^4.3.0
   shared_preferences: ^2.5.0
 
 dev_dependencies:

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:alibabacloud_rum_flutter_plugin/alibabacloud_rum_flutter_plugin.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -21,9 +20,6 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 初始化阿里云 RUM SDK（不自动 runApp）
-  await AlibabaCloudRUM().initialize();
 
   final paths = await AppPaths.load();
   await paths.ensureCreated();
@@ -77,15 +73,13 @@ Future<void> main() async {
         localeProvider.overrideWith(() => LocaleNotifier(initialLocale)),
         initialBrightnessProvider.overrideWithValue(initialBrightness),
       ],
-      child: AlibabaCloudActionCapture(
-        child: const AuthGate(
+      child: const AuthGate(
           child: ChatTaskServiceInitializer(
             child: AppLifecycleObserver(
               child: ThkTreeApp(),
             ),
           ),
         ),
-      ),
     ),
   );
 }

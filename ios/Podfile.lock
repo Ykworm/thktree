@@ -1,32 +1,19 @@
 PODS:
-  - alibabacloud_rum_flutter_plugin (1.0.9):
-    - AlibabaCloudRUM (= 2.2.7)
-    - Flutter
-  - AlibabaCloudRUM (2.2.7)
   - Flutter (1.0.0)
   - flutter_secure_storage (6.0.0):
     - Flutter
 
 DEPENDENCIES:
-  - alibabacloud_rum_flutter_plugin (from `.symlinks/plugins/alibabacloud_rum_flutter_plugin/ios`)
   - Flutter (from `Flutter`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
 
-SPEC REPOS:
-  trunk:
-    - AlibabaCloudRUM
-
 EXTERNAL SOURCES:
-  alibabacloud_rum_flutter_plugin:
-    :path: ".symlinks/plugins/alibabacloud_rum_flutter_plugin/ios"
   Flutter:
     :path: Flutter
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
 
 SPEC CHECKSUMS:
-  alibabacloud_rum_flutter_plugin: acce9003080c87db718545feaf2bb8bea2ab0a16
-  AlibabaCloudRUM: cc96df2780f84e3f1b1c6d9811e3a1d040571c54
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
 

@@ -103,13 +103,23 @@ class BackupReminderService {
 
 不需要 `AppLifecycleObserver`，因为搜索页面每次切换回来都会重新 build。
 
+## Dev 调试入口
+
+在 Settings 页面的 `Dev Tools` section 新增一个调试按钮：
+
+```
+[触发备份提醒]  // 仅在 kDebugMode 显示
+```
+
+点击后将 `nextBackupReminderDate` 设为 `DateTime.now().subtract(Duration(days: 1))`，下次进入搜索页立即触发横幅显示。
+
 ## 文件变更清单
 
 | 文件 | 变更类型 | 说明 |
 |------|----------|------|
 | `lib/data/services/settings_store.dart` | 修改 | AppSettings 新增字段，SettingsStore 新增读写方法 |
-| `lib/ui/features/settings/settings_controller.dart` | 修改 | 新增 saveBackupReminderEnabled / saveNextBackupReminderDate |
-| `lib/ui/features/settings/settings_screen.dart` | 修改 | 新增备份提醒开关入口 |
+| `lib/ui/features/settings/settings_controller.dart` | 修改 | 新增 saveBackupReminderEnabled / saveNextBackupReminderDate / triggerBackupReminderDebug |
+| `lib/ui/features/settings/settings_screen.dart` | 修改 | 新增备份提醒开关入口 + Dev Tools 调试按钮 |
 | `lib/ui/features/search/search_content.dart` | 修改 | 新增横幅 Widget 及备份逻辑 |
 | `lib/l10n/app_en.arb` | 修改 | 新增本地化文案 |
 | `lib/l10n/app_zh.arb` | 修改 | 新增本地化文案 |

@@ -9,14 +9,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "99.0.0"
-  alibabacloud_rum_flutter_plugin:
-    dependency: "direct main"
-    description:
-      name: alibabacloud_rum_flutter_plugin
-      sha256: b7fbad7895717053472bd482703fab262fb99aa2f3da6f617e87f6517858d984
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "2.3.3"
   analyzer:
     dependency: transitive
     description:
@@ -448,7 +440,7 @@ packages:
     source: hosted
     version: "4.1.2"
   image:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: image
       sha256: f31d52537dc417fdcde36088fdf11d191026fd5e4fae742491ebd40e5a8bea7d
