@@ -68,6 +68,17 @@
 - **whitelist 维护** —— KIMI / MiniMax 的新模型需手动加白；`model_fetcher` 已预留 `_*Whitelist` 便于扩展。
 - **Seed-2.0-pro 联网** —— 由 `isModelWebSearchUnsupported` 模型级屏蔽，与 provider 级 `webSearchSupportMap` 共存；若后续 doubao 其他模型也需逐个屏蔽，应统一收敛到模型级判定。
 
+### 7. 豆包 Responses API 图片格式修正 + 空文本默认提示
+
+- **问题**：豆包 Seed-2.1-turbo 只发图片不写文字时返回 400；Seed-2.1-pro 正常。
+- **根因**：
+  - `DoubaoResponsesClient.buildMultimodalContent` 用的是 OpenAI 的 `image_url` 格式（`{type:'image_url', image_url:{url:'...'}}`），豆包 Responses API 要求 `input_image`（`{type:'input_image', image_url:'...'})`（直接字符串，不是对象）。
+  - 用户只发图片不写文字时，`text` 为空字符串，某些模型不接受空 `input_text` 块。
+- **修复**：
+  - `DoubaoResponsesClient.buildMultimodalContent`：`image_url` → `input_image`，`{url:'...'}` → 直接字符串。
+  - 基类 `LlmClient.buildMultimodalContent` 与 `DoubaoResponsesClient` 同步：`text.isEmpty` 时自动填 `'描述这张图片'`，避免空文本导致 API 拒绝。
+  - `chat_controller.sendUserMessage`：同逻辑，`effectiveText = trimmed.isEmpty && imageData != null ? '描述这张图片' : trimmed`。
+
 ## 验证
 
 - Device smoke（用户已实测通过）：
@@ -77,4 +88,5 @@
   - 豆包 Seed-2.0-pro → 联网 chip 不再误显示；Seed-2.1-pro / 2.1-turbo 仍正确显示 alwaysThinking。
   - 模型清单：KIMI 仅剩 k2.6 / k2.5，MiniMax 仅剩 M3。
   - DeepSeek 模型下图片按钮消失（符合「公开 API 不支持视觉」预期）。
+  - **豆包 Seed-2.1-turbo / 2.1-pro** → 只发图片不写文字，自动填充"描述这张图片"，不再 400。
 - 代码改动随本文档一并 commit；未执行 ctsync（用户确认不需）。
