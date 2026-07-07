@@ -108,6 +108,18 @@ stream 解析端 `_extractClaudeDelta`（Anthropic 协议）在 [ADR-021](../../
 
 OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持（豆包 / DeepSeek 原生 Chat Completions 路径）。
 
+## 多模态内容构建（`buildMultimodalContent`）
+
+各 client 子类按协议格式生成图片 content 块：
+
+| Client | 协议 | 图片类型 | image_url 格式 |
+|---|---|---|---|
+| `LlmClient`（基类） | OpenAI 兼容 | `image_url` | `{url: 'data:mime;base64,...'}`（对象） |
+| `ClaudeClient` | Anthropic | `image` | `{source: {type:'base64', media_type, data}}` |
+| `DoubaoResponsesClient` | 豆包 Responses API | `input_image` | 直接字符串 `'data:mime;base64,...'` |
+
+**空文本兜底**：`buildMultimodalContent` 检测到 `text.isEmpty && imageData != null` 时自动填充 `'描述这张图片'`，避免豆包等模型因空 `input_text` 块返回 400。
+
 ## 维护要点
 
 - 改 LLM 配置前必读 [DECISIONS.md ADR-006](../../DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage)（SSE 流式 + Key 存储）
@@ -130,3 +142,5 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 - 2026-07-05：豆包模型白名单（`_fetchDoubaoModels` + `_doubaoWhitelist`，只返回 3 个 Seed 系列模型，不再走 /models API）+ Seed 模型 vision 能力精确映射
 - 2026-07-06：DeepSeek 全量切到 Anthropic 兼容协议（ADR-020），preset baseUrl 改为 `/anthropic/v1`，老用户自动迁移
 - 2026-07-06：Per-session 深度思考开关上线——`LlmClient.streamChatCompletion` 新增 `deepThinking` 参数；OpenAI 兼容路径按 provider 分支（豆包 `{type: 'enabled'}` / MiniMax-M3 `true`）/ Claude 路径注入 `{type: 'enabled'}`；`ModelCapability` 加 `deepThinking` + `alwaysThinking` 双 cap 区分（详见 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) + [ADR-022](../../DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。`doubao-seed-2-0-lite-250528` 从豆包 whitelist 移除（方舟端不可达，留着会引导到死路径）
+- 2026-07-08：Seed-2.0-pro 模型 ID 修正——`doubao-seed-2-0-pro`（无日期后缀）在 ARK API 调用失败，白名单改为 `doubao-seed-2-0-pro-260215`；`isModelWebSearchUnsupported` 改为仅屏蔽无后缀的旧模型；`webSearchSupportMap` 豆包条目改 `supported`，联网判断收敛到模型级
+- 2026-07-08：豆包 Responses API 图片格式修正——`DoubaoResponsesClient.buildMultimodalContent` 图片类型从 `image_url` 改为 `input_image`，`image_url` 从对象改为直接字符串；空文本时自动填充默认提示；`chat_controller.sendUserMessage` 同步处理
