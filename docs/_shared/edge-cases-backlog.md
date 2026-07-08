@@ -207,13 +207,16 @@ graph TB
 - **相关代码**：`SearchService`、`AppDatabase`
 - **相关文档**：[search README](../modules/search/README.md)、[storage-format.md § 8](storage-format.md#8-reindex重建索引必须支持)
 
-#### EC-015 FTS5 分词器与多语言混合
+#### EC-015 FTS5 分词器与多语言混合 — ✅ 已修复（2026-07-08）
 
+- **当前状态**：✅ 已修复（2026-07-08）
 - **风险等级**：P2
 - **影响模块**：search
-- **场景描述**：中文 + 英文 + 数字混合的笔记内容，FTS5 默认分词器（`unicode61`）对中文按字分词，对英文按词分词，行为差异可能影响搜索精度。
-- **风险分析**：中文搜索"思维导图"可能只能按单字命中，长词搜索准确率下降。
-- **建议验证方式**：构造中英混合内容，测试不同查询的命中精度。
+- **场景描述**：中文 + 英文 + 数字混合的笔记内容，FTS5 默认分词器（`unicode61`）对中文按字分词，对英文按词分词，行为差异可能影响搜索精度。英文 CamelCase / snake_case 被视为单个 token，搜子串匹配不到。
+- **风险分析**：中文搜索"思维导图"可能只能按单字命中；英文搜索 "test" 匹配不到 `TestCase`（FTS5 token 边界限制）。同一单词在不同文档中以不同形式存在时，时搜到时搜不到。
+- **修复方案**：FTS5 无结果时**无条件**降级 LIKE 子串匹配（此前仅含 CJK 字符的查询才降级）。SQLite LIKE 默认对 ASCII 大小写不敏感，`Flutter` / `flutter` 互通。LIKE 仅在 FTS5 冷路径（无结果）时触发，有 `LIMIT 50` 约束。
+- **修复 commit**：`codex/search-bugfix` 分支
+- **相关代码**：`lib/data/services/search_service.dart` `search()` 方法（去掉 `_containsCjk` 条件）
 - **相关文档**：[search spec](../modules/search/specs/2026-06-05-搜索功能-design.md)
 
 #### EC-016 并发搜索 + 写入
