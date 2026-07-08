@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 
 /// 分享卡片 Widget —— 用于截图生成图片
@@ -35,7 +36,7 @@ class ShareCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(_radius),
         boxShadow: [
           BoxShadow(
-            color: CupertinoColors.black.withValues(alpha: 0.08),
+            color: AppColors.elevationShadow,
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -78,7 +79,7 @@ class ShareCardWidget extends StatelessWidget {
             // ── 底部分隔线 ──
             const SizedBox(height: 20),
             Container(
-              height: 0.5,
+              height: AppSp.dividerThickness,
               color: AppColors.border,
             ),
             const SizedBox(height: 12),

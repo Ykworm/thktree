@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 
@@ -174,7 +175,7 @@ class _ChatComposerState extends State<ChatComposer> {
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSp.cardRadius),
                 ),
                 child: CupertinoButton(
                   key: ValueKey(widget.isStreaming ? 'stop_button' : 'send_button'),
@@ -204,7 +205,7 @@ class _ChatComposerState extends State<ChatComposer> {
             Container(
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppSp.sheetTopRadius),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Row(
@@ -450,19 +451,19 @@ class _ImagePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80,
+      height: AppSp.imagePreviewHeight,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSp.cardRadius),
       ),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSp.cardRadius),
             child: Image.memory(
               imageData,
-              width: 80,
-              height: 80,
+              width: AppSp.imagePreviewHeight,
+              height: AppSp.imagePreviewHeight,
               fit: BoxFit.cover,
             ),
           ),

@@ -1475,19 +1475,19 @@ abstract class AppLocalizations {
   /// No description provided for @myQuestions.
   ///
   /// In en, this message translates to:
-  /// **'My Questions'**
+  /// **'Session Messages'**
   String get myQuestions;
 
   /// No description provided for @myQuestionsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Questions I Asked'**
+  /// **'My Sent Messages'**
   String get myQuestionsTitle;
 
   /// No description provided for @myQuestionsEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No questions yet'**
+  /// **'No messages sent in this chat yet'**
   String get myQuestionsEmpty;
 
   /// Title for rename dialog

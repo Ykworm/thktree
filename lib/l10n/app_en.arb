@@ -1012,9 +1012,9 @@
     "description": "Swipe action label for creating a branch"
   },
   "viewTree": "View Tree",
-  "myQuestions": "My Questions",
-  "myQuestionsTitle": "Questions I Asked",
-  "myQuestionsEmpty": "No questions yet",
+  "myQuestions": "Session Messages",
+  "myQuestionsTitle": "My Sent Messages",
+  "myQuestionsEmpty": "No messages sent in this chat yet",
   "@viewTree": {
     "description": "More action label for viewing the full tree"
   },

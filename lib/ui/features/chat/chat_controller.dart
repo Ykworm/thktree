@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
 import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
@@ -351,49 +352,79 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     return messages;
   }
 
-  /// 在 build() 完成后由 [ChatControllerParams.autoTriggerReply] 调度执行。
+  /// 统一解析当前对话实际使用的 (provider, modelId, apiKey)。
   ///
-  /// 复用 [sendUserMessage] 里的 provider/model 解析链（对话级 → 第一个有 key 的
-  /// provider → 全局设置），但**不** append user 消息，直接开始流式回复。
-  Future<void> _triggerAssistantReply() async {
-    _trace('chat_controller.trigger_assistant_reply');
-    final sessionProviderId = _providerId;
-    final sessionModelId = _modelId;
+  /// **核心修复**：显示侧（chat_screen build → resolveChatModel）和调用侧
+  /// （_triggerLlmStream / _triggerAssistantReply）必须走同一套优先级，
+  /// 否则 title bar 显示的模型与实际调用的模型不一致（空白分支必现）。
+  ///
+  /// 优先级（与 resolveChatModel 的 1-3 级完全一致）：
+  ///   1. session 级别 [providerId] / [modelId]
+  ///   2. settings.lastUsedChatProviderId / lastUsedChatModelId
+  ///   3. settings.chatDefaultProviderId / chatDefaultModelId
+  ///   4. 兜底：第一个有 apiKey + model 的 provider
+  ///
+  /// 设计决策：不传 providers 给 resolveChatModel（只用 1-3 级），自行做第 4 级。
+  /// 这样 1-3 级解析出模型但验证失败（provider 删了 / key 空）时返回 null，
+  /// 让调用方报错提示用户手动切换，而不是静默降级到另一个模型。
+  /// 只有 1-3 级完全落空（空白分支典型场景）才走第 4 级兜底。
+  Future<({LlmProviderConfig provider, String modelId, String apiKey})?>
+      _resolveChatModelForLlm() async {
+    final configStore = ref.read(llmConfigStoreProvider);
+    final settings = ref.read(settingsControllerProvider).value;
+    final providers = await configStore.loadAll();
 
-    if (sessionProviderId != null && sessionModelId != null) {
-      final configStore = ref.read(llmConfigStoreProvider);
-      final provider = await configStore.getProvider(sessionProviderId);
-      if (provider == null) {
-        _trace('chat_controller.provider_not_found',
-            attrs: {'providerId': sessionProviderId});
-        return;
+    // 1-3 级：复用 resolveChatModel（不传 providers，禁用其第 4 级同步兜底）
+    final resolved = resolveChatModel(
+      sessionProviderId: _providerId,
+      sessionModelId: _modelId,
+      lastUsedChatProviderId: settings?.lastUsedChatProviderId,
+      lastUsedChatModelId: settings?.lastUsedChatModelId,
+      chatDefaultProviderId: settings?.chatDefaultProviderId,
+      chatDefaultModelId: settings?.chatDefaultModelId,
+    );
+
+    final providerId = resolved.$1.isNotEmpty ? resolved.$1 : null;
+    final modelId = resolved.$2.isNotEmpty ? resolved.$2 : null;
+
+    // 1-3 级解析出了模型 → 验证 provider 存在 + apiKey 非空 + model 在列表中
+    if (providerId != null && modelId != null) {
+      final provider = providers.where((p) => p.id == providerId).firstOrNull;
+      if (provider != null) {
+        final apiKey = await configStore.readApiKey(providerId);
+        if (apiKey.isNotEmpty && provider.models.any((m) => m.id == modelId)) {
+          return (provider: provider, modelId: modelId, apiKey: apiKey);
+        }
       }
-      final apiKey = await configStore.readApiKey(sessionProviderId);
-      if (apiKey.isEmpty) return;
-      await _startStreamingWithConfig(
-        providerConfig: provider,
-        apiKey: apiKey,
-        model: sessionModelId,
-      );
-      return;
+      // 1-3 级指定的模型不可用 → 不降级，返回 null 让调用方报错提示
+      return null;
     }
 
-    // Fallback: 第一个有 key 且有 model 的 provider
-    final configStore = ref.read(llmConfigStoreProvider);
-    final providers = await configStore.loadAll();
+    // 1-3 级完全落空（空白分支典型场景）→ 第 4 级兜底：第一个有 apiKey + model 的 provider
     for (final p in providers) {
       final key = await configStore.readApiKey(p.id);
       if (key.isNotEmpty && p.models.isNotEmpty) {
-        await _startStreamingWithConfig(
-          providerConfig: p,
-          apiKey: key,
-          model: p.models.first.id,
-        );
-        return;
+        return (provider: p, modelId: p.models.first.id, apiKey: key);
       }
     }
 
-    // 没有可用的 provider/model，静默返回
+    return null;
+  }
+
+  /// 在 build() 完成后由 [ChatControllerParams.autoTriggerReply] 调度执行。
+  ///
+  /// 复用 [_resolveChatModelForLlm] 的 provider/model 解析链，但**不** append
+  /// user 消息，直接开始流式回复。
+  Future<void> _triggerAssistantReply() async {
+    _trace('chat_controller.trigger_assistant_reply');
+    final resolved = await _resolveChatModelForLlm();
+    if (resolved == null) return;
+
+    await _startStreamingWithConfig(
+      providerConfig: resolved.provider,
+      apiKey: resolved.apiKey,
+      model: resolved.modelId,
+    );
   }
 
   /// Retry / Regenerate the last assistant message.
@@ -613,71 +644,25 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
     String? imageMimeType,
   }) async {
     final sessionStore = await ref.read(sessionStoreProvider.future);
-    final sessionProviderId = _providerId;
-    final sessionModelId = _modelId;
+    final resolved = await _resolveChatModelForLlm();
 
-    if (sessionProviderId != null && sessionModelId != null) {
-      final configStore = ref.read(llmConfigStoreProvider);
-      final provider = await configStore.getProvider(sessionProviderId);
-      if (provider == null) {
-        _trace('chat_controller.provider_not_found', attrs: {'providerId': sessionProviderId});
-        await sessionStore.appendAssistantMessage(
-          nodeId: nodeId,
-          content: '[提供商未找到] providerId=$sessionProviderId 对应的提供商配置不存在，请切换模型。',
-        );
-        state = AsyncData(await _read());
-        return;
-      }
-      final apiKey = await configStore.readApiKey(sessionProviderId);
-      if (apiKey.isEmpty) {
-        await sessionStore.appendAssistantMessage(
-          nodeId: nodeId,
-          content: '[未配置 API Key] 请为 ${provider.name} 配置 API Key。',
-        );
-        state = AsyncData(await _read());
-        return;
-      }
-      await _startStreamingWithConfig(
-        providerConfig: provider,
-        apiKey: apiKey,
-        model: sessionModelId,
-        imageData: imageData,
-        imageMimeType: imageMimeType,
-        currentMessages: messagesForLlm,
+    if (resolved == null) {
+      await sessionStore.appendAssistantMessage(
+        nodeId: nodeId,
+        content: '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。',
       );
-    } else {
-      final configStore = ref.read(llmConfigStoreProvider);
-      final providers = await configStore.loadAll();
-      String? fallbackApiKey;
-      String? fallbackModel;
-      LlmProviderConfig? fallbackProvider;
-      for (final p in providers) {
-        final key = await configStore.readApiKey(p.id);
-        if (key.isNotEmpty && p.models.isNotEmpty) {
-          fallbackApiKey = key;
-          fallbackModel = p.models.first.id;
-          fallbackProvider = p;
-          break;
-        }
-      }
-      if (fallbackApiKey != null && fallbackApiKey.isNotEmpty) {
-        await _startStreamingWithConfig(
-          providerConfig: fallbackProvider!,
-          apiKey: fallbackApiKey,
-          model: fallbackModel!,
-          imageData: imageData,
-          imageMimeType: imageMimeType,
-          currentMessages: messagesForLlm,
-        );
-      } else {
-        await sessionStore.appendAssistantMessage(
-          nodeId: nodeId,
-          content: '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。',
-        );
-        state = AsyncData(await _read());
-        return;
-      }
+      state = AsyncData(await _read());
+      return;
     }
+
+    await _startStreamingWithConfig(
+      providerConfig: resolved.provider,
+      apiKey: resolved.apiKey,
+      model: resolved.modelId,
+      imageData: imageData,
+      imageMimeType: imageMimeType,
+      currentMessages: messagesForLlm,
+    );
   }
 
   /// 关键词榜 stale 触发（fire-and-forget 内部方法）。
@@ -809,40 +794,22 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
 
   /// 判断当前对话解析出的模型是否支持视觉（图片）。
   ///
-  /// 解析链与 [_triggerLlmStream] 一致：对话级 provider/model →
-  /// 第一个有 key 且有模型的 provider。优先用 provider 配置里的权威
-  /// capabilities（`model.supportsVision`）；命中且为 true 直接返回，
-  /// 否则回退到关键词实时推断（与 UI 侧 [_isImageSupported] 逻辑保持一致），
-  /// 避免改了能力映射表后必须重新拉取模型列表才生效。
+  /// 解析链与 [_triggerLlmStream] 一致（[_resolveChatModelForLlm]）。
+  /// 优先用 provider 配置里的权威 capabilities（`model.supportsVision`）；
+  /// 命中且为 true 直接返回，否则回退到关键词实时推断（与 UI 侧
+  /// [_isImageSupported] 逻辑保持一致），避免改了能力映射表后必须
+  /// 重新拉取模型列表才生效。
   Future<bool> _currentModelSupportsVision() async {
-    String? providerId = _providerId;
-    String? modelId = _modelId;
+    final resolved = await _resolveChatModelForLlm();
+    if (resolved == null) return false;
 
-    if (providerId == null || modelId == null) {
-      final configStore = ref.read(llmConfigStoreProvider);
-      final providers = await configStore.loadAll();
-      for (final p in providers) {
-        final key = await configStore.readApiKey(p.id);
-        if (key.isNotEmpty && p.models.isNotEmpty) {
-          providerId = p.id;
-          modelId = p.models.first.id;
-          break;
-        }
-      }
-    }
-    if (modelId == null) return false;
-
-    if (providerId != null) {
-      final configStore = ref.read(llmConfigStoreProvider);
-      final provider = await configStore.getProvider(providerId);
-      final model = provider?.models.where((m) => m.id == modelId).firstOrNull;
-      // 优先用持久化的权威 capabilities；命中且为 true 直接返回，
-      // 否则回退到关键词实时推断（与 UI 侧 [_isImageSupported] 逻辑保持一致），
-      // 避免改了能力映射表后必须重新拉取模型列表才生效。
-      if (model?.supportsVision ?? false) return true;
-    }
-    // fallback：关键词实时推断（与 model.supportsVision 的来源一致）
-    return inferCapabilities(modelId).contains(ModelCapability.vision);
+    final model = resolved.provider.models
+        .where((m) => m.id == resolved.modelId)
+        .firstOrNull;
+    // 优先用持久化的权威 capabilities；命中且为 true 直接返回，
+    // 否则回退到关键词实时推断（与 model.supportsVision 的来源一致）
+    if (model?.supportsVision ?? false) return true;
+    return inferCapabilities(resolved.modelId).contains(ModelCapability.vision);
   }
 }
 

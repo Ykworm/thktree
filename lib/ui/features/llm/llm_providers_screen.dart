@@ -11,7 +11,13 @@ import 'package:thk_tree/ui/features/llm/llm_provider_detail_screen.dart';
 
 /// LLM 提供商列表页面
 class LlmProvidersScreen extends ConsumerWidget {
-  const LlmProvidersScreen({super.key});
+  const LlmProvidersScreen({super.key, this.parentCrumbs = const []});
+
+  final List<BreadcrumbSegment> parentCrumbs;
+
+  static const _ownCrumb = BreadcrumbSegment(label: '提供商', routeName: 'providers-list');
+
+  List<BreadcrumbSegment> get _crumbs => [...parentCrumbs, _ownCrumb];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +33,8 @@ class LlmProvidersScreen extends ConsumerWidget {
           onPressed: () async {
             final result = await Navigator.of(context).push<bool>(
               CupertinoPageRoute(
-                builder: (_) => const LlmProviderDetailScreen(),
+                settings: const RouteSettings(name: 'provider-detail'),
+                builder: (_) => LlmProviderDetailScreen(parentCrumbs: _crumbs),
               ),
             );
             if (result == true) {
@@ -38,8 +45,12 @@ class LlmProvidersScreen extends ConsumerWidget {
         ),
       ),
       child: SafeArea(
-        child: providersAsync.when(
-          data: (providers) {
+        child: Column(
+          children: [
+            ThkBreadcrumbRow(crumbs: _crumbs),
+            Expanded(
+              child: providersAsync.when(
+                data: (providers) {
             // 只显示 APP 支持的提供商
             final visible = providers
                 .where((p) => visibleProviderTypes.contains(p.type))
@@ -82,8 +93,9 @@ class LlmProvidersScreen extends ConsumerWidget {
                     onTap: () async {
                       final result = await Navigator.of(context).push<bool>(
                         CupertinoPageRoute(
+                          settings: const RouteSettings(name: 'provider-detail'),
                           builder: (_) =>
-                              LlmProviderDetailScreen(provider: provider),
+                              LlmProviderDetailScreen(provider: provider, parentCrumbs: _crumbs),
                         ),
                       );
                       if (result == true) {
@@ -137,6 +149,9 @@ class LlmProvidersScreen extends ConsumerWidget {
           error: (e, st) => ThkFillCardPageBody(
             child: Center(child: Text(e.toString())),
           ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_durations.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 
 /// 查看当前对话的原始 Markdown（session.md 文件内容），支持复制。
@@ -63,8 +65,8 @@ class _ChatMarkdownPageState extends ConsumerState<_ChatMarkdownPage> {
   void _scrollToTop() {
     _scrollController.animateTo(
       0,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
+      duration: AppDur.listScroll,
+      curve: AppDur.listScrollCurve,
     );
   }
 
@@ -72,8 +74,8 @@ class _ChatMarkdownPageState extends ConsumerState<_ChatMarkdownPage> {
     if (!_scrollController.hasClients) return;
     _scrollController.animateTo(
       _scrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
+      duration: AppDur.listScroll,
+      curve: AppDur.listScrollCurve,
     );
   }
 
@@ -104,7 +106,7 @@ class _ChatMarkdownPageState extends ConsumerState<_ChatMarkdownPage> {
       decoration: BoxDecoration(
         color: CupertinoTheme.of(context).scaffoldBackgroundColor,
         borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(12)),
+            const BorderRadius.vertical(top: Radius.circular(AppSp.sheetTopRadius)),
       ),
       child: Column(
         children: [
@@ -148,7 +150,7 @@ class _ChatMarkdownPageState extends ConsumerState<_ChatMarkdownPage> {
                     _copied ? l10n.copied : l10n.copy,
                     style: TextStyle(
                       color: _copied
-                          ? CupertinoColors.systemGreen
+                          ? AppColors.success
                           : AppColors.accent,
                     ),
                   ),
@@ -248,7 +250,7 @@ class _ScrollFloatingButton extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.black.withValues(alpha: 0.12),
+              color: AppColors.elevationShadow,
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),

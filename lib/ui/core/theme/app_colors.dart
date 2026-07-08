@@ -121,6 +121,33 @@ class AppColors {
   // ── Semantic ─────────────────────────────────────────────────────
   static const success       = Color(0xFF34C759); // systemGreen
   static const onSurface     = Color(0xFFFFFFFF); // 卡片上前景色（白色）
+
+  // ── Chat / Sheet overlay ────────────────────────────────────────
+  /// Sheet 遮罩层（50% 透明黑）
+  static const scrim = Color(0x80000000);
+
+  /// 浮层阴影色（12% 透明黑）
+  static Color get elevationShadow =>
+      const Color(0x1F000000);
+
+  /// 思考过程区块背景（light = surfaceMuted, dark 待补）
+  static Color get thinkingBg => surfaceMuted;
+
+  /// Markdown 代码块背景（light = pageBg, dark 待补）
+  static Color get markdownCodeBg => pageBg;
+
+  /// 用户消息气泡背景（light = accentLight, dark 待补）
+  static Color get userBubbleBg => accentLight;
+
+  /// 助手消息气泡背景
+  static Color get assistantBubbleBg => surface;
+
+  /// 助手消息气泡边框（0.5px）
+  static Color get assistantBubbleBorder => border;
+
+  /// 问题来源标签色（accent 50% 透明）
+  static Color get questionSourceTag =>
+      const Color(0x806366F1);
 }
 
 /// 节点卡片配色方案（圆圈 + 标题 + 副标题）。

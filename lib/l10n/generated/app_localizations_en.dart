@@ -794,13 +794,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewTree => 'View Tree';
 
   @override
-  String get myQuestions => 'My Questions';
+  String get myQuestions => 'Session Messages';
 
   @override
-  String get myQuestionsTitle => 'Questions I Asked';
+  String get myQuestionsTitle => 'My Sent Messages';
 
   @override
-  String get myQuestionsEmpty => 'No questions yet';
+  String get myQuestionsEmpty => 'No messages sent in this chat yet';
 
   @override
   String get renameNode => 'Rename Node';

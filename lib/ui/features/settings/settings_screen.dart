@@ -15,6 +15,7 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/ui/features/backup_restore/backup_restore_screen.dart';
 import 'package:thk_tree/ui/features/settings/llm_settings_screen.dart';
 import 'package:thk_tree/ui/features/settings/keyword_score_prompt_screen.dart';
 import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
@@ -66,9 +67,7 @@ class SettingsScreen extends ConsumerWidget {
         ThkListSection(
           header: l10n.backupAndRestore,
           children: [
-            _BackupReminderToggle(),
-            _BackupEntry(),
-            _RestoreEntry(),
+            _BackupRestoreEntry(),
           ],
         ),
         if (kDebugMode) ...[
@@ -280,7 +279,10 @@ class _LlmSettingsEntry extends ConsumerWidget {
       onTap: () {
         Navigator.of(context).push(
           CupertinoPageRoute(
-            builder: (_) => const LlmSettingsScreen(),
+            settings: const RouteSettings(name: 'llm-settings'),
+            builder: (_) => const LlmSettingsScreen(
+              parentCrumbs: [BreadcrumbSegment(label: '设置', routeName: '/settings')],
+            ),
           ),
         );
       },
@@ -414,6 +416,27 @@ class _FaceIdToggle extends ConsumerWidget {
           ref.read(settingsControllerProvider.notifier).saveFaceIdEnabled(value);
         },
       ),
+    );
+  }
+}
+
+class _BackupRestoreEntry extends ConsumerWidget {
+  const _BackupRestoreEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ThkListTile(
+      leading: const Icon(CupertinoIcons.archivebox),
+      title: '备份与恢复',
+      subtitle: '自动备份 · 分享 · 恢复',
+      trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
+      onTap: () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(
+            builder: (_) => const BackupRestoreScreen(),
+          ),
+        );
+      },
     );
   }
 }
@@ -589,6 +612,20 @@ class _BackupEntry extends ConsumerWidget {
           [XFile(zipFile!.path)],
           sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
         );
+
+        // 手动备份（分享出去）成功后刷新下次提醒日期
+        // （修复原 bug：手动备份完不刷新，提醒该来还来）
+        final settings = ref
+            .read(settingsControllerProvider)
+            .whenOrNull(data: (s) => s);
+        if (settings != null) {
+          final nextDate = DateTime.now().add(
+            Duration(days: settings.backupReminderIntervalDays),
+          );
+          await ref
+              .read(settingsControllerProvider.notifier)
+              .saveNextBackupReminderDate(nextDate);
+        }
       },
     );
   }

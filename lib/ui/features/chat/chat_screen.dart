@@ -13,6 +13,8 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_durations.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/auto_title_controller.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
@@ -26,6 +28,7 @@ import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
+import 'package:thk_tree/ui/core/shared/selection_state.dart';
 import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
@@ -65,7 +68,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final ChatControllerParams _args;
   final _chatListKey = GlobalKey<ChatListViewState>();
   bool _showModelPanel = false;
-  String? _currentSelectedText;
 
   // ---- 图片选择状态 ----
   Uint8List? _selectedImageData;
@@ -388,7 +390,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           key: const ValueKey('more_button'),
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,
-          onPressed: isStreaming ? null : () => _showMoreActions(context),
+          onPressed: isStreaming
+              ? null
+              : () {
+                  // 收起输入法再弹出菜单（overlay 走 rootOverlay 不抢焦点，需手动收）
+                  FocusScope.of(context).unfocus();
+                  _showMoreActions(context);
+                },
           child: Icon(
             AppIcons.more,
             size: 24,
@@ -411,12 +419,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   },
                   child: messagesAsync.when(
                     data: (messages) => SelectionArea(
+                      // 注意：消息列表是「嵌套 SelectionArea」——每条 MessageBubble
+                      // 内部各自包了一个 SelectionArea（GptMarkdown 自身不可选）。
+                      // 嵌套下外层 SelectionArea 的 onSelectionChanged 收不到子选区，
+                      // 所以这里几乎不会回调；选区实际由 MessageBubble 内的
+                      // SelectionArea 捕获并写入 currentSelectionProvider。
+                      // 保留写入仅作兜底（万一外层能拿到选区时同步）。
                       onSelectionChanged: (value) {
                         final text = value?.plainText;
                         if (text != null && text.trim().isNotEmpty) {
-                          _currentSelectedText = text;
-                        } else {
-                          _currentSelectedText = null;
+                          ref.read(currentSelectionProvider.notifier).state = text;
                         }
                       },
                       child: ChatListView(
@@ -591,7 +603,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: CupertinoColors.black.withValues(alpha: 0.12),
+                        color: AppColors.elevationShadow,
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -767,7 +779,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           GridAction(
             label: l10n.submitTreeStructure,
             icon: AppIcons.checkCircle,
-            color: CupertinoColors.systemGreen,
+            color: AppColors.success,
             onPressed: () => unawaited(_onSubmitDocSplit()),
           ),
         GridAction(
@@ -934,7 +946,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// 从顶部 branch 按钮进入：先弹 sheet 让用户选 mode，再 [_showBranchFlow]。
   Future<void> _onCreateBranchFromMenu(BuildContext context) async {
     // 在弹 sheet 之前读取选中文本，避免选区被清除
-    final selected = _currentSelectedText;
+    final selected = ref.read(currentSelectionProvider);
     debugPrint('[ChatScreen] _onCreateBranchFromMenu: selectedText=${selected?.length ?? 'null'} chars');
 
     final mode = await showBranchModeSheet(
@@ -1162,7 +1174,7 @@ class _MoreActionsOverlayPanel extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onDismiss,
-            child: const ColoredBox(color: Color(0x80000000)),
+            child: const ColoredBox(color: AppColors.scrim),
           ),
         ),
         // 底部菜单本体
@@ -1302,7 +1314,7 @@ class _ContextUsageBar extends StatelessWidget {
     final total = contextWindow;
     final ratio = total > 0 ? (used / total).clamp(0.0, 1.0) : 0.0;
     final color = ratio > 0.85
-        ? CupertinoColors.systemRed
+        ? AppColors.destructive
         : ratio > 0.6
             ? AppColors.accent
             : AppColors.accent;

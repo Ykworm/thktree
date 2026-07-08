@@ -16,8 +16,11 @@ class AppSettings {
     this.lastUsedChatModelId,
     this.ttsVoiceId,
     this.webSearchEnabledMap = const {},
+    this.autoBackupEnabled = true,
     this.backupReminderEnabled = true,
     this.nextBackupReminderDate,
+    this.lastAutoBackupAt,
+    this.backupReminderIntervalDays = 3,
   });
 
   final String? localeLanguageCode;
@@ -36,11 +39,20 @@ class AppSettings {
   /// 各提供商的联网搜索开关状态（key: providerType name, value: enabled）
   final Map<String, bool> webSearchEnabledMap;
 
+  /// 自动备份开关（默认开启）
+  final bool autoBackupEnabled;
+
   /// 备份提醒开关（默认开启）
   final bool backupReminderEnabled;
 
   /// 下次备份提醒日期
   final DateTime? nextBackupReminderDate;
+
+  /// 上次自动备份时间（用于判断 24h 周期，与提醒日期独立）
+  final DateTime? lastAutoBackupAt;
+
+  /// 分享提醒周期（天），默认 3
+  final int backupReminderIntervalDays;
 
   AppSettings copyWith({
     String? localeLanguageCode,
@@ -56,8 +68,11 @@ class AppSettings {
     String? lastUsedChatModelId,
     String? ttsVoiceId,
     Map<String, bool>? webSearchEnabledMap,
+    bool? autoBackupEnabled,
     bool? backupReminderEnabled,
     DateTime? nextBackupReminderDate,
+    DateTime? lastAutoBackupAt,
+    int? backupReminderIntervalDays,
   }) {
     return AppSettings(
       localeLanguageCode: localeLanguageCode ?? this.localeLanguageCode,
@@ -73,8 +88,11 @@ class AppSettings {
       lastUsedChatModelId: lastUsedChatModelId ?? this.lastUsedChatModelId,
       ttsVoiceId: ttsVoiceId ?? this.ttsVoiceId,
       webSearchEnabledMap: webSearchEnabledMap ?? this.webSearchEnabledMap,
+      autoBackupEnabled: autoBackupEnabled ?? this.autoBackupEnabled,
       backupReminderEnabled: backupReminderEnabled ?? this.backupReminderEnabled,
       nextBackupReminderDate: nextBackupReminderDate ?? this.nextBackupReminderDate,
+      lastAutoBackupAt: lastAutoBackupAt ?? this.lastAutoBackupAt,
+      backupReminderIntervalDays: backupReminderIntervalDays ?? this.backupReminderIntervalDays,
     );
   }
 
@@ -108,8 +126,11 @@ class SettingsStore {
   static const _keyLastUsedChatProviderId = 'last_used_chat_provider_id';
   static const _keyLastUsedChatModelId = 'last_used_chat_model_id';
   static const _keyTtsVoiceId = 'tts_voice_id';
+  static const _keyAutoBackupEnabled = 'auto_backup_enabled';
   static const _keyBackupReminderEnabled = 'backup_reminder_enabled';
   static const _keyNextBackupReminderDate = 'next_backup_reminder_date';
+  static const _keyLastAutoBackupAt = 'last_auto_backup_at';
+  static const _keyBackupReminderIntervalDays = 'backup_reminder_interval_days';
   static const _keyWebSearchPrefix = 'web_search_enabled_';
   static final _webSearchKeys =
       webSearchSupportMap.keys.map((t) => t.name).toList();
@@ -133,6 +154,9 @@ class SettingsStore {
     final lastUsedChatModelId = await _secureStorage.read(key: _keyLastUsedChatModelId);
     final ttsVoiceId = await _secureStorage.read(key: _keyTtsVoiceId);
 
+    final autoBackupEnabledStr = await _secureStorage.read(key: _keyAutoBackupEnabled);
+    final autoBackupEnabled = autoBackupEnabledStr == null ? true : autoBackupEnabledStr == 'true';
+
     final backupReminderEnabledStr = await _secureStorage.read(key: _keyBackupReminderEnabled);
     // Default: true (backup reminder ON by default)
     final backupReminderEnabled = backupReminderEnabledStr == null ? true : backupReminderEnabledStr == 'true';
@@ -141,6 +165,16 @@ class SettingsStore {
     final nextBackupReminderDate = nextBackupReminderDateStr == null
         ? null
         : DateTime.tryParse(nextBackupReminderDateStr);
+
+    final lastAutoBackupAtStr = await _secureStorage.read(key: _keyLastAutoBackupAt);
+    final lastAutoBackupAt = lastAutoBackupAtStr == null
+        ? null
+        : DateTime.tryParse(lastAutoBackupAtStr);
+
+    final backupReminderIntervalDaysStr = await _secureStorage.read(key: _keyBackupReminderIntervalDays);
+    final backupReminderIntervalDays = backupReminderIntervalDaysStr == null
+        ? 3
+        : (int.tryParse(backupReminderIntervalDaysStr) ?? 3);
 
     final webSearchMap = <String, bool>{};
     for (final key in _webSearchKeys) {
@@ -164,8 +198,11 @@ class SettingsStore {
       lastUsedChatModelId: lastUsedChatModelId,
       ttsVoiceId: ttsVoiceId,
       webSearchEnabledMap: webSearchMap,
+      autoBackupEnabled: autoBackupEnabled,
       backupReminderEnabled: backupReminderEnabled,
       nextBackupReminderDate: nextBackupReminderDate,
+      lastAutoBackupAt: lastAutoBackupAt,
+      backupReminderIntervalDays: backupReminderIntervalDays,
     );
   }
 
@@ -242,6 +279,14 @@ class SettingsStore {
     );
   }
 
+  /// 保存自动备份开关状态
+  Future<void> saveAutoBackupEnabled(bool enabled) async {
+    await _secureStorage.write(
+      key: _keyAutoBackupEnabled,
+      value: enabled.toString(),
+    );
+  }
+
   /// 保存备份提醒开关状态
   Future<void> saveBackupReminderEnabled(bool enabled) async {
     await _secureStorage.write(
@@ -260,5 +305,25 @@ class SettingsStore {
         value: date.toIso8601String(),
       );
     }
+  }
+
+  /// 保存上次自动备份时间
+  Future<void> saveLastAutoBackupAt(DateTime? date) async {
+    if (date == null) {
+      await _secureStorage.delete(key: _keyLastAutoBackupAt);
+    } else {
+      await _secureStorage.write(
+        key: _keyLastAutoBackupAt,
+        value: date.toIso8601String(),
+      );
+    }
+  }
+
+  /// 保存分享提醒周期（天）
+  Future<void> saveBackupReminderIntervalDays(int days) async {
+    await _secureStorage.write(
+      key: _keyBackupReminderIntervalDays,
+      value: days.toString(),
+    );
   }
 }

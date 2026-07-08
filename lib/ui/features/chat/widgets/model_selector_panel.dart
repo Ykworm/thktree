@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -71,7 +72,7 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
 
         return ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.45,
+            maxHeight: MediaQuery.of(context).size.height * AppSp.sheetHeightSm,
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -104,7 +105,7 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
                   ),
                 ),
                 Container(
-                  height: 0.5,
+                  height: AppSp.dividerThickness,
                   color: AppColors.border,
                 ),
                 // 模型列表 / 空状态

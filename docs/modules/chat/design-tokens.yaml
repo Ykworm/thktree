@@ -1,6 +1,6 @@
 # 聊天模块设计规范
 # 从代码和 Markdown 文档提取
-# 生成日期: 2026-06-11
+# 生成日期: 2026-07-08 (v0.4 补充视觉 token)
 # 源文件:
 #   - docs/modules/chat/README.md
 #   - lib/ui/features/chat/chat_screen.dart
@@ -8,13 +8,19 @@
 
 meta:
   module: "chat"
-  generated: "2026-06-11"
+  generated: "2026-07-08"
+  version: "0.4"
   sources:
     - "docs/modules/chat/README.md"
     - "lib/ui/features/chat/chat_screen.dart"
     - "lib/ui/features/chat/chat_controller.dart"
     - "lib/ui/features/chat/chat_screen_launch_params.dart"
     - "lib/ui/features/chat/widgets/model_selector_panel.dart"
+    - "lib/ui/core/shared/chat_composer.dart"
+    - "lib/ui/core/shared/message_bubble.dart"
+    - "lib/ui/features/chat/widgets/chat_markdown_sheet.dart"
+    - "lib/ui/features/chat/widgets/chat_outline_sheet.dart"
+    - "lib/ui/features/chat/user_questions.dart"
 
 # ============================================================
 # 核心设计原则
@@ -274,3 +280,220 @@ sseProtocol:
     trigger: "用户点停止按钮"
     method: "chatController.cancel()"
     behavior: "取消 HTTP 连接，保留已接收内容"
+
+# ============================================================
+# 视觉 Token（§8 新增，源码实测）
+# ============================================================
+
+visualTokens:
+  description: "从 chat_screen.dart / chat_composer.dart / message_bubble.dart / model_selector_panel.dart 等源码实测提取，标注行号"
+  caveat: "⚠️ app_colors.dart 与 docs/visual/*.md 均已过时，以下 token 以源码实测为准"
+
+  # ── 导航栏 ──
+  navBar:
+    titleStyle:
+      fontSize: 16
+      fontWeight: 600
+      dartRef: null
+      sourceLine: "chat_screen.dart ~标题行"
+      note: "未走 AppTheme token，Cupertino 导航默认 17px 但实测 16px — 待新建 AppTheme.chatNavTitle"
+    subtitleStyle:
+      fontSize: 12
+      fontWeight: 500
+      color: "textTertiary (#94A3B8)"
+      dartRef: "AppColors.textTertiary"
+      note: "模型名 + provider 名"
+
+  # ── 模型选择器 ──
+  modelSelector:
+    pillRadius: 6
+    pillBg: "#EEF2FF (accentLight)"
+    pillTextColor: "#6366F1 (accent)"
+    pillFontSize: 13
+    pillFontWeight: 400
+    panelHeightRatio: 0.45
+    panelSearchHint: "搜索模型…"
+    panelItemHeight: 56
+    panelItemTitleStyle: { fontSize: 15, fontWeight: 500 }
+    panelItemSubtitleStyle: { fontSize: 13, fontWeight: 400, color: "textSecondary" }
+    sourceLines: "model_selector_panel.dart:74(45%), :87(radius)"
+
+  # ── 消息气泡 ──
+  messageBubble:
+    radius: 12
+    maxWidthRatio: 0.85
+    userBubbleBg: "#EEF2FF (accentLight)"
+    userBubbleTextColor: "textPrimary (#1E293B)"
+    userBubbleAlignment: "right"
+    assistantBubbleBg: "#FFFFFF (surface)"
+    assistantBubbleBorder: "0.5px #E2E8F0 (border)"
+    assistantBubbleTextColor: "textPrimary (#1E293B)"
+    assistantBubbleAlignment: "left"
+    bodyStyle:
+      fontSize: 17
+      fontWeight: 400
+      lineHeight: 1.6
+      dartRef: "AppTheme.body"
+    timestampStyle:
+      fontSize: 13
+      fontWeight: 400
+      color: "textTertiary (#94A3B8)"
+      dartRef: "AppColors.textTertiary"
+      note: "时间戳文字色"
+    sourceLines: "message_bubble.dart:526(radius 12), :411(maxWidth 0.85)"
+
+  # ── 思考过程 ──
+  thinkingSection:
+    bg: "#F1F5F9 (surfaceMuted)"
+    radius: 8
+    titleFontSize: 14
+    titleFontWeight: 500
+    collapseLinkColor: "accent (#6366F1)"
+    collapseLinkFontSize: 14
+    dartRef: "AppColors.accent"
+    note: "源码暂无独立 thinking widget，为 prototype 规范标注"
+
+  # ── 输入区 ──
+  inputArea:
+    containerBg: "#FFFFFF (surface)"
+    inputMinLines: 1
+    inputMaxLines: 6
+    inputFontSize: 17
+    inputFontWeight: 400
+    inputPlaceholderColor: "textTertiary (#94A3B8)"
+    sendButtonIcon: "AppIcons.send"
+    sendButtonColor_disabled: "textTertiary (#94A3B8)"
+    sendButtonColor_enabled: "accent (#6366F1)"
+    stopButtonIcon: "AppIcons.stop"
+    stopButtonColor: "CupertinoColors.systemRed"
+    stopButtonNote: "⚠️ 硬编码 CupertinoColors.systemRed，建议 → AppColors.destructive"
+    toggleBar:
+      webSearch:
+        icon: "AppIcons.globe"
+        activeColor: "accent (#6366F1)"
+        inactiveColor: "textTertiary (#94A3B8)"
+      deepThinking:
+        icon: "AppIcons.sparkles (推测)"
+        defaultOn: true
+        activeColor: "accent (#6366F1)"
+        inactiveColor: "textTertiary (#94A3B8)"
+      imagePick:
+        icon: "AppIcons.image"
+        supportedColor: "accent (#6366F1)"
+        unsupportedColor: "textTertiary (#94A3B8)"
+    imagePreview:
+      height: 80
+      width: 80
+      removeIcon: "AppIcons.close"
+      removeIconBg: "black 50%"
+    sourceLines: "chat_composer.dart:532(minLines/maxLines), :80(input)"
+
+  # ── Sheet / Dialog ──
+  sheets:
+    modelPicker:
+      heightRatio: 0.45
+      scrimColor: "#00000080 (50% 透明黑)"
+      topRadius: 14
+      sourceLine: "model_selector_panel.dart:74"
+    moreSheet:
+      heightRatio: 0.65
+      items: ["本次发言", "查看整棵树", "原始 Markdown", "分支"]
+      scrimColor: "#00000080"
+    mdViewer:
+      heightRatio: 0.88
+      header: ["关闭", "原始 Markdown", "复制"]
+      bodyFont: "monospace"
+      bodyFontSize: 14
+      bodyLineHeight: 1.5
+      sourceLine: "chat_markdown_sheet.dart:265"
+    branchSheet:
+      heightRatio: 0.65
+      title: "选择创建方式"
+      options: ["总结后创建", "使用原始上下文创建", "空白分支"]
+      radioActiveColor: "accent (#6366F1)"
+      radioInactiveColor: "textTertiary (#94A3B8)"
+      continueDisabledOpacity: 0.6
+      sourceLine: "chat_screen.dart 分支相关代码"
+
+  # ── 我发出的消息 ──
+  myQuestions:
+    rowHeight: 56
+    titleStyle: { fontSize: 15, fontWeight: 500 }
+    subtitleStyle: { fontSize: 13, fontWeight: 400, color: "textSecondary" }
+    sourceTagBg: "accent 50% 透明 (#6366F180)"
+    chevron: "AppIcons.chevronRight"
+    sourceLine: "user_questions.dart:290"
+
+  # ── 整棵树 ──
+  treeViewer:
+    circleSize: 12
+    circleBorderWidth: 2
+    rowHeight: 56
+    indentStep: 28
+    activeCircleColor: "accent (#6366F1)"
+    activeTitleColor: "accent (#6366F1)"
+    inactiveCircleColor: "palette.circle (NodePalette)"
+    sourceLine: "chat_outline_sheet.dart:178"
+
+  # ── 空态 ──
+  emptyState:
+    text: "暂无消息"
+    textColor: "textTertiary (#94A3B8)"
+    textStyle: { fontSize: 15, fontWeight: 400 }
+
+# ============================================================
+# 偏差汇总（源码实测 vs token 规范）
+# ============================================================
+
+deviations:
+  description: "源码中未走 AppColors/AppTheme token 的硬编码，需迁移"
+
+  hardcodedColors:
+    - value: "CupertinoColors.systemGreen"
+      context: "复制成功 icon 变色（2s）"
+      source: "message_bubble.dart"
+      suggestion: "→ AppColors.success (#34C759)"
+    - value: "CupertinoColors.systemRed"
+      context: "stop 按钮 / 删除 / 左滑"
+      source: "chat_composer.dart / theme_detail_screen.dart"
+      suggestion: "→ AppColors.destructive (#DC2626)"
+    - value: "CupertinoColors.systemTeal"
+      context: "model item hover 高亮"
+      source: "model_selector_panel.dart"
+      suggestion: "→ AppColors.accent 或 AppColors.accentLight"
+    - value: "CupertinoColors.systemIndigo"
+      context: "model item selected 高亮"
+      source: "model_selector_panel.dart"
+      suggestion: "→ AppColors.accent (#6366F1)"
+    - value: "CupertinoColors.systemOrange"
+      context: "来源标签 icon 色"
+      source: "user_questions.dart"
+      suggestion: "→ AppColors.accent 或语义色"
+    - value: "Color(0x80000000)"
+      context: "Bottom Sheet scrim"
+      source: "chat_screen.dart:1175"
+      suggestion: "→ AppColors.scrim"
+    - value: "black.withValues(alpha: 0.12)"
+      context: "浮层阴影"
+      source: "chat_screen.dart 多处"
+      suggestion: "→ AppColors.elevationShadow"
+
+  hardcodedLayout:
+    - value: "0.85 (maxWidth ratio)"
+      context: "消息气泡最大宽度"
+      source: "message_bubble.dart:411"
+      suggestion: "→ AppSp.chatBubbleMaxWidth"
+    - value: "0.45 (sheet height ratio)"
+      context: "模型选择器 panel"
+      source: "model_selector_panel.dart:74"
+      suggestion: "→ AppSp.sheetHeightSm"
+    - value: "80 (image preview height)"
+      context: "图片缩略图"
+      source: "chat_composer.dart"
+      suggestion: "→ AppSp.imagePreviewHeight"
+
+  hardcodedDurations:
+    - value: "Duration(seconds: 2)"
+      context: "复制成功 icon 变色持续"
+      source: "message_bubble.dart"
+      suggestion: "→ AppDur.copyFeedback"

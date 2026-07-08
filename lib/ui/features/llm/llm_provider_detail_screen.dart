@@ -18,9 +18,10 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 ///
 /// 传入 [provider] 则编辑现有提供商；不传则新建自定义提供商。
 class LlmProviderDetailScreen extends ConsumerStatefulWidget {
-  const LlmProviderDetailScreen({super.key, this.provider});
+  const LlmProviderDetailScreen({super.key, this.provider, this.parentCrumbs = const []});
 
   final LlmProviderConfig? provider;
+  final List<BreadcrumbSegment> parentCrumbs;
 
   @override
   ConsumerState<LlmProviderDetailScreen> createState() =>
@@ -40,6 +41,10 @@ class _LlmProviderDetailScreenState
   bool _isFetchingModels = false;
   List<LlmModelConfig> _fetchedModels = [];
   LlmError? _fetchError;
+
+  static const _ownCrumb = BreadcrumbSegment(label: '配置', routeName: 'provider-detail');
+
+  List<BreadcrumbSegment> get _crumbs => [...widget.parentCrumbs, _ownCrumb];
 
   @override
   void initState() {
@@ -108,9 +113,13 @@ class _LlmProviderDetailScreenState
               : null,
         ),
         child: SafeArea(
-          child: _isLoadingApiKey
-              ? const Center(child: CupertinoActivityIndicator())
-              : ListView(
+          child: Column(
+            children: [
+              ThkBreadcrumbRow(crumbs: _crumbs),
+              Expanded(
+                child: _isLoadingApiKey
+                    ? const Center(child: CupertinoActivityIndicator())
+                    : ListView(
                   children: [
                     // API 配置区
                     ThkListSection(
@@ -232,6 +241,9 @@ class _LlmProviderDetailScreenState
                       ),
                   ],
                 ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart'
     show resolveChatModel;
+import 'package:thk_tree/ui/core/shared/link_launcher.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -587,6 +588,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
               child: GptMarkdown(
                 _body,
                 style: TextStyle(fontSize: 17, height: 1.6),
+                onLinkTap: (url, _) => openMarkdownLink(context, url),
               ),
             ),
           ),

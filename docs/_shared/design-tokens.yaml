@@ -1,19 +1,28 @@
 # 全局设计 token
 # 从代码和 Markdown 文档提取，供 AI 生成页面时直接引用
-# 生成日期: 2026-06-11
+# 生成日期: 2026-07-08 (v0.4 补充 chat/themes 视觉 token)
 # 源文件:
 #   - lib/ui/core/theme/app_colors.dart
 #   - lib/ui/core/theme/app_theme.dart
 #   - lib/ui/core/theme/app_icons.dart
 #   - docs/_shared/design-system.md
+#   - lib/ui/features/chat/chat_screen.dart (§8 新增源)
+#   - lib/ui/core/shared/chat_composer.dart (§8 新增源)
+#   - lib/ui/core/shared/message_bubble.dart (§8 新增源)
+#   - lib/ui/features/chat/widgets/model_selector_panel.dart (§8 新增源)
 
 meta:
-  generated: "2026-06-11"
+  generated: "2026-07-08"
+  version: "0.4"
   sources:
     - "lib/ui/core/theme/app_colors.dart"
     - "lib/ui/core/theme/app_theme.dart"
     - "lib/ui/core/theme/app_icons.dart"
     - "docs/_shared/design-system.md"
+    - "lib/ui/features/chat/chat_screen.dart"
+    - "lib/ui/core/shared/chat_composer.dart"
+    - "lib/ui/core/shared/message_bubble.dart"
+    - "lib/ui/features/chat/widgets/model_selector_panel.dart"
 
 # ============================================================
 # 1. 颜色 — 基础色
@@ -79,6 +88,44 @@ colors:
     value: "#FFFFFF"
     dartRef: "AppColors.onSurface"
     usage: "卡片上前景色（白色）"
+
+  # ── Chat / Sheet 语义色 (§8 新增) ──
+  scrim:
+    value: "#00000080"
+    dartRef: "AppColors.scrim"
+    usage: "Bottom Sheet 遮罩（50% 透明黑）— 源码 Color(0x80000000)"
+  elevationShadow:
+    value: "#0000001F"
+    dartRef: "AppColors.elevationShadow"
+    usage: "浮层阴影（7% 透明黑）— 源码 black.withValues(alpha: 0.12)"
+  thinkingBg:
+    value: "#F1F5F9"
+    dartRef: "AppColors.thinkingBg"
+    usage: "思考过程背景 — getter 指向 surfaceMuted，语义别名"
+  markdownCodeBg:
+    value: "#F8FAFC"
+    dartRef: "AppColors.markdownCodeBg"
+    usage: "Markdown 代码块背景 — getter 指向 pageBg，语义别名"
+  userBubbleBg:
+    value: "#EEF2FF"
+    dartRef: "AppColors.userBubbleBg"
+    usage: "用户消息气泡背景 — getter 指向 accentLight，语义别名"
+  assistantBubbleBg:
+    value: "#FFFFFF"
+    dartRef: "AppColors.assistantBubbleBg"
+    usage: "助手消息气泡背景 — getter 指向 surface"
+  assistantBubbleBorder:
+    value: "#E2E8F0"
+    dartRef: "AppColors.assistantBubbleBorder"
+    usage: "助手消息气泡 0.5px 边框 — getter 指向 border"
+  copyFeedbackSuccess:
+    value: "#34C759"
+    dartRef: "AppColors.success"
+    usage: "复制成功 2s icon 变色"
+  questionSourceTag:
+    value: "#6366F180"
+    dartRef: "AppColors.questionSourceTag"
+    usage: "我问过的问题 → 来源标签背景（accent 50% 透明）"
 
 # ============================================================
 # 2. 主题色 — 5 套典雅黑金色调
@@ -244,48 +291,95 @@ typography:
 spacing:
   screenPadding:
     value: 16
-    dartRef: null
+    dartRef: "AppSp.screenPadding"
     usage: "屏幕内边距"
   listItemVerticalPadding:
     value: 12
-    dartRef: null
+    dartRef: "AppSp.listItemVerticalPadding"
     usage: "列表项垂直内边距"
   cardRadius:
     value: 12
-    dartRef: null
+    dartRef: "AppSp.cardRadius"
     usage: "卡片圆角"
   buttonRadius:
     value: 10
-    dartRef: null
+    dartRef: "AppSp.buttonRadius"
     usage: "按钮圆角"
   dragBubbleRadius:
     value: 10
-    dartRef: null
+    dartRef: "AppSp.dragBubbleRadius"
     usage: "拖拽气泡圆角"
   treeIndent:
     value: 28
-    dartRef: null
+    dartRef: "AppSp.treeIndent"
     usage: "树节点缩进步进"
   treeRowHeight:
     value: 56
-    dartRef: null
+    dartRef: "AppSp.treeRowHeight"
     usage: "树节点行高"
   touchTarget:
     value: 44
-    dartRef: null
+    dartRef: "AppSp.touchTarget"
     usage: "圆圈热区（44×44）"
   dragHandle:
     value: 52
-    dartRef: null
+    dartRef: "AppSp.dragHandle"
     usage: "拖拽手柄热区（52×52）"
   titleToContentGap:
     value: 16
-    dartRef: null
+    dartRef: "AppSp.titleToContentGap"
     usage: "大标题到内容间距"
   dividerThickness:
     value: 0.5
-    dartRef: null
+    dartRef: "AppSp.dividerThickness"
     usage: "区块间分隔线粗细"
+
+  # ── Chat / Sheet 间距 (§8 新增) ──
+  chatBubbleRadius:
+    value: 12
+    dartRef: "AppSp.chatBubbleRadius"
+    usage: "消息气泡圆角"
+  chatBubbleMaxWidth:
+    value: 0.85
+    dartRef: "AppSp.chatBubbleMaxWidth"
+    usage: "消息气泡最大宽度比例（85% 屏宽）"
+  sheetHeightSm:
+    value: 0.45
+    dartRef: "AppSp.sheetHeightSm"
+    usage: "Small Sheet 高度比例（45%）— 模型选择器"
+  sheetHeightMd:
+    value: 0.65
+    dartRef: "AppSp.sheetHeightMd"
+    usage: "Medium Sheet 高度比例（65%）— 分支/更多"
+  sheetHeightLg:
+    value: 0.88
+    dartRef: "AppSp.sheetHeightLg"
+    usage: "Large Sheet 高度比例（88%）— Markdown 查看器"
+  imagePreviewHeight:
+  imagePreviewHeight:
+    value: 80
+    dartRef: "AppSp.imagePreviewHeight"
+    usage: "图片预览缩略图高度（80pt）"
+  modelPillRadius:
+    value: 6
+    dartRef: "AppSp.modelPillRadius"
+    usage: "模型选择 pill 圆角（6pt）"
+  sheetTopRadius:
+    value: 14
+    dartRef: "AppSp.sheetTopRadius"
+    usage: "Sheet 顶部圆角（14pt）"
+  messageInputMinLines:
+    value: 1
+    dartRef: "AppSp.messageInputMinLines"
+    usage: "输入框最小行数"
+  messageInputMaxLines:
+    value: 6
+    dartRef: "AppSp.messageInputMaxLines"
+    usage: "输入框最大行数"
+  bottomTolerance:
+    value: 24
+    dartRef: "AppSp.bottomTolerance"
+    usage: "消息列表自动滚底容差（24pt）"
 
 # ============================================================
 # 6. 动画 — 文档定义
@@ -295,23 +389,40 @@ animation:
   circleToggle:
     duration: 200
     curve: "easeInOut"
-    dartRef: null
+    dartRef: "AppDur.sheetScroll"
     usage: "圆圈展开/折叠"
   dragHandleScale:
     duration: 120
     curve: "easeOut"
-    dartRef: null
+    dartRef: "AppDur.scrimFade"
     usage: "拖拽手柄 scale"
   listRefresh:
     duration: 200
     curve: "easeInOut"
-    dartRef: null
+    dartRef: "AppDur.copyFeedback"
     usage: "列表刷新"
   modal:
     duration: 250
     curve: "easeOut"
-    dartRef: null
+    dartRef: "AppDur.modal"
     usage: "弹层出现"
+
+  # ── Chat 动效 (§8 新增) ──
+  copyFeedback:
+    duration: 2000
+    curve: null
+    dartRef: "AppDur.copyFeedback"
+    usage: "复制成功 icon 变色持续时间（2s）"
+  sheetScroll:
+    duration: 300
+    curve: "easeOut"
+    dartRef: "AppDur.listScroll"
+    usage: "Sheet 内列表滚动过渡"
+  streamingIndicator:
+    duration: 1500
+    curve: "easeInOut"
+    dartRef: "AppDur.shimmer"
+    usage: "生成中指示器脉动"
 
 # ============================================================
 # 7. 触控反馈

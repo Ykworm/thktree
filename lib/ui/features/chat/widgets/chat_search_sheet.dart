@@ -5,6 +5,7 @@ import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 
 /// 聊天内搜索 — 在当前对话的所有消息中搜索文本，点击结果跳转。
 ///
@@ -73,7 +74,7 @@ class _ChatSearchPageState extends State<_ChatSearchPage> {
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
         color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSp.sheetTopRadius)),
       ),
       child: Column(
         children: [

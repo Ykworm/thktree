@@ -14,12 +14,14 @@ class DefaultModelPickerScreen extends ConsumerWidget {
     required this.currentProviderId,
     required this.currentModelId,
     required this.onSelected,
+    this.parentCrumbs = const [],
   });
 
   final String title;
   final String? currentProviderId;
   final String? currentModelId;
   final Future<void> Function(String providerId, String modelId) onSelected;
+  final List<BreadcrumbSegment> parentCrumbs;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +32,11 @@ class DefaultModelPickerScreen extends ConsumerWidget {
       backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(title: title),
       child: SafeArea(
-        child: providersAsync.when(
+        child: Column(
+          children: [
+            ThkBreadcrumbRow(crumbs: parentCrumbs),
+            Expanded(
+              child: providersAsync.when(
           data: (providers) {
             final configuredProviders =
                 providers.where((provider) => provider.models.isNotEmpty).toList();
@@ -99,6 +105,9 @@ class DefaultModelPickerScreen extends ConsumerWidget {
           error: (e, _) => ThkFillCardPageBody(
             child: Center(child: Text(e.toString())),
           ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -12,7 +12,13 @@ import 'package:thk_tree/ui/features/settings/default_model_config_screen.dart';
 /// - 模型提供商：跳转到现有的 LlmProvidersScreen
 /// - 默认模型配置：跳转到 DefaultModelConfigScreen
 class LlmSettingsScreen extends StatelessWidget {
-  const LlmSettingsScreen({super.key});
+  const LlmSettingsScreen({super.key, this.parentCrumbs = const []});
+
+  final List<BreadcrumbSegment> parentCrumbs;
+
+  static const _ownCrumb = BreadcrumbSegment(label: '大模型', routeName: 'llm-settings');
+
+  List<BreadcrumbSegment> get _crumbs => [...parentCrumbs, _ownCrumb];
 
   @override
   Widget build(BuildContext context) {
@@ -24,45 +30,58 @@ class LlmSettingsScreen extends StatelessWidget {
         middle: Text(l10n.llmSettings),
       ),
       child: SafeArea(
-        child: ThkFillCardPageBody(
-          child: ListView.separated(
-            padding: EdgeInsets.zero,
-            itemCount: 2,
-            separatorBuilder: (context, index) => Container(
-              height: 0.5,
-              margin: const EdgeInsetsDirectional.only(start: 16),
-              color: CupertinoColors.separator.resolveFrom(context),
+        child: Column(
+          children: [
+            ThkBreadcrumbRow(crumbs: _crumbs),
+            Expanded(
+              child: ThkFillCardPageBody(
+                child: ListView.separated(
+                  padding: EdgeInsets.zero,
+                  itemCount: 2,
+                  separatorBuilder: (context, index) => Container(
+                    height: 0.5,
+                    margin: const EdgeInsetsDirectional.only(start: 16),
+                    color: CupertinoColors.separator.resolveFrom(context),
+                  ),
+                  itemBuilder: (context, index) {
+                    switch (index) {
+                      case 0:
+                        return ThkListTile(
+                          title: l10n.llmProvidersTitle,
+                          backgroundColor: AppColors.surface,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              CupertinoPageRoute(
+                                settings: const RouteSettings(name: 'providers-list'),
+                                builder: (context) => LlmProvidersScreen(
+                                  parentCrumbs: _crumbs,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      case 1:
+                        return ThkListTile(
+                          title: l10n.defaultModelConfig,
+                          backgroundColor: AppColors.surface,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              CupertinoPageRoute(
+                                settings: const RouteSettings(name: 'default-model-config'),
+                                builder: (context) => DefaultModelConfigScreen(
+                                  parentCrumbs: _crumbs,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
             ),
-            itemBuilder: (context, index) {
-              switch (index) {
-                case 0:
-                  return ThkListTile(
-                    title: l10n.llmProvidersTitle,
-                    backgroundColor: AppColors.surface,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (context) => const LlmProvidersScreen(),
-                        ),
-                      );
-                    },
-                  );
-                case 1:
-                  return ThkListTile(
-                    title: l10n.defaultModelConfig,
-                    backgroundColor: AppColors.surface,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (context) => const DefaultModelConfigScreen(),
-                        ),
-                      );
-                    },
-                  );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
+          ],
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -654,7 +655,7 @@ Future<BranchMode?> showBranchModeSheet(
             decoration: BoxDecoration(
               color: CupertinoTheme.of(ctx).scaffoldBackgroundColor,
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+                  const BorderRadius.vertical(top: Radius.circular(AppSp.sheetTopRadius)),
             ),
             child: SafeArea(
               child: Column(
@@ -696,7 +697,7 @@ Future<BranchMode?> showBranchModeSheet(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppSp.buttonRadius),
                                 border: Border.all(
                                   color: AppColors.border
                                       .withValues(alpha: 0.35),
@@ -847,7 +848,8 @@ class _BranchModeOption extends StatelessWidget {
 /// 2. 弹 [showTitleSuggestion] 让用户选 / 输入 title。
 /// 3. 直接创建 child chat node（parent=parentNodeId），把 sourceContent 写为
 ///    首条 user 消息，再写 provider/model 元数据，最后
-///    push `/themes/{themeId}/nodes/{childNodeId}` (autoTriggerReply=true)。
+///    push `/themes/{themeId}/nodes/{childNodeId}` (autoTriggerReply=false ——
+///    不自动发给 LLM，等用户自己发送)。
 ///
 /// [parentNodeId] 可空：null = 把新 node 创建为 theme root（与 [nodeStore.createChatNode]
 /// 行为一致）。被 note→chat 创建流程使用（note 选了 theme root 时 parentId 为 null）。
@@ -1031,7 +1033,7 @@ Future<String?> showBranchFlow({
       '/themes/$themeId/nodes/${childNode.nodeId}',
       extra: ChatScreenLaunchParams(
         title: title,
-        autoTriggerReply: true,
+        autoTriggerReply: false,
       ),
     );
     return title;

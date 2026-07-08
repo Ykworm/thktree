@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_durations.dart';
 
 typedef MessageBuilder = Widget Function(BuildContext context, SessionMessage message);
 
@@ -72,8 +73,8 @@ class ChatListViewState extends State<ChatListView> {
     if (key?.currentContext != null) {
       Scrollable.ensureVisible(
         key!.currentContext!,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+        duration: AppDur.listScroll,
+        curve: AppDur.listScrollCurve,
         alignment: 0.3,
       );
       return;
@@ -107,7 +108,7 @@ class ChatListViewState extends State<ChatListView> {
       if (ctx != null) {
         Scrollable.ensureVisible(
           ctx,
-          duration: const Duration(milliseconds: 200),
+          duration: AppDur.sheetScroll,
           curve: Curves.easeOut,
           alignment: 0.3,
         );
@@ -224,8 +225,8 @@ class ChatListViewState extends State<ChatListView> {
     if (distance < 4) return;
     _scrollController.animateTo(
       max,
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
+      duration: AppDur.scrimFade,
+      curve: AppDur.scrimFadeCurve,
     );
   }
 
@@ -236,8 +237,8 @@ class ChatListViewState extends State<ChatListView> {
     if (distance < 4) return;
     _scrollController.animateTo(
       0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
+      duration: AppDur.listScroll,
+      curve: AppDur.listScrollCurve,
     );
   }
 }

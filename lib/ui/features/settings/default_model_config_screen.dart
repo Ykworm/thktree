@@ -14,15 +14,20 @@ import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 /// 展示三个默认模型设置项（聊天 / 标题生成 / 对话总结）。
 /// 每个设置项点击后弹出按提供商分组的模型选择器。
 class DefaultModelConfigScreen extends ConsumerStatefulWidget {
-  const DefaultModelConfigScreen({super.key});
+  const DefaultModelConfigScreen({super.key, this.parentCrumbs = const []});
+
+  final List<BreadcrumbSegment> parentCrumbs;
 
   @override
   ConsumerState<DefaultModelConfigScreen> createState() => _DefaultModelConfigScreenState();
 }
 
 class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScreen> {
-  /// 防抖：自动保存默认模型后置 true，避免重复调用。
   bool _autoModelSaved = false;
+
+  static const _ownCrumb = BreadcrumbSegment(label: '模型配置', routeName: 'default-model-config');
+
+  List<BreadcrumbSegment> get _crumbs => [...widget.parentCrumbs, _ownCrumb];
 
   @override
   Widget build(BuildContext context) {
@@ -56,9 +61,13 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
         middle: Text(l10n.defaultModelConfig),
       ),
       child: SafeArea(
-        child: settingsAsync.when(
-          data: (_) => ThkFillCardPageBody(
-            child: Column(
+        child: Column(
+          children: [
+            ThkBreadcrumbRow(crumbs: _crumbs),
+            Expanded(
+              child: settingsAsync.when(
+                data: (_) => ThkFillCardPageBody(
+                  child: Column(
               children: [
                 Expanded(
                   child: ListView.separated(
@@ -134,6 +143,9 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
           error: (e, st) => ThkFillCardPageBody(
             child: Center(child: Text(e.toString())),
           ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -211,10 +223,12 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
   }) {
     Navigator.of(context).push<bool>(
       CupertinoPageRoute(
+        settings: const RouteSettings(name: 'model-picker'),
         builder: (_) => DefaultModelPickerScreen(
           title: title,
           currentProviderId: providerId,
           currentModelId: modelId,
+          parentCrumbs: _crumbs,
           onSelected: (nextProviderId, nextModelId) async {
             onSave(nextProviderId, nextModelId);
           },

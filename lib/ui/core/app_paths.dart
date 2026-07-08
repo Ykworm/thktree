@@ -11,6 +11,7 @@ class AppPaths {
     required this.themesDir,
     required this.logsDir,
     required this.tempDir,
+    required this.backupsDir,
     required this.indexDbPath,
     required this.appLogPath,
   });
@@ -19,6 +20,7 @@ class AppPaths {
   final Directory themesDir;
   final Directory logsDir;
   final Directory tempDir;
+  final Directory backupsDir;
   final String indexDbPath;
   final String appLogPath;
 
@@ -33,6 +35,7 @@ class AppPaths {
     final themesDir = Directory(p.join(rootDir.path, 'themes'));
     final logsDir = Directory(p.join(rootDir.path, 'logs'));
     final tempDir = Directory(p.join(rootDir.path, 'temp'));
+    final backupsDir = Directory(p.join(rootDir.path, 'backups'));
     final indexDbPath = p.join(rootDir.path, 'index.sqlite');
     final appLogPath = p.join(logsDir.path, 'app.log');
 
@@ -46,6 +49,7 @@ class AppPaths {
       themesDir: themesDir,
       logsDir: logsDir,
       tempDir: tempDir,
+      backupsDir: backupsDir,
       indexDbPath: indexDbPath,
       appLogPath: appLogPath,
     );
@@ -63,6 +67,9 @@ class AppPaths {
     }
     if (!await tempDir.exists()) {
       await tempDir.create(recursive: true);
+    }
+    if (!await backupsDir.exists()) {
+      await backupsDir.create(recursive: true);
     }
   }
 

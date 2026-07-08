@@ -2,16 +2,19 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText, SelectionArea;
+import 'package:thk_tree/ui/core/shared/selection_state.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
+import 'package:thk_tree/ui/core/shared/link_launcher.dart';
 import 'package:thk_tree/ui/core/shared/markdown_builders.dart';
 import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/tts_controller.dart';
@@ -342,7 +345,6 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
   bool _copied = false;
   bool _sharing = false;
   bool _showReasoning = false;
-  String? _selectedText;
   final _shareButtonKey = GlobalKey();
 
   Future<void> _copyToClipboard() async {
@@ -398,8 +400,9 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
       }
 
       // 如果用户选中了文本，只对选中文本生成图片
-      final answer = (_selectedText != null && _selectedText!.trim().isNotEmpty)
-          ? _selectedText!
+      final selected = ref.read(currentSelectionProvider);
+      final answer = (selected != null && selected.trim().isNotEmpty)
+          ? selected
           : widget.message.body;
 
       final shareMessages = <ShareMessage>[];
@@ -522,7 +525,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
               child: Container(
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSp.chatBubbleRadius),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
@@ -584,17 +587,12 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                               const SizedBox(height: 8),
                             if (widget.message.body.trim().isNotEmpty)
                               SelectionArea(
-                                onSelectionChanged: (value) {
-                                  final text = value?.plainText;
-                                  setState(() {
-                                    _selectedText = (text != null && text.trim().isNotEmpty)
-                                        ? text
-                                        : null;
-                                  });
-                                },
+                                onSelectionChanged: (v) => syncSelection(context, v),
                                 child: GptMarkdown(
                                   sanitizedBody,
                                   style: baseStyle,
+                                  onLinkTap: (url, _) =>
+                                      openMarkdownLink(context, url),
                                   tableBuilder: (ctx, rows, style, cfg) {
                                     final tableMarkdown = _tableRowsToMarkdown(rows);
                                     return _TableWithActions(
@@ -625,7 +623,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                 _copied ? AppIcons.checkCircle : AppIcons.copy,
                                 size: 18,
                                 color: _copied
-                                    ? CupertinoColors.systemGreen
+                                    ? AppColors.success
                                     : AppColors.textSecondary,
                               ),
                             ),
@@ -667,7 +665,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                               if (widget.message.status == SessionMessageStatus.error)
                                 CupertinoButton(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  color: CupertinoColors.systemRed,
+                                  color: AppColors.destructive,
                                   onPressed: widget.onRetry,
                                   child: Text(
                                     l10n.retry,
@@ -775,12 +773,14 @@ class _ReasoningSection extends StatelessWidget {
           if (isExpanded) ...[
             const SizedBox(height: 8),
             SelectionArea(
+              onSelectionChanged: (v) => syncSelection(context, v),
               child: GptMarkdown(
                 sanitizedReasoning,
                 style: TextStyle(
                   fontSize: 15,
                   color: AppColors.textSecondary,
                 ),
+                onLinkTap: (url, _) => openMarkdownLink(context, url),
                 tableBuilder: (ctx, rows, style, cfg) {
                   final tableMarkdown = _tableRowsToMarkdown(rows);
                   return _TableWithActions(
@@ -938,6 +938,7 @@ class _TableExpandedView extends StatelessWidget {
           child: GptMarkdown(
             _sanitizeMarkdown(content, stripThinkTags: true),
             style: baseStyle,
+            onLinkTap: (url, _) => openMarkdownLink(context, url),
             codeBuilder: _buildCodeBlock,
             tableBuilder: (
               context,
@@ -991,6 +992,7 @@ class _MarkdownTableView extends StatelessWidget {
         );
 
         return SelectionArea(
+          onSelectionChanged: (v) => syncSelection(context, v),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Table(
@@ -1014,6 +1016,7 @@ class _MarkdownTableView extends StatelessWidget {
                             ? textStyle.copyWith(fontWeight: FontWeight.w600)
                             : textStyle,
                         textAlign: cell.alignment,
+                        onLinkTap: (url, _) => openMarkdownLink(context, url),
                         latexBuilder: buildLatex,
                         useDollarSignsForLatex: true,
                       ),

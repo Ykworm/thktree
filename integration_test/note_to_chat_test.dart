@@ -308,4 +308,40 @@ class _InMemorySettingsStore implements SettingsStore {
   Future<void> saveTtsVoiceId(String? voiceId) async {
     _settings = _settings.copyWith(ttsVoiceId: voiceId);
   }
+
+  @override
+  Future<void> saveLastUsedChatModel({String? providerId, String? modelId}) async {
+    _settings = _settings.copyWith(
+      lastUsedChatProviderId: providerId,
+      lastUsedChatModelId: modelId,
+    );
+  }
+
+  @override
+  Future<void> saveWebSearchEnabled(String providerType, bool enabled) async {}
+
+  @override
+  Future<void> saveBackupReminderEnabled(bool enabled) async {
+    _settings = _settings.copyWith(backupReminderEnabled: enabled);
+  }
+
+  @override
+  Future<void> saveNextBackupReminderDate(DateTime? date) async {
+    _settings = _settings.copyWith(nextBackupReminderDate: date);
+  }
+
+  @override
+  Future<void> saveAutoBackupEnabled(bool enabled) async {
+    _settings = _settings.copyWith(autoBackupEnabled: enabled);
+  }
+
+  @override
+  Future<void> saveLastAutoBackupAt(DateTime? date) async {
+    _settings = _settings.copyWith(lastAutoBackupAt: date);
+  }
+
+  @override
+  Future<void> saveBackupReminderIntervalDays(int days) async {
+    _settings = _settings.copyWith(backupReminderIntervalDays: days);
+  }
 }

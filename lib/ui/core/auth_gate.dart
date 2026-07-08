@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:thk_tree/data/services/auto_backup_service.dart';
+import 'package:thk_tree/data/services/settings_store.dart';
+import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
@@ -53,22 +57,55 @@ class _AuthGateState extends ConsumerState<AuthGate> with WidgetsBindingObserver
     final settingsAsync = ref.read(settingsControllerProvider);
     final settings = settingsAsync.whenOrNull(data: (s) => s);
     if (settings == null || !settings.faceIdEnabled) {
-      if (mounted) setState(() => _authenticated = true);
+      if (mounted) {
+        setState(() => _authenticated = true);
+        _triggerAutoBackup();
+      }
       return;
     }
 
     final biometric = ref.read(biometricServiceProvider);
     final canAuth = await biometric.canAuthenticate();
     if (!canAuth) {
-      if (mounted) setState(() => _authenticated = true);
+      if (mounted) {
+        setState(() => _authenticated = true);
+        _triggerAutoBackup();
+      }
       return;
     }
 
     _authenticating = true;
     final ok = await biometric.authenticate();
     _authenticating = false;
-    if (mounted && ok) setState(() => _authenticated = true);
+    if (mounted && ok) {
+      setState(() => _authenticated = true);
+      _triggerAutoBackup();
+    }
     // If failed, stay on lock screen — user can tap to retry.
+  }
+
+  /// 认证成功后触发自动备份（前台补偿：超 24h 备份一次到本地）
+  void _triggerAutoBackup() {
+    final paths = ref.read(appPathsProvider).value;
+    if (paths == null) return;
+    final settings =
+        ref.read(settingsControllerProvider).whenOrNull(data: (s) => s);
+    if (settings == null) return;
+    unawaited(_doAutoBackup(paths, settings));
+  }
+
+  Future<void> _doAutoBackup(AppPaths paths, AppSettings settings) async {
+    if (!settings.autoBackupEnabled) return;
+    final service = AutoBackupService(paths: paths);
+    final didBackup = await service.maybeBackup(
+      settings: settings,
+      appVersion: '1.0.0', // TODO: package_info
+    );
+    if (didBackup) {
+      await ref
+          .read(settingsControllerProvider.notifier)
+          .saveLastAutoBackupAt(DateTime.now());
+    }
   }
 
   @override

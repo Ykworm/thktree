@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:thk_tree/data/services/auto_backup_service.dart';
 import 'package:thk_tree/data/services/export_service.dart';
 import 'package:thk_tree/data/services/search_service.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
@@ -16,6 +17,7 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/notes/note_detail_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/ui/features/backup_restore/backup_restore_screen.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
@@ -454,6 +456,11 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
 
     if (!_shouldShow(settings)) return const SizedBox.shrink();
 
+    final paths = ref.read(appPathsProvider).value;
+    final backupCount = paths != null
+        ? AutoBackupService(paths: paths).listBackups().length
+        : 0;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -471,7 +478,7 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '建议定期备份数据以保护您的内容',
+                  '你已有 $backupCount 份本地备份，建议分享一份到 iCloud 或其他设备保存',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -492,20 +499,37 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
             ],
           ),
           const SizedBox(height: 8),
-          CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            minimumSize: Size.zero,
-            color: AppColors.accent,
-            borderRadius: BorderRadius.circular(8),
-            onPressed: () => _onBackup(context, l10n),
-            child: const Text(
-              '立即备份',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.white,
+          Row(
+            children: [
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                minimumSize: Size.zero,
+                color: AppColors.accent,
+                borderRadius: BorderRadius.circular(8),
+                onPressed: () => _onBackup(context, l10n),
+                child: const Text(
+                  '去分享',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.white,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                minimumSize: Size.zero,
+                onPressed: _onDismiss,
+                child: Text(
+                  '忽略',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -525,76 +549,18 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
   }
 
   DateTime _computeNextDate() {
-    final days = 3 + Random().nextInt(5); // 3,4,5,6,7
+    final settings =
+        ref.read(settingsControllerProvider).whenOrNull(data: (s) => s);
+    final days = settings?.backupReminderIntervalDays ?? 3;
     return DateTime.now().add(Duration(days: days));
   }
 
   Future<void> _onBackup(BuildContext context, AppLocalizations l10n) async {
-    final paths = await ref.read(appPathsProvider.future);
     if (!context.mounted) return;
-
-    final navigator = Navigator.of(context, rootNavigator: true);
-
-    // 显示进度对话框
-    unawaited(
-      showCupertinoDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          title: Text(l10n.backupInProgress),
-          content: const Padding(
-            padding: EdgeInsets.only(top: 16),
-            child: CupertinoActivityIndicator(),
-          ),
-        ),
-      ).then((_) {}).catchError((_) {}),
-    );
-
-    File? zipFile;
-    Object? exportError;
-    try {
-      final exportService = ExportService(rootDir: paths.rootDir);
-      zipFile = await exportService.exportFull(
-        appVersion: '1.0.0',
-      );
-    } catch (e) {
-      exportError = e;
-    } finally {
-      if (navigator.canPop()) {
-        navigator.pop();
-      }
-    }
-
-    if (exportError != null) {
-      if (context.mounted) {
-        showCupertinoDialog(
-          context: context,
-          builder: (ctx) => CupertinoAlertDialog(
-            title: Text(l10n.error),
-            content: Text(exportError.toString()),
-            actions: [
-              CupertinoDialogAction(
-                child: Text(l10n.ok),
-                onPressed: () => Navigator.of(ctx).pop(),
-              ),
-            ],
-          ),
-        );
-      }
-      return;
-    }
-
-    // 备份成功，计算下次提醒日期
-    final nextDate = _computeNextDate();
-    await ref.read(settingsControllerProvider.notifier).saveNextBackupReminderDate(nextDate);
-    if (mounted) {
-      setState(() => _dismissed = true);
-    }
-
-    // 分享备份文件
-    await Share.shareXFiles(
-      [XFile(zipFile!.path)],
-      sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
+    await Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => const BackupRestoreScreen(),
+      ),
     );
   }
 }

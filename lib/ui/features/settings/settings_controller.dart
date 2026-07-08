@@ -69,6 +69,12 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     state = AsyncData(await store.load());
   }
 
+  Future<void> saveAutoBackupEnabled(bool enabled) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveAutoBackupEnabled(enabled);
+    state = AsyncData(await store.load());
+  }
+
   Future<void> saveBackupReminderEnabled(bool enabled) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveBackupReminderEnabled(enabled);
@@ -78,6 +84,18 @@ class SettingsController extends AsyncNotifier<AppSettings> {
   Future<void> saveNextBackupReminderDate(DateTime? date) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveNextBackupReminderDate(date);
+    state = AsyncData(await store.load());
+  }
+
+  Future<void> saveLastAutoBackupAt(DateTime? date) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveLastAutoBackupAt(date);
+    state = AsyncData(await store.load());
+  }
+
+  Future<void> saveBackupReminderIntervalDays(int days) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveBackupReminderIntervalDays(days);
     state = AsyncData(await store.load());
   }
 

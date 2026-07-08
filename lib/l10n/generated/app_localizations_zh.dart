@@ -752,13 +752,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get viewTree => '查看整棵树';
 
   @override
-  String get myQuestions => '我的提问';
+  String get myQuestions => '本次发言';
 
   @override
-  String get myQuestionsTitle => '我问过的问题';
+  String get myQuestionsTitle => '我发出的消息';
 
   @override
-  String get myQuestionsEmpty => '还没有提问';
+  String get myQuestionsEmpty => '本次对话中还没有发言';
 
   @override
   String get renameNode => '重命名节点';

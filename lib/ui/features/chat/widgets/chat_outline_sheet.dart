@@ -3,6 +3,7 @@ import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 
 /// 对话目录 — 列出所有 user message，点击跳转到对应位置。
 ///
@@ -52,7 +53,7 @@ class _ChatOutlinePageState extends State<_ChatOutlinePage> {
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
         color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSp.sheetTopRadius)),
       ),
       child: Column(
         children: [

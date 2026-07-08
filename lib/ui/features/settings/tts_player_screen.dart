@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/shared/link_launcher.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
@@ -140,6 +141,7 @@ class _TtsPlayerScreenState extends ConsumerState<TtsPlayerScreen> {
                           fontSize: 18,
                           color: AppColors.textPrimary,
                         ),
+                        onLinkTap: (url, _) => openMarkdownLink(context, url),
                       ),
                     ),
                   ),

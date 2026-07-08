@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
@@ -9,7 +10,10 @@ class ExportService {
   final Directory rootDir;
 
   /// 导出全量数据为 zip 文件
-  Future<File> exportFull({required String appVersion}) async {
+  ///
+  /// [outputDir] 指定输出目录：传 backupsDir 时文件名用 `thktree-backup-{ts}.zip`
+  /// （自动备份），不传则用 `thktree-export-{ts}.zip`（手动备份，写 rootDir）。
+  Future<File> exportFull({required String appVersion, Directory? outputDir}) async {
     final themesDir = Directory('${rootDir.path}/themes');
     if (!themesDir.existsSync()) {
       throw StateError('themes directory not found');
@@ -76,9 +80,16 @@ class ExportService {
     if (zipBytes == null) {
       throw StateError('Failed to encode zip archive');
     }
-    final zipFile = File(
-        '${rootDir.path}/thktree-export-${DateTime.now().millisecondsSinceEpoch}.zip');
-    await zipFile.writeAsBytes(zipBytes);
+    final outDir = outputDir ?? rootDir;
+    final isBackup = outputDir != null;
+    final fileName = isBackup
+        ? 'thktree-backup-${DateTime.now().millisecondsSinceEpoch}.zip'
+        : 'thktree-export-${DateTime.now().millisecondsSinceEpoch}.zip';
+    // 原子写入：先写 .tmp 再 rename，避免写到一半中断产生半截 zip
+    final tmpFile = File('${outDir.path}/$fileName.tmp');
+    await tmpFile.writeAsBytes(zipBytes);
+    final zipFile = File('${outDir.path}/$fileName');
+    await tmpFile.rename(zipFile.path);
 
     return zipFile;
   }
@@ -95,6 +106,14 @@ class ExportService {
 
       if (entity is File) {
         final bytes = await entity.readAsBytes();
+        // 跳过正在流式写入的 session.md（避免读到半截内容）
+        // 流式输出时文件内会带 <!-- streaming --> 标记
+        if (name == 'session.md') {
+          final content = utf8.decode(bytes, allowMalformed: true);
+          if (content.contains('<!-- streaming -->')) {
+            continue;
+          }
+        }
         archive.addFile(ArchiveFile(archiveFilePath, bytes.length, bytes));
       } else if (entity is Directory) {
         await _addDirectoryToArchive(archive, entity, archiveFilePath);

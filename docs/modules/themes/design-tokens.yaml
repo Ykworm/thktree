@@ -1,6 +1,6 @@
 # 主题模块设计规范
 # 从代码和 Markdown 文档提取
-# 生成日期: 2026-06-11
+# 生成日期: 2026-07-08 (v0.4 补充视觉 token)
 # 源文件:
 #   - docs/modules/themes/visual/theme-list-design.md
 #   - docs/modules/themes/visual/theme-detail-design.md
@@ -9,7 +9,8 @@
 
 meta:
   module: "themes"
-  generated: "2026-06-11"
+  generated: "2026-07-08"
+  version: "0.4"
   sources:
     - "docs/modules/themes/visual/theme-list-design.md"
     - "docs/modules/themes/visual/theme-detail-design.md"
@@ -384,3 +385,85 @@ l10nKeys:
   # 通用
   - key: "cancel / create / save / delete / OK"
     usage: "通用按钮"
+
+# ============================================================
+# 视觉 Token（§8 新增，源码实测 + 截图）
+# ============================================================
+
+visualTokens:
+  description: "从 theme_list_screen.dart 源码实测 + 真机截图提取，标注行号"
+  caveat: "⚠️ app_colors.dart 与 docs/visual/*.md 均已过时，以下 token 以源码实测为准"
+
+  # ── 主题列表 ──
+  themeListScreen:
+    navBarStyle: "ThkLargeTitlePage"
+    titleStyle:
+      family: "Cormorant Garamond"
+      fontSize: 34
+      fontWeight: 600
+      dartRef: "AppTheme.largeTitle"
+    trailingIcons: ["AppIcons.tree (树视图)", "AppIcons.more (⋯)", "AppIcons.add (+)"]
+    listItemStyle:
+      title: { fontSize: 17, fontWeight: 400, dartRef: "AppTheme.body" }
+      subtitle: { fontSize: 13, fontWeight: 400, dartRef: "AppTheme.footnote" }
+      circleSize: 12
+      circleBorderWidth: 2
+      circleColor: "palette.circle (NodePalette)"
+      circleBgWhenCollapsed: "palette.circle 填充 alpha 0.15"
+      circleBgWhenExpanded: "palette.circle 2px border + alpha 0.15"
+      dragHandleHitArea: 52
+      dragHandleIcon: "CupertinoIcons.line_horizontal_3"
+      dragHandleIconSize: 24
+      dragHandleIconColor: "textTertiary alpha 0.4"
+      spineLineWidth: 3
+      spineLineColor: "colorForTheme(themeId)"
+      spineLineRadius: 1.5
+      separatorThickness: 0.5
+      separatorIndent: 56
+
+  # ── 新建会话 Dialog ──
+  newSessionDialog:
+    type: "CupertinoAlertDialog"
+    title: "新建会话"
+    titleStyle: { fontSize: 18, fontWeight: 600 }
+    input: "ThkTextField"
+    inputPlaceholder: "输入会话标题"
+    inputMaxLength: 30
+    inputAutofocus: true
+    clearIcon: "AppIcons.close"
+    actions: ["取消 (destructive)", "创建 (default)"]
+
+  # ── 主题色应用规则 ──
+  themeColorApplication:
+    accentColor: "colorForTheme(themeId)"
+    tintBg: "tintForTheme(themeId)"
+    appliesTo:
+      - "列表左侧书脊线 3px"
+      - "ThkListTile leading icon 色"
+      - "ThkListTile leading icon 背景"
+      - "DragTarget hover 背景"
+      - "拖拽指示线"
+      - "swipe 右滑（分支）颜色"
+    doesNotApplyTo:
+      - "页面背景"
+      - "按钮大色块"
+      - "节点圆圈色（走 NodePalette）"
+
+  # ── 来源标签副标题 ──
+  sourceTagSubtitle:
+    styles:
+      - label: "选中文本"
+        color: "CupertinoColors.systemOrange"
+        note: "⚠️ 硬编码，建议 → AppColors.accent"
+      - label: "对话"
+        color: "CupertinoColors.systemBlue"
+        note: "⚠️ 硬编码，建议 → AppColors.accent"
+      - label: "摘要"
+        color: "CupertinoColors.systemPurple"
+        note: "⚠️ 硬编码，建议 → AppColors.accent"
+      - label: "笔记"
+        color: "CupertinoColors.systemTeal"
+        note: "⚠️ 硬编码，建议 → AppColors.accent"
+    tagBg: "accent 50% 透明 (#6366F180)"
+    tagFontSize: 12
+    tagFontWeight: 400

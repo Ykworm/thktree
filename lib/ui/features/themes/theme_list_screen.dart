@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart' show brightnessProvider;
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
@@ -106,7 +107,7 @@ List<Widget> _buildThemeList(
       if (i < themes.length - 1)
         Padding(
           padding: const EdgeInsetsDirectional.only(start: 56),
-          child: Container(height: 0.5, color: AppColors.border),
+          child: Container(height: AppSp.dividerThickness, color: AppColors.border),
         ),
     ],
   ];
