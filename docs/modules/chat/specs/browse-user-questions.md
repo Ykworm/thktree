@@ -5,7 +5,7 @@
 
 ## 0. 实现落点
 
-- 入口：`lib/ui/features/chat/chat_screen.dart` 的 `_showMoreActions` 宫格新增「我的提问」`GridAction`（橙色 `AppIcons.chat`），push 列表页
+- 入口：`lib/ui/features/chat/chat_screen.dart` 的 `_showMoreActions` 宫格新增「本次发言」`GridAction`（橙色 `AppIcons.chat`），push 列表页
 - 列表页 / 回复页 / 全屏图片预览：`lib/ui/features/chat/user_questions.dart`
   - `UserQuestionsListPage`（读 live `chatControllerProvider(_args)`，按 `groupUserTurns` 分组，空状态 `myQuestionsEmpty`）
   - `UserQuestionReplyPage`（复用 `MessageBubble` 渲染单 turn，纯阅读态）
@@ -39,7 +39,7 @@
 Chat Page（根）
   └─ 点击左上角 more 按钮
        └─ 弹出 Sheet（现有更多菜单）
-            └─ 新增宫格项：我的提问（入口短标签；进入后 List 标题为「我问过的问题」，见 §9）
+            └─ 新增宫格项：本次发言（入口短标签；进入后 List 标题为「我发出的消息」，见 §9）
                  └─ Push 新视图：User Input List
                       ├─ 点击 Item 右侧 chevron / 整行
                       │    └─ Push 隔离 LLM 回复页（展示对应 turn）
@@ -93,8 +93,8 @@ Chat Page（根）
 
 - **长度核查（已读代码确认）**：现有菜单项已存在 5 字标签——「提交树结构」「查看整棵树」。因此长文案在宫格内也不会换行 / 截断。
 - **采用解耦方案（已定）**：
-  - 宫格入口标签：**「我的提问」**（4 字，节奏与现有短项一致）
-  - 进入后的 User Input List **导航栏标题**：**「我问过的问题」**（大标题位，承载完整语义）
+  - 宫格入口标签：**「本次发言」**（4 字，节奏与现有短项一致，"本次"明确 scope = 当前对话）
+  - 进入后的 User Input List **导航栏标题**：**「我发出的消息」**（大标题位，"发出"覆盖所有 user message 类型而非仅"提问"）
 - 避免：浏览对话历史（易与跨会话历史混淆）
 
 ## 10. 待确认事项
@@ -108,7 +108,7 @@ Flutter UI 功能，采用「编译通过 + 关键路径手工验证」：
 - `flutter analyze` 无新增 error
 - 手工验证路径：
   1. 进入任意含多轮对话的会话
-  2. more → 「我的提问」→ 看到按时间排序的 user message 列表（List 标题为「我问过的问题」）
+  2. more → 「本次发言」→ 看到按时间排序的 user message 列表（List 标题为「我发出的消息」）
   3. 含图消息显示缩略图；点击缩略图 → 全屏预览 → X 关闭回 List
   4. 点击某 Item → 进入隔离回复页，展示该 user message 及其后 assistant 回复（含追问）
   5. 返回 → 回到 List；再返回 → 回到 Chat Page（位置不变）
