@@ -168,6 +168,7 @@ final appRouter = GoRouter(
       path: '/settings',
       parentNavigatorKey: _rootNavigatorKey,
       pageBuilder: (context, state) => CupertinoPage(
+        name: 'settings',
         child: const SettingsScreen(),
       ),
     ),

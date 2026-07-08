@@ -2,8 +2,11 @@ import 'package:flutter/cupertino.dart';
 
 /// 面包屑导航段。
 ///
-/// [label] 是显示文本（如"设置"），[routeName] 是 CupertinoPageRoute 的 RouteSettings.name，
-/// 用于 popUntil 定位目标页面。
+/// [label] 是显示文本（如"设置"），[routeName] 是路由标识：
+/// - 以 `/` 开头表示 go_router 路由路径，仅适用于真正位于 navigator 栈底的路由
+///   （如 tab 根），用 popUntil(isFirst) 跳回；
+/// - 否则是 RouteSettings.name，用 popUntil 精确匹配。go_router 路由需在
+///   pageBuilder 的 Page 上显式设 name，Navigator.push 路由用 RouteSettings(name:)。
 class BreadcrumbSegment {
   const BreadcrumbSegment({required this.label, required this.routeName});
 
@@ -83,10 +86,15 @@ class ThkBreadcrumbRow extends StatelessWidget {
 
   void _popToRoute(BuildContext context, String routeName) {
     if (routeName.startsWith('/')) {
-      // go_router 路由：pop 到栈底（第一个 Route），保留底层页面
+      // 仅适用于"真正位于 navigator 栈底"的路由（如 tab 根）。
+      // 注意：parentNavigatorKey=root 的全屏覆盖路由（如 /settings）不是栈底，
+      // 不能用 isFirst —— 需给目标 Page 设 name 并走下面的 name 匹配分支。
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
-      // Navigator.push 的路由：用 popUntil 匹配 RouteSettings.name
+      // 用 RouteSettings.name 精确匹配，停在目标页。
+      // go_router 路由需在 pageBuilder 的 Page 上显式设 name（不是 GoRoute.name，
+      // 后者不会传到 navigator Page 的 RouteSettings.name）；
+      // Navigator.push 路由用 RouteSettings(name:)。
       Navigator.of(context).popUntil((route) {
         final name = route.settings.name;
         return name == routeName;

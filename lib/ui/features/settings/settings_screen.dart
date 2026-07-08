@@ -281,7 +281,7 @@ class _LlmSettingsEntry extends ConsumerWidget {
           CupertinoPageRoute(
             settings: const RouteSettings(name: 'llm-settings'),
             builder: (_) => const LlmSettingsScreen(
-              parentCrumbs: [BreadcrumbSegment(label: '设置', routeName: '/settings')],
+              parentCrumbs: [BreadcrumbSegment(label: '设置', routeName: 'settings')],
             ),
           ),
         );
