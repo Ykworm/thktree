@@ -102,15 +102,13 @@ class SearchService {
       // If FTS5 returned results, return them.
       if (results.isNotEmpty) return results;
 
-      // Fallback: LIKE query for CJK substring matching.
-      // FTS5 unicode61 tokenizer treats consecutive CJK characters as a
-      // single token, so partial matches (e.g., "思维" in "思维导图") fail.
-      // LIKE provides substring matching as a fallback.
-      if (_containsCjk(query)) {
-        return await _searchWithLike(query, limit);
-      }
-
-      return results;
+      // Fallback: LIKE query for substring matching.
+      // FTS5 unicode61 tokenizer has token-boundary limitations for both CJK
+      // (consecutive characters treated as one token) and ASCII (CamelCase /
+      // snake_case treated as single tokens). LIKE provides universal
+      // substring matching as a fallback. SQLite LIKE is case-insensitive for
+      // ASCII by default, so "Flutter" matches "flutter" and vice versa.
+      return await _searchWithLike(query, limit);
     } on DatabaseException catch (e, st) {
       dev.log('[SearchService.search] FTS5 query failed: $e\n$st');
       // Return empty results instead of crashing the UI when index is missing/corrupt.
@@ -489,16 +487,12 @@ class SearchService {
     return tokens.join(' ');
   }
 
-  /// Check if string contains CJK characters.
-  bool _containsCjk(String text) {
-    return RegExp(r'[\u4e00-\u9fff]').hasMatch(text);
-  }
-
-  /// Fallback LIKE query for CJK substring matching.
+  /// Fallback LIKE query for substring matching.
   ///
-  /// When FTS5 returns no results and the query contains CJK characters,
-  /// use LIKE for substring matching. This handles cases where FTS5's
-  /// unicode61 tokenizer treats consecutive CJK as a single token.
+  /// When FTS5 returns no results, use LIKE for universal substring matching.
+  /// This handles FTS5 unicode61 tokenizer limitations for both CJK (consecutive
+  /// characters treated as one token) and ASCII (CamelCase / snake_case as
+  /// single tokens). SQLite LIKE is case-insensitive for ASCII by default.
   Future<List<SearchResult>> _searchWithLike(String query, int limit) async {
     try {
       final rows = await db.rawQuery('''

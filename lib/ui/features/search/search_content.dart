@@ -172,6 +172,13 @@ class _SearchBoxState extends State<SearchBox> {
   bool _ownsController = false;
   bool _ownsFocusNode = false;
 
+  /// Guards against circular updates between [queryNotifier] and [_controller].
+  ///
+  /// When the notifier pushes a value to the controller (notifier → controller),
+  /// setting `_controller.text` triggers `onChanged`, which would normally
+  /// push back to the notifier. The flag short-circuits that return path.
+  bool _syncing = false;
+
   @override
   void initState() {
     super.initState();
@@ -179,13 +186,31 @@ class _SearchBoxState extends State<SearchBox> {
     _focusNode = widget.focusNode ?? FocusNode();
     _ownsController = widget.controller == null;
     _ownsFocusNode = widget.focusNode == null;
+    // Listen to external notifier changes (e.g., tag tap) and sync to controller.
+    widget.queryNotifier?.addListener(_onNotifierChanged);
+    // Initial sync — notifier may already have a value (state preserved by IndexedStack).
+    if (widget.queryNotifier != null) {
+      _controller.text = widget.queryNotifier!.value;
+    }
   }
 
   @override
   void dispose() {
+    widget.queryNotifier?.removeListener(_onNotifierChanged);
     if (_ownsController) _controller.dispose();
     if (_ownsFocusNode) _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onNotifierChanged() {
+    if (_syncing) return;
+    final value = widget.queryNotifier?.value ?? '';
+    // Only update if different — avoids unnecessary cursor jumps.
+    if (_controller.text != value) {
+      _syncing = true;
+      _controller.text = value;
+      _syncing = false;
+    }
   }
 
   @override
@@ -196,7 +221,10 @@ class _SearchBoxState extends State<SearchBox> {
       focusNode: _focusNode,
       placeholder: widget.placeholder ?? l10n.searchHint,
       onChanged: (value) {
-        widget.queryNotifier?.value = value;
+        // Skip when syncing from notifier to avoid circular push-back.
+        if (!_syncing) {
+          widget.queryNotifier?.value = value;
+        }
       },
     );
   }
