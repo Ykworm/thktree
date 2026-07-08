@@ -26,11 +26,11 @@ SettingsScreen._LlmSettingsEntry
 
 ## RouteSettings 命名
 
-每个页面 push 时设 `RouteSettings(name:)` 用于面包屑跳转定位。
+每个页面 push 时设 `RouteSettings(name:)` 用于面包屑跳转定位。go_router 路由则在 pageBuilder 的 Page 上设 `name`。
 
 | 页面 | routeName | 路由类型 |
 |------|-----------|----------|
-| SettingsScreen (go_router) | `/settings` | go_router 管理，面包屑跳转用 `popUntil(route.isFirst)` |
+| SettingsScreen (go_router) | `settings` | go_router，pageBuilder 的 `CupertinoPage(name: 'settings')` |
 | LlmSettingsScreen | `llm-settings` | Navigator.push |
 | LlmProvidersScreen | `providers-list` | Navigator.push |
 | LlmProviderDetailScreen | `provider-detail` | Navigator.push |
@@ -41,8 +41,10 @@ SettingsScreen._LlmSettingsEntry
 
 `ThkBreadcrumbRow._popToRoute` 按 routeName 分流：
 
-- **以 `/` 开头（go_router 路由）**：`Navigator.popUntil((route) => route.isFirst)` — 保守处理，pop 到栈底保留 go_router 的根页面
-- **其他（Navigator.push 路由）**：`Navigator.popUntil((route) => route.settings.name == routeName)` — 精确匹配 RouteSettings.name
+- **以 `/` 开头（仅真正位于 navigator 栈底的路由，如 tab 根）**：`Navigator.popUntil((route) => route.isFirst)` — 当前无面包屑使用此分支
+- **其他（RouteSettings.name 匹配）**：`Navigator.popUntil((route) => route.settings.name == routeName)` — 精确匹配，停在目标页
+
+> go_router 路由走 name 匹配分支时，必须在 pageBuilder 返回的 **Page** 上设 `name`（如 `CupertinoPage(name: 'settings', ...)`），不能只给 `GoRoute` 设 `name` —— `GoRoute.name` 不会传到 navigator Page 的 `RouteSettings.name`。详见下方「已知陷阱」。
 
 ## 改动文件
 
@@ -53,6 +55,17 @@ SettingsScreen._LlmSettingsEntry
 5. **修改** `lib/ui/features/settings/default_model_picker_screen.dart` — 面包屑（接收 parentCrumbs）
 6. **修改** `lib/ui/features/llm/llm_providers_screen.dart` — 面包屑 + push 加 RouteSettings + parentCrumbs（两处入口）
 7. **修改** `lib/ui/features/llm/llm_provider_detail_screen.dart` — 面包屑（接收 parentCrumbs）
+
+## 已知陷阱（2026-07-08 修复）
+
+1. **`/settings` 不是 navigator 栈底**
+   `/settings` 配了 `parentNavigatorKey: _rootNavigatorKey`，是覆盖在 StatefulShellRoute（tab bar）之上的全屏路由。栈为 `[shell, /settings, LlmSettings, ...]`，`/settings.isFirst = false`。早期用 `popUntil(route.isFirst)` 想跳回 settings，实际会越过 /settings 一直 pop 到 shell，把 settings 也弹掉（用户表现：settings 返回按钮消失，退不回 tab bar）。
+
+2. **`GoRoute.name` ≠ Page 的 `RouteSettings.name`**
+   go_router 的 `GoRoute.name` 只用于 `goNamed`/`pushNamed`，**不会**传到 navigator Page 的 `RouteSettings.name`。曾给 GoRoute 设 `name: 'settings'` 后用 `popUntil(name == 'settings')`，predicate 永不匹配，栈被 pop 空，触发 go_router `currentConfiguration.isNotEmpty` 断言崩溃。修复：在 pageBuilder 的 `CupertinoPage` 上显式设 `name: 'settings'`（Page 级 name 会传到 `route.settings.name`）。
+
+3. **不用 `context.go('/settings')`**
+   会重置整个路由栈，副作用是清掉其它 tab 里 push 的详情页。Page name + popUntil 只 pop 上层手动 route，不影响其它 tab。
 
 ## 不在此次范围
 

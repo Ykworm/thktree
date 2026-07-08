@@ -36,4 +36,19 @@
 - 面包屑放在 SafeArea 内、导航栏下方，作为 body 的第一行
 - 不影响 go_router，不需要改动路由注册
 - 非 Settings 入口（`llm_setup_check.dart`、`router.dart`、`generate_title_screen.dart`）不传 `parentCrumbs`，无 Settings 祖先链路时不显示面包屑
-- go_router 路由（`/settings`）的跳转：因 `context.go` 在混合栈（go_router + Navigator.push）中行为不可控，改用 `Navigator.popUntil(route.isFirst)` 保守 pop 到栈底
+- go_router 路由（`/settings`）的跳转：~~`Navigator.popUntil(route.isFirst)`~~（已废弃，见下方修复）
+
+## 修复（2026-07-08）：点面包屑"设置"返回崩溃 / 返回按钮消失
+
+**现象**：深层页面点面包屑"设置"段，settings page 顶部返回按钮消失，无法退回 tab bar；或栈被 pop 空触发 `currentConfiguration.isNotEmpty` 断言崩溃。
+
+**根因**：
+- `/settings` 配 `parentNavigatorKey: root`，是覆盖在 shell 之上的全屏路由，**不是栈底**。`popUntil(route.isFirst)` 会越过它 pop 到 shell。
+- `GoRoute.name` 不传到 Page 的 `RouteSettings.name`，`popUntil(name==)` 永不匹配，栈被 pop 空。
+
+**修复**：
+- `router.dart`：`/settings` 的 pageBuilder 里 `CupertinoPage(name: 'settings', ...)`（Page 级 name 传到 `route.settings.name`）
+- `settings_screen.dart`：parentCrumbs 的"设置"段 routeName 改 `'settings'`（非 `/` 开头，走 name 匹配分支）
+- `thk_breadcrumb_nav.dart`：name 匹配分支注释说明 go_router 路由需在 Page 上设 name；isFirst 兜底分支保留带风险注释
+
+**不用 `context.go` 的原因**：会重置整个路由栈，清掉其它 tab 里 push 的详情页。Page name + popUntil 只 pop 上层手动 route，不影响其它 tab。
