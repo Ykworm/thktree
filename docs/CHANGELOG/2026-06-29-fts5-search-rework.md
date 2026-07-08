@@ -152,4 +152,4 @@ LIMIT ?
 - [edge-cases-backlog § EC-043](../_shared/edge-cases-backlog.md) — 标 ✅ 完整修复
 - [war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md) — 已补"方案 B 重写原因"
 - [docs/modules/search/README.md § 关键设计原则](../modules/search/README.md) — 已改写为实际方案
-- [docs/_tmp/2026-06-29-fts5-upsert-repeat-v1.md](../_tmp/2026-06-29-fts5-upsert-repeat-v1.md) — 上游 brainstorming 草稿
+- docs/_tmp/2026-06-29-fts5-upsert-repeat-v1.md — 上游 brainstorming 草稿

@@ -4,7 +4,7 @@
 |------|------|
 | 日期 | 2026-06-18 |
 | 范围 | chat 模块（共享 message_bubble）+ 新建 `markdown_builders.dart` |
-| 设计文档 | [`docs/_tmp/latex-fittedbox-wrap.md`](../_tmp/latex-fittedbox-wrap.md) |
+| 设计文档 | [`docs/_tmp/latex-fittedbox-wrap.md`](../war-stories/ui-ux/latex-fittedbox-wrap.md) |
 | War Story | [`docs/war-stories/ui-ux/2026-06-18-gptmarkdown-latex-renderline-overflow.md`](../war-stories/ui-ux/2026-06-18-gptmarkdown-latex-renderline-overflow.md) |
 | 状态 | ✅ 完成，5 个集成测试通过 |
 

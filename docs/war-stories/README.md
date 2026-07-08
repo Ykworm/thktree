@@ -83,6 +83,11 @@ YYYY-MM-DD-简短问题描述.md
 
 ## 索引（按时间倒序）
 
+### 2026-07
+
+- `flutter/2026-07-08-titlebar-model-mismatch-dual-fallback.md` — Title bar 显示模型与实际调用不一致（显示侧 resolveChatModel 4 级 vs 调用侧内嵌 2 级 fallback，优先级缺失 + 兜底条件不同 + 异步竞态；空白分支 100% 命中；统一为 _resolveChatModelForLlm 复用 1-3 级 + 自行第 4 级查 apiKey；详见 ADR-026）
+- `flutter/2026-07-08-nested-selectionarea-branch-preview.md` — 嵌套 SelectionArea 导致外层 onSelectionChanged 收不到选区（chat 选文字→分支预览消失；GptMarkdown 不可选被迫内层自包 SelectionArea，外层感知不到子选区；用共享 NotifierProvider + 顶层 `syncSelection(context,v)` 从内层透出；顺带踩 riverpod 3.0 移除 StateProvider）
+
 ### 2026-06
 
 - `packages/2026-06-29-fts5-conflict-replace-silent.md` — FTS5 虚拟表上 `ConflictAlgorithm.replace` 静默失效（不抛错不替换只多一行；用 `db.transaction` 包裹 DELETE+INSERT + 扁平查询组合方案 A+B；下游 commit `cb9891f` 补强：方案 B 子查询+GROUP BY 在 iOS SQLite 报 `unable to use function X` 失败，重写为扁平查询 + `col=5`（content 列），`upsertMessage` 同款 bug 同步修复）

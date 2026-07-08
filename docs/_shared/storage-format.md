@@ -27,6 +27,7 @@
           context-summary.md          # 可选：存在表示该 node 有已确认总结
       notes/
         {noteId}.md
+  backups/                             # 自动备份产物，最多保留 7 份 zip
   index.sqlite                         # 可选：SQLite 索引
 ```
 
@@ -34,6 +35,7 @@
 - Theme 必须位于 `themes/{themeId}/`
 - Node 必须位于 `themes/{themeId}/nodes/{nodeId}/`
 - Note 必须位于 `themes/{themeId}/notes/{noteId}.md`
+- Backups 由 App 自动管理，位于 `backups/`，文件命名与清理策略对实现透明；不应手动修改其中的 zip 文件
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **面向 AI 代理的工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实现此计划。步骤使用复选框（`- [ ]`）语法来跟踪进度。
 
-> **草稿来源**：[docs/_tmp/2026-06-24-llm-error-retry.md](../_tmp/2026-06-24-llm-error-retry.md)（用户已拍板）
+> **草稿来源**：docs/_tmp/2026-06-24-llm-error-retry.md（用户已拍板）
 
 **任务类型：** 普通功能改版（非 Bug 修复 / 非集成测试；涉及 4 个场景重构 + 新组件 + 新测试）
 **平台范围：** iOS-only（沿用 AGENTS.md 工作流）

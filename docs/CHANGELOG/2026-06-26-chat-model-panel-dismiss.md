@@ -4,7 +4,7 @@
 |------|------|
 | 日期 | 2026-06-26 |
 | 范围 | chat 模块（`ModelSelectorPanel` 关闭交互 + `ChatScreen` 集成） |
-| 设计文档 | [`docs/_tmp/chat-model-panel-dismiss.md`](../_tmp/chat-model-panel-dismiss.md)（brainstorming 草稿，merge 后清理） |
+| 设计文档 | `docs/_tmp/chat-model-panel-dismiss.md`（brainstorming 草稿，merge 后清理） |
 | War Story | （无） |
 | 状态 | ✅ 完成 |
 
@@ -116,6 +116,6 @@ child: Stack(
 
 ## 关联
 
-- [`docs/_tmp/chat-model-panel-dismiss.md`](../_tmp/chat-model-panel-dismiss.md) — brainstorming 草稿（merge 后清理）
+- `docs/_tmp/chat-model-panel-dismiss.md` — brainstorming 草稿（merge 后清理）
 - [`docs/modules/chat/visual/README.md`](../modules/chat/visual/README.md) § 5 — 视觉规范同步更新
 - [`docs/modules/chat/design-tokens.yaml`](../modules/chat/design-tokens.yaml) `modelSelector` — design token 同步更新

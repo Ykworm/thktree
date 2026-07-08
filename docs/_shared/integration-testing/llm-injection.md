@@ -3,7 +3,7 @@
 > **本文件**：30 行导航 + TL;DR
 > **详细版**（208 行）：[docs/modules/llm/specs/integration-test-llm-injection.md](../../modules/llm/specs/integration-test-llm-injection.md) — 强烈建议先读
 >
-> **最近变更**：2026-06-20 — API Key 注入机制从 `assets/test_llm_config/` 物理文件迁移到 `--dart-define-from-file` 编译期注入。详见 [设计稿](../../_tmp/2026-06-20-llm-test-config-redesign.md)。
+> **最近变更**：2026-06-20 — API Key 注入机制从 `assets/test_llm_config/` 物理文件迁移到 `--dart-define-from-file` 编译期注入。详见 [设计稿](../(已归档))。
 
 ---
 

@@ -314,4 +314,4 @@ Test 3 可构造"loop 在 sleep 期间被 cancel"场景：
 - [lib/data/services/background_task_bridge.dart](../../../lib/data/services/background_task_bridge.dart) — Bridge 抽象基类
 - [lib/data/stores/session_store.dart](../../../lib/data/stores/session_store.dart) — `findInterrupted` 静态方法定义处
 - [docs/DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界](../../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) — 策略 ADR
-- [docs/_tmp/ios-async-chat.md](../../_tmp/ios-async-chat.md) — brainstorming 草稿
+- docs/_tmp/ios-async-chat.md — brainstorming 草稿

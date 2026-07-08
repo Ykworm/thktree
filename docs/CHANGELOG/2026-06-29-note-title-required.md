@@ -4,7 +4,7 @@
 |------|------|
 | 日期 | 2026-06-29 |
 | 范围 | `lib/ui/features/notes/note_editor_screen.dart`（修改）+ l10n 双语（新增 key）+ `integration_test/note_title_required_test.dart`（新增 5 个 case）|
-| 设计文档 | 无（单点修复，方案见 [docs/_tmp/note-title-required.md](../_tmp/note-title-required.md)）|
+| 设计文档 | 无（单点修复，方案见 docs/_tmp/note-title-required.md）|
 | 状态 | 🟡 代码完成，集成测试留给用户跑（用户反馈：测试案例太多，自己测）|
 
 ## 背景
@@ -110,7 +110,7 @@ trailing: CupertinoButton(
 
 ## 关联
 
-- [上游 brainstorming](../_tmp/note-title-required.md) — 用户确认"保留现状 + ✓ 按钮拦截"方案
+- 上游 brainstorming — 用户确认"保留现状 + ✓ 按钮拦截"方案
 - [笔记模块 CHANGELOG § 11](../modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29) — 模块级详细记录
 - [笔记模块 README](../modules/notes/README.md) — 功能列表"标题必填校验"行
 - [FEATURES.md § 2](../FEATURES.md) — 功能总表"标题必填校验"行

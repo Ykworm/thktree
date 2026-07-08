@@ -31,6 +31,8 @@
 | 3 | `恢复冲突处理测试` | ❌ TODO 空壳 | FilePicker 平台通道无法操作 |
 | 4 | `恢复覆盖模式测试` | ❌ TODO 空壳 | FilePicker 平台通道无法操作 |
 
+> **2026-07-08 更新**：自动备份功能已上线。新测试重点应补充 § 5.5 的自动备份路径，而非继续投入 UI 触发 Share 的高成本测试。
+
 ```dart
 // 当前 68 行的结构（line 1-68）
 import 'package:flutter_test/flutter_test.dart';
@@ -154,21 +156,31 @@ class ImportService {
 - merge 模式**仅在文件级别去重**，themeId 不变（依赖 SQLite 索引重建）
 - overwrite 模式**暴力清空 themes 目录**，无确认机制
 
-### 3.3 UI 入口（settings_screen.dart）
+### 3.3 UI 入口（`backup_restore_screen.dart`）
 
-**`_BackupEntry`**（line 659-740）—— 点击后流程：
+**2026-07-08 更新**：备份/恢复入口已收敛为独立的 `BackupRestoreScreen`（`lib/ui/features/backup_restore/backup_restore_screen.dart`），从设置页「备份与恢复」行进入。原有 settings_screen 中的 `_BackupEntry` / `_RestoreEntry` / `_BackupReminderToggle` 已迁移到聚合页内。
+
+**聚合页分区**（从上到下）：
+
+- **自动备份**：开关（`autoBackupEnabled`）+ 上次备份时间
+- **本地备份**：`{root}/backups/` 下的 zip 列表，每份可「分享」或「删除」
+- **手动备份**：按钮 → 生成 zip → 调系统 Share 面板
+- **恢复**：按钮 → 调系统文件选择器 → 冲突对话框（覆盖 / 合并 / 取消）
+- **分享提醒**：开关 + 周期选择（3/5/7/14 天）
+
+手动备份流程：
 
 ```
 1. 取 pathsAsync.value（AppPaths 提供）
 2. 弹进度对话框（fire-and-forget：unawaited + .then.catchError 吞异常）
-3. exportService.exportFull(appVersion: '1.0.0')
-   ⚠️ TODO: 从 package_info 获取（line 700 注释）
+3. exportService.exportFull(appVersion: '1.0.0', outputDir: paths.backupsDir)
 4. 关闭进度对话框（navigator.canPop() 检查避免 _debugLocked）
 5. Share.shareXFiles([XFile(zipFile.path)])
    ⚠️ 这一步会跳出 app 进入 iOS 系统分享面板！
+6. 成功后刷新 nextBackupReminderDate
 ```
 
-**`_RestoreEntry`**（line 743-900）—— 点击后流程：
+恢复流程：
 
 ```
 1. FilePicker.platform.pickFiles(type: custom, allowedExtensions: ['zip'])
@@ -182,20 +194,42 @@ class ImportService {
    - error   → 显示 message
 ```
 
-### 3.4 缺失的 ValueKey 清单 ⚠️
+### 3.4 原子写入与临时文件
 
-`lib/ui/features/settings/settings_screen.dart` 当前**完全没有 ValueKey**：
+`ExportService.exportFull` 在 `outputDir` 非 null 时使用原子写入：
+
+```
+1. 内存里构造完整 zip 字节流（package:archive ZipEncoder）
+2. 写入 {outputDir}/thktree-backup-{ms}.zip.tmp
+3. 校验通过 → rename 为 {outputDir}/thktree-backup-{ms}.zip
+4. 中断了只可能残留 .tmp，不会留下半截 zip
+```
+
+`AutoBackupService.maybeBackup` 开头会先清理 `*.tmp` 残留，然后保留最多 7 份正式 zip。
+
+### 3.5 缺失的 ValueKey 清单 ⚠️
+
+`lib/ui/features/backup_restore/backup_restore_screen.dart` 当前**完全没有 ValueKey**：
 
 | 需要的 Key | 当前是否存在 | 影响 |
 |-----------|------------|------|
-| `backup_tile` | ❌ | UI 触发备份完全靠 `find.text('备份数据')` |
-| `restore_tile` | ❌ | UI 触发恢复完全靠 `find.text('恢复数据')` |
-| `tab_settings` | ❌ | `_switchToTab(tester, '设置')` 只能靠 tab 栏 Text |
-| `restore_conflict_dialog` | ❌ | 冲突对话框定位靠 `find.text('数据冲突')` |
-| `restore_overwrite_button` | ❌ | 选覆盖只能 `find.text('覆盖')` |
-| `restore_merge_button` | ❌ | 选合并只能 `find.text('合并')` |
+| `backup_restore_screen` | ❌ | 集成测试无法按页面定位 |
+| `auto_backup_toggle` | ❌ | 无法自动开关自动备份 |
+| `backup_reminder_toggle` | ❌ | 无法自动开关分享提醒 |
+| `backup_reminder_interval` | ❌ | 无法选择提醒周期 |
+| `manual_backup_button` | ❌ | 无法触发手动备份 |
+| `restore_button` | ❌ | 无法触发恢复 |
+| `local_backup_tile_{n}` | ❌ | 无法定位某份备份进行分享/删除 |
 
-**这一节是 4 个测试全空壳的根本原因**——没有 ValueKey 就没法用 `find.byKey` 精确定位，所有现有 helper（`safeTap`、`enterTextAndWait`）都用 `find.byKey` 优先。
+搜索页横幅也需要 Key：
+
+| 需要的 Key | 当前是否存在 | 影响 |
+|-----------|------------|------|
+| `backup_reminder_banner` | ❌ | 无法断言横幅显示/隐藏 |
+| `backup_reminder_dismiss_button` | ❌ | 无法点“忽略” |
+| `backup_reminder_share_button` | ❌ | 无法点“去分享” |
+
+**这一节是 UI 测试难写的根本原因**——没有 ValueKey 就没法用 `find.byKey` 精确定位，所有现有 helper（`safeTap`、`enterTextAndWait`）都用 `find.byKey` 优先。
 
 ---
 
@@ -470,6 +504,96 @@ testWidgets('恢复覆盖模式测试', (tester) async {
 });
 ```
 
+### 5.5 自动备份路径测试（2026-07-08 新增）
+
+自动备份不依赖 UI/Share/FilePicker，可稳定覆盖。
+
+```dart
+testWidgets('自动备份 24h 补偿与保留 7 份', (tester) async {
+  final app = await createTestApp();
+  await tester.pumpWidget(app);
+  await tester.pumpAndSettle();
+
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(ThkTreeApp)),
+  );
+  final paths = container.read(appPathsProvider).requireValue;
+  await paths.backupsDir.create(recursive: true);
+
+  await _createTheme(tester, 'Auto Backup Theme');
+  await waitForText(tester, 'Auto Backup Theme');
+
+  // 1. 模拟 24h 前没备份，手动调 maybeBackup 触发
+  final service = AutoBackupService(paths: paths);
+  await service.maybeBackup(
+    appVersion: '1.0.0',
+    settings: (await container.read(settingsStoreProvider).load())
+        .copyWith(autoBackupEnabled: true),
+    save: (s) => container.read(settingsStoreProvider).save(s),
+  );
+
+  // 2. backups/ 下出现 1 份正式 zip
+  final zips = paths.backupsDir
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.zip'))
+      .toList();
+  expect(zips.length, 1);
+  expect(zips.any((f) => f.path.endsWith('.tmp')), isFalse);
+
+  // 3. 立即再调一次不应触发（lastAutoBackupAt 已更新）
+  await service.maybeBackup(
+    appVersion: '1.0.0',
+    settings: (await container.read(settingsStoreProvider).load())
+        .copyWith(autoBackupEnabled: true),
+    save: (s) => container.read(settingsStoreProvider).save(s),
+  );
+  final zips2 = paths.backupsDir
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.zip'))
+      .toList();
+  expect(zips2.length, 1);
+
+  // 4. 清理
+  zips2.first.deleteSync();
+});
+
+testWidgets('自动备份原子写入中断自愈', (tester) async {
+  final app = await createTestApp();
+  await tester.pumpWidget(app);
+  await tester.pumpAndSettle();
+
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(ThkTreeApp)),
+  );
+  final paths = container.read(appPathsProvider).requireValue;
+  await paths.backupsDir.create(recursive: true);
+
+  await _createTheme(tester, 'Auto Backup Theme');
+  await waitForText(tester, 'Auto Backup Theme');
+
+  // 模拟上次中断残留 .tmp
+  await File('${paths.backupsDir.path}/thktree-backup-1234567890.zip.tmp')
+      .writeAsString('incomplete');
+
+  final service = AutoBackupService(paths: paths);
+  await service.maybeBackup(
+    appVersion: '1.0.0',
+    settings: (await container.read(settingsStoreProvider).load())
+        .copyWith(autoBackupEnabled: true),
+    save: (s) => container.read(settingsStoreProvider).save(s),
+  );
+
+  // .tmp 被清理，且只有 1 份正式 zip
+  final files = paths.backupsDir.listSync().whereType<File>().toList();
+  expect(files.any((f) => f.path.endsWith('.tmp')), isFalse);
+  expect(files.where((f) => f.path.endsWith('.zip')).length, 1);
+
+  files.where((f) => f.path.endsWith('.zip')).first.deleteSync();
+});
+```
+
 ---
 
 ## 6. 依赖的 helpers 与 fixtures
@@ -480,8 +604,13 @@ testWidgets('恢复覆盖模式测试', (tester) async {
 | `_createTheme` / `_createNode` | theme_chat_e2e_test.dart（**需提升到 _support/**） | 创建测试数据 |
 | `_switchToTab(tester, '设置')` | theme_chat_e2e_test.dart（**需提升到 _support/**） | 跳转到 settings tab |
 | `ExportService` / `ImportService` | `lib/data/services/` | 直接调服务（不走 UI 触发） |
-| `appPathsProvider` | `lib/ui/core/app_paths.dart` | 拿测试沙盒目录路径 |
-| `ValueKey('backup_tile'/'restore_tile')` | **⚠️ 待补** | UI 触发备份/恢复 |
+| `AutoBackupService` | `lib/data/services/auto_backup_service.dart` | 验证自动备份路径 |
+| `appPathsProvider` | `lib/ui/core/app_paths.dart` | 拿测试沙盒目录路径（含 `backupsDir`） |
+| `ValueKey('backup_restore_tile')` | **⚠️ 待补** | UI 进入备份与恢复聚合页 |
+| `ValueKey('auto_backup_toggle')` | **⚠️ 待补** | 自动备份开关 |
+| `ValueKey('backup_reminder_toggle')` | **⚠️ 待补** | 分享提醒开关 |
+| `ValueKey('manual_backup_button')` | **⚠️ 待补** | 手动备份按钮 |
+| `ValueKey('restore_button')` | **⚠️ 待补** | 恢复按钮 |
 
 ---
 
@@ -489,11 +618,12 @@ testWidgets('恢复覆盖模式测试', (tester) async {
 
 按依赖顺序：
 
-1. **🔴 settings ValueKey 缺失**（§ 4.1）—— 不补则 UI 测试完全无法触发备份/恢复入口
-2. **🔴 Share/FilePicker 平台通道**（§ 4.2）—— iOS 系统面板集成测试点不到，必须绕过
-3. **🟡 `_createTheme` / `_createNode` 未提升到 `_support/`**（§ 4.3）—— 复用性差，4 个测试都得复制粘贴
-4. **🟡 `appPathsProvider` 是否能直接读** —— `AppPaths.themesDir` getter 需确认是否存在（README.md § 5.2 中描述）
+1. **🔴 `BackupRestoreScreen` ValueKey 缺失**（§ 3.5）—— 不补则 UI 测试无法进入聚合页/触发各入口
+2. **🔴 Share/FilePicker 平台通道**（§ 4.2）—— iOS 系统面板集成测试点不到，手动备份/恢复必须绕过或 mock
+3. **🟡 `_createTheme` / `_createNode` 未提升到 `_support/`**（§ 4.3）—— 复用性差，多个测试都得复制粘贴
+4. **🟡 `appPathsProvider` 是否能直接读** —— `AppPaths.backupsDir` getter 需确认是否存在
 5. **🟢 package_info 未集成** —— `appVersion: '1.0.0'` 是 hardcode，不影响测试，但建议跟进
+6. **🟢 自动备份 24h 周期** —— 测试需 mock `lastAutoBackupAt` 或直接调 `AutoBackupService.maybeBackup`，不能等 24h
 
 ---
 
@@ -502,13 +632,15 @@ testWidgets('恢复覆盖模式测试', (tester) async {
 ### 不在本文档范围
 
 - ❌ **不实现**任何 backup_restore_test.dart 的 TODO（本次只写文档）
-- ❌ **不补** settings ValueKey（属于代码改动，不在文档任务）
+- ❌ **不补** UI ValueKey（属于代码改动，不在文档任务）
 - ❌ **不重构** `_support/` 或 `test_helpers.dart`（用户决策 3：本次只写文档）
 
 ### 已知风险
 
 - **Share.shareXFiles 跳 app**：iOS 系统分享面板弹出后 Flutter app 进入 inactive，集成测试 driver 无法点击面板按钮——必须绕开
 - **FilePicker 平台通道**：同理，iOS 文件选择器无法在测试中操作
+- **自动备份 24h 周期**：集成测试不能真实等待 24h，需通过 `settings.copyWith(lastAutoBackupAt: ...)` 或调 `AutoBackupService.maybeBackup` 直接触发
+- **原子写入验证**：中断场景需要模拟 `.tmp` 残留文件，验证清理逻辑；不能直接杀进程
 - **磁盘慢**：模拟器 IO 比真机慢，zip 写盘可能需要 `pumpAndSettleWithTimeout(seconds: 30)`
 - **冲突对话框时序**：弹对话框后 waitForWidget 必须有 timeout（默认 10s 可能不够）
 - **副作用难清理**：备份 zip 写在 sandbox 临时目录，跑完测试要手动 `File(zipPath).deleteSync()`，否则下次跑可能残留
@@ -518,7 +650,7 @@ testWidgets('恢复覆盖模式测试', (tester) async {
 | 维度 | backup-restore | theme-chat-e2e |
 |------|---------------|----------------|
 | 是否需要 LLM | ❌ | ✅ 真实 API |
-| 平台通道 | Share / FilePicker（**难处理**） | 无 |
+| 平台通道 | Share / FilePicker（**手动路径难处理；自动备份路径可避开**） | 无 |
 | 阻塞项 | ValueKey 缺失 + 平台通道 | ValueKey 已有 |
 | 测试时长 | < 10s（纯本地 IO） | 60-120s（LLM 推理） |
 | 稳定性 | 高（无网络） | 中（API 不稳定） |
@@ -550,22 +682,22 @@ flutter test integration_test/ -d "<iOS Simulator>"
 ### 文档编写（本 spec）
 
 - [x] 目标与背景
-- [x] 测试现状（4 个 TODO 空壳）
-- [x] 底层实现剖析（ExportService / ImportService / UI 入口）
-- [x] ValueKey 缺失清单
+- [x] 测试现状（4 个 TODO 空壳 + 自动备份已上线说明）
+- [x] 底层实现剖析（ExportService / ImportService / 聚合页 UI 入口 / 原子写入）
+- [x] ValueKey 缺失清单（含聚合页与横幅）
 - [x] 编写前置依赖（4.1-4.3）
-- [x] 4 个 testWidgets 完整代码
+- [x] 5 个 testWidgets 完整代码（含 § 5.5 自动备份）
 - [x] 阻塞点汇总
 - [x] 风险与边界
 - [x] 执行命令
 
 ### 代码层面（**不在本文档任务**）
 
-- [ ] 给 `_BackupEntry` / `_RestoreEntry` 加 `backup_tile` / `restore_tile` ValueKey
+- [ ] 给 `BackupRestoreScreen` 加 `backup_restore_tile` / 各分区 ValueKey
 - [ ] 给冲突对话框按钮加 `restore_overwrite_button` / `restore_merge_button` ValueKey
 - [ ] 把 `_createTheme` / `_createNode` / `_switchToTab` 提升到 `integration_test/_support/`
 - [ ] 新增 `integration_test/_support/backup_helpers.dart`（`createBackupZip` / `restoreBackupZip`）
-- [ ] 实现 § 5.1-5.4 四个 testWidgets 实际代码
+- [ ] 实现 § 5.1-5.5 五个 testWidgets 实际代码
 - [ ] 跑通 + 截图验证
 
 ---
@@ -576,8 +708,10 @@ flutter test integration_test/ -d "<iOS Simulator>"
 - [fixtures.md](./fixtures.md) — fixtures 详解（InMemoryLlmConfigStore，本 spec 不需要 LLM，但 fixtures 体系相关）
 - [helpers.md](./helpers.md) — test_helpers.dart 工具（`waitForText` / `_createTheme` 思路参考）
 - [theme-chat-e2e.md](./theme-chat-e2e.md) — 完整跑通的范式（4 个私有 helper 都可借鉴）
-- [docs/_tmp/导出导入方案.md](../../../_tmp/导出导入方案.md) — backup 业务方案 brainstorming 记录
-- `lib/data/services/export_service.dart` — ExportService 实现（105 行）
-- `lib/data/services/import_service.dart` — ImportService 实现（133 行）
-- `lib/data/models/export_manifest.dart` — manifest schema 定义（96 行）
-- `lib/ui/features/settings/settings_screen.dart:659-900` — `_BackupEntry` / `_RestoreEntry` UI 入口
+- [docs/_tmp/2026-07-08-auto-backup.md](../../(已归档)) — 自动备份功能 brainstorming + 实现计划
+- `lib/data/services/export_service.dart` — ExportService 实现
+- `lib/data/services/import_service.dart` — ImportService 实现
+- `lib/data/services/auto_backup_service.dart` — AutoBackupService 实现
+- `lib/data/models/export_manifest.dart` — manifest schema 定义
+- `lib/ui/features/backup_restore/backup_restore_screen.dart` — 备份与恢复聚合页 UI
+- `lib/ui/features/settings/settings_screen.dart` — 设置页入口（现收敛为单个「备份与恢复」行）

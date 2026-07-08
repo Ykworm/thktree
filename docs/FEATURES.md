@@ -59,7 +59,7 @@
 | 滚动到顶/底 | chat | ✅ 完成 | 2026-07-06 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/chat_list_view.dart` + `lib/ui/features/chat/chat_screen.dart` | 浮动箭头按钮（离开底部时出现，点击回到底部）+ 双击 nav bar 标题区跳到顶部（iOS 原生行为） |
 | 对话目录 | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/widgets/chat_outline_sheet.dart` | 更多菜单入口，底部 sheet 列出所有 user 消息，点击跳转到对话中对应位置 |
 | 聊天内搜索 | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/widgets/chat_search_sheet.dart` | 更多菜单入口，在当前对话的所有消息中搜索文本，高亮显示结果 |
-| 用户问题列表 | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/user_questions.dart` | 更多菜单入口，展示当前会话所有用户提问列表，支持点击查看对应回复 |
+| 本次发言 | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/user_questions.dart` | 更多菜单入口，展示当前会话所有用户消息列表，支持点击查看对应回复 |
 | Context Usage Bar | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart`（`_ContextUsageBar`） | 对话页底部 1px 高 token 使用率进度条，>85% 变红警示 |
 
 ### 联网搜索
@@ -95,7 +95,7 @@ KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实�
 | 设置页 | settings | ✅ 完成 | 2026-06-28 | [README](modules/settings/README.md) | [README](modules/settings/visual/README.md) | `lib/ui/features/settings/settings_screen.dart` 等 | 大模型入口 + 默认模型配置页 + 独立模型选择页；**2026-06-28 起入口从底部 tab 移至搜索页顶栏右上角齿轮按钮**（详见 [CHANGELOG](CHANGELOG/2026-06-28-settings-out-of-tabbar.md)） |
 | 生物认证（Face ID） | settings | ✅ 完成 | 2026-06-17 | [README](modules/settings/README.md) | — | `lib/data/services/biometric_service.dart` | BiometricService + AuthGate + WidgetsBindingObserver，进前台弹验证 |
 | 分享功能 | settings | ✅ 完成 | 2026-07-08 | [README](modules/settings/README.md) | — | `lib/data/services/share_service.dart` | ShareService.shareAsImage 将问答对渲染为 PNG 图片并调起系统分享面板（offscreen 渲染 → `Share.shareXFiles()`） |
-| 备份与恢复 | settings | ✅ 完成 | 2026-07-08 | [README](modules/settings/README.md) | — | `lib/ui/features/settings/settings_screen.dart`（`_BackupEntry`/`_RestoreEntry`）+ `lib/data/services/export_service.dart` + `lib/data/services/import_service.dart` | 导出为 zip 包；导入支持覆盖/合并两种冲突策略；备份提醒横幅可设置周期 |
+| 备份与恢复 | settings | ✅ 完成 | 2026-07-08 | [README](modules/settings/README.md) | — | `lib/ui/features/backup_restore/backup_restore_screen.dart` + `lib/data/services/auto_backup_service.dart` + `lib/data/services/export_service.dart` + `lib/data/services/import_service.dart` | 自动备份（24h 前台补偿，本地保留 7 份）；手动备份并分享；导入支持覆盖/合并；分享提醒独立周期（3/5/7/14 天可调），仅“分享出去”刷新提醒日期 |
 | 语音播放 | settings | ✅ 完成（iOS only） | 2026-06-17 | [README](modules/settings/README.md) | [语音播放设计](modules/settings/specs/2026-06-05-语音播放功能-design.md) | `lib/ui/features/settings/tts_player_screen.dart` 等 | v1.1 上线：iOS 原生 AVSpeechSynthesizer，5 层架构（Plugin→Service→Controller→UI），单条消息互斥，语速不持久化、声音持久化；3 层背景（base + radial ambient + per-message tint）+ 4 类动效（波形/脉冲环/glow shift/文字渐入）；scroll 浮按钮解决长文本回顶；Android 平台用 NoOpTtsService 静默桩。v2+ 路线图见设计 doc §11 |
 
 ## 7. 跨模块（_shared / 基础设施）
@@ -109,8 +109,8 @@ KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实�
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| Lab tab 入口 | lab | ✅ 完成 | 2026-07-04 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/lab_placeholder_screen.dart` + `lib/ui/core/router.dart` | tab bar 4→5（搜索/主题/笔记/**Lab**/设置）+ `LabPlaceholderScreen` 功能块卡片布局（`_FeatureCard` 组件）+ `lab_bg_with_title.png` 覆盖灵动岛 + 状态栏深色背景（`#0F1035`）+ 支持滚动 + `AppIcons.lab`（sf_flask）+ 中英 l10n（统一 "Lab"）；子功能候选见 [brainstorm 草稿](_tmp/2026-06-24-lab-tab-brainstorm.md)，详见 commit `31b201d` |
-| 关键词排行榜 | lab | ✅ 完成 | 2026-07-02 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/keyword_ranking/` + `lib/data/services/keyword_*.dart` | LLM 提取关键词 → 自动/手动分类 → 聚合评分 → 排行榜展示；leaf 状态机（pending/fresh/stale），fresh 禁用选择不浪费 API；provider fallback 遍历所有已配置 key 的提供商；详见 [brainstorm 草稿](_tmp/2026-07-02-keyword-ranking-brainstorm.md) + [CHANGELOG](CHANGELOG/2026-07-02-keyword-ranking-fixes.md) |
+| Lab tab 入口 | lab | ✅ 完成 | 2026-07-04 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/lab_placeholder_screen.dart` + `lib/ui/core/router.dart` | tab bar 4→5（搜索/主题/笔记/**Lab**/设置）+ `LabPlaceholderScreen` 功能块卡片布局（`_FeatureCard` 组件）+ `lab_bg_with_title.png` 覆盖灵动岛 + 状态栏深色背景（`#0F1035`）+ 支持滚动 + `AppIcons.lab`（sf_flask）+ 中英 l10n（统一 "Lab"）；子功能候选详见 commit `31b201d` |
+| 关键词排行榜 | lab | ✅ 完成 | 2026-07-02 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/keyword_ranking/` + `lib/data/services/keyword_*.dart` | LLM 提取关键词 → 自动/手动分类 → 聚合评分 → 排行榜展示；leaf 状态机（pending/fresh/stale），fresh 禁用选择不浪费 API；provider fallback 遍历所有已配置 key 的提供商；详见 [CHANGELOG](CHANGELOG/2026-07-02-keyword-ranking-fixes.md) |
 | 用户输入总结 | lab | ✅ 完成 | 2026-07-08 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/user_input_summary/` + `lib/data/services/user_input_summary_service.dart` | 扫描用户历史输入（支持 7/14/30/90 天范围），LLM 生成 Markdown 分析报告，支持缓存持久化 |
 | 思维碰撞 | lab | ✅ 完成 | 2026-07-08 | [README](modules/lab/README.md) | — | `lib/ui/features/lab/thinking_collision/` | 从关键词排行榜随机配对（优先跨主题配对），LLM 异步生成一句话摘要，点击碰撞对创建新对话节点并跳转 |
 

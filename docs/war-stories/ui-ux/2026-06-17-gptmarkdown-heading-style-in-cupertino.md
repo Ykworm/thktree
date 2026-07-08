@@ -96,7 +96,7 @@ builder: (context, child) => GptMarkdownTheme(
 
 ## 参考链接
 
-- [NoteDetailScreen UI 修复文档](../_tmp/note-detail-ui-fix.md)
+- [NoteDetailScreen UI 修复文档](../modules/notes/specs/note-detail-ui-fix.md)
 - [笔记详情页 UI 重构](../modules/notes/CHANGELOG.md) — § 8
 
 ## 复盘
