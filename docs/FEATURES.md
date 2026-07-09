@@ -29,6 +29,7 @@
 | 汇总预览 | themes | ❌ 取消 | 2026-06-22 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | — | 产品决策取消 |
 | 祖先上下文总结 | themes | 🔨 部分实现 | — | [README](modules/themes/README.md) | — | `lib/data/services/` | context-summary.md 写入存在，注入对话未完成 |
 | 主题详情 overflow menu | themes | ✅ 完成 | 2026-07-04 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/theme_detail_screen.dart` | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
+| 合并 & 创建新 Chat | themes | ✅ 完成 | 2026-07-09 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/merge_chat_confirm_screen.dart` 等 | 选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree 范围（chat 页入口限当前树，tree 页入口可跨树），详见 [spec](modules/themes/specs/merge-chat.md) |
 
 ## 2. 笔记模块（notes）
 
@@ -77,7 +78,7 @@ KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实�
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| 全文搜索 | search | ✅ 完成 | 2026-06-22 | [README](modules/search/README.md) | — | `lib/ui/features/search/search_screen.dart` | SearchScreen UI + SearchService (SQLite FTS5) 已实现，索引修复流程已集成 |
+| 全文搜索 | search | ✅ 完成 | 2026-06-22 | [README](modules/search/README.md) | — | `lib/ui/features/search/search_screen.dart` | SearchScreen UI + SearchService (SQLite FTS5) 已实现，索引修复流程已集成；搜索 tab 走显式搜索按钮（非 live），笔记 tab 仍 live |
 | 搜索功能设计 | search | ✅ 完成 | 2026-06-05 | [README](modules/search/README.md) | — | `docs/modules/search/specs/2026-06-05-搜索功能-design.md` | 完整设计 spec |
 
 ## 5. LLM 模块（llm）

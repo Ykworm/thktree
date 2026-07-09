@@ -29,6 +29,7 @@
 | 汇总预览 | 📋 待开发 | — | 未实现 |
 | 祖先上下文总结 | 🔨 部分实现 | — | context-summary.md 写入存在 |
 | 主题详情 overflow menu | ✅ 完成 | 2026-07-04 | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
+| 合并 & 创建新 Chat | ✅ 完成 | 2026-07-09 | 选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree 范围（chat 页入口限当前树，tree 页入口可跨树），详见 [spec](specs/merge-chat.md) |
 
 ## 3. 代码文件
 
@@ -36,8 +37,11 @@
 lib/ui/features/themes/
 ├── theme_list_screen.dart          # 149 行：主题列表
 ├── theme_list_controller.dart      # 28 行：AsyncNotifier<List<Theme>>
-├── theme_detail_screen.dart        # 905 行：树视图（最大文件）
-└── theme_detail_controller.dart    # 148 行：AsyncNotifier.family<ThemeDetailState, String>
+├── theme_detail_screen.dart        # 905 行：树视图（最大文件）+ tree page 合并&创建入口
+├── theme_detail_controller.dart    # 148 行：AsyncNotifier.family<ThemeDetailState, String>
+├── full_tree_screen.dart           # 582 行：整树全展开视图 + 多选合并模式
+├── merge_chat_confirm_screen.dart  # 590 行：合并&创建 Step 2（标题 + 挂载位置）
+└── merge_chat_tree_scope.dart      # 50 行：子树计算纯函数（currentTreeRootIdOf / subTreeNodes / directChildren）
 ```
 
 依赖：
@@ -52,6 +56,7 @@ lib/ui/features/themes/
 | **Visual 索引** | [visual/README.md](visual/README.md) | 视觉设计入口 |
 | 主题列表设计 | [visual/theme-list-design.md](visual/theme-list-design.md) | ThemeListScreen 全屏设计 |
 | 主题详情设计 | [visual/theme-detail-design.md](visual/theme-detail-design.md) | ThemeDetailScreen + 5 套节点配色 + 所有交互 |
+| 合并 & 创建新 Chat | [specs/merge-chat.md](specs/merge-chat.md) | 多选合并流程 + 跨 tree 范围规则（Theme ≠ Tree） |
 
 ## 5. 关键设计原则
 
@@ -85,6 +90,7 @@ lib/ui/features/themes/
 ## 7. 相关历史
 
 - **2026-07-04** — ThemeDetailScreen NavBar 刷新按钮改为 overflow menu（`⋯` + CupertinoActionSheet：刷新 / 折叠全部 / 展开全部）
+- **2026-07-09** — 合并 & 创建新 Chat：选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree（chat 页入口限当前树，tree 页入口可跨树）；新增 `merge_chat_tree_scope.dart` 纯函数 + `test/merge_chat_tree_scope_test.dart`（6 case）固定约束
 - **2026-06-07** — 节点卡片重构：从 chevron 改为圆圈 toggle，5 套配色，行高 56px
 - **2026-06-07** — 节点圆圈改为所有节点均显示空心圆（叶子节点不可点击），圆圈与标题间距缩至 0px
 - **2026-06-07** — visual 文档从 `docs/visual/themes/` 迁至 `docs/modules/themes/visual/`

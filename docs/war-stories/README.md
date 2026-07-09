@@ -85,6 +85,8 @@ YYYY-MM-DD-简短问题描述.md
 
 ### 2026-07
 
+- `ui-ux/2026-07-09-search-tag-cloud-no-trigger.md` — Tag cloud 点击不触发搜索（ValueNotifier 只在值变化时触发 listener，不触发初始值；动态创建的 SearchResults widget 在 initState 中未处理初始值；initState 检查并处理）
+- `packages/2026-07-09-fts5-cjk-tokenization.md` — FTS5 CJK 分词导致子串搜索失败（unicode61 将连续 CJK 视为一个 token；新增 _tokenizeCjk 逐字分词 + _cleanSnippet 清理 + v6 迁移触发索引重建）
 - `flutter/2026-07-08-titlebar-model-mismatch-dual-fallback.md` — Title bar 显示模型与实际调用不一致（显示侧 resolveChatModel 4 级 vs 调用侧内嵌 2 级 fallback，优先级缺失 + 兜底条件不同 + 异步竞态；空白分支 100% 命中；统一为 _resolveChatModelForLlm 复用 1-3 级 + 自行第 4 级查 apiKey；详见 ADR-026）
 - `flutter/2026-07-08-nested-selectionarea-branch-preview.md` — 嵌套 SelectionArea 导致外层 onSelectionChanged 收不到选区（chat 选文字→分支预览消失；GptMarkdown 不可选被迫内层自包 SelectionArea，外层感知不到子选区；用共享 NotifierProvider + 顶层 `syncSelection(context,v)` 从内层透出；顺带踩 riverpod 3.0 移除 StateProvider）
 
