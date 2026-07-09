@@ -29,6 +29,7 @@ import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/core/shared/message_bubble.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/core/shared/selection_state.dart';
+import 'package:thk_tree/ui/core/shared/clips_context_menu.dart';
 import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
@@ -37,7 +38,6 @@ import 'package:thk_tree/ui/features/chat/user_questions.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
-import 'package:thk_tree/ui/features/themes/full_tree_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -341,6 +341,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         title: '',
         middle: GestureDetector(
           onTap: toggleModelPanel,
+          onDoubleTapDown: (_) => _chatListKey.currentState?.scrollToTop(),
           behavior: HitTestBehavior.opaque,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -425,6 +426,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       // 所以这里几乎不会回调；选区实际由 MessageBubble 内的
                       // SelectionArea 捕获并写入 currentSelectionProvider。
                       // 保留写入仅作兜底（万一外层能拿到选区时同步）。
+                      contextMenuBuilder: (context, editableTextState) =>
+                          buildClipsContextMenu(context, editableTextState),
                       onSelectionChanged: (value) {
                         final text = value?.plainText;
                         if (text != null && text.trim().isNotEmpty) {
@@ -802,13 +805,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           color: CupertinoColors.systemIndigo,
           onPressed: () {
             Navigator.of(context).pop();
-            Navigator.of(context).push(
-              CupertinoPageRoute(
-                builder: (_) => FullTreeScreen(
-                  themeId: widget.themeId,
-                  currentNodeId: widget.nodeId,
-                ),
-              ),
+            context.push(
+              '/themes/${widget.themeId}/full-tree?currentNodeId=${widget.nodeId}',
             );
           },
         ),

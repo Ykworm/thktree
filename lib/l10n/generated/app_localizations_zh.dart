@@ -427,6 +427,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectTheme => '选择主题';
 
   @override
+  String get selectTree => '选择 Tree';
+
+  @override
   String get selectLocation => '选择位置';
 
   @override
@@ -811,6 +814,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchHint => '搜索笔记和对话...';
 
   @override
+  String get searchAction => '搜索';
+
+  @override
+  String get searchIdleHint => '输入后点击「搜索」';
+
+  @override
   String get searchEmpty => '在知识中寻找连接';
 
   @override
@@ -928,6 +937,117 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupAndRestore => '备份与恢复';
+
+  @override
+  String get storageSection => '存储';
+
+  @override
+  String get cleanImagesEntry => '清理无用图片';
+
+  @override
+  String get cleanImagesSubtitle => '扫描并删除未引用的图片';
+
+  @override
+  String get scanningImages => '扫描中…';
+
+  @override
+  String cleanImagesFound(int count, String size) {
+    return '发现 $count 个无用图片，共 $size';
+  }
+
+  @override
+  String get cleanImagesConfirm => '清理';
+
+  @override
+  String cleanImagesDone(int count, String size) {
+    return '已清理 $count 个图片，释放 $size';
+  }
+
+  @override
+  String get cleanImagesNone => '没有发现无用图片';
+
+  @override
+  String get cleanImagesSelectAll => '全选';
+
+  @override
+  String get cleanImagesDeselectAll => '取消全选';
+
+  @override
+  String cleanImagesDeleteSelected(int count) {
+    return '删除（$count）';
+  }
+
+  @override
+  String cleanImagesConfirmDelete(int count, String size) {
+    return '确定删除选中的 $count 个无用图片？将释放 $size。此操作不可撤销。';
+  }
+
+  @override
+  String cleanImagesSummary(int selected, int total) {
+    return '已选 $selected / 共 $total';
+  }
+
+  @override
+  String cleanImagesScanStats(int sessionFiles, int images) {
+    return '扫描到 $sessionFiles 个会话、$images 张图片';
+  }
+
+  @override
+  String get cleanImagesDirExists => '存在';
+
+  @override
+  String get cleanImagesDirMissing => '不存在';
+
+  @override
+  String cleanImagesDiagnostics(
+    String status,
+    int sessions,
+    int raw,
+    int hit,
+    int empty,
+    int fail,
+  ) {
+    return '诊断：数据目录 $status · 会话 $sessions · 原始图片 $raw · 命中 $hit · 空目录 $empty · 读取失败 $fail';
+  }
+
+  @override
+  String get rescan => '重新扫描';
+
+  @override
+  String cleanImagesOrphanHint(int count) {
+    return '发现 $count 张无用图片，勾选后可删除';
+  }
+
+  @override
+  String get cleanImagesAllInUse => '未发现无用图片，以下图片均在使用中';
+
+  @override
+  String get cleanImagesEduSummary => '删除图片不可恢复。被聊天引用的图片删除后，对应对话将显示图片缺失。';
+
+  @override
+  String get cleanImagesEduUnused => '· 未使用：没有任何聊天引用，删除安全。';
+
+  @override
+  String get cleanImagesEduInUse => '· 使用中：正被某条聊天引用，删除后该消息的图片会丢失（文字仍在）。';
+
+  @override
+  String get cleanImagesEduPermanent => '· 所有删除均为永久操作，无法撤销。';
+
+  @override
+  String get cleanImagesInUse => '使用中';
+
+  @override
+  String get cleanImagesWarnTitle => '注意：将删除正在使用的图片';
+
+  @override
+  String cleanImagesConfirmInUse(int count) {
+    return '其中 $count 张正被聊天引用，删除后这些对话会显示图片缺失。此操作不可撤销。';
+  }
+
+  @override
+  String cleanImagesStatusLine(int unused, int total) {
+    return '共 $total 张图片，其中 $unused 张未使用（删除安全），其余正被聊天引用。';
+  }
 
   @override
   String get backupData => '备份数据';
@@ -1148,4 +1268,51 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get menuAbout => '关于';
+
+  @override
+  String get mergeChats => '合并 Chat';
+
+  @override
+  String mergeChatHint(int max) {
+    return '最多选择 $max 个 chat 进行合并';
+  }
+
+  @override
+  String selectedCount(int count, int max) {
+    return '已选 $count/$max';
+  }
+
+  @override
+  String get mergeAndCreate => '合并 & 创建新 Chat';
+
+  @override
+  String get mergeChatConfirmTitle => '合并 & 创建';
+
+  @override
+  String get selectMountLocation => '选择挂载位置';
+
+  @override
+  String get rootNode => '根节点（顶层）';
+
+  @override
+  String maxSelectionReached(int max) {
+    return '最多选 $max 个';
+  }
+
+  @override
+  String get multiSelect => '多选';
+
+  @override
+  String get done => '完成';
+
+  @override
+  String get mergeSelectGuideOnlyChat => '只有 Chat 类型的节点可以选择';
+
+  @override
+  String mergeSelectGuideMaxChats(int max) {
+    return '最多选择 $max 个 Chat';
+  }
+
+  @override
+  String get mergeSelectGuideTapMerge => '选好后点击底部「合并 & 创建新 Chat」';
 }

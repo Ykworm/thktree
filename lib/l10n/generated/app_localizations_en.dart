@@ -448,6 +448,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectTheme => 'Select Theme';
 
   @override
+  String get selectTree => 'Select Tree';
+
+  @override
   String get selectLocation => 'Select Location';
 
   @override
@@ -853,6 +856,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchHint => 'Search notes and conversations...';
 
   @override
+  String get searchAction => 'Search';
+
+  @override
+  String get searchIdleHint => 'Tap Search after typing';
+
+  @override
   String get searchEmpty => 'Find connections in your knowledge';
 
   @override
@@ -971,6 +980,122 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupAndRestore => 'Backup & Restore';
+
+  @override
+  String get storageSection => 'Storage';
+
+  @override
+  String get cleanImagesEntry => 'Clean Unused Images';
+
+  @override
+  String get cleanImagesSubtitle => 'Scan and remove unreferenced images';
+
+  @override
+  String get scanningImages => 'Scanning…';
+
+  @override
+  String cleanImagesFound(int count, String size) {
+    return 'Found $count unused image(s), $size total';
+  }
+
+  @override
+  String get cleanImagesConfirm => 'Clean';
+
+  @override
+  String cleanImagesDone(int count, String size) {
+    return 'Cleaned $count image(s), freed $size';
+  }
+
+  @override
+  String get cleanImagesNone => 'No unused images found';
+
+  @override
+  String get cleanImagesSelectAll => 'Select All';
+
+  @override
+  String get cleanImagesDeselectAll => 'Deselect All';
+
+  @override
+  String cleanImagesDeleteSelected(int count) {
+    return 'Delete ($count)';
+  }
+
+  @override
+  String cleanImagesConfirmDelete(int count, String size) {
+    return 'Delete $count selected unused image(s)? This will free $size and cannot be undone.';
+  }
+
+  @override
+  String cleanImagesSummary(int selected, int total) {
+    return 'Selected $selected / $total';
+  }
+
+  @override
+  String cleanImagesScanStats(int sessionFiles, int images) {
+    return 'Scanned $sessionFiles session(s), $images image(s)';
+  }
+
+  @override
+  String get cleanImagesDirExists => 'present';
+
+  @override
+  String get cleanImagesDirMissing => 'missing';
+
+  @override
+  String cleanImagesDiagnostics(
+    String status,
+    int sessions,
+    int raw,
+    int hit,
+    int empty,
+    int fail,
+  ) {
+    return 'Diagnostics: data dir $status · sessions $sessions · raw images $raw · dirs hit $hit · empty $empty · list failed $fail';
+  }
+
+  @override
+  String get rescan => 'Rescan';
+
+  @override
+  String cleanImagesOrphanHint(int count) {
+    return 'Found $count unused image(s), select to delete';
+  }
+
+  @override
+  String get cleanImagesAllInUse =>
+      'No unused images; the following are all in use';
+
+  @override
+  String get cleanImagesEduSummary =>
+      'Deleting images cannot be undone. Images referenced by a chat will appear missing in that conversation after deletion.';
+
+  @override
+  String get cleanImagesEduUnused =>
+      '· Unused: not referenced by any chat — safe to delete.';
+
+  @override
+  String get cleanImagesEduInUse =>
+      '· In use: referenced by a chat — deleting removes the image from that message (text stays).';
+
+  @override
+  String get cleanImagesEduPermanent =>
+      '· All deletions are permanent and cannot be undone.';
+
+  @override
+  String get cleanImagesInUse => 'In use';
+
+  @override
+  String get cleanImagesWarnTitle => 'Warning: deleting images in use';
+
+  @override
+  String cleanImagesConfirmInUse(int count) {
+    return 'Of these, $count is/are referenced by a chat and will appear missing after deletion. This cannot be undone.';
+  }
+
+  @override
+  String cleanImagesStatusLine(int unused, int total) {
+    return '$total image(s) total, $unused unused (safe to delete), the rest are in use.';
+  }
 
   @override
   String get backupData => 'Backup Data';
@@ -1201,4 +1326,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuAbout => 'About';
+
+  @override
+  String get mergeChats => 'Merge Chats';
+
+  @override
+  String mergeChatHint(int max) {
+    return 'Select up to $max chats to merge';
+  }
+
+  @override
+  String selectedCount(int count, int max) {
+    return '$count/$max selected';
+  }
+
+  @override
+  String get mergeAndCreate => 'Merge & Create New Chat';
+
+  @override
+  String get mergeChatConfirmTitle => 'Merge & Create';
+
+  @override
+  String get selectMountLocation => 'Select Mount Location';
+
+  @override
+  String get rootNode => 'Root (Top Level)';
+
+  @override
+  String maxSelectionReached(int max) {
+    return 'Maximum $max selections';
+  }
+
+  @override
+  String get multiSelect => 'Select';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get mergeSelectGuideOnlyChat => 'Only chat-type nodes can be selected';
+
+  @override
+  String mergeSelectGuideMaxChats(int max) {
+    return 'Select up to $max chats';
+  }
+
+  @override
+  String get mergeSelectGuideTapMerge =>
+      'Tap \"Merge & Create New Chat\" at the bottom when done';
 }

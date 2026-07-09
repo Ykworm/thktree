@@ -187,6 +187,7 @@
   "pleaseConfigureSummaryModel": "请在默认模型配置中设置总结文本的模型",
   "createChatFromNote": "从笔记发起对话",
   "selectTheme": "选择主题",
+  "selectTree": "选择 Tree",
   "selectLocation": "选择位置",
   "asRootChat": "作为根对话",
   "underNode": "在「{title}」下",
@@ -433,6 +434,14 @@
   "@searchHint": {
     "description": "搜索输入框占位符"
   },
+  "searchAction": "搜索",
+  "@searchAction": {
+    "description": "搜索框旁的显式搜索按钮文案"
+  },
+  "searchIdleHint": "输入后点击「搜索」",
+  "@searchIdleHint": {
+    "description": "有输入但未提交搜索时的空态提示"
+  },
   "searchEmpty": "在知识中寻找连接",
   "@searchEmpty": {
     "description": "搜索页面空状态提示"
@@ -602,6 +611,155 @@
     "description": "Android 平台提示"
   },
   "backupAndRestore": "备份与恢复",
+  "storageSection": "存储",
+  "cleanImagesEntry": "清理无用图片",
+  "cleanImagesSubtitle": "扫描并删除未引用的图片",
+  "scanningImages": "扫描中…",
+  "cleanImagesFound": "发现 {count} 个无用图片，共 {size}",
+  "cleanImagesConfirm": "清理",
+  "cleanImagesDone": "已清理 {count} 个图片，释放 {size}",
+  "cleanImagesNone": "没有发现无用图片",
+  "cleanImagesSelectAll": "全选",
+  "@cleanImagesSelectAll": {
+    "description": "Button to select all orphan images in the cleanup screen"
+  },
+  "cleanImagesDeselectAll": "取消全选",
+  "@cleanImagesDeselectAll": {
+    "description": "Button to deselect all orphan images in the cleanup screen"
+  },
+  "cleanImagesDeleteSelected": "删除（{count}）",
+  "@cleanImagesDeleteSelected": {
+    "description": "Bottom bar button to delete selected orphan images, shows count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesConfirmDelete": "确定删除选中的 {count} 个无用图片？将释放 {size}。此操作不可撤销。",
+  "@cleanImagesConfirmDelete": {
+    "description": "Confirm dialog before deleting selected orphan images",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanImagesSummary": "已选 {selected} / 共 {total}",
+  "@cleanImagesSummary": {
+    "description": "Bottom bar summary of selected vs total orphan images",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesScanStats": "扫描到 {sessionFiles} 个会话、{images} 张图片",
+  "@cleanImagesScanStats": {
+    "description": "Empty-state diagnostic: how many sessions and images were scanned",
+    "placeholders": {
+      "sessionFiles": {
+        "type": "int"
+      },
+      "images": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesDirExists": "存在",
+  "cleanImagesDirMissing": "不存在",
+  "cleanImagesDiagnostics": "诊断：数据目录 {status} · 会话 {sessions} · 原始图片 {raw} · 命中 {hit} · 空目录 {empty} · 读取失败 {fail}",
+  "@cleanImagesDiagnostics": {
+    "description": "Detailed scan diagnostics shown in cleanup screen (empty state and as caption). Helps verify path/list behavior without Xcode Console",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "sessions": {
+        "type": "int"
+      },
+      "raw": {
+        "type": "int"
+      },
+      "hit": {
+        "type": "int"
+      },
+      "empty": {
+        "type": "int"
+      },
+      "fail": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "重新扫描",
+  "@rescan": {
+    "description": "Button to re-run the orphan image scan"
+  },
+  "cleanImagesOrphanHint": "发现 {count} 张无用图片，勾选后可删除",
+  "@cleanImagesOrphanHint": {
+    "description": "Banner on cleanup screen when orphan images exist",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesAllInUse": "未发现无用图片，以下图片均在使用中",
+  "@cleanImagesAllInUse": {
+    "description": "Banner on cleanup screen when all images are referenced (in use)"
+  },
+  "cleanImagesEduSummary": "删除图片不可恢复。被聊天引用的图片删除后，对应对话将显示图片缺失。",
+  "@cleanImagesEduSummary": {
+    "description": "Collapsed educational banner summary on cleanup screen"
+  },
+  "cleanImagesEduUnused": "· 未使用：没有任何聊天引用，删除安全。",
+  "@cleanImagesEduUnused": {
+    "description": "Expanded educational banner: what an unused image means"
+  },
+  "cleanImagesEduInUse": "· 使用中：正被某条聊天引用，删除后该消息的图片会丢失（文字仍在）。",
+  "@cleanImagesEduInUse": {
+    "description": "Expanded educational banner: what an in-use image means"
+  },
+  "cleanImagesEduPermanent": "· 所有删除均为永久操作，无法撤销。",
+  "@cleanImagesEduPermanent": {
+    "description": "Expanded educational banner: permanent warning"
+  },
+  "cleanImagesInUse": "使用中",
+  "@cleanImagesInUse": {
+    "description": "Small label on an in-use (referenced) image thumbnail"
+  },
+  "cleanImagesWarnTitle": "注意：将删除正在使用的图片",
+  "@cleanImagesWarnTitle": {
+    "description": "Confirmation dialog title when selected images include in-use ones"
+  },
+  "cleanImagesConfirmInUse": "其中 {count} 张正被聊天引用，删除后这些对话会显示图片缺失。此操作不可撤销。",
+  "@cleanImagesConfirmInUse": {
+    "description": "Extra warning in confirm dialog when deleting in-use images",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesStatusLine": "共 {total} 张图片，其中 {unused} 张未使用（删除安全），其余正被聊天引用。",
+  "@cleanImagesStatusLine": {
+    "description": "Status line summarizing unused vs in-use image counts",
+    "placeholders": {
+      "unused": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "backupData": "备份数据",
   "restoreData": "恢复数据",
   "backupInProgress": "正在备份...",
@@ -721,5 +879,80 @@
   "menuAbout": "关于",
   "@menuAbout": {
     "description": "搜索页右上角菜单中的关于选项"
+  },
+  "mergeChats": "合并 Chat",
+  "@mergeChats": {
+    "description": "树页面更多菜单中进入多选合并模式的选项"
+  },
+  "mergeChatHint": "最多选择 {max} 个 chat 进行合并",
+  "@mergeChatHint": {
+    "description": "FullTreeScreen 多选模式顶部提示文案",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "selectedCount": "已选 {count}/{max}",
+  "@selectedCount": {
+    "description": "多选模式下的已选计数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeAndCreate": "合并 & 创建新 Chat",
+  "@mergeAndCreate": {
+    "description": "进入合并确认页面的按钮"
+  },
+  "mergeChatConfirmTitle": "合并 & 创建",
+  "@mergeChatConfirmTitle": {
+    "description": "合并确认页面的导航栏标题"
+  },
+  "selectMountLocation": "选择挂载位置",
+  "@selectMountLocation": {
+    "description": "选择新 chat 挂载位置的区块标题"
+  },
+  "rootNode": "根节点（顶层）",
+  "@rootNode": {
+    "description": "将新 chat 挂载为根节点的选项"
+  },
+  "maxSelectionReached": "最多选 {max} 个",
+  "@maxSelectionReached": {
+    "description": "用户尝试超过最大选择数时的提示",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "multiSelect": "多选",
+  "@multiSelect": {
+    "description": "FullTreeScreen 中进入多选模式的按钮"
+  },
+  "done": "完成",
+  "@done": {
+    "description": "FullTreeScreen 中退出多选模式的按钮"
+  },
+  "mergeSelectGuideOnlyChat": "只有 Chat 类型的节点可以选择",
+  "@mergeSelectGuideOnlyChat": {
+    "description": "多选合并教学提示：只能选 chat 节点"
+  },
+  "mergeSelectGuideMaxChats": "最多选择 {max} 个 Chat",
+  "@mergeSelectGuideMaxChats": {
+    "description": "多选合并教学提示：最大选择数",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeSelectGuideTapMerge": "选好后点击底部「合并 & 创建新 Chat」",
+  "@mergeSelectGuideTapMerge": {
+    "description": "多选合并教学提示：选完后点底部按钮"
   }
 }

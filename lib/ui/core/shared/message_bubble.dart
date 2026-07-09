@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText, SelectionArea;
 import 'package:thk_tree/ui/core/shared/selection_state.dart';
+import 'package:thk_tree/ui/core/shared/clips_context_menu.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -588,6 +589,8 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                             if (widget.message.body.trim().isNotEmpty)
                               SelectionArea(
                                 onSelectionChanged: (v) => syncSelection(context, v),
+                                contextMenuBuilder: (context, editableTextState) =>
+                                    buildClipsContextMenu(context, editableTextState),
                                 child: GptMarkdown(
                                   sanitizedBody,
                                   style: baseStyle,
@@ -774,6 +777,8 @@ class _ReasoningSection extends StatelessWidget {
             const SizedBox(height: 8),
             SelectionArea(
               onSelectionChanged: (v) => syncSelection(context, v),
+              contextMenuBuilder: (context, editableTextState) =>
+                  buildClipsContextMenu(context, editableTextState),
               child: GptMarkdown(
                 sanitizedReasoning,
                 style: TextStyle(
@@ -993,6 +998,8 @@ class _MarkdownTableView extends StatelessWidget {
 
         return SelectionArea(
           onSelectionChanged: (v) => syncSelection(context, v),
+          contextMenuBuilder: (context, editableTextState) =>
+              buildClipsContextMenu(context, editableTextState),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Table(

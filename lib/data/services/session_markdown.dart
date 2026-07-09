@@ -375,6 +375,43 @@ String updateSessionFrontmatter(
   return result;
 }
 
+/// 将多个 chat 的对话历史合并为一条纯文本消息。
+///
+/// 每个来源用 `## 来自「title」` 标题分隔，消息按 `角色：内容` 格式逐行排列。
+/// assistant 角色显示 modelId（如 `deepseek-chat`），user 显示 `User`。
+/// 含图片的消息在 body 前标注 `[图片]`。
+String buildMergedTranscript(
+  List<({String title, SessionDocument document})> sources,
+) {
+  final buffer = StringBuffer();
+
+  for (var i = 0; i < sources.length; i++) {
+    final source = sources[i];
+    if (i > 0) {
+      buffer.writeln();
+      buffer.writeln();
+    }
+    buffer.writeln('## 来自「${source.title}」');
+    buffer.writeln();
+
+    for (final message in source.document.messages) {
+      final body = message.body.trim();
+      if (body.isEmpty) continue;
+
+      final label = switch (message.role) {
+        SessionRole.user => 'User',
+        SessionRole.assistant => message.modelId ?? 'Assistant',
+        SessionRole.system => 'System',
+      };
+
+      final bodyWithImage = message.hasImage ? '[图片] $body' : body;
+      buffer.writeln('$label：$bodyWithImage');
+    }
+  }
+
+  return buffer.toString();
+}
+
 String buildConversationTranscript(SessionDocument document) {
   final buffer = StringBuffer();
 

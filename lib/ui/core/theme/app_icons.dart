@@ -154,6 +154,11 @@ class AppIcons {
   /// 相机（camera）
   static const IconData camera = CupertinoIcons.camera;
 
+  // ── 碎片库 ──
+
+  /// 碎片库入口（rectangle.stack，一叠卡片 = 文本碎片集合）
+  static const IconData clips = SFIcons.sf_rectangle_stack;
+
   // ── TTS（语音播放） ──
 
   /// 滚动到顶部（用于 player 页浮按钮）

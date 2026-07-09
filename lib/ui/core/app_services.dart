@@ -27,6 +27,7 @@ import 'package:thk_tree/data/services/keyword_extraction_service.dart';
 import 'package:thk_tree/data/services/keyword_aggregation_service.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/data/services/keyword_category_storage.dart';
+import 'package:thk_tree/data/services/clip_storage.dart';
 
 class NoteListVersionNotifier extends Notifier<int> {
   @override
@@ -286,6 +287,15 @@ final keywordCategoryStorageProvider =
     FutureProvider<KeywordCategoryStorage>((ref) async {
   final paths = await ref.watch(appPathsProvider.future);
   return KeywordCategoryStorage(rootDir: paths.rootDir.path);
+});
+
+/// 全局 `clips.json` 文件读写器（碎片库）。
+///
+/// 碎片库是一个全局文本暂存区，存术语/关键词/常用句式，
+/// 在不同对话里反复取用。不绑定 session/node/theme。
+final clipStorageProvider = FutureProvider<ClipStorage>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  return ClipStorage(rootDir: paths.rootDir.path);
 });
 
 /// 单个 theme 的关键词分析状态机服务（依赖对应 [keywordAnalysisStorageProvider]）。

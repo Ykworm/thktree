@@ -3,12 +3,14 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
+import 'package:thk_tree/ui/features/chat/widgets/clips_sheet.dart';
 
-class ChatComposer extends StatefulWidget {
+class ChatComposer extends ConsumerStatefulWidget {
   const ChatComposer({
     super.key,
     required this.hintText,
@@ -74,10 +76,10 @@ class ChatComposer extends StatefulWidget {
   final VoidCallback? onImageRemove;
 
   @override
-  State<ChatComposer> createState() => _ChatComposerState();
+  ConsumerState<ChatComposer> createState() => _ChatComposerState();
 }
 
-class _ChatComposerState extends State<ChatComposer> {
+class _ChatComposerState extends ConsumerState<ChatComposer> {
   final _controller = TextEditingController();
   final _inputFocusNode = FocusNode();
 
@@ -172,6 +174,23 @@ class _ChatComposerState extends State<ChatComposer> {
                 ),
               ),
               const SizedBox(width: 4),
+              // 碎片库按钮
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppSp.cardRadius),
+                ),
+                child: CupertinoButton(
+                  padding: const EdgeInsets.all(8),
+                  onPressed: _openClipsSheet,
+                  child: Icon(
+                    AppIcons.clips,
+                    size: 20,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.surface,
@@ -247,6 +266,10 @@ class _ChatComposerState extends State<ChatComposer> {
         ],
       ),
     );
+  }
+
+  void _openClipsSheet() {
+    showClipsSheet(context, _controller);
   }
 
   Future<void> _send() async {

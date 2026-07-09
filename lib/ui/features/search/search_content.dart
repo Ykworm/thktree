@@ -155,12 +155,17 @@ class SearchBox extends StatefulWidget {
     this.placeholder,
     this.controller,
     this.focusNode,
+    this.onSearch,
   });
 
   final ValueNotifier<String>? queryNotifier;
   final String? placeholder;
   final TextEditingController? controller;
   final FocusNode? focusNode;
+  /// Called when the user explicitly triggers a search (keyboard search/return
+  /// key, or an external search button). When non-null, live typing no longer
+  /// drives searching on its own — callers wire an explicit trigger.
+  final VoidCallback? onSearch;
 
   @override
   State<SearchBox> createState() => _SearchBoxState();
@@ -226,17 +231,19 @@ class _SearchBoxState extends State<SearchBox> {
           widget.queryNotifier?.value = value;
         }
       },
+      onSubmitted: (_) => widget.onSearch?.call(),
     );
   }
 }
 
 /// Live results list driven by [queryNotifier].
-/// Performs a debounced (300ms) full-text search via [searchServiceProvider].
+/// Performs a debounced full-text search via [searchServiceProvider].
 class SearchResults extends ConsumerStatefulWidget {
   const SearchResults({
     super.key,
     required this.queryNotifier,
     this.scrollable = true,
+    this.debounceDelay = const Duration(milliseconds: 300),
   });
 
   final ValueNotifier<String> queryNotifier;
@@ -245,6 +252,11 @@ class SearchResults extends ConsumerStatefulWidget {
   /// Set to `false` when placed inside a [SliverToBoxAdapter] or other
   /// scrollable parent that handles scrolling.
   final bool scrollable;
+
+  /// Debounce before firing the search. Defaults to 300ms (live typing).
+  /// Pass [Duration.zero] for an explicit-commit search box where the caller
+  /// already controls when a search happens.
+  final Duration debounceDelay;
 
   @override
   ConsumerState<SearchResults> createState() => _SearchResultsState();
@@ -260,6 +272,12 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
   void initState() {
     super.initState();
     widget.queryNotifier.addListener(_onQueryChanged);
+    // If queryNotifier already has a non-empty value (e.g., tapped from tag
+    // cloud), fire search immediately — ValueNotifier only notifies on
+    // *changes*, not the current value.
+    if (widget.queryNotifier.value.trim().isNotEmpty) {
+      _onQueryChanged();
+    }
   }
 
   @override
@@ -280,7 +298,7 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
       });
       return;
     }
-    _debounce = Timer(const Duration(milliseconds: 300), () async {
+    _debounce = Timer(widget.debounceDelay, () async {
       setState(() {
         _loading = true;
         _error = null;
@@ -426,21 +444,74 @@ class SearchContent extends StatefulWidget {
 
 class _SearchContentState extends State<SearchContent> {
   final _queryNotifier = ValueNotifier<String>('');
+  final _committedNotifier = ValueNotifier<String>('');
+
+  @override
+  void initState() {
+    super.initState();
+    // When the text box is emptied, also clear the last committed query so the
+    // results view returns to the recent-search tag cloud (no stale results).
+    _queryNotifier.addListener(_onQueryTextChanged);
+  }
+
+  void _onQueryTextChanged() {
+    // The live text diverged from the last committed search (user edited or
+    // cleared the field) — drop the stale committed term so the results view
+    // returns to the idle/tag-cloud state instead of showing old results.
+    final q = _queryNotifier.value.trim();
+    final c = _committedNotifier.value.trim();
+    if (q != c) {
+      _committedNotifier.value = '';
+    }
+  }
+
+  /// Explicit search trigger — wired to the search button and keyboard return.
+  /// Only fires when there is non-empty text; the committed value (not live
+  /// typing) drives [SearchResults], so history is written once per commit.
+  void _commitSearch() {
+    final q = _queryNotifier.value.trim();
+    if (q.isEmpty) return;
+    _committedNotifier.value = q;
+  }
 
   @override
   void dispose() {
+    _queryNotifier.removeListener(_onQueryTextChanged);
     _queryNotifier.dispose();
+    _committedNotifier.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         const _BackupReminderBanner(),
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: SearchBox(queryNotifier: _queryNotifier),
+          child: ValueListenableBuilder<String>(
+            valueListenable: _queryNotifier,
+            builder: (context, query, _) {
+              final canSearch = query.trim().isNotEmpty;
+              return Row(
+                children: [
+                  Expanded(
+                    child: SearchBox(
+                      queryNotifier: _queryNotifier,
+                      onSearch: _commitSearch,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: canSearch ? _commitSearch : null,
+                    child: Text(l10n.searchAction),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
         Expanded(
           child: ValueListenableBuilder<String>(
@@ -448,14 +519,54 @@ class _SearchContentState extends State<SearchContent> {
             builder: (context, query, _) {
               if (query.trim().isEmpty) {
                 return RecentSearchTags(
-                  onTagTap: (tag) => _queryNotifier.value = tag,
+                  onTagTap: (tag) {
+                    _queryNotifier.value = tag;
+                    _committedNotifier.value = tag;
+                  },
                 );
               }
-              return SearchResults(queryNotifier: _queryNotifier);
+              // Field has text. Show results only when it matches the last
+              // committed term; otherwise show an idle hint (no stale results).
+              return ValueListenableBuilder<String>(
+                valueListenable: _committedNotifier,
+                builder: (context, committed, _) {
+                  if (committed.trim() != query.trim()) {
+                    return _SearchIdleHint(l10n: l10n);
+                  }
+                  return SearchResults(
+                    queryNotifier: _committedNotifier,
+                    debounceDelay: Duration.zero,
+                  );
+                },
+              );
             },
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Shown when the field has text but no search has been committed yet
+/// (e.g., the user is still typing or has edited after a search).
+class _SearchIdleHint extends StatelessWidget {
+  const _SearchIdleHint({required this.l10n});
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(CupertinoIcons.search, size: 40, color: AppColors.textTertiary),
+          const SizedBox(height: 12),
+          Text(
+            l10n.searchIdleHint,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 }

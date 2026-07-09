@@ -854,6 +854,12 @@ abstract class AppLocalizations {
   /// **'Select Theme'**
   String get selectTheme;
 
+  /// Label for selecting which tree to mount the merged chat into
+  ///
+  /// In en, this message translates to:
+  /// **'Select Tree'**
+  String get selectTree;
+
   /// Title for chat location selection
   ///
   /// In en, this message translates to:
@@ -1586,6 +1592,18 @@ abstract class AppLocalizations {
   /// **'Search notes and conversations...'**
   String get searchHint;
 
+  /// Explicit search button label next to the search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchAction;
+
+  /// Idle hint when there is input but no search committed yet
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Search after typing'**
+  String get searchIdleHint;
+
   /// Search page empty state prompt
   ///
   /// In en, this message translates to:
@@ -1801,6 +1819,181 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backup & Restore'**
   String get backupAndRestore;
+
+  /// Settings section header for storage management
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get storageSection;
+
+  /// Settings tile title to clean orphan chat images
+  ///
+  /// In en, this message translates to:
+  /// **'Clean Unused Images'**
+  String get cleanImagesEntry;
+
+  /// Subtitle for clean unused images tile
+  ///
+  /// In en, this message translates to:
+  /// **'Scan and remove unreferenced images'**
+  String get cleanImagesSubtitle;
+
+  /// Dialog title while scanning for orphan images
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning…'**
+  String get scanningImages;
+
+  /// Confirm dialog message showing orphan count and size
+  ///
+  /// In en, this message translates to:
+  /// **'Found {count} unused image(s), {size} total'**
+  String cleanImagesFound(int count, String size);
+
+  /// Button label to confirm cleaning orphan images
+  ///
+  /// In en, this message translates to:
+  /// **'Clean'**
+  String get cleanImagesConfirm;
+
+  /// Result dialog message after cleaning orphan images
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaned {count} image(s), freed {size}'**
+  String cleanImagesDone(int count, String size);
+
+  /// Dialog message when no orphan images found
+  ///
+  /// In en, this message translates to:
+  /// **'No unused images found'**
+  String get cleanImagesNone;
+
+  /// Button to select all orphan images in the cleanup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get cleanImagesSelectAll;
+
+  /// Button to deselect all orphan images in the cleanup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect All'**
+  String get cleanImagesDeselectAll;
+
+  /// Bottom bar button to delete selected orphan images, shows count
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ({count})'**
+  String cleanImagesDeleteSelected(int count);
+
+  /// Confirm dialog before deleting selected orphan images
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} selected unused image(s)? This will free {size} and cannot be undone.'**
+  String cleanImagesConfirmDelete(int count, String size);
+
+  /// Bottom bar summary of selected vs total orphan images
+  ///
+  /// In en, this message translates to:
+  /// **'Selected {selected} / {total}'**
+  String cleanImagesSummary(int selected, int total);
+
+  /// Empty-state diagnostic: how many sessions and images were scanned
+  ///
+  /// In en, this message translates to:
+  /// **'Scanned {sessionFiles} session(s), {images} image(s)'**
+  String cleanImagesScanStats(int sessionFiles, int images);
+
+  /// No description provided for @cleanImagesDirExists.
+  ///
+  /// In en, this message translates to:
+  /// **'present'**
+  String get cleanImagesDirExists;
+
+  /// No description provided for @cleanImagesDirMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'missing'**
+  String get cleanImagesDirMissing;
+
+  /// Detailed scan diagnostics shown in cleanup screen (empty state and as caption). Helps verify path/list behavior without Xcode Console
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics: data dir {status} · sessions {sessions} · raw images {raw} · dirs hit {hit} · empty {empty} · list failed {fail}'**
+  String cleanImagesDiagnostics(
+    String status,
+    int sessions,
+    int raw,
+    int hit,
+    int empty,
+    int fail,
+  );
+
+  /// Button to re-run the orphan image scan
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get rescan;
+
+  /// Banner on cleanup screen when orphan images exist
+  ///
+  /// In en, this message translates to:
+  /// **'Found {count} unused image(s), select to delete'**
+  String cleanImagesOrphanHint(int count);
+
+  /// Banner on cleanup screen when all images are referenced (in use)
+  ///
+  /// In en, this message translates to:
+  /// **'No unused images; the following are all in use'**
+  String get cleanImagesAllInUse;
+
+  /// Collapsed educational banner summary on cleanup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting images cannot be undone. Images referenced by a chat will appear missing in that conversation after deletion.'**
+  String get cleanImagesEduSummary;
+
+  /// Expanded educational banner: what an unused image means
+  ///
+  /// In en, this message translates to:
+  /// **'· Unused: not referenced by any chat — safe to delete.'**
+  String get cleanImagesEduUnused;
+
+  /// Expanded educational banner: what an in-use image means
+  ///
+  /// In en, this message translates to:
+  /// **'· In use: referenced by a chat — deleting removes the image from that message (text stays).'**
+  String get cleanImagesEduInUse;
+
+  /// Expanded educational banner: permanent warning
+  ///
+  /// In en, this message translates to:
+  /// **'· All deletions are permanent and cannot be undone.'**
+  String get cleanImagesEduPermanent;
+
+  /// Small label on an in-use (referenced) image thumbnail
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get cleanImagesInUse;
+
+  /// Confirmation dialog title when selected images include in-use ones
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: deleting images in use'**
+  String get cleanImagesWarnTitle;
+
+  /// Extra warning in confirm dialog when deleting in-use images
+  ///
+  /// In en, this message translates to:
+  /// **'Of these, {count} is/are referenced by a chat and will appear missing after deletion. This cannot be undone.'**
+  String cleanImagesConfirmInUse(int count);
+
+  /// Status line summarizing unused vs in-use image counts
+  ///
+  /// In en, this message translates to:
+  /// **'{total} image(s) total, {unused} unused (safe to delete), the rest are in use.'**
+  String cleanImagesStatusLine(int unused, int total);
 
   /// Settings tile title for backup
   ///
@@ -2221,6 +2414,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About'**
   String get menuAbout;
+
+  /// Action in tree page overflow menu to enter multi-select mode for merging chats
+  ///
+  /// In en, this message translates to:
+  /// **'Merge Chats'**
+  String get mergeChats;
+
+  /// Hint text shown at top of FullTreeScreen in multi-select mode
+  ///
+  /// In en, this message translates to:
+  /// **'Select up to {max} chats to merge'**
+  String mergeChatHint(int max);
+
+  /// Selected count indicator in multi-select mode
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max} selected'**
+  String selectedCount(int count, int max);
+
+  /// Button to proceed to merge confirmation page
+  ///
+  /// In en, this message translates to:
+  /// **'Merge & Create New Chat'**
+  String get mergeAndCreate;
+
+  /// Navigation bar title for merge confirmation page
+  ///
+  /// In en, this message translates to:
+  /// **'Merge & Create'**
+  String get mergeChatConfirmTitle;
+
+  /// Section title for choosing where to mount the new chat
+  ///
+  /// In en, this message translates to:
+  /// **'Select Mount Location'**
+  String get selectMountLocation;
+
+  /// Option to mount the new chat as a root node
+  ///
+  /// In en, this message translates to:
+  /// **'Root (Top Level)'**
+  String get rootNode;
+
+  /// Toast shown when user tries to select more than the maximum
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum {max} selections'**
+  String maxSelectionReached(int max);
+
+  /// Button to enter multi-select mode in FullTreeScreen
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get multiSelect;
+
+  /// Button to exit multi-select mode in FullTreeScreen
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// Multi-select merge guide: only chat nodes are selectable
+  ///
+  /// In en, this message translates to:
+  /// **'Only chat-type nodes can be selected'**
+  String get mergeSelectGuideOnlyChat;
+
+  /// Multi-select merge guide: maximum selection count
+  ///
+  /// In en, this message translates to:
+  /// **'Select up to {max} chats'**
+  String mergeSelectGuideMaxChats(int max);
+
+  /// Multi-select merge guide: tap bottom button after selecting
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Merge & Create New Chat\" at the bottom when done'**
+  String get mergeSelectGuideTapMerge;
 }
 
 class _AppLocalizationsDelegate

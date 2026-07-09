@@ -564,6 +564,10 @@
   "@selectTheme": {
     "description": "Title for theme selection"
   },
+  "selectTree": "Select Tree",
+  "@selectTree": {
+    "description": "Label for selecting which tree to mount the merged chat into"
+  },
   "selectLocation": "Select Location",
   "@selectLocation": {
     "description": "Title for chat location selection"
@@ -1087,6 +1091,14 @@
   "@searchHint": {
     "description": "Search input field placeholder"
   },
+  "searchAction": "Search",
+  "@searchAction": {
+    "description": "Explicit search button label next to the search field"
+  },
+  "searchIdleHint": "Tap Search after typing",
+  "@searchIdleHint": {
+    "description": "Idle hint when there is input but no search committed yet"
+  },
   "searchEmpty": "Find connections in your knowledge",
   "@searchEmpty": {
     "description": "Search page empty state prompt"
@@ -1258,6 +1270,195 @@
   "backupAndRestore": "Backup & Restore",
   "@backupAndRestore": {
     "description": "Settings section header for backup and restore"
+  },
+  "storageSection": "Storage",
+  "@storageSection": {
+    "description": "Settings section header for storage management"
+  },
+  "cleanImagesEntry": "Clean Unused Images",
+  "@cleanImagesEntry": {
+    "description": "Settings tile title to clean orphan chat images"
+  },
+  "cleanImagesSubtitle": "Scan and remove unreferenced images",
+  "@cleanImagesSubtitle": {
+    "description": "Subtitle for clean unused images tile"
+  },
+  "scanningImages": "Scanning…",
+  "@scanningImages": {
+    "description": "Dialog title while scanning for orphan images"
+  },
+  "cleanImagesFound": "Found {count} unused image(s), {size} total",
+  "@cleanImagesFound": {
+    "description": "Confirm dialog message showing orphan count and size",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanImagesConfirm": "Clean",
+  "@cleanImagesConfirm": {
+    "description": "Button label to confirm cleaning orphan images"
+  },
+  "cleanImagesDone": "Cleaned {count} image(s), freed {size}",
+  "@cleanImagesDone": {
+    "description": "Result dialog message after cleaning orphan images",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanImagesNone": "No unused images found",
+  "@cleanImagesNone": {
+    "description": "Dialog message when no orphan images found"
+  },
+  "cleanImagesSelectAll": "Select All",
+  "@cleanImagesSelectAll": {
+    "description": "Button to select all orphan images in the cleanup screen"
+  },
+  "cleanImagesDeselectAll": "Deselect All",
+  "@cleanImagesDeselectAll": {
+    "description": "Button to deselect all orphan images in the cleanup screen"
+  },
+  "cleanImagesDeleteSelected": "Delete ({count})",
+  "@cleanImagesDeleteSelected": {
+    "description": "Bottom bar button to delete selected orphan images, shows count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesConfirmDelete": "Delete {count} selected unused image(s)? This will free {size} and cannot be undone.",
+  "@cleanImagesConfirmDelete": {
+    "description": "Confirm dialog before deleting selected orphan images",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanImagesSummary": "Selected {selected} / {total}",
+  "@cleanImagesSummary": {
+    "description": "Bottom bar summary of selected vs total orphan images",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesScanStats": "Scanned {sessionFiles} session(s), {images} image(s)",
+  "@cleanImagesScanStats": {
+    "description": "Empty-state diagnostic: how many sessions and images were scanned",
+    "placeholders": {
+      "sessionFiles": {
+        "type": "int"
+      },
+      "images": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesDirExists": "present",
+  "cleanImagesDirMissing": "missing",
+  "cleanImagesDiagnostics": "Diagnostics: data dir {status} · sessions {sessions} · raw images {raw} · dirs hit {hit} · empty {empty} · list failed {fail}",
+  "@cleanImagesDiagnostics": {
+    "description": "Detailed scan diagnostics shown in cleanup screen (empty state and as caption). Helps verify path/list behavior without Xcode Console",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "sessions": {
+        "type": "int"
+      },
+      "raw": {
+        "type": "int"
+      },
+      "hit": {
+        "type": "int"
+      },
+      "empty": {
+        "type": "int"
+      },
+      "fail": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "Rescan",
+  "@rescan": {
+    "description": "Button to re-run the orphan image scan"
+  },
+  "cleanImagesOrphanHint": "Found {count} unused image(s), select to delete",
+  "@cleanImagesOrphanHint": {
+    "description": "Banner on cleanup screen when orphan images exist",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesAllInUse": "No unused images; the following are all in use",
+  "@cleanImagesAllInUse": {
+    "description": "Banner on cleanup screen when all images are referenced (in use)"
+  },
+  "cleanImagesEduSummary": "Deleting images cannot be undone. Images referenced by a chat will appear missing in that conversation after deletion.",
+  "@cleanImagesEduSummary": {
+    "description": "Collapsed educational banner summary on cleanup screen"
+  },
+  "cleanImagesEduUnused": "· Unused: not referenced by any chat — safe to delete.",
+  "@cleanImagesEduUnused": {
+    "description": "Expanded educational banner: what an unused image means"
+  },
+  "cleanImagesEduInUse": "· In use: referenced by a chat — deleting removes the image from that message (text stays).",
+  "@cleanImagesEduInUse": {
+    "description": "Expanded educational banner: what an in-use image means"
+  },
+  "cleanImagesEduPermanent": "· All deletions are permanent and cannot be undone.",
+  "@cleanImagesEduPermanent": {
+    "description": "Expanded educational banner: permanent warning"
+  },
+  "cleanImagesInUse": "In use",
+  "@cleanImagesInUse": {
+    "description": "Small label on an in-use (referenced) image thumbnail"
+  },
+  "cleanImagesWarnTitle": "Warning: deleting images in use",
+  "@cleanImagesWarnTitle": {
+    "description": "Confirmation dialog title when selected images include in-use ones"
+  },
+  "cleanImagesConfirmInUse": "Of these, {count} is/are referenced by a chat and will appear missing after deletion. This cannot be undone.",
+  "@cleanImagesConfirmInUse": {
+    "description": "Extra warning in confirm dialog when deleting in-use images",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanImagesStatusLine": "{total} image(s) total, {unused} unused (safe to delete), the rest are in use.",
+  "@cleanImagesStatusLine": {
+    "description": "Status line summarizing unused vs in-use image counts",
+    "placeholders": {
+      "unused": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "backupData": "Backup Data",
   "@backupData": {
@@ -1558,5 +1759,80 @@
   "menuAbout": "About",
   "@menuAbout": {
     "description": "About option in the search page menu"
+  },
+  "mergeChats": "Merge Chats",
+  "@mergeChats": {
+    "description": "Action in tree page overflow menu to enter multi-select mode for merging chats"
+  },
+  "mergeChatHint": "Select up to {max} chats to merge",
+  "@mergeChatHint": {
+    "description": "Hint text shown at top of FullTreeScreen in multi-select mode",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "selectedCount": "{count}/{max} selected",
+  "@selectedCount": {
+    "description": "Selected count indicator in multi-select mode",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeAndCreate": "Merge & Create New Chat",
+  "@mergeAndCreate": {
+    "description": "Button to proceed to merge confirmation page"
+  },
+  "mergeChatConfirmTitle": "Merge & Create",
+  "@mergeChatConfirmTitle": {
+    "description": "Navigation bar title for merge confirmation page"
+  },
+  "selectMountLocation": "Select Mount Location",
+  "@selectMountLocation": {
+    "description": "Section title for choosing where to mount the new chat"
+  },
+  "rootNode": "Root (Top Level)",
+  "@rootNode": {
+    "description": "Option to mount the new chat as a root node"
+  },
+  "maxSelectionReached": "Maximum {max} selections",
+  "@maxSelectionReached": {
+    "description": "Toast shown when user tries to select more than the maximum",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "multiSelect": "Select",
+  "@multiSelect": {
+    "description": "Button to enter multi-select mode in FullTreeScreen"
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Button to exit multi-select mode in FullTreeScreen"
+  },
+  "mergeSelectGuideOnlyChat": "Only chat-type nodes can be selected",
+  "@mergeSelectGuideOnlyChat": {
+    "description": "Multi-select merge guide: only chat nodes are selectable"
+  },
+  "mergeSelectGuideMaxChats": "Select up to {max} chats",
+  "@mergeSelectGuideMaxChats": {
+    "description": "Multi-select merge guide: maximum selection count",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeSelectGuideTapMerge": "Tap \"Merge & Create New Chat\" at the bottom when done",
+  "@mergeSelectGuideTapMerge": {
+    "description": "Multi-select merge guide: tap bottom button after selecting"
   }
 }

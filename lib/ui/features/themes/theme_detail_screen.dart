@@ -69,6 +69,15 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               _collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll,
             ),
           ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.push(
+                '/themes/${widget.themeId}/full-tree?multiSelect=true',
+              );
+            },
+            child: Text(l10n.mergeAndCreate),
+          ),
         ],
         cancelButton: CupertinoActionSheetAction(
           isDestructiveAction: true,

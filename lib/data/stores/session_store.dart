@@ -106,6 +106,38 @@ class SessionStore {
     return msgId;
   }
 
+  /// 批量导入消息（用于多对话合并）。
+  ///
+  /// 保持每条消息的原始 role 和 body，一次性追加到 session.md。
+  /// assistant 消息保留 modelId；图片路径和 reasoning 不导入。
+  Future<void> importMessages({
+    required String nodeId,
+    required List<SessionMessage> messages,
+  }) async {
+    await _queue.run(nodeId, () async {
+      final path = await getSessionPathForNode(nodeId);
+      final file = File(path);
+      final content = await file.readAsString();
+
+      final buffer = StringBuffer(_ensureEndsWithNewline(content));
+      for (final message in messages) {
+        final body = message.body.trim();
+        if (body.isEmpty) continue;
+        final timestamp = DateTime.now().toUtc().toIso8601String();
+        final msgId = newMsgId();
+        buffer.writeln(formatMessageHeader(
+          role: message.role,
+          timestampUtcIso8601: timestamp,
+          msgId: msgId,
+          modelId: message.modelId,
+        ));
+        buffer.writeln(body);
+      }
+
+      await _atomicWriteString(path, buffer.toString());
+    });
+  }
+
   /// 更新 session.md frontmatter 中的 providerId 和 modelId
   Future<void> updateSessionModel({
     required String nodeId,

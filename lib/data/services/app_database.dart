@@ -8,7 +8,7 @@ class AppDatabase {
   static Future<AppDatabase> open({required String path}) async {
     final db = await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, version) => _createSchema(db),
       onUpgrade: (db, oldVersion, newVersion) async {
         await _createSchema(db);
@@ -20,6 +20,9 @@ class AppDatabase {
         }
         if (oldVersion < 5) {
           await _migrateV5(db);
+        }
+        if (oldVersion < 6) {
+          await _migrateV6(db);
         }
       },
       onOpen: (db) => _createSchema(db),
@@ -106,6 +109,27 @@ Future<void> _migrateV5(Database db) async {
   await _addColumnIfNotExists(db, 'themes', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
   // Mark "未分类" theme as pinned (backward compat)
   await db.execute("UPDATE themes SET pinned = 1 WHERE title = '未分类'");
+}
+
+/// v6: rebuild search_index with CJK per-character tokenization.
+///
+/// The `content` column now stores CJK text with spaces between each
+/// character (see `SearchService._tokenizeCjk`). Old rows use the old
+/// format, so we drop and recreate the table. `searchServiceProvider`
+/// detects the empty table and auto-rebuilds from disk on next launch.
+Future<void> _migrateV6(Database db) async {
+  await db.execute('DROP TABLE IF EXISTS search_index');
+  await db.execute('''
+CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
+  entityType,
+  entityId,
+  themeId,
+  themeTitle UNINDEXED,
+  entityTitle,
+  content,
+  updatedAt UNINDEXED
+)
+''');
 }
 
 Future<void> _addColumnIfNotExists(

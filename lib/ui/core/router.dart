@@ -23,6 +23,9 @@ import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_screen.dart';
+import 'package:thk_tree/ui/features/themes/full_tree_screen.dart';
+import 'package:thk_tree/ui/features/themes/merge_chat_confirm_screen.dart';
+import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/ui/features/about/about_screen.dart';
 import 'package:thk_tree/ui/features/search/search_screen.dart';
 
@@ -95,6 +98,41 @@ final appRouter = GoRouter(
                     title: params.title,
                     autoTriggerReply: params.autoTriggerReply,
                     isDocSplit: params.isDocSplit,
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/themes/:themeId/full-tree',
+              pageBuilder: (context, state) {
+                final themeId = state.pathParameters['themeId']!;
+                final currentNodeId =
+                    state.uri.queryParameters['currentNodeId'];
+                final multiSelect =
+                    state.uri.queryParameters['multiSelect'] == 'true';
+                return CupertinoPage(
+                  child: FullTreeScreen(
+                    themeId: themeId,
+                    currentNodeId: currentNodeId,
+                    initialMultiSelect: multiSelect,
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/themes/:themeId/merge-confirm',
+              pageBuilder: (context, state) {
+                final themeId = state.pathParameters['themeId']!;
+                final extra = state.extra;
+                final List<NodeEntity> selectedNodes =
+                    extra is List<NodeEntity> ? extra : <NodeEntity>[];
+                final crossTree =
+                    state.uri.queryParameters['crossTree'] == 'true';
+                return CupertinoPage(
+                  child: MergeChatConfirmScreen(
+                    themeId: themeId,
+                    selectedNodes: selectedNodes,
+                    crossTree: crossTree,
                   ),
                 );
               },

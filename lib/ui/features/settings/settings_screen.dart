@@ -20,6 +20,7 @@ import 'package:thk_tree/ui/features/settings/llm_settings_screen.dart';
 import 'package:thk_tree/ui/features/settings/keyword_score_prompt_screen.dart';
 import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
 import 'package:thk_tree/data/services/export_service.dart';
+import 'package:thk_tree/ui/features/settings/clean_images_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:thk_tree/data/services/import_service.dart';
@@ -68,6 +69,12 @@ class SettingsScreen extends ConsumerWidget {
           header: l10n.backupAndRestore,
           children: [
             _BackupRestoreEntry(),
+          ],
+        ),
+        ThkListSection(
+          header: l10n.storageSection,
+          children: [
+            _CleanImagesEntry(),
           ],
         ),
         if (kDebugMode) ...[
@@ -794,5 +801,25 @@ class _RestoreEntry extends ConsumerWidget {
       },
     );
   }
+}
+
+class _CleanImagesEntry extends ConsumerWidget {
+  const _CleanImagesEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return ThkListTile(
+      leading: const Icon(CupertinoIcons.photo),
+      title: l10n.cleanImagesEntry,
+      subtitle: l10n.cleanImagesSubtitle,
+      trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
+      onTap: () => Navigator.of(context).push(
+        CupertinoPageRoute(builder: (_) => const CleanImagesScreen()),
+      ),
+    );
+  }
+
 }
 

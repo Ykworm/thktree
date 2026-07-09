@@ -8,6 +8,7 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_durations.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/shared/clips_context_menu.dart';
 
 /// 查看当前对话的原始 Markdown（session.md 文件内容），支持复制。
 void showChatMarkdownSheet(BuildContext context, String nodeId) {
@@ -188,6 +189,8 @@ class _ChatMarkdownPageState extends ConsumerState<_ChatMarkdownPage> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: AppColors.surface,
           child: SelectionArea(
+            contextMenuBuilder: (context, editableTextState) =>
+                buildClipsContextMenu(context, editableTextState),
             child: SingleChildScrollView(
               controller: _scrollController,
               padding: const EdgeInsets.only(bottom: 48),

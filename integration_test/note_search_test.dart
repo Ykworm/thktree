@@ -267,6 +267,71 @@ void main() {
     },
     timeout: const Timeout(Duration(seconds: 60)),
   );
+
+  testWidgets(
+    'Case 6: CJK 子串搜索 — 不加空格也能搜到（EC-015 v2）',
+    (tester) async {
+      final app = await createTestApp(locale: const Locale('zh'));
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final themeTitle = 'CJK搜索主题_$ts';
+      final noteTitle = 'CJK搜索笔记_$ts';
+      // 中英混合内容：unicode61 会把 "Flutter开发指南" 当成一个 token，
+      // 修复前搜 "Flutter开发"（不加空格）匹配不到。
+      final noteContent = 'Flutter开发指南是一篇关于跨平台开发的文档 CJKV2_$ts';
+
+      // ── 准备：建笔记 ──────────────────────────────────────────────
+      await _switchToTab(tester, '笔记');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('add_note_button')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(AppIcons.add).last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(CupertinoTextField).last, themeTitle);
+      await tester.pump();
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.enterText(
+        find.byKey(const ValueKey('note_title_input')),
+        noteTitle,
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const ValueKey('note_body_input')),
+        noteContent,
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(find.byIcon(AppIcons.check));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+
+      // ── 验证 1：搜 "Flutter开发"（不加空格）能搜到 ──────────────────
+      final searchField = find.byType(CupertinoSearchTextField).first;
+      await tester.enterText(searchField, 'Flutter开发');
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+      expect(_countSearchResultEntities(), greaterThan(0),
+          reason: '搜 "Flutter开发"（不加空格）应能命中包含 "Flutter开发指南" 的笔记');
+
+      // ── 验证 2：搜纯 CJK 子串 "开发指南" 也能搜到 ───────────────────
+      await tester.enterText(searchField, '');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.enterText(searchField, '开发指南');
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+      expect(_countSearchResultEntities(), greaterThan(0),
+          reason: '搜 "开发指南"（纯 CJK 子串）应能命中包含 "Flutter开发指南" 的笔记');
+    },
+    timeout: const Timeout(Duration(seconds: 60)),
+  );
 }
 
 // ---------------------------------------------------------------------------

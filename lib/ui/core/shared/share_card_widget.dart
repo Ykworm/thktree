@@ -17,12 +17,17 @@ class ShareCardWidget extends StatelessWidget {
   /// 按时间顺序排列的待分享消息（每条可携带本地图片字节）
   final List<ShareMessage> messages;
 
-  static const double _cardWidth = 400;
+  static const double _minCardWidth = 400;
+  static const double _maxCardWidth = 600;
   static const double _padding = 20;
   static const double _radius = 16;
 
   @override
   Widget build(BuildContext context) {
+    // 基于屏幕宽度动态计算卡片宽度，避免内容被挤压
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth.clamp(_minCardWidth, _maxCardWidth);
+
     final blocks = <Widget>[];
     for (var i = 0; i < messages.length; i++) {
       blocks.add(_buildMessageBlock(messages[i]));
@@ -30,7 +35,7 @@ class ShareCardWidget extends StatelessWidget {
     }
 
     return Container(
-      width: _cardWidth,
+      width: cardWidth,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(_radius),

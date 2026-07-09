@@ -95,7 +95,7 @@ class SearchService {
         themeId: row['themeId']! as String,
         themeTitle: row['themeTitle'] as String? ?? '',
         entityTitle: row['entityTitle'] as String? ?? '',
-        snippet: row['snippet'] as String? ?? '',
+        snippet: _cleanSnippet(row['snippet'] as String? ?? ''),
         updatedAt: row['updatedAt'] as String? ?? '',
       )).toList();
 
@@ -144,7 +144,7 @@ class SearchService {
           'themeId': themeId,
           'themeTitle': themeTitle,
           'entityTitle': noteTitle,
-          'content': body,
+          'content': _tokenizeCjk(body),
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         });
       });
@@ -182,7 +182,7 @@ class SearchService {
           'themeId': themeId,
           'themeTitle': themeTitle,
           'entityTitle': nodeTitle,
-          'content': body,
+          'content': _tokenizeCjk(body),
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         });
       });
@@ -246,7 +246,7 @@ class SearchService {
                 'themeId': theme.themeId,
                 'themeTitle': theme.title,
                 'entityTitle': meta.title,
-                'content': body,
+                'content': _tokenizeCjk(body),
                 'updatedAt': meta.updatedAt,
               });
               total++;
@@ -391,7 +391,7 @@ class SearchService {
             'themeId': themeId,
             'themeTitle': themeTitle,
             'entityTitle': nodeTitle,
-            'content': bodyBuf.toString().trim(),
+            'content': _tokenizeCjk(bodyBuf.toString().trim()),
             'updatedAt': doc.frontmatter['updatedAt'] as String? ?? '',
           });
           total();
@@ -456,10 +456,94 @@ class SearchService {
     return map;
   }
 
+  /// Tokenize CJK characters for FTS5 indexing.
+  ///
+  /// The default `unicode61` tokenizer treats consecutive CJK characters
+  /// (and ASCII+CJK runs) as a **single** token, making substring searches
+  /// like "决策树" impossible against indexed text "决策树算法指南".
+  ///
+  /// This function inserts a space between every CJK character so that
+  /// unicode61 treats each character as its own token. Both the indexed
+  /// content and the user query must pass through this function.
+  ///
+  /// Non-CJK characters (ASCII, punctuation, whitespace) are preserved
+  /// as-is — unicode61 already handles those correctly.
+  String _tokenizeCjk(String text) {
+    final buffer = StringBuffer();
+    String? prevChar;
+    for (int i = 0; i < text.length; i++) {
+      final ch = text[i];
+      if (_isCjk(ch)) {
+        // Insert a separator before the CJK char if the previous char
+        // is not already whitespace.
+        if (prevChar != null &&
+            prevChar != ' ' &&
+            prevChar != '\n' &&
+            prevChar != '\t' &&
+            prevChar != '\r') {
+          buffer.write(' ');
+        }
+        buffer.write(ch);
+        buffer.write(' '); // separator after each CJK char
+        prevChar = ' ';
+      } else {
+        buffer.write(ch);
+        prevChar = ch;
+      }
+    }
+    return buffer.toString().trim();
+  }
+
+  /// Whether [char] is a CJK ideograph that needs per-character tokenization.
+  bool _isCjk(String char) {
+    final code = char.codeUnitAt(0);
+    return (code >= 0x4E00 && code <= 0x9FFF) || // CJK Unified Ideographs
+        (code >= 0x3400 && code <= 0x4DBF); // CJK Extension A
+  }
+
+  /// Remove spaces inserted by [_tokenizeCjk] from a snippet string.
+  ///
+  /// FTS5 `snippet()` extracts fragments from the indexed `content` column,
+  /// which stores the tokenized (space-separated) form. This function
+  /// collapses the inter-CJK spaces — including those between `</b>`/`<b>`
+  /// highlight markers — so the displayed snippet looks natural.
+  String _cleanSnippet(String snippet) {
+    var result = snippet;
+    var prev = '';
+    while (result != prev) {
+      prev = result;
+      // CJK <space> CJK → CJKCJK
+      result = result.replaceAllMapped(
+        RegExp(r'([\u4e00-\u9fff\u3400-\u4dbf])\s+([\u4e00-\u9fff\u3400-\u4dbf])'),
+        (m) => '${m.group(1)}${m.group(2)}',
+      );
+      // </b> <space> <b> → </b><b>
+      result = result.replaceAll('</b> <b>', '</b><b>');
+      // CJK <space> </b> → CJK</b>
+      result = result.replaceAllMapped(
+        RegExp(r'([\u4e00-\u9fff\u3400-\u4dbf])\s+(</b>)'),
+        (m) => '${m.group(1)}${m.group(2)}',
+      );
+      // <b> <space> CJK → <b>CJK
+      result = result.replaceAllMapped(
+        RegExp(r'(<b>)\s+([\u4e00-\u9fff\u3400-\u4dbf])'),
+        (m) => '${m.group(1)}${m.group(2)}',
+      );
+      // </b> <space> CJK → </b>CJK
+      result = result.replaceAllMapped(
+        RegExp(r'(</b>)\s+([\u4e00-\u9fff\u3400-\u4dbf])'),
+        (m) => '${m.group(1)}${m.group(2)}',
+      );
+    }
+    return result;
+  }
+
   /// Sanitize a user query for FTS5 MATCH.
   ///
   /// Strips FTS5 operators (AND, OR, NOT, quotes, etc.) to prevent syntax
-  /// errors. Keeps alphanumeric and CJK characters.
+  /// errors. Keeps alphanumeric and CJK characters. CJK characters are
+  /// per-character tokenized via [_tokenizeCjk] so that substring searches
+  /// like "决策树" match indexed content "决 策 树 算 法 指 南".
   String _sanitizeQuery(String input) {
     // Remove quotes and common FTS5 operators.
     final cleaned = input
@@ -479,8 +563,12 @@ class SearchService {
 
     if (cleaned.isEmpty) return '';
 
+    // Tokenize CJK characters (insert spaces between each CJK char) so
+    // that FTS5 unicode61 treats them as individual tokens.
+    final tokenized = _tokenizeCjk(cleaned);
+
     // Split into tokens, filter empty, join with space for implicit AND.
-    final tokens = cleaned
+    final tokens = tokenized
         .split(RegExp(r'\s+'))
         .where((t) => t.isNotEmpty)
         .toList();
@@ -495,6 +583,10 @@ class SearchService {
   /// single tokens). SQLite LIKE is case-insensitive for ASCII by default.
   Future<List<SearchResult>> _searchWithLike(String query, int limit) async {
     try {
+      // Content is stored in tokenized form (CJK chars space-separated).
+      // Tokenize the query the same way so LIKE can match.
+      final tokenizedQuery = _tokenizeCjk(query);
+
       final rows = await db.rawQuery('''
         SELECT
           entityType,
@@ -508,11 +600,11 @@ class SearchService {
         WHERE content LIKE ?
         ORDER BY updatedAt DESC
         LIMIT ?
-      ''', ['%$query%', limit]);
+      ''', ['%$tokenizedQuery%', limit]);
 
       return rows.map((row) {
         final content = row['content'] as String? ?? '';
-        final snippet = _extractSnippet(content, query);
+        final snippet = _cleanSnippet(_extractSnippet(content, tokenizedQuery));
         return SearchResult(
           entityType: row['entityType']! as String,
           entityId: row['entityId']! as String,
