@@ -57,3 +57,6 @@ ui-ux-pro-max-skill/
 
 # 放行设计资产(第一次UI调优基线, 后续会挪到更合适位置)
 !.workbuddy/outputs/
+
+# 放行项目 skill 软链(指向 .agents/skills, 共享 canonical)
+!.workbuddy/skills
