@@ -1,0 +1,17 @@
+## ADR-016: iOS LLM 流式中断恢复策略——disk-first + 自动重发 + 30s 边界
+
+2026-06-22 决定。用户在 iOS 上聊天时将 APP 切后台、iOS 进入挂起（suspend）状态、然后切回前台，这条高频路径下 LLM 流式回复必须能"无感接续"或"优雅重发"。背景与决策细节见 [集成测试 spec](_shared/integration-testing/chat-async-recovery.md)。
+
+背景：iOS App Store 审核对 `UIBackgroundModes` 严控；LLM provider（OpenAI / Claude / Gemini / DeepSeek）均不支持 SSE 流式 resume；`beginBackgroundTask` 提供硬上限 ~30s 的 process 续命窗口。结合三条限制得出"分层兜底"策略——**disk 是真相，桥接是薄壳，串行重发是收敛**。
+
+决策：四项硬约束。第一，**disk-first 真相源**——`session.md` 的 `<!-- streaming -->` 标记同时承担"流式中间态语义"（见 storage-format.md § 4.4）和"后台恢复入口"两个角色；`SessionStore.findInterrupted()` 扫描磁盘找到带该标记的 node，`ChatTaskService.resumeInterrupted()` 把它们入队。第二，**自动重发（不伪装 resume）**——LLM 不支持 SSE resume，切回时若流已关闭则全量重发；已生成 assistant 内容作为 history 附在新请求中。第三，**30s 边界**——短回复（< 30s）由 iOS `beginBackgroundTask` 真在后台跑完、切回时流仍存活 → 无缝接续渲染；长回复（≥ 30s）iOS 挂起 process、流被冻 → 检测到流已关闭 → 自动重发。第四，**iOS 合规边界**——不引入 TTS/audio background mode、不使用 VoIP push 做非 VoIP 用途、不使用 silent push 保活；仅依赖 `beginBackgroundTask` 的 30s 续命窗口（Info.plist 加 `UIBackgroundModes=processing` 仅为审核友好）。
+
+分层架构：Dart 端三层 + iOS 原生一层。`BackgroundTaskBridge`（`lib/data/services/background_task_bridge.dart`）封装 MethodChannel 调用（`beginBackgroundTask` / `endBackgroundTask`），抽象成 `Future<String> begin()` + `Future<void> end(taskId)`，**可注入**（test 时换 `_CountingBridge` 计数验证）；`BackgroundTaskHandler`（Swift，`ios/Runner/BackgroundTaskHandler.swift`）实现 MethodChannel handler + `UIApplication.beginBackgroundTask` 调用 + `expirationHandler` 释放；`ChatTaskService`（`lib/data/services/chat_task_service.dart`）是核心调度器，负责串行 queue + generation token（cancel 时 generation 自增让 loop 退出）+ bridge.begin/end 包裹 + `resumeInterrupted()` / `cancelResumeQueue()` 入口；`ChatController`（`lib/ui/features/chat/chat_controller.dart`）保持 UI 同步层职责（监听 Riverpod state、绑定 Widget），续传/重发决策**不下沉到 widget**。
+
+并发策略：切回时扫到 N 个未完成 → **串行排队重发**（一次 1 个，跑完/失败/用户停止 才下一个），不并发——避免 LLM provider rate limit 与用户认知负担。可后续调为并发上限 = 2。
+
+影响范围：`ios/Runner/Info.plist`（`UIBackgroundModes=processing`）、`ios/Runner/AppDelegate.swift`（注册 `BackgroundTaskHandler` MethodChannel）、`ios/Runner/BackgroundTaskHandler.swift`（新增 MethodChannel handler）、`ios/Runner.xcodeproj/project.pbxproj`（Swift 文件加到 target）、`lib/data/services/background_task_bridge.dart`（新增 MethodChannel 客户端）、`lib/data/services/chat_task_service.dart`（新增后台中断恢复服务）、`lib/data/services/session_store.dart`（新增 `findInterrupted()`）、`lib/main.dart`（`AppLifecycleObserver` 冷启动恢复 + 切回前台触发）、`lib/main_test.dart`（`extraOverrides` 暴露 ProviderContainer override 给集成测试）、`lib/ui/features/chat/chat_controller.dart`（分层重构为 UI 同步层）、`lib/ui/features/chat/chat_screen.dart`（无功能改动，仅接续 Riverpod state）、`integration_test/chat_async_recovery_test.dart`（新增，4 个 testWidgets：findInterrupted 扫描 / resumeInterrupted 串行入队 / cancelResumeQueue 清空 / startTask bridge.begin/end 计数）。
+
+实施要点：`bridge.begin/end` 必须配对调用——bridge 实现不保证 taskId 自动释放（依赖 `expirationHandler`），ChatTaskService 要在 `onDone` / `onError` / 用户主动停止三条路径都 end。串行 queue 用 `Stream` + `await for` 实现而非 `Timer.periodic`（避免退避时序假设）。`findInterrupted` 必须只扫描 `<!-- streaming -->` 标记，不含 `<!-- error: ... -->`（错误态属于"已结束"语义，不是中断）。`generation` token 自增保证 cancel 后正在跑的任务能被 loop 退出条件识别——**不要复用 `_handle` / `_cancelToken` 这种流式接口的取消机制**，那是 UI 同步层的事。
+
+放弃的方案：B 局部重发（保留"接续"语义需要 LLM 支持 SSE resume，目前不支持）；C 显式重发（用户每次切回都要点一次"重发"，违反最少打扰偏好）；后台保活手段 = TTS/audio/VoIP push/silent push（全部被 iOS 审核明令禁止）。放弃"零配置即可跑测试"的便利（集成测试需额外 override `backgroundTaskBridgeProvider`）换取"可验证的串行重发 + bridge.begin/end 配对"。
