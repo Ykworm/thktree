@@ -47,3 +47,7 @@
 - 工具优先级 → `conventions/tool-priority.md`
 - 功能开发主线 → `flutter-dev` skill；平台原生问题按需 `ios-application-dev` / `android-native-dev`
 - 完整开发闭环 → `workflow` skill
+
+## 协作习惯
+
+- 任务结束报告：列出本次新增 / 修改文件的**绝对路径**，方便在 IDE 打开（注意 ThkTree 与 TalkWithClaude 是不同仓库，看当前激活工作区）。
