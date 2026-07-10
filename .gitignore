@@ -54,3 +54,6 @@ ui-ux-pro-max-skill/
 # WorkBuddy agent state (memory, skills, session data)
 .workbuddy/
 .superpowers/
+
+# 放行设计资产(第一次UI调优基线, 后续会挪到更合适位置)
+!.workbuddy/outputs/

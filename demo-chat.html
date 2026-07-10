@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThkTree · Chat 交互 demo</title>
+<style>
+:root{
+  /* 中性底座（app_colors.dart · light） */
+  --page-bg:#F8FAFC;
+  --surface:#FFFFFF;
+  --surface-muted:#F1F5F9;
+  --text-primary:#1E293B;
+  --text-secondary:#64748B;
+  --text-tertiary:#94A3B8;
+  --border:#E2E8F0;
+  --line:#CBD5E1;
+  /* 强调 */
+  --accent:#6366F1;
+  --accent-deep:#4F46E5;
+  --accent-light:#EEF2FF;
+  --user-bubble:#EEF2FF;
+  --assistant-bubble:#FFFFFF;
+  --assistant-border:#E2E8F0;
+  --destructive:#DC2626;
+  --success:#34C759;
+  --scrim:rgba(0,0,0,.5);
+  --elevation:0 8px 24px rgba(0,0,0,.12);
+  /* 主题色 5 */
+  --theme1:#C4A77D;
+  --theme2:#8E8B82;
+  --theme3:#A89090;
+  --theme4:#8B9080;
+  --theme5:#6B7B8E;
+  /* 圆角三档 */
+  --r-12:12px;
+  --r-16:16px;
+  --r-20:20px;
+  /* 间距（4 倍数） */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;-webkit-font-smoothing:antialiased;color:var(--text-primary);}
+body{background:#EEF2F6;padding:var(--s-6);min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:var(--s-6);}
+
+/* === 状态切换器 === */
+.controls{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-16);
+  padding:var(--s-3) var(--s-4);
+  display:flex;
+  gap:var(--s-2);
+  flex-wrap:wrap;
+  max-width:844px;
+  width:100%;
+  align-items:center;
+}
+.controls .label{font-size:12px;font-weight:700;color:var(--text-secondary);margin-right:var(--s-2);}
+.controls .pill{
+  font-size:12px;
+  padding:6px 12px;
+  border-radius:14px;
+  background:var(--surface-muted);
+  color:var(--text-secondary);
+  cursor:pointer;
+  border:none;
+  font-weight:500;
+  transition:all 0.15s;
+}
+.controls .pill:hover{background:var(--border);}
+.controls .pill.active{background:var(--accent);color:#fff;font-weight:600;}
+
+/* === 手机壳 === */
+.phone{
+  width:390px;height:844px;
+  background:var(--page-bg);
+  border-radius:32px;
+  border:1px solid var(--border);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  box-shadow:var(--elevation);
+  position:relative;
+}
+/* 状态栏 */
+.statusbar{
+  height:62px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--s-6);
+  flex-shrink:0;
+}
+.statusbar .time{font-size:15px;font-weight:600;}
+.statusbar .notch{width:120px;height:30px;border-radius:15px;background:var(--text-primary);}
+
+/* AppBar */
+.appbar{
+  height:56px;background:var(--surface);
+  display:flex;align-items:center;padding:0 var(--s-4);gap:var(--s-2);
+  flex-shrink:0;border-bottom:0.5px solid var(--border);
+}
+.appbar .back{font-size:24px;color:var(--accent);width:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.appbar .middle{flex:1;min-width:0;}
+.appbar .title{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.appbar .sub{font-size:12px;color:var(--text-secondary);margin-top:2px;}
+.appbar .more{font-size:20px;color:var(--accent);width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+
+/* Breadcrumb（仅 deep 显示） */
+.crumb{
+  background:var(--surface-muted);
+  padding:var(--s-2) var(--s-4);
+  font-size:12px;color:var(--text-secondary);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  flex-shrink:0;
+}
+.crumb b{color:var(--text-primary);font-weight:600;}
+
+/* 主内容 wrapper（gap 控距） */
+.content{
+  flex:1;
+  display:flex;flex-direction:column;
+  gap:var(--s-3);
+  padding:var(--s-4);
+  padding-bottom:var(--s-3);
+  overflow-y:auto;
+  min-height:0;
+}
+
+/* Question Header */
+.qhead{
+  font-size:13px;color:var(--text-secondary);
+  line-height:1.5;
+  padding:var(--s-2) 0;
+}
+.qhead .tag{font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:var(--s-1);}
+
+/* 气泡通用 */
+.bubble{
+  border-radius:var(--r-16);
+  padding:var(--s-3) var(--s-4);
+  font-size:15px;line-height:1.55;
+  max-width:86%;
+  position:relative;
+  word-wrap:break-word;
+}
+.bubble.user{
+  background:var(--user-bubble);
+  align-self:flex-end;
+}
+.bubble.assistant{
+  background:var(--assistant-bubble);
+  border:0.5px solid var(--assistant-border);
+  align-self:flex-start;
+}
+.bubble.assistant.failed{
+  border:1.5px solid var(--destructive);
+}
+.bubble.assistant.dim{opacity:0.5;}
+.bubble .meta{
+  display:flex;align-items:center;gap:var(--s-2);
+  font-size:11px;color:var(--text-tertiary);
+  margin-bottom:var(--s-2);
+}
+.bubble .meta .dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--text-tertiary);
+}
+.bubble .meta .dot.streaming{background:var(--accent);animation:pulse 1.2s infinite;}
+.bubble .meta .dot.done{background:var(--success);}
+.bubble .meta .dot.failed{background:var(--destructive);}
+.bubble .img-attached{
+  width:160px;height:120px;border-radius:var(--r-12);
+  background:linear-gradient(135deg,#DB2777,#7C3AED);
+  margin-bottom:var(--s-2);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:32px;
+}
+.bubble .ts{
+  font-size:11px;color:var(--text-tertiary);
+  margin-top:var(--s-1);text-align:right;
+}
+@keyframes pulse{0%,100%{opacity:.3;}50%{opacity:1;}}
+
+/* 思考折叠 */
+.think{
+  background:var(--surface-muted);
+  border-radius:var(--r-12);
+  padding:var(--s-2) var(--s-3);
+  font-size:12px;color:var(--text-secondary);
+  margin:var(--s-2) 0;
+  display:flex;align-items:center;gap:var(--s-2);
+  cursor:pointer;
+}
+.think .ic{font-size:14px;}
+
+/* 操作行（默认隐藏） */
+.ops{
+  display:none;
+  gap:var(--s-4);
+  margin-top:var(--s-2);
+  padding-top:var(--s-2);
+  border-top:0.5px solid var(--border);
+}
+.bubble.assistant.show-ops .ops{display:flex;}
+.ops .op{
+  display:flex;align-items:center;gap:4px;
+  font-size:12px;color:var(--text-secondary);
+  cursor:pointer;
+  padding:4px 0;
+}
+.ops .op:hover{color:var(--accent);}
+
+/* 失败 banner */
+.fail-banner{
+  background:rgba(220,38,38,.08);
+  border:0.5px solid var(--destructive);
+  border-radius:var(--r-12);
+  padding:var(--s-2) var(--s-3);
+  font-size:12px;color:var(--destructive);
+  display:flex;align-items:center;gap:var(--s-2);
+  margin-top:var(--s-2);
+}
+.fail-banner .retry{
+  margin-left:auto;
+  text-decoration:underline;
+  font-weight:600;
+  cursor:pointer;
+}
+
+/* 停止按钮（streaming 时浮在 input 上） */
+.stop{
+  display:none;
+  align-self:center;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:6px 14px;
+  font-size:12px;font-weight:600;
+  color:var(--text-primary);
+  box-shadow:var(--elevation);
+  cursor:pointer;
+  margin-bottom:var(--s-2);
+}
+.stop.show{display:flex;align-items:center;gap:6px;}
+
+/* 浮动"新消息"按钮 */
+.toast-new{
+  position:absolute;
+  bottom:160px;left:50%;transform:translateX(-50%);
+  background:var(--accent);color:#fff;
+  font-size:12px;font-weight:600;
+  padding:6px 14px;border-radius:14px;
+  box-shadow:var(--elevation);
+  display:none;cursor:pointer;
+}
+.toast-new.show{display:block;}
+
+/* Empty State */
+.empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:var(--s-3);text-align:center;
+  color:var(--text-secondary);
+}
+.empty .art{
+  width:96px;height:96px;border-radius:48px;
+  background:var(--surface-muted);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.empty .art::after{
+  content:"";position:absolute;
+  top:8px;right:8px;width:24px;height:4px;border-radius:2px;
+  background:var(--theme1);
+}
+.empty .art::before{
+  content:"";position:absolute;
+  top:18px;right:18px;width:14px;height:3px;border-radius:1.5px;
+  background:var(--theme3);
+}
+.empty .ttl{font-size:17px;font-weight:600;color:var(--text-primary);}
+.empty .sub{font-size:13px;}
+.empty .cta{
+  margin-top:var(--s-2);
+  background:var(--accent);color:#fff;
+  font-size:14px;font-weight:600;
+  padding:10px 20px;border-radius:20px;border:none;
+  cursor:pointer;
+}
+
+/* Loading State */
+.skel-row{
+  display:flex;gap:var(--s-2);align-items:flex-end;
+  margin-bottom:var(--s-2);
+}
+.skel-row.r{justify-content:flex-end;}
+.skel{
+  background:linear-gradient(90deg,var(--surface-muted) 25%,#E2E8F0 50%,var(--surface-muted) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:var(--r-16);
+  height:48px;
+}
+.skel.s1{width:65%;}
+.skel.s2{width:80%;height:64px;}
+.skel.s3{width:50%;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* Input Card（合并） */
+.input-card{
+  margin:0 var(--s-4) var(--s-3);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-20);
+  padding:var(--s-3) var(--s-3);
+  display:flex;flex-direction:column;gap:var(--s-2);
+  flex-shrink:0;
+  box-shadow:0 -2px 8px rgba(0,0,0,.02);
+}
+.input-card .row1{
+  display:flex;align-items:center;gap:var(--s-2);
+}
+.input-card .icon-btn{
+  width:36px;height:36px;border-radius:18px;
+  background:var(--surface-muted);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--text-secondary);
+  cursor:pointer;border:none;
+  flex-shrink:0;
+}
+.input-card .icon-btn:hover{background:var(--border);}
+.input-card .send-btn{
+  background:var(--surface-muted);color:var(--text-tertiary);
+}
+.input-card .send-btn.active{background:var(--accent);color:#fff;}
+.input-card .tf{
+  flex:1;height:36px;
+  background:var(--surface-muted);
+  border-radius:18px;
+  padding:0 var(--s-3);
+  display:flex;align-items:center;
+  font-size:14px;
+  cursor:text;
+}
+.input-card .tf.typing{background:var(--surface);border:1px solid var(--accent);}
+.input-card .tf .caret{
+  display:inline-block;width:2px;height:16px;
+  background:var(--accent);margin-left:2px;
+  animation:blink 1s infinite;
+}
+@keyframes blink{0%,50%{opacity:1;}51%,100%{opacity:0;}}
+.input-card .chips{
+  display:flex;gap:var(--s-2);flex-wrap:wrap;
+}
+.input-card .chip{
+  font-size:12px;
+  color:var(--text-secondary);
+  background:var(--surface-muted);
+  padding:5px 11px;
+  border-radius:14px;
+  cursor:pointer;border:none;
+  transition:all 0.15s;
+}
+.input-card .chip:hover{background:var(--border);}
+.input-card .chip.on{
+  background:var(--accent-light);
+  color:var(--accent-deep);
+  border:0.5px solid var(--accent);
+  font-weight:600;
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 状态切换器 ============ -->
+<div class="controls">
+  <div class="label">Chat 状态：</div>
+  <button class="pill" data-state="empty">empty</button>
+  <button class="pill" data-state="loading">loading</button>
+  <button class="pill active" data-state="idle">idle（正常）</button>
+  <button class="pill" data-state="typing">typing</button>
+  <button class="pill" data-state="streaming">streaming</button>
+  <button class="pill" data-state="failed">failed</button>
+  <button class="pill" data-state="partial">partial-error</button>
+  <div class="label" style="margin-left:auto;font-size:11px">↑ 点上面切状态 · 点气泡看操作行 · 点工具 chip 切激活</div>
+</div>
+
+<!-- ============ 手机 ============ -->
+<div class="phone">
+  <div class="statusbar"><span class="time">15:32</span><span class="notch"></span></div>
+  <div class="appbar">
+    <div class="back">‹</div>
+    <div class="middle">
+      <div class="title">溪流瀑布慢门摄影分析</div>
+      <div class="sub">kimi-k2.5 · KIMI</div>
+    </div>
+    <div class="more">⋯</div>
+  </div>
+  <div class="crumb" data-show="deep">
+    <b>主题</b> / 未分类 / 1234 / <b>冰叶日中花园识别</b> / 当前
+  </div>
+  <div class="content" id="content">
+    <!-- 内容由 JS 渲染 -->
+  </div>
+  <div class="stop" id="stop">■ 停止生成</div>
+  <div class="toast-new" id="toast">↓ 1 条新消息</div>
+  <div class="input-card">
+    <div class="row1">
+      <button class="icon-btn" id="attachBtn" title="附件（图片/文件）">📎</button>
+      <div class="tf" id="tf">消息</div>
+      <button class="icon-btn send-btn" id="send">↑</button>
+    </div>
+    <div class="chips">
+      <button class="chip" data-chip="search">🌐 联网搜索</button>
+      <button class="chip" data-chip="think">💭 深度思考</button>
+      <button class="chip" data-chip="image">🖼 添加图片</button>
+      <button class="chip" data-chip="model">⚙ kimi-k2.5</button>
+    </div>
+  </div>
+</div>
+
+<div class="controls" style="background:transparent;border:none;padding:0;font-size:12px;color:var(--text-secondary);max-width:844px">
+  <b>说明：</b>当前显示 Chat 真实 8 态。输入区是合并后的「单一卡片」(行1: 输入 / 行2: 工具 chips)。
+  主题列表 / 知识树 demo 在另外两个 HTML 中，待你看 Chat OK 后我出。
+</div>
+
+<script>
+/* === 状态数据 === */
+const STATES = {
+  empty: () => `
+    <div class="empty">
+      <div class="art"></div>
+      <div class="ttl">开始一段新对话</div>
+      <div class="sub">输入问题，AI 会基于此主题的上下文回答</div>
+      <button class="cta">开始</button>
+    </div>
+  `,
+  loading: () => `
+    <div class="skel-row"><div class="skel s1"></div></div>
+    <div class="skel-row r"><div class="skel s3"></div></div>
+    <div class="skel-row"><div class="skel s2"></div></div>
+    <div class="skel-row r"><div class="skel s1"></div></div>
+  `,
+  idle: () => `
+    <div class="qhead">
+      <div class="tag">你问了</div>
+      一句话回复我这是什么？
+    </div>
+    <div class="bubble user" data-toggle>
+      <div class="img-attached">🖼</div>
+      <div>一句话回复我这是什么？</div>
+      <div class="ts">12:34 · 已发送</div>
+    </div>
+    <div class="bubble assistant" data-toggle>
+      <div class="meta">
+        <span class="dot done"></span>
+        <span>助手 · kimi-k2.5</span>
+        <span style="color:var(--success);font-weight:600">已收到</span>
+      </div>
+      <div>这是一丛盛开的菊花，<b>洋红、紫红和金黄</b>三种颜色。背景是模糊的绿叶和温暖的阳光，整张照片给人生机勃勃的感觉。</div>
+      <div class="ts">12:34</div>
+      <div class="ops">
+        <div class="op">📋 复制</div>
+        <div class="op">🔊 朗读</div>
+        <div class="op">⤴ 分享</div>
+        <div class="op">📝 转笔记</div>
+        <div class="op">↻ 重生成</div>
+      </div>
+    </div>
+    <div style="height:8px"></div>
+  `,
+  typing: () => `
+    <div class="bubble user">
+      <div>把这张图改成黑白风格</div>
+      <div class="ts">刚刚 · 发送中</div>
+    </div>
+    <div class="bubble assistant" style="opacity:0.6">
+      <div class="meta"><span class="dot"></span><span>助手准备中</span></div>
+      <div style="color:var(--text-tertiary);font-style:italic">正在准备回答…</div>
+    </div>
+  `,
+  streaming: () => `
+    <div class="bubble user">
+      <div>把这张图改成黑白风格</div>
+      <div class="ts">刚刚 · 已发送</div>
+    </div>
+    <div class="bubble assistant" data-toggle>
+      <div class="meta">
+        <span class="dot streaming"></span>
+        <span>kimi-k2.5 · 生成中</span>
+      </div>
+      <div class="think"><span class="ic">💭</span> 思考中… (3.2s)</div>
+      <div>黑白风格会强调花朵的轮廓和光影层次，建议增加对比度到 +20，<span style="background:linear-gradient(90deg,var(--text-tertiary) 50%,transparent 50%);background-size:4px 100%;color:transparent;animation:shimmer 1s infinite">锐化细节让花瓣边缘更清晰，同时降低阴影噪声保持画面干净▍</span></div>
+      <div class="ts">刚刚</div>
+      <div class="ops">
+        <div class="op">■ 停止</div>
+      </div>
+    </div>
+  `,
+  failed: () => `
+    <div class="bubble user">
+      <div>把这张图改成黑白风格</div>
+      <div class="ts">12:36 · 已发送</div>
+    </div>
+    <div class="bubble assistant failed" data-toggle>
+      <div class="meta">
+        <span class="dot failed"></span>
+        <span>kimi-k2.5</span>
+        <span style="color:var(--destructive);font-weight:600">生成失败</span>
+      </div>
+      <div style="color:var(--text-secondary)">[错误] 请求超时（30s），模型未在预期时间内响应。</div>
+      <div class="fail-banner">
+        ⚠ 生成失败
+        <span class="retry">↻ 重试</span>
+        <span class="detail-link" style="margin-left:auto;color:var(--accent);text-decoration:underline;cursor:pointer">⌄ 查看错误详情</span>
+      </div>
+      <div class="err-detail" id="errDetail" style="display:none;margin-top:var(--s-2);background:var(--surface-muted);border-radius:var(--r-12);padding:var(--s-3);font-size:11px;color:var(--text-secondary);line-height:1.7;font-family:ui-monospace,monospace">
+        <div>请求 ID: req_8f3a2c9e71b4</div>
+        <div>错误码: 504 GATEWAY_TIMEOUT</div>
+        <div>模型: kimi-k2.5 · 节点: cn-east-1</div>
+        <div>耗时: 30.2s / 阈值 30s</div>
+        <div>时间: 2026-07-10 12:36:03 +08:00</div>
+        <div style="color:var(--accent);cursor:pointer;margin-top:4px" onclick="copyErr()">⧉ 复制错误详情</div>
+      </div>
+    </div>
+  `,
+  partial: () => `
+    <div class="bubble user">
+      <div>详细讲一下这个</div>
+      <div class="ts">12:36 · 已发送</div>
+    </div>
+    <div class="bubble assistant dim" data-toggle>
+      <div class="meta">
+        <span class="dot failed"></span>
+        <span>已中断</span>
+      </div>
+      <div>这是一丛盛开的菊花，有洋红、紫红和金黄三种颜色。背景的虚化让主体更突出，整张照片给人生机勃勃的感觉…</div>
+      <div class="fail-banner">
+        ⚠ 已中断（网络断开）
+        <span class="retry">↻ 继续</span>
+      </div>
+    </div>
+    <div class="bubble assistant" data-toggle>
+      <div class="meta">
+        <span class="dot"></span>
+        <span>已重新连接 · 继续生成中</span>
+      </div>
+      <div>如果你想拍出类似的效果，可以考虑<b>用慢门 1/8s</b>配合 ND 滤镜<span style="color:var(--text-tertiary)">▍</span></div>
+    </div>
+  `,
+};
+
+const content = document.getElementById('content');
+const stopBtn = document.getElementById('stop');
+const tf = document.getElementById('tf');
+const sendBtn = document.getElementById('send');
+const toast = document.getElementById('toast');
+const crumb = document.querySelector('.crumb');
+
+/* === 渲染 === */
+function render(state){
+  content.innerHTML = STATES[state]();
+  // 操作行 toggle
+  content.querySelectorAll('[data-toggle]').forEach(el=>{
+    el.addEventListener('click', e=>{
+      if(e.target.classList.contains('op')) return;
+      el.classList.toggle('show-ops');
+    });
+  });
+  // 失败态：查看错误详情
+  const detailLink = content.querySelector('.fail-banner .detail-link');
+  const detailBox = content.querySelector('#errDetail');
+  if(detailLink && detailBox){
+    detailLink.addEventListener('click', ()=>{
+      const open = detailBox.style.display !== 'none';
+      detailBox.style.display = open ? 'none' : 'block';
+      detailLink.textContent = open ? '⌄ 查看错误详情' : '⌃ 收起';
+    });
+  }
+  // 停止按钮（streaming 时显示）
+  stopBtn.classList.toggle('show', state==='streaming');
+  // crumb 默认隐藏（idle 不显示），手动切到 deep 态时再亮
+  crumb.style.display = state==='idle' ? 'none' : 'block';
+  crumb.style.background = state==='failed' ? 'rgba(220,38,38,.06)' : 'var(--surface-muted)';
+  // 浮按钮（任意 deep 状态可演示）
+  toast.classList.toggle('show', state==='idle' || state==='partial');
+  // 标记 active pill
+  document.querySelectorAll('.controls .pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.state===state);
+  });
+  // 流式：1.5s 后自动跳 idle
+  if(state==='streaming'){
+    setTimeout(()=>render('idle'), 4000);
+  }
+}
+
+/* === 事件 === */
+document.querySelectorAll('.controls .pill').forEach(p=>{
+  p.addEventListener('click', ()=>render(p.dataset.state));
+});
+
+// 输入区交互
+tf.addEventListener('click', ()=>{
+  const txt = prompt('输入消息内容：', '');
+  if(txt){
+    tf.textContent = txt;
+    tf.classList.add('typing');
+    sendBtn.classList.add('active');
+  } else {
+    tf.innerHTML = '消息<span class="caret"></span>';
+    tf.classList.add('typing');
+    sendBtn.classList.add('active');
+  }
+});
+sendBtn.addEventListener('click', ()=>{
+  if(!sendBtn.classList.contains('active')) return;
+  if(tf.textContent.trim()==='消息' || !tf.textContent.trim()) return;
+  // 发消息 → 切到 streaming
+  render('streaming');
+  tf.textContent = '消息';
+  tf.classList.remove('typing');
+  sendBtn.classList.remove('active');
+});
+
+// chips 切换 + 附件按钮联动
+const attachBtn = document.getElementById('attachBtn');
+document.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    const on = c.classList.toggle('on');
+    if(c.dataset.chip === 'image'){
+      attachBtn.classList.toggle('active', on);
+      attachBtn.style.background = on ? 'var(--accent-light)' : '';
+    }
+  });
+});
+// 点附件按钮 → 模拟已选图（与添加图片 chip 联动）
+attachBtn.addEventListener('click', ()=>{
+  const imgChip = document.querySelector('.chip[data-chip="image"]');
+  const on = !imgChip.classList.contains('on');
+  imgChip.classList.toggle('on', on);
+  attachBtn.classList.toggle('active', on);
+  attachBtn.style.background = on ? 'var(--accent-light)' : '';
+});
+
+// 复制错误详情
+window.copyErr = function(){
+  navigator.clipboard?.writeText('req_8f3a2c9e71b4 · 504 GATEWAY_TIMEOUT · kimi-k2.5 · cn-east-1 · 30.2s');
+  alert('错误详情已复制');
+};
+
+// 停止按钮
+stopBtn.addEventListener('click', ()=>render('idle'));
+
+// toast
+toast.addEventListener('click', ()=>toast.classList.remove('show'));
+
+// 初始
+render('idle');
+</script>
+</body>
+</html>

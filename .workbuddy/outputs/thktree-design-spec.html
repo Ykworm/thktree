@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThkTree UI Design Spec — 源码实测 Design Token 规范</title>
+<style>
+  :root {
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --text: #1E293B;
+    --text-secondary: #64748B;
+    --text-tertiary: #94A3B8;
+    --border: #E2E8F0;
+    --border-light: #F1F5F9;
+    --accent: #6366F1;
+    --accent-light: #EEF2FF;
+    --success: #34C759;
+    --destructive: #DC2626;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --font-sans: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    --font-mono: 'SF Mono', Menlo, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .spec-container { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Header */
+  .spec-header { margin-bottom: 48px; }
+  .spec-header h1 {
+    font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  .spec-header .subtitle {
+    color: var(--text-secondary); font-size: 16px;
+  }
+  .spec-header .meta {
+    display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap;
+  }
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 600;
+  }
+  .tag-warning { background: #FEF3C7; color: #92400E; }
+  .tag-info { background: var(--accent-light); color: var(--accent); }
+  .tag-ok { background: #D1FAE5; color: #065F46; }
+
+  /* Section */
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.3px;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-light);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .emoji { font-size: 24px; }
+
+  /* Alert box */
+  .alert {
+    border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 24px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .alert-critical { background: #FEF2F2; border: 1px solid #FECACA; }
+  .alert-warning { background: #FFFBEB; border: 1px solid #FDE68A; }
+  .alert-info { background: var(--accent-light); border: 1px solid #C7D2FE; }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .alert-body { font-size: 14px; }
+  .alert-body strong { font-weight: 700; }
+  .alert-body code {
+    background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 13px;
+  }
+
+  /* Token table */
+  .token-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  .token-table th {
+    text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--text-secondary);
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    background: var(--border-light);
+  }
+  .token-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border-light);
+    vertical-align: top; font-size: 14px;
+  }
+  .token-table tr:hover td { background: var(--border-light); }
+  .token-name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--accent); }
+  .token-value { font-family: var(--font-mono); font-size: 13px; }
+  .color-swatch {
+    display: inline-block; width: 18px; height: 18px; border-radius: 4px;
+    vertical-align: middle; margin-right: 6px; border: 1px solid rgba(0,0,0,0.1);
+  }
+  .deviation-badge {
+    display: inline-block; padding: 1px 7px; border-radius: 100px;
+    font-size: 11px; font-weight: 700; vertical-align: middle; margin-left: 6px;
+  }
+  .badge-deviate { background: #FEF3C7; color: #92400E; }
+  .badge-match { background: #D1FAE5; color: #065F46; }
+
+  /* Sub-section */
+  .subsection-title {
+    font-size: 17px; font-weight: 700; margin: 28px 0 14px;
+    color: var(--text);
+  }
+
+  /* Component card */
+  .comp-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); overflow: hidden; margin-bottom: 20px;
+  }
+  .comp-card-header {
+    padding: 12px 16px; background: var(--border-light);
+    border-bottom: 1px solid var(--border);
+    font-weight: 700; font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .comp-card-body { padding: 16px; }
+  .prop-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 6px 0; border-bottom: 1px dashed var(--border-light);
+    font-size: 14px;
+  }
+  .prop-row:last-child { border-bottom: none; }
+  .prop-label { color: var(--text-secondary); font-size: 13px; }
+  .prop-value { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+
+  /* Typography scale */
+  .type-scale { display: flex; flex-direction: column; gap: 12px; }
+  .type-item {
+    display: flex; align-items: baseline; gap: 16px;
+    padding: 12px 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+  }
+  .type-sample { flex: 1; }
+  .type-meta { font-family: var(--font-mono); font-size: 12px; color: var(--text-tertiary); white-space: nowrap; }
+
+  /* Spacing scale */
+  .spacing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .spacing-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px; text-align: center;
+  }
+  .spacing-visual {
+    height: 24px; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .spacing-bar { background: var(--accent); border-radius: 2px; height: 12px; }
+  .spacing-label { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+  .spacing-value { font-size: 11px; color: var(--text-tertiary); }
+
+  @media (max-width: 640px) {
+    .spec-container { padding: 24px 16px 60px; }
+    .spec-header h1 { font-size: 26px; }
+    .section-title { font-size: 19px; }
+    .token-table { font-size: 13px; }
+    .token-table th, .token-table td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="spec-container">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- HEADER -->
+<!-- ═══════════════════════════════════════════ -->
+<header class="spec-header">
+  <h1>ThkTree UI Design Spec</h1>
+  <p class="subtitle">源码实测 Design Token 规范 · 搜索页 / 抽屉菜单 / 设置页 / 大模型 / 供应商 / 笔记模块 / 主题</p>
+  <div class="meta">
+    <span class="tag tag-warning">⚠️ app_colors.dart 过时</span>
+    <span class="tag tag-info">📐 C 方案：截图 + 源码交叉验证</span>
+    <span class="tag tag-ok">✅ 基于 Widget 真实值</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CRITICAL ALERT -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="alert alert-critical">
+  <span class="alert-icon">⚡</span>
+  <div class="alert-body">
+    <strong>本规范的数据来源是真实 Widget 源码（grep 抽取），不是 app_colors.dart。</strong><br>
+    <code>lib/ui/core/theme/app_colors.dart</code> 已被用户确认为<strong>过时文件</strong>，不反映 App 当前实际渲染。<br>
+    所有 token 值均来自以下文件的直接读取：<br>
+    <code>search_screen.dart</code> · <code>search_content.dart</code> · <code>router.dart</code> (Tab栏) · <code>settings_screen.dart</code> · <code>llm_settings_screen.dart</code> · <code>llm_providers_screen.dart</code> · <code>llm_provider_detail_screen.dart</code> · <code>note_browse_screen.dart</code> · <code>note_editor_screen.dart</code> · <code>generate_title_screen.dart</code> · <code>note_detail_screen.dart</code> · <code>node_location_picker.dart</code> · <code>theme_list_screen.dart</code> · <code>theme_detail_screen.dart</code> · <code>widgets/</code> (ThkListSection/Tile/TextField/Button)
+  </div>
+</div>
+
+<div class="alert alert-info">
+  <span class="alert-icon">📸</span>
+  <div class="alert-body">
+    <strong>C 方案状态：</strong>已收到第一批 3 张 + 第二批 9 张真机截图意图（搜索/抽屉/设置/大模型/供应商/笔记全流程）。<br>
+    当前模型无法解析图片输入，第二批截图被系统过滤；因此本阶段继续以<strong>源码数值为准</strong>，截图用于用户后期文字描述验证。<br>
+    下一步：切换到支持 vision 的模型 / 用户提供文字描述 → 真机截帧 → 逐像素对比偏差。
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- §1 COLOR TOKENS -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="emoji">🎨</span> §1 Color Tokens — 色彩系统</h2>
+
+  <p style="margin-bottom: 16px; color: var(--text-secondary);">
+    以下为 Light 模式值。所有语义色通过 <code>AppColors</code> getter 动态切换 dark/light。
+  </p>
+
+  <table class="token-table">
+    <thead>
+      <tr><th style="width:26%">Token 名称</th><th style="width:16%">Hex</th><th>用途 / 出现位置</th><th style="width:14%">与旧文件</th></tr>
+    </thead>
+    <tbody>
+      <!-- Primary / Accent -->
+      <tr>
+        <td><span class="token-name">accent</span></td>
+        <td><span class="color-swatch" style="background:#6366F1"></span>#6366F1</td>
+        <td>通用交互色：Tab 选中态、按钮底色、备份按钮、列表项 leading 图标、选中指示条</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+      <tr>
+        <td><span class="token-name">accentDeep</span></td>
+        <td><span class="color-swatch" style="background:#4F46E5"></span>#4F46E5</td>
+        <td>按下态（pressed）</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+      <tr>
+        <td><span class="token-name">accentLight</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#EEF2FF"></span>#EEF2FF (L) / #1E1B4B (D)</td>
+        <td>Indigo 浅色背景 tint</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+
+      <!-- Surface -->
+      <tr>
+        <td><span class="token-name">pageBg</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#F8FAFC"></span>#F8FAFC (L) / #020617 (D)</td>
+        <td>页面根背景色（Slate 50/950）</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+      <tr>
+        <td><span class="token-name">surface</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#FFFFFF"></span>#FFFFFF (L) / #0F172A (D)</td>
+        <td>卡片/面板/抽屉背景：Tab 栏容器、搜索结果行、设置列表分组、_MenuPanel 容器</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+      <tr>
+        <td><span class="token-name">surfaceMuted</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#F1F5F9"></span>#F1F5F9 (L) / #1E293B (D)</td>
+        <td>备份提醒横幅背景（_BackupReminderBanner）</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+
+      <!-- Text -->
+      <tr>
+        <td><span class="token-name">textPrimary</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#1E293B"></span>#1E293B (L) / #F1F5F9 (D)</td>
+        <td>主文字：导航标题、搜索 placeholder、菜单项标题、列表项标题、空态副文本、按钮文字</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+      <tr>
+        <td><span class="token-name">textSecondary</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#64748B"></span>#64748B (L) / #94A3B8 (D)</td>
+        <td>次要文字：空态提示「在知识中寻找连接」、Section header 文字、最近搜索标题</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+      <tr>
+        <td><span class="token-name">textTertiary</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#94A3B8"></span>#94A3B8 (L) / #64748B (D)</td>
+        <td>辅助文字：搜索图标(空态)、主题标签、snippet 文字、Tag x 图标、chevron_right、Tab 未选中</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+
+      <!-- Structure -->
+      <tr>
+        <td><span class="token-name">border</span> (getter)</td>
+        <td><span class="color-swatch" style="background:#E2E8F0"></span>#E2E8F0 (L) / #334155 (D)</td>
+        <td>分割线：搜索结果项底线(0.5pt)、备份横幅边框(0.5pt)、Tag chip 边框(0.5pt)、Tab 栏顶线(0.5pt)</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+
+      <!-- Semantic -->
+      <tr>
+        <td><span class="token-name">destructive</span></td>
+        <td><span class="color-swatch" style="background:#DC2626"></span>#DC2626</td>
+        <td>错误提示文字、清除全部按钮</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+      <tr>
+        <td><span class="token-name">success</span></td>
+        <td><span class="color-swatch" style="background:#34C759"></span>#34C759</td>
+        <td>系统绿（备份提醒 Toggle ON 态）</td>
+        <td><span class="deviation-badge badge-match">一致</span></td>
+      </tr>
+
+      <!-- Hardcoded values found in source (NOT in token file!) -->
+      <tr style="background: #FFFBEB;">
+        <td><span class="token-name" style="color:#92400E;">⚠ Color(0x61000000)</span></td>
+        <td><span class="color-swatch" style="background:rgba(0,0,0,0.38)"></span>rgba(0,0,0,0.38)</td>
+        <td>_SlideFromLeftRoute barrierColor — 抽屉遮罩层。硬编码在 search_screen.dart:50</td>
+        <td><span class="deviation-badge badge-deviate">仅源码有</span></td>
+      </tr>
+      <tr style="background: #FFFBEB;">
+        <td><span class="token-name" style="color:#92400E;">⚠ CupertinoColors.destructiveRed</span></td>
+        <td><span class="color-swatch" style="background:#FF3B30"></span>#FF3B30</td>
+        <td>搜索错误提示文字（search_content.dart:353）— 用了系统色而非 AppColors.destructive</td>
+        <td><span class="deviation-badge badge-deviate">不一致</span></td>
+      </tr>
+      <tr style="background: #FFFBEB;">
+        <td><span class="token-name" style="color:#92400E;">⚠ CupertinoColors.white</span></td>
+        <td><span class="color-swatch" style="background:#FFFFFF;border:1px solid #ccc"></span>#FFFFFF</td>
+        <td>备份按钮文字色（search_content.dart:506）— 硬编码 white 而非 onSurface</td>
+        <td><span class="deviation-badge badge-deviate">应统一</span></td>
+      </tr>
+      <tr style="background: #FFFBEB;">
+        <td><span class="token-name" style="color:#92400E;">⚠ border.withAlpha(30)</span></td>
+        <td><span class="color-swatch" style="background:#E2E8F04D"></span>#E2E8F0 at 30/255 α</td>
+        <td>Tag chip 背景（_RecentSearchTag）— 用 border 色 + 透明度做浅灰底，而非 surfaceMuted</td>
+        <td><span class="deviation-badge badge-deviate">仅源码有</span></td>
+      </tr>
+      <tr style="background: #FFFBEB;">
+        <td><span class="token-name" style="color:#92400E;">⚠ CupertinoColors.separator</span></td>
+        <td><span class="color-swatch" style="background:#C5C9D6"></span>~#C5C9D6 (L) / ~#40444D (D)</td>
+        <td>LLM 设置/供应商/默认模型页的分隔线 — 用 iOS 系统分隔线而非 AppColors.border</td>
+        <td><span class="deviation-badge badge-deviate">不一致</span></td>
+      </tr>
+      <tr style="background: #FFFBEB;">
+        <td><span class="token-name" style="color:#92400E;">⚠ CupertinoColors.systemGrey</span></td>
+        <td><span class="color-swatch" style="background:#8E8E93"></span>#8E8E93</td>
+        <td>Provider Detail 里模型展开行的 chevron_right 颜色</td>
+        <td><span class="deviation-badge badge-deviate">应统一</span></td>
+      </tr>
+      <tr style="background: #FFFBEB;">
+        <td><span class="token-name" style="color:#92400E;">⚠ CupertinoColors.destructiveRed（再出现）</span></td>
+        <td><span class="color-swatch" style="background:#FF3B30"></span>#FF3B30</td>
+        <td>供应商列表删除图标（llm_providers_screen.dart:174）— 与搜索页错误文字一起构成两处 destructiveRed</td>
+        <td><span class="deviation-badge badge-deviate">不一致</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-warning">
+    <span class="alert-icon">🔍</span>
+    <div class="alert-body">
+      <strong>发现 7 处硬编码/系统色值未走 AppColors token 系统：</strong>barrierColor、destructiveRed×2、white 按钮文字、border.withAlpha(30) tag 底、CupertinoColors.separator、CupertinoColors.systemGrey。
+      这些是旧 token 文件<strong>无法覆盖的漂移点</strong>——尤其 separator 在大模型相关页面全面替代了 AppColors.border。
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- §2 TYPOGRAPHY -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="emoji">🔤</span> §2 Typography — 字体层级</h2>
+
+  <div class="type-scale">
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 20px; font-weight: 600;">搜索 / ThkTree·设置</div>
+      <div class="type-meta">20px / w600 — Large Title / 页面大标题</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 17px; font-weight: 700;">ThkTree（抽屉标题同此）</div>
+      <div class="type-meta">~17px iOS Large Title — 导航栏滚动后的大标题</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 16px; font-weight: 400;">设置 / 语言 / 大模型</div>
+      <div class="type-meta">16px / w400 — Body / 列表项标题（CupertinoListTile 默认）</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 16px; font-weight: 500;">建议定期备份数据 / 搜索结果标题</div>
+      <div class="type-meta">16px / w500 — Medium Body / 强调正文</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 14px; font-weight: 400;">跟随系统 / 立即备份 / 最近搜索</div>
+      <div class="type-meta">14px / w400 — Secondary / 副标题、caption、标签文字</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 14px; font-weight: 600;">立即备份 / 清除全部</div>
+      <div class="type-meta">14px / w600 — Button / 操作性文字</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 13px; font-weight: 400;">语言 / Dev Tools / 备份与恢复</div>
+      <div class="type-meta">13px / w400 — Section Header / 分组标题</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 12px; font-weight: 400;">朗读语音、语速设置 / 主题标签</div>
+      <div class="type-meta">12px / w400 — Caption / 列表项副文本、snippet</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-size: 10px; font-weight: 400;">搜索 / 主题 / 笔记 / Lab</div>
+      <div class="type-meta">10px / w400 — Tab Label / 底部导航文字</div>
+    </div>
+    <div class="type-item">
+      <div class="type-sample" style="font-family: SF Mono, Menlo, monospace; font-size: 12px;">/Users/yuweikang/Library...</div>
+      <div class="type-meta">12px / Menlo mono — Log File Path / 日志路径</div>
+    </div>
+  </div>
+
+  <h3 class="subsection-title">字体来源说明</h3>
+  <p style="color: var(--text-secondary); font-size: 14px;">
+    项目使用 <strong>iOS 原生字体栈</strong>（通过 Cupertino 组件隐式使用 SF Pro），无显式 fontFamily 设置（日志对话框除外，用 Menlo）。
+    旧 token 文件中声明的 <code>Inter</code> / <code>JetBrains Mono</code> <strong>未在当前 Flutter 代码中实际引用</strong>——这是文档与实现的偏差之一。
+  </p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- §3 SPACING & SIZING -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="emoji">📐</span> §3 Spacing & Sizing — 间距与尺寸</h2>
+
+  <h3 class="subsection-title">3.1 Padding / Margin 实测值</h3>
+  <table class="token-table">
+    <thead>
+      <tr><th>位置</th><th>值</th><th>源码位置</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="token-name">搜索页 SearchBox 外层</span></td><td class="token-value">padding: all(16)</td><td>search_content.dart:412</td></tr>
+      <tr><td><span class="token-name">搜索结果项</span></td><td class="token-value">h:16, v:12</td><td>search_content.dart:39</td></tr>
+      <tr><td><span class="token-name">备份横幅</span></td><td class="token-value">margin: L16 T8 R16 B0<br>padding: h:16 v:12</td><td>search_content.dart:458-459</td></tr>
+      <tr><td><span class="token-name">菜单面板标题</span></td><td class="token-value">h:20</td><td>search_screen.dart:103</td></tr>
+      <tr><td><span class="token-name">菜单项 _MenuTile</span></td><td class="token-value">h:20, v:14</td><td>search_screen.dart:158</td></tr>
+      <tr><td><span class="token-name">菜单图标→文字间距</span></td><td class="token-value">gap: 12 (SizedBox.width)</td><td>search_screen.dart:162</td></tr>
+      <tr><td><span class="token-name">菜单标题→首个项间距</span></td><td class="token-value">24</td><td>search_screen.dart:113</td></tr>
+      <tr><td><span class="token-name">菜单顶部留白</span></td><td class="token-value">20</td><td>search_screen.dart:101</td></tr>
+      <tr><td><span class="token-name">设置 Section 外边距</span></td><td class="token-value">L20 T0 R20 B20</td><td>thk_list_section.dart:25</td></tr>
+      <tr><td><span class="token-name">设置分隔线缩进</span></td><td class="token-value">56</td><td>thk_list_section.dart:26</td></tr>
+      <tr><td><span class="token-name">Tab 栏内边距</span></td><td class="token-value">top:6, bottom:2</td><td>router.dart:287</td></tr>
+      <tr><td><span class="token-name">Tab 栏高度</span></td><td class="token-value">49</td><td>router.dart:289</td></tr>
+      <tr><td><span class="token-name">Tab 项宽度</span></td><td class="token-value">64</td><td>router.dart:348</td></tr>
+      <tr><td><span class="token-name">Tag chip 文字区</span></td><td class="token-value">L12 T6 R0 B6</td><td>search_content.dart:821</td></tr>
+      <tr><td><span class="token-name">Tag chip × 按钮</span></td><td class="token-value">L4 T6 R8 B6</td><td>search_content.dart:829</td></tr>
+      <tr><td><span class="token-name">备份按钮内边距</span></td><td class="token-value">h:16, v:6</td><td>search_content.dart:496</td></tr>
+      <tr><td><span class="token-name">最近搜索列表</span></td><td class="token-value">h:16, v:8</td><td>search_content.dart:752</td></tr>
+      <tr><td><span class="token-name">Tag Wrap 间距</span></td><td class="token-value">spacing:8, runSpacing:8</td><td>search_content.dart:781-782</td></tr>
+      <tr><td><span class="token-name">空态 icon→文字间距</span></td><td class="token-value">12</td><td>search_content.dart:363, 679</td></tr>
+      <tr><td><span class="token-name">loading/error padding</span></td><td class="token-value">all(16)</td><td>search_content.dart:344, 350</td></tr>
+      <tr><td><span class="token-name">ThkFillCardPageBody 顶部间距</span></td><td class="token-value">12</td><td>thk_fill_card_page_body.dart:8</td></tr>
+      <tr><td><span class="token-name">LLM 设置/供应商 列表 divider</span></td><td class="token-value">h:0.5, marginStart:16, color:separator</td><td>llm_settings_screen.dart:31-35</td></tr>
+      <tr><td><span class="token-name">Provider Tile 删除图标</span></td><td class="token-value">size:20, color:destructiveRed</td><td>llm_providers_screen.dart:173-175</td></tr>
+      <tr><td><span class="token-name">Provider Detail 文本框 padding</span></td><td class="token-value">h:12, v:10</td><td>thk_text_field.dart:27</td></tr>
+      <tr><td><span class="token-name">Provider Detail 按钮区 padding</span></td><td class="token-value">h:20, v:16</td><td>llm_provider_detail_screen.dart:184-186</td></tr>
+      <tr><td><span class="token-name">Provider Detail 展开区 padding</span></td><td class="token-value">L16 T0 R16 B12</td><td>llm_provider_detail_screen.dart:531</td></tr>
+      <tr><td><span class="token-name">Provider Detail Context Size 选择器</span></td><td class="token-value">surfaceMuted 底色, radius:8, padding:h:12 v:8</td><td>llm_provider_detail_screen.dart:543-549</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">3.2 Icon Size 实测值</h3>
+  <table class="token-table">
+    <thead><tr><th>位置</th><th>Size</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>导航菜单按钮 (≡)</td><td class="token-value">22</td><td>search_screen.dart:25</td></tr>
+      <tr><td>菜单项图标 / chevron</td><td class="token-value">20 / 16</td><td>search_screen.dart:161,174</td></tr>
+      <tr><td>搜索结果 entity 图标</td><td class="token-value">16</td><td>search_content.dart:54</td></tr>
+      <tr><td>备份横幅 archivebox</td><td class="token-value">18</td><td>search_content.dart:470</td></tr>
+      <tr><td>备份横幅 × 关闭</td><td class="token-value">16</td><td>search_content.dart:488</td></tr>
+      <tr><td>空态搜索图标</td><td class="token-value">40</td><td>search_content.dart:362, 678</td></tr>
+      <tr><td>Tag chip × 图标</td><td class="token-value">12</td><td>search_content.dart:834</td></tr>
+      <tr><td>Tab 图标 (SFIcon fontSize)</td><td class="token-value">25</td><td>router.dart:358</td></tr>
+      <tr><td>列表项 leading 图标</td><td class="token-value">22</td><td>thk_list_tile.dart:46</td></tr>
+      <tr><td>供应商列表空态 cloud</td><td class="token-value">40</td><td>llm_providers_screen.dart:55</td></tr>
+      <tr><td>供应商列表删除图标</td><td class="token-value">20</td><td>llm_providers_screen.dart:175</td></tr>
+      <tr><td>导航栏 + 按钮 (AppIcons.add/delete/copy)</td><td class="token-value">默认 CupertinoButton 大小</td><td>多个 screen</td></tr>
+    </tbody>
+  </table>
+</section>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- §4 BORDER RADIUS -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="emoji">🔲</span> §4 Border Radius — 圆角系统</h2>
+
+  <table class="token-table">
+    <thead><tr><th>组件</th><th>圆角值</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>备份横幅容器</td><td class="token-value">12</td><td>search_content.dart:462</td></tr>
+      <tr><td>备份按钮</td><td class="token-value">8</td><td>search_content.dart:499</td></tr>
+      <tr><td>Tag Chip</td><td class="token-value">16</td><td>search_content.dart:812</td></tr>
+      <tr><td>Tab 选中指示条</td><td class="token-value">1.5</td><td>router.dart:374</td></tr>
+    </tbody>
+  </table>
+
+  <p style="color: var(--text-secondary); font-size: 14px; margin-top: 12px;">
+    注意：列表分组（ThkListSection.insetGrouped）的圆角由 <code>CupertinoListSection</code> 内部控制（iOS 默认 ~10pt），非自定义。搜索结果行无圆角（纯分割线）。
+  </p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- §5 COMPONENT SPECS -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="emoji">🧱</span> §5 Component Specs — 组件规格</h2>
+
+  <!-- Tab Bar -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      Bottom Tab Bar
+      <span style="font-size:12px;color:var(--text-tertiary)">router.dart:277-316</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">容器背景</span><span class="prop-value">AppColors.surface (#FFF)</span></div>
+      <div class="prop-row"><span class="prop-label">顶边框</span><span class="prop-value">Border.top: AppColors.border, 0.5pt</span></div>
+      <div class="prop-row"><span class="prop-label">安全区内边距</span><span class="prop-value">top:6, bottom:2</span></div>
+      <div class="prop-row"><span class="prop-label">固定高度</span><span class="prop-value">49pt</span></div>
+      <div class="prop-row"><span class="prop-label">Tab 项宽</span><span class="prop-value">64pt</span></div>
+      <div class="prop-row"><span class="prop-label">图标大小</span><span class="prop-value">SFIcon fontSize: 25</span></div>
+      <div class="prop-row"><span class="prop-label">标签字号</span><span class="prop-value">10px</span></div>
+      <div class="prop-row"><span class="prop-label">图标→标签间距</span><span class="prop-value">1px (SizedBox.height:1)</span></div>
+      <div class="prop-row"><span class="prop-label">选中态颜色</span><span class="prop-value">AppColors.accent (#6366F1)</span></div>
+      <div class="prop-row"><span class="prop-label">未选中颜色</span><span class="prop-value">AppColors.textTertiary (#94A3B8)</span></div>
+      <div class="prop-row"><span class="prop-label">选中指示条</span><span class="prop-value">w:20, h:3, radius:1.5, color: accent</span></div>
+      <div class="prop-row"><span class="prop-label">Tab 数量</span><span class="prop-value">4（搜索 / 主题 / 笔记 / Lab）</span></div>
+      <div class="prop-row"><span class="prop-label">触觉反馈</span><span class="prop-value">HapticFeedback.lightImpact()</span></div>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      Navigation Bar (搜索页 Inline 模式)
+      <span style="font-size:12px;color:var(--text-tertiary)">search_screen.dart:16-29</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">类型</span><span class="prop-value">CupertinoNavigationBar</span></div>
+      <div class="prop-row"><span class="prop-label">中间标题</span><span class="prop-value">fontSize:20 (iOS默认 largeTitle), fontWeight: w600</span></div>
+      <div class="prop-row"><span class="prop-label">左侧按钮</span><span class="prop-value">line_horizontal_3, size:22, color:textPrimary</span></div>
+      <div class="prop-row"><span class="prop-label">按钮内边距</span><span class="prop-value">EdgeInsets.zero, minimumSize: Size.zero</span></div>
+    </div>
+  </div>
+
+  <!-- Drawer Menu -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      Drawer Panel (侧边菜单)
+      <span style="font-size:12px;color:var(--text-tertiary)">search_screen.dart:78-139</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">屏幕占比</span><span class="prop-value">width: screenWidth * 0.7</span></div>
+      <div class="prop-row"><span class="prop-label">背景色</span><span class="prop-value">AppColors.surface (#FFF)</span></div>
+      <div class="prop-row"><span class="prop-label">遮罩层</span><span class="prop-value">Color(0x61000000) — 38% 黑色</span></div>
+      <div class="prop-row"><span class="prop-label">动画时长</span><span class="prop-value">进入 280ms / 退出 240ms</span></div>
+      <div class="prop-row"><span class="prop-label">曲线</span><span class="prop-value">Curves.easeOutCubic</span></div>
+      <div class="prop-row"><span class="prop-label">标题 "ThkTree"</span><span class="prop-value">20px / w600 / textPrimary / pad-h:20</span></div>
+      <div class="prop-row"><span class="prop-label">菜单项 (_MenuTile)</span><span class="prop-value">icon(size:20,textSecondary) + gap:12 + title(16px,textPrimary) + chevron(16px,textTertiary)</span></div>
+      <div class="prop-row"><span class="prop-label">菜单项内边距</span><span class="prop-value">h:20, v:14</span></div>
+      <div class="prop-row"><span class="prop-label">点击行为</span><span class="prop-value">HitTestBehavior.opaque + HapticFeedback.lightImpact</span></div>
+    </div>
+  </div>
+
+  <!-- Search Box -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      Search Box (搜索框)
+      <span style="font-size:12px;color:var(--text-tertiary)">CupertinoSearchTextField (封装)</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">组件</span><span class="prop-value">CupertinoSearchTextField (iOS 原生样式)</span></div>
+      <div class="prop-row"><span class="prop-label">外层 padding</span><span class="prop-value">all(16)</span></div>
+      <div class="prop-row"><span class="prop-label">Placeholder</span><span class="prop-value">l10n.searchHint = "搜索笔记和对话..."</span></div>
+      <div class="prop-row"><span class="prop-label">防抖</span><span class="prop-value">300ms (Timer)</span></div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      Empty State (空状态)
+      <span style="font-size:12px;color:var(--text-tertiary)">search_content.dart:357-370</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">布局</span><span class="prop-value">Column + Center + mainAxisSize.min</span></div>
+      <div class="prop-row"><span class="prop-label">图标</span><span class="prop-value">CupertinoIcons.search, size:40, color:textTertiary</span></div>
+      <div class="prop-row"><span class="prop-label">图标→文字间距</span><span class="prop-value">12px</span></div>
+      <div class="prop-row"><span class="prop-label">文案</span><span class="prop-value">l10n.searchEmpty = "在知识中寻找连接", color:textSecondary</span></div>
+    </div>
+  </div>
+
+  <!-- Backup Banner -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      Backup Reminder Banner
+      <span style="font-size:12px;color:var(--text-tertiary)">search_content.dart:434-513</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">外边距</span><span class="prop-value">fromLTRB(16, 8, 16, 0)</span></div>
+      <div class="prop-row"><span class="prop-label">内边距</span><span class="prop-value">symmetric(h:16, v:12)</span></div>
+      <div class="prop-row"><span class="prop-label">背景</span><span class="prop-value">surfaceMuted (#F1F5F9)</span></div>
+      <div class="prop-row"><span class="prop-label">圆角</span><span class="prop-value">12</span></div>
+      <div class="prop-row"><span class="prop-label">边框</span><span class="prop-value">border.all(border, 0.5pt)</span></div>
+      <div class="prop-row"><span class="prop-label">图标</span><span class="prop-value">archivebox, 18px, accent 色</span></div>
+      <div class="prop-row"><span class="prop-label">标题</span><span class="prop-value">14px / w500 / textPrimary</span></div>
+      <div class="prop-row"><span class="prop-label">按钮</span><span class="prop-value">accent 底色, 圆角8, "立即备份" 14px/w600/white</span></div>
+    </div>
+  </div>
+
+  <!-- Settings List -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      Settings List (iOS Inset Grouped)
+      <span style="font-size:12px;color:var(--text-tertiary)">ThkListSection + ThkListTile</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">容器类型</span><span class="prop-value">CupertinoListSection.insetGrouped</span></div>
+      <div class="prop-row"><span class="prop-label">分组外边距</span><span class="prop-value">fromSTEB(20, 0, 20, 20)</span></div>
+      <div class="prop-row"><span class="prop-label">Header 字号</span><span class="prop-value">13px / w400 / textSecondary</span></div>
+      <div class="prop-row"><span class="prop-label">分隔线缩进</span><span class="prop-value">56pt</span></div>
+      <div class="prop-row"><span class="prop-label">Leading 图标</span><span class="prop-value">size:22, 颜色=accent (或 themeId 色轮)</span></div>
+      <div class="prop-row"><span class="prop-label">Trailing 默认</span><span class="prop-value">CupertinoListTileChevron()</span></div>
+      <div class="prop-row"><span class="prop-label">导航模式</span><span class="prop-value">ThkLargeTitlePage = SliverNavBar + CustomScrollView</span></div>
+    </div>
+  </div>
+
+  <!-- ThkFillCardPageBody -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      ThkFillCardPageBody（卡片化列表容器）
+      <span style="font-size:12px;color:var(--text-tertiary)">thk_fill_card_page_body.dart</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">顶部间距</span><span class="prop-value">topSpacing: 12（默认）</span></div>
+      <div class="prop-row"><span class="prop-label">水平内边距</span><span class="prop-value">horizontalPadding: 0（默认）</span></div>
+      <div class="prop-row"><span class="prop-label">底部内边距</span><span class="prop-value">bottomPadding: 0（默认）</span></div>
+      <div class="prop-row"><span class="prop-label">背景</span><span class="prop-value">AppColors.surface (#FFF)</span></div>
+      <div class="prop-row"><span class="prop-label">圆角</span><span class="prop-value">borderRadius: 0（默认）</span></div>
+      <div class="prop-row"><span class="prop-label">用途</span><span class="prop-value">LLM 设置/供应商/默认模型配置页的内容容器</span></div>
+    </div>
+  </div>
+
+  <!-- LLM Settings Screen -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      LLM Settings Screen（大模型设置页）
+      <span style="font-size:12px;color:var(--text-tertiary)">llm_settings_screen.dart</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">页面背景</span><span class="prop-value">AppColors.pageBg</span></div>
+      <div class="prop-row"><span class="prop-label">导航栏</span><span class="prop-value">CupertinoNavigationBar, middle: l10n.llmSettings（"大模型"）</span></div>
+      <div class="prop-row"><span class="prop-label">列表容器</span><span class="prop-value">ThkFillCardPageBody + ListView.separated</span></div>
+      <div class="prop-row"><span class="prop-label">列表项</span><span class="prop-value">2 项：模型提供商 / 默认模型配置</span></div>
+      <div class="prop-row"><span class="prop-label">分隔线</span><span class="prop-value">h:0.5, marginStart:16, color: CupertinoColors.separator</span></div>
+      <div class="prop-row"><span class="prop-label">列表项背景</span><span class="prop-value">AppColors.surface</span></div>
+      <div class="prop-row"><span class="prop-label">跳转动画</span><span class="prop-value">CupertinoPageRoute</span></div>
+    </div>
+  </div>
+
+  <!-- LLM Providers Screen -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      LLM Providers Screen（模型供应商列表）
+      <span style="font-size:12px;color:var(--text-tertiary)">llm_providers_screen.dart</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">页面背景</span><span class="prop-value">AppColors.pageBg</span></div>
+      <div class="prop-row"><span class="prop-label">导航栏</span><span class="prop-value">CupertinoNavigationBar, middle: "模型提供商", trailing: AppIcons.add</span></div>
+      <div class="prop-row"><span class="prop-label">列表项</span><span class="prop-value">ThkListTile(title, subtitle=模型数量, trailing=删除按钮)</span></div>
+      <div class="prop-row"><span class="prop-label">副标题</span><span class="prop-value">模型数量 / "暂无提供商"（textSecondary）</span></div>
+      <div class="prop-row"><span class="prop-label">删除图标</span><span class="prop-value">AppIcons.delete, size:20, color: CupertinoColors.destructiveRed</span></div>
+      <div class="prop-row"><span class="prop-label">空态</span><span class="prop-value">AppIcons.cloud size:40 textTertiary + "noModels" textSecondary</span></div>
+      <div class="prop-row"><span class="prop-label">分隔线</span><span class="prop-value">CupertinoColors.separator, h:0.5, marginStart:16</span></div>
+      <div class="prop-row"><span class="prop-label">示例数据</span><span class="prop-value">DeepSeek(2) / KIMI(2) / Minimax(1) / MIMO(暂无) / 豆包(3)</span></div>
+    </div>
+  </div>
+
+  <!-- LLM Provider Detail -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      LLM Provider Detail（提供商详情/编辑）
+      <span style="font-size:12px;color:var(--text-tertiary)">llm_provider_detail_screen.dart</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">页面背景</span><span class="prop-value">AppColors.pageBg</span></div>
+      <div class="prop-row"><span class="prop-label">导航栏</span><span class="prop-value">ThkNavBar.inline(title=编辑/新建提供商)</span></div>
+      <div class="prop-row"><span class="prop-label">分组标题</span><span class="prop-value">ThkListSection(header=基础URL/API Key/选择模型)</span></div>
+      <div class="prop-row"><span class="prop-label">输入框</span><span class="prop-value">ThkTextField：surfaceMuted 底, border 边框, radius:8, padding:h:12 v:10</span></div>
+      <div class="prop-row"><span class="prop-label">主按钮</span><span class="prop-value">ThkButton.filled：accent 底, radius:8, "获取模型" 14px/w600/white</span></div>
+      <div class="prop-row"><span class="prop-label">模型行</span><span class="prop-value">CupertinoListTile(title, subtitle=id, additionalInfo=contextSize)</span></div>
+      <div class="prop-row"><span class="prop-label">展开行 chevron</span><span class="prop-value">CupertinoIcons.chevron_right, size:18, color: CupertinoColors.systemGrey</span></div>
+      <div class="prop-row"><span class="prop-label">Context Size 选择器</span><span class="prop-value">surfaceMuted 底, radius:8, 选项 1M/512K/256K/128K/64K/32K/16K/8K/4K</span></div>
+      <div class="prop-row"><span class="prop-label">错误卡片</span><span class="prop-value">LlmErrorCard（compact）</span></div>
+    </div>
+  </div>
+
+  <!-- ThkButton -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      ThkButton（通用按钮）
+      <span style="font-size:12px;color:var(--text-tertiary)">thk_button.dart</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">filled 默认 padding</span><span class="prop-value">h:16, v:8</span></div>
+      <div class="prop-row"><span class="prop-label">filled 背景</span><span class="prop-value">AppColors.accent</span></div>
+      <div class="prop-row"><span class="prop-label">filled 文字</span><span class="prop-value">white / w600（⚠ 硬编码 CupertinoColors.white）</span></div>
+      <div class="prop-row"><span class="prop-label">filled 圆角</span><span class="prop-value">8</span></div>
+      <div class="prop-row"><span class="prop-label">disabled 背景</span><span class="prop-value">accentDeep.withValues(alpha:0.4)</span></div>
+      <div class="prop-row"><span class="prop-label">tinted 背景</span><span class="prop-value">accentLight</span></div>
+      <div class="prop-row"><span class="prop-label">tinted 文字</span><span class="prop-value">accent</span></div>
+      <div class="prop-row"><span class="prop-label">plain</span><span class="prop-value">无边框/无背景，文字默认色</span></div>
+    </div>
+  </div>
+
+  <!-- ThkTextField -->
+  <div class="comp-card">
+    <div class="comp-card-header">
+      ThkTextField（文本输入框）
+      <span style="font-size:12px;color:var(--text-tertiary)">thk_text_field.dart</span>
+    </div>
+    <div class="comp-card-body">
+      <div class="prop-row"><span class="prop-label">背景</span><span class="prop-value">surfaceMuted（默认）</span></div>
+      <div class="prop-row"><span class="prop-label">边框</span><span class="prop-value">Border.all(color: AppColors.border)</span></div>
+      <div class="prop-row"><span class="prop-label">圆角</span><span class="prop-value">8</span></div>
+      <div class="prop-row"><span class="prop-label">内边距</span><span class="prop-value">h:12, v:10</span></div>
+      <div class="prop-row"><span class="prop-label">placeholder 颜色</span><span class="prop-value">textTertiary</span></div>
+      <div class="prop-row"><span class="prop-label">clearButtonMode</span><span class="prop-value">editing（默认）</span></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- §6 DEVIATION SUMMARY -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="emoji">⚠️</span> §6 偏差汇总 — 源码 vs 旧 token 文件 vs 文档</h2>
+
+  <table class="token-table">
+    <thead>
+      <tr><th style="width:6%">级别</th><th style="width:28%">问题</th><th>影响范围</th><th>建议</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="deviation-badge badge-deviate">中</span></td>
+        <td><strong>7 处硬编码/系统色值</strong>未走 AppColors token：barrierColor(0x61000000)、destructiveRed×2(≠destructive)、white 按钮文字、border.withAlpha(30)(tag底)、CupertinoColors.separator(大模型页面 divider)、CupertinoColors.systemGrey(chevron)</td>
+        <td>search_screen.dart, search_content.dart, llm_providers_screen.dart, llm_*</td>
+        <td>回修源码，统一走 token；separator 建议替换为 AppColors.border</td>
+      </tr>
+      <tr>
+        <td><span class="deviation-badge badge-deviate">低</span></td>
+        <td><strong>字体声明不匹配</strong>：旧文档写 Inter/JetBrains Mono，实际代码用 iOS 系统字体(SF Pro)，仅日志用 Menlo</td>
+        <td>docs/visual/* 全套文档</td>
+        <td>更新文档，标注真实字体栈</td>
+      </tr>
+      <tr>
+        <td><span class="deviation-badge badge-deviate">低</span></td>
+        <td><strong>间距散落</strong>：padding/margin 无统一 token 引用，全靠手写数字（8/12/14/16/20/24 等）</td>
+        <td>所有 widget</td>
+        <td>抽取 spacing scale token 并回写代码</td>
+      </tr>
+      <tr>
+        <td><span class="deviation-badge badge-match">✅</span></td>
+        <td><strong>Semantic Color 一致</strong>：accent/textPrimary/Secondary/Tertiary/border/surface/pageBg 的 getter 定义与源码使用完全吻合</td>
+        <td>app_colors.dart 定义层</td>
+        <td>这些 token 本身没腐化，但缺少上面 7 个遗漏/系统色</td>
+      </tr>
+      <tr>
+        <td><span class="deviation-badge badge-match">✅</span></td>
+        <td><strong>设计语言匹配截图</strong>：「典雅黑金」+ Slate 中性底座 + Indigo 交互色 与真机截图视觉一致（搜索/抽屉/设置/大模型/供应商）</td>
+        <td>全局观感</td>
+        <td>设计方向无需调整，仅需补齐细节规范</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- §7 NOTE MODULE -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="emoji">📝</span> §7 Note Module — 笔记模块全流程</h2>
+  <p style="margin-bottom: 16px; color: var(--text-secondary);">
+    覆盖流程：笔记 Tab 首页 → 选择主题（Bottom Sheet） → 编辑器 → 自动生成标题 → 保存 → 主题列表 → 主题详情树。
+  </p>
+
+  <h3 class="subsection-title">7.1 页面骨架与背景色</h3>
+  <table class="token-table">
+    <thead><tr><th>页面</th><th>Scaffold 背景</th><th>导航栏</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>NoteBrowseScreen</td><td>AppColors.surface (#FFF)</td><td>ThkNavBar.large(title: 笔记)</td><td>note_browse_screen.dart:106</td></tr>
+      <tr><td>NoteEditorScreen</td><td>AppColors.pageBg (#F8FAFC)</td><td>ThkNavBar.inline(title: 当前主题)</td><td>note_editor_screen.dart:213</td></tr>
+      <tr><td>GenerateTitleScreen</td><td>AppColors.pageBg</td><td>ThkNavBar.inline(title: 生成标题)</td><td>generate_title_screen.dart:130</td></tr>
+      <tr><td>NoteDetailScreen</td><td>AppColors.pageBg</td><td>ThkNavBar.inline(title: 笔记标题)</td><td>note_detail_screen.dart:490</td></tr>
+      <tr><td>ThemeNoteListScreen</td><td>ThkLargeTitlePage(bg: surface)</td><td>Large Title "笔记"</td><td>note_detail_screen.dart:663</td></tr>
+      <tr><td>ThemeListScreen</td><td>AppColors.surface</td><td>ThkNavBar.large(title: 主题)</td><td>theme_list_screen.dart:22</td></tr>
+      <tr><td>ThemeDetailScreen</td><td>AppColors.surface</td><td>ThkNavBar.inline(title: treeTitle)</td><td>theme_detail_screen.dart:193</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">7.2 编辑器 Typography & Spacing</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>标题输入</td><td>fontSize:28, fontWeight:w600, color:textPrimary; placeholder textTertiary</td><td>note_editor_screen.dart:256-269</td></tr>
+      <tr><td>标题装饰</td><td>BoxDecoration(color:surface, border:null)</td><td>note_editor_screen.dart:270-273</td></tr>
+      <tr><td>AI 标题按钮</td><td>icon sparkles size:22, color:accent(enabled) / textTertiary(disabled)</td><td>note_editor_screen.dart:280-289</td></tr>
+      <tr><td>正文输入</td><td>fontSize:17, height:1.6, color:textPrimary; placeholder textTertiary</td><td>note_editor_screen.dart:295-307</td></tr>
+      <tr><td>正文最小行</td><td>minLines:10, maxLines:null</td><td>note_editor_screen.dart:312-313</td></tr>
+      <tr><td>编辑器内边距</td><td>all(16)</td><td>note_editor_screen.dart:247</td></tr>
+      <tr><td>标题与正文间距</td><td>SizedBox(height:16)</td><td>note_editor_screen.dart:293</td></tr>
+      <tr><td>MarkdownToolbar</td><td>height:44, color:surfaceMuted, topBorder:0.5 border, button icon size:18 textPrimary</td><td>markdown_toolbar.dart:18-29</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">7.3 自动生成标题页</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>自定义标题输入</td><td>padding: L16 T12 R16 B8; placeholder titleHint; fontSize:17; bg:surface; radius:10</td><td>generate_title_screen.dart:230-248</td></tr>
+      <tr><td>候选标题区标题</td><td>"generatingTitle" 13px textSecondary</td><td>generate_title_screen.dart:252-264</td></tr>
+      <tr><td>候选标题项</td><td>margin-bottom:8; padding:12; radius:10; border:1; selected:bg accentLight + border accent + text accent w600; unselected:bg surface + border border + textPrimary</td><td>generate_title_screen.dart:280-306</td></tr>
+      <tr><td>确认按钮</td><td>trailing check: disabled=textTertiary, enabled=accent</td><td>generate_title_screen.dart:139-148</td></tr>
+      <tr><td>错误/无模型</td><td>icon sparkles size:40 textTertiary + textSecondary + CupertinoButton.filled</td><td>generate_title_screen.dart:158-219</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">7.4 笔记详情与主题笔记列表</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>详情页导航</td><td>trailing: branch + edit/check + ellipsis</td><td>note_detail_screen.dart:494-514</td></tr>
+      <tr><td>笔记渲染</td><td>GptMarkdown fontSize:17 height:1.6; Container bg:surface</td><td>note_detail_screen.dart:572-594</td></tr>
+      <tr><td>渲染区内边距</td><td>L16 T12 R16 B12+bottomSafe</td><td>note_detail_screen.dart:576-580</td></tr>
+      <tr><td>编辑模式</td><td>CupertinoTextField expands true, padding:16, style 17/1.6 textPrimary, bg:surface; MarkdownToolbar bottom</td><td>note_detail_screen.dart:523-549</td></tr>
+      <tr><td>主题笔记列表</td><td>ThkLargeTitlePage(title: 笔记, bg:surface); list ThkListTile + swipe delete</td><td>note_detail_screen.dart:663-829</td></tr>
+      <tr><td>列表空态</td><td>icon note size:40 textTertiary; text noNotesYet textSecondary</td><td>note_detail_screen.dart:727-749</td></tr>
+      <tr><td>Swipe delete</td><td>leftActionColor: CupertinoColors.destructiveRed</td><td>note_detail_screen.dart:799</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">7.5 主题选择器（Bottom Sheet）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>Sheet 容器</td><td>height:50% screen; bg:surface; topRadius:12</td><td>node_location_picker.dart:47-55</td></tr>
+      <tr><td>Sheet 标题</td><td>selectTheme, AppTheme.headline (17/w600)</td><td>node_location_picker.dart:276</td></tr>
+      <tr><td>新增主题按钮</td><td>Icon(AppIcons.add)</td><td>node_location_picker.dart:278-282</td></tr>
+      <tr><td>列表项</td><td>CupertinoListSection.insetGrouped + CupertinoListTile</td><td>node_location_picker.dart:572-580</td></tr>
+      <tr><td>新主题弹窗</td><td>CupertinoAlertDialog(title: newTheme, ThkTextField, cancel/create)</td><td>node_location_picker.dart:467-493</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">7.6 主题列表与主题详情</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>ThemeListScreen</td><td>bg:surface; ThkNavBar.large "主题"; trailing +</td><td>theme_list_screen.dart:22-41</td></tr>
+      <tr><td>主题列表项</td><td>ThkListTile: leading folder icon, title localized, subtitle lastMessagePreview/relativeTime, trailing star accent(size:18) or chevron</td><td>theme_list_screen.dart:92-104</td></tr>
+      <tr><td>主题列表空态</td><td>icon accountTree size:40 textTertiary; text noThemesYet textSecondary</td><td>theme_list_screen.dart:74-85</td></tr>
+      <tr><td>ThemeDetailScreen</td><td>bg:surface; inline nav; ListView.separated padding L0 T8 R0 B80</td><td>theme_detail_screen.dart:193-269</td></tr>
+      <tr><td>分隔线</td><td>height:0.5; margin:0 16; color: CupertinoColors.separator</td><td>theme_detail_screen.dart:251-254</td></tr>
+      <tr><td>TreeRow</td><td>height:56; padding-left: depth*28; circle 12 with palette; title body textPrimary; subtitle caption1 palette.subtitle</td><td>theme_detail_screen.dart:376-438</td></tr>
+      <tr><td>Swipe delete</td><td>leftActionColor: CupertinoColors.destructiveRed</td><td>theme_detail_screen.dart:502</td></tr>
+      <tr><td>Drag handle</td><td>Icon(CupertinoIcons.line_horizontal_3) size:24 color textTertiary</td><td>theme_detail_screen.dart:635-654</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">7.7 笔记模块新增硬编码/系统色</h3>
+  <table class="token-table">
+    <thead><tr><th>色值</th><th>出现位置</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemRed</td><td>note_select_screen 错误提示、note_detail 错误提示、theme_note_list 错误提示</td><td>统一为 AppColors.destructive</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.destructiveRed</td><td>theme_note_list swipe delete, theme_detail swipe delete</td><td>统一为 AppColors.destructive</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemIndigo</td><td>note_detail 更多菜单「移动」图标</td><td>统一为 accent</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemGreen</td><td>note_detail 复制成功状态</td><td>可用 success token（已定义）</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.separator</td><td>theme_detail 列表分隔线</td><td>统一为 AppColors.border</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemBlue</td><td>theme_detail drag hover 背景/指示线</td><td>可用 accent 或新增 drag token</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoButton.filled</td><td>generate_title 无模型/重试按钮（使用系统填充色）</td><td>统一为 ThkButton.filled（accent）</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoAlertDialog 默认 action</td><td>多处弹窗（新建主题、重命名、删除确认）使用系统蓝色</td><td>若要完全统一，需自定义弹窗主题</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="section">
+  <h2 class="section-title"><span class="emoji">💬</span> §8 Theme Chat Module — 主题聊天全流程</h2>
+  <p style="margin-bottom: 16px; color: var(--text-secondary);">
+    覆盖流程：主题列表（带 back + 树图标 + ⋯ + 新建会话）→ 新建会话 dialog → 4 种 chat 屏态（空 / 文本回答 / 图片已选 / 多模态回答） → 更多 sheet（4 项） → 我的提问 / 整棵树 / 原始 Markdown / 分支 sheet。
+    数据来源：<code>chat_screen.dart</code>、<code>chat_composer.dart</code>、<code>message_bubble.dart</code>、<code>chat_markdown_sheet.dart</code>、<code>chat_outline_sheet.dart</code>、<code>model_selector_panel.dart</code>、<code>user_questions.dart</code>、<code>theme_list_screen.dart</code> 等 8 个 widget 源码。
+  </p>
+
+  <h3 class="subsection-title">8.1 页面骨架与背景色</h3>
+  <table class="token-table">
+    <thead><tr><th>页面 / 弹层</th><th>Scaffold 背景</th><th>导航栏</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>ChatScreen（主屏）</td><td>AppColors.pageBg (#F8FAFC)</td><td>双行 inline：back + "AI. agent" 17px/w600 + ⋯；副行模型行 12px accent</td><td>chat_screen.dart:337</td></tr>
+      <tr><td>ThemeListScreen</td><td>AppColors.surface (#FFF)</td><td>inline：back + "未分类 · 树" + 树图标 + ⋯ + +</td><td>theme_list_screen.dart:22</td></tr>
+      <tr><td>ModelSelectorPanel</td><td>CupertinoTheme.scaffoldBackgroundColor</td><td>inline 标题 + 搜索 + 4 分组</td><td>model_selector_panel.dart:78</td></tr>
+      <tr><td>ChatMarkdownSheet</td><td>CupertinoTheme.scaffoldBackgroundColor</td><td>工具栏：关闭 / 标题 / 复制</td><td>chat_markdown_sheet.dart:105</td></tr>
+      <tr><td>ChatOutlineSheet</td><td>CupertinoTheme.scaffoldBackgroundColor</td><td>工具栏：关闭 / 标题 / 复制</td><td>chat_outline_sheet.dart:54</td></tr>
+      <tr><td>UserQuestionsScreen</td><td>（继承页面背景）</td><td>inline：back + "我问过的问题" 17px/w600</td><td>user_questions.dart:178</td></tr>
+      <tr><td>新建会话 dialog</td><td>半透明遮罩 Color(0x80000000) + CupertinoAlertDialog(surface)</td><td>title "新建会话" 17px/w600 居中 + ThkTextField</td><td>chat_screen.dart:1175</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.2 Chat 导航栏（双行 inline）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>外层 padding</td><td>horizontal: 8, vertical: 8 (顶部 4, 底部 8)</td><td>chat_screen.dart:336-355</td></tr>
+      <tr><td>第一行（trailing 区）</td><td>主轴对齐: space-between; leading = back (size: 22); center = "AI. agent" 17px/w600; trailing = ⋯ (size: 22, accent)</td><td>chat_screen.dart:341-354</td></tr>
+      <tr><td>第二行（副标题）</td><td>padding-vertical: 2; 居中; 文字: "modelName · providerName" 12px textSecondary; trailing chevron 12px</td><td>chat_screen.dart:357-369</td></tr>
+      <tr><td>back icon</td><td>size: 22, color: textSecondary; chevron path</td><td>chat_screen.dart:344</td></tr>
+      <tr><td>more 按钮（disabled）</td><td>icon AppIcons.more size: 22, color: textTertiary</td><td>chat_screen.dart:402</td></tr>
+      <tr><td>more 按钮（active）</td><td>icon AppIcons.more size: 22, color: accent</td><td>chat_screen.dart:403</td></tr>
+      <tr><td>副行模型行可点击态</td><td>GestureDetector onTap = openModelPicker; chevron 2pt margin-left</td><td>chat_screen.dart:358-368</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.3 消息气泡（user / assistant）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>user 气泡背景</td><td>AppColors.accentLight (#EEF2FF)</td><td>message_bubble.dart:481</td></tr>
+      <tr><td>assistant 气泡背景</td><td>AppColors.surface (#FFF) + 0.5px border AppColors.border</td><td>message_bubble.dart:482</td></tr>
+      <tr><td>气泡正文</td><td>fontSize: 17, color: AppColors.textPrimary, line-height: 1.4（隐含）</td><td>message_bubble.dart:495-496</td></tr>
+      <tr><td>气泡圆角</td><td>BorderRadius.circular(12)</td><td>message_bubble.dart:526</td></tr>
+      <tr><td>气泡内 padding</td><td>EdgeInsets.all(12)</td><td>message_bubble.dart:529</td></tr>
+      <tr><td>气泡外边距</td><td>EdgeInsets.only(bottom: 8)</td><td>message_bubble.dart:504</td></tr>
+      <tr><td>气泡最大宽度</td><td>520pt（普通）/ MediaQuery.width - 32（表格）</td><td>message_bubble.dart:491-492</td></tr>
+      <tr><td>气泡标题行（"用户 / 助手 · 模型 · 状态"）</td><td>fontSize: 12, fontWeight: w500, color: textSecondary; 标题-正文间距 6pt</td><td>message_bubble.dart:539-547</td></tr>
+      <tr><td>时间戳</td><td>fontSize: 12, color: textTertiary; 时间戳-气泡间距 6pt; 居中</td><td>message_bubble.dart:514-515</td></tr>
+      <tr><td>消息内图片缩略图</td><td>BorderRadius.circular(8); 200pt × 200pt; objectFit: cover</td><td>message_bubble.dart:1110-1114</td></tr>
+      <tr><td>表格 cell padding</td><td>EdgeInsets.symmetric(horizontal: 8, vertical: 6)</td><td>message_bubble.dart:1006</td></tr>
+      <tr><td>表头行</td><td>bg: surfaceMuted; fontWeight: w600; 1px border</td><td>message_bubble.dart:1002-1010</td></tr>
+      <tr><td>代码块</td><td>bg: surface, padding: all(12), radius: 8, fontSize: 14, fontFamily: monospace</td><td>message_bubble.dart:897-907</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.4 思考过程 Chip（assistant 内嵌）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>容器</td><td>bg: AppColors.surfaceMuted (#F1F5F9); radius: 10; padding: all(10); 气泡内边距外</td><td>message_bubble.dart:733-737</td></tr>
+      <tr><td>标题行（"思考过程" / "收起思考过程"）</td><td>fontSize: 13, fontWeight: w600; 标题-正文间距 8pt; 两端对齐（标题左 + 按钮右）</td><td>message_bubble.dart:748-770</td></tr>
+      <tr><td>展开/收起按钮文字</td><td>color: AppColors.accent (#6366F1); fontSize: 13, fontWeight: w600</td><td>message_bubble.dart:761-763</td></tr>
+      <tr><td>展开后正文</td><td>fontSize: 15, color: textSecondary; line-height: 1.4</td><td>message_bubble.dart:776-777</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.5 消息操作行（气泡底部 icon 组）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>icon size</td><td>统一 18pt</td><td>message_bubble.dart:620, 642, 652, 678</td></tr>
+      <tr><td>icon 间距</td><td>12pt（操作按钮之间水平）</td><td>message_bubble.dart:626, 632, 647, 660</td></tr>
+      <tr><td>icon-操作行 间距</td><td>6pt（正文-操作行）</td><td>message_bubble.dart:610</td></tr>
+      <tr><td>copy 按钮（idle）</td><td>icon: AppIcons.copy size: 18, color: textSecondary</td><td>message_bubble.dart:622</td></tr>
+      <tr><td>copy 按钮（copied）</td><td>icon: CupertinoIcons.check_mark size: 18, color: CupertinoColors.systemGreen（持续 2s）</td><td>message_bubble.dart:622, 353</td></tr>
+      <tr><td>share 按钮</td><td>icon: AppIcons.share size: 18, color: textSecondary</td><td>message_bubble.dart:643</td></tr>
+      <tr><td>save-as-note 按钮</td><td>icon: AppIcons.note size: 18, color: textSecondary</td><td>message_bubble.dart:655</td></tr>
+      <tr><td>retry 按钮</td><td>padding: 12/6; radius: 隐含；bg: CupertinoColors.systemRed; text: CupertinoColors.white 14px</td><td>message_bubble.dart:663-668</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.6 Chat 输入区（Composer）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>composer 外边距</td><td>EdgeInsets.fromLTRB(12, 4, 12, 4)</td><td>chat_composer.dart:102</td></tr>
+      <tr><td>输入框（TextField）</td><td>bg: AppColors.surface；radius: 20；padding: 16/10；minLines:1, maxLines:6；fontSize: 16（隐含 CupertinoTextField 默认）</td><td>chat_composer.dart:155-160</td></tr>
+      <tr><td>输入框-发送按钮 间距</td><td>4pt</td><td>chat_composer.dart:173</td></tr>
+      <tr><td>发送按钮容器</td><td>bg: AppColors.surface; radius: 12; padding: 8</td><td>chat_composer.dart:176-181</td></tr>
+      <tr><td>发送/stop icon size</td><td>20pt</td><td>chat_composer.dart:188-189</td></tr>
+      <tr><td>icon enabled 颜色</td><td>AppColors.accent</td><td>chat_composer.dart:191</td></tr>
+      <tr><td>icon disabled 颜色</td><td>AppColors.textTertiary</td><td>chat_composer.dart:192</td></tr>
+      <tr><td>输入行-三件套 间距</td><td>4pt</td><td>chat_composer.dart:203</td></tr>
+      <tr><td>三件套容器（联网/思考/图片）</td><td>bg: AppColors.surface; radius: 14; padding: horizontal 4</td><td>chat_composer.dart:206-209</td></tr>
+      <tr><td>三件套分隔线</td><td>width: 1, height: 20, color: AppColors.border</td><td>chat_composer.dart:309-311</td></tr>
+      <tr><td>单件 padding</td><td>EdgeInsets.symmetric(horizontal: 12, vertical: 10)</td><td>chat_composer.dart:336</td></tr>
+      <tr><td>单件 icon size</td><td>14pt（联网 / 思考 / 图片）</td><td>chat_composer.dart:343, 383, 520</td></tr>
+      <tr><td>单件 文字</td><td>fontSize: 12; icon-文字间距 4pt</td><td>chat_composer.dart:346, 351, 432</td></tr>
+      <tr><td>enabled 文字/icon</td><td>AppColors.accent</td><td>chat_composer.dart:332, 414</td></tr>
+      <tr><td>disabled 文字/icon</td><td>AppColors.textTertiary</td><td>chat_composer.dart:332, 414</td></tr>
+      <tr><td>unsupported 弱化色</td><td>AppColors.textTertiary.withValues(alpha: 0.5)</td><td>chat_composer.dart:333, 373, 510</td></tr>
+      <tr><td>始终思考（只读）</td><td>同 unsupported 弱化色；"始终思考"文案</td><td>chat_composer.dart:373</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.7 图片已选预览条（Composer 上方）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>预览条容器</td><td>height: 80; bg: AppColors.surface; radius: 12; 与输入框间距 4pt</td><td>chat_composer.dart:453-456</td></tr>
+      <tr><td>缩略图</td><td>80pt × 80pt; radius: 12; 与文字间距 8pt</td><td>chat_composer.dart:461-469</td></tr>
+      <tr><td>文字"图片已选择"</td><td>fontSize: 14, color: textSecondary</td><td>chat_composer.dart:474-475</td></tr>
+      <tr><td>关闭 icon</td><td>AppIcons.close size: 20, color: textTertiary</td><td>chat_composer.dart:484-485</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.8 Chat 列表底部"回到底部"浮按钮</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>位置</td><td>right: 16, bottom: 110</td><td>chat_screen.dart:592-593</td></tr>
+      <tr><td>尺寸</td><td>36pt × 36pt</td><td>chat_screen.dart:597-598</td></tr>
+      <tr><td>背景</td><td>AppColors.surface</td><td>chat_screen.dart:600</td></tr>
+      <tr><td>阴影</td><td>blur 8, offset (0,2), color: CupertinoColors.black.withValues(alpha: 0.12)</td><td>chat_screen.dart:604-606</td></tr>
+      <tr><td>icon</td><td>AppIcons.chevronDown size: 20, color: textSecondary</td><td>chat_screen.dart:613</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.9 「更多」Sheet（4 项入口）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>遮罩</td><td>Color(0x80000000) 半透明黑</td><td>chat_screen.dart:1175</td></tr>
+      <tr><td>底板</td><td>bg: AppColors.surface；topRadius: 16</td><td>chat_screen.dart:1185-1186</td></tr>
+      <tr><td>内边距</td><td>EdgeInsets.fromLTRB(16, 12, 16, 12)</td><td>chat_screen.dart:1192</td></tr>
+      <tr><td>底部安全间距</td><td>bottomInset > 0 ? 8 : 4</td><td>chat_screen.dart:1166</td></tr>
+      <tr><td>item 圆形 icon 容器</td><td>44pt × 44pt；icon size: 22pt；icon-文字间距 6pt</td><td>chat_screen.dart:1273-1285</td></tr>
+      <tr><td>item label</td><td>fontSize: 11, line-height: 1.15, color: textPrimary</td><td>chat_screen.dart:1290-1292</td></tr>
+      <tr><td>布局</td><td>grid 4 列；item 宽 clamp(80,84)；列间距 12pt；Wrap spacing/runSpacing 12/8</td><td>chat_screen.dart:1225-1231</td></tr>
+      <tr><td>提交树结构</td><td>icon: CupertinoIcons.tree size: 22, color: CupertinoColors.systemGreen</td><td>chat_screen.dart:780</td></tr>
+      <tr><td>创建分支</td><td>icon: AppIcons.branch size: 22, color: AppColors.accent</td><td>chat_screen.dart:786</td></tr>
+      <tr><td>原始 Markdown</td><td>icon: AppIcons.markdown size: 22, color: CupertinoColors.systemTeal</td><td>chat_screen.dart:792</td></tr>
+      <tr><td>查看整棵树</td><td>icon: AppIcons.tree size: 22, color: CupertinoColors.systemIndigo</td><td>chat_screen.dart:800</td></tr>
+      <tr><td>我问过的问题</td><td>icon: AppIcons.question size: 22, color: CupertinoColors.systemOrange</td><td>chat_screen.dart:816</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.10 「原始 Markdown」Sheet（80% 高）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>Sheet 高度</td><td>MediaQuery.size.height * 0.8（80%）</td><td>chat_markdown_sheet.dart:103</td></tr>
+      <tr><td>背景</td><td>CupertinoTheme.scaffoldBackgroundColor</td><td>chat_markdown_sheet.dart:105</td></tr>
+      <tr><td>顶角圆角</td><td>Radius.circular(12)</td><td>chat_markdown_sheet.dart:107</td></tr>
+      <tr><td>拖拽条</td><td>36pt × 5pt; radius 2.5; color: textTertiary.withValues(alpha: 0.3); padding (top:8, bottom:4)</td><td>chat_markdown_sheet.dart:113-119</td></tr>
+      <tr><td>工具栏</td><td>padding: 8/4；左"关闭" / 中"原始 Markdown" 17px/w600 / 右"复制"</td><td>chat_markdown_sheet.dart:124, 138-139</td></tr>
+      <tr><td>左"关闭"/右"复制" 按钮颜色</td><td>AppColors.accent (idle) / CupertinoColors.systemGreen (copied, 2s)</td><td>chat_markdown_sheet.dart:151-152</td></tr>
+      <tr><td>body 容器</td><td>bg: surface; padding: 12/8; scroll padding-bottom: 48</td><td>chat_markdown_sheet.dart:186-191</td></tr>
+      <tr><td>body 文字</td><td>fontSize: 12, fontFamily: 'monospace', line-height: 1.4, color: textPrimary, whiteSpace: pre-wrap</td><td>chat_markdown_sheet.dart:195-198</td></tr>
+      <tr><td>空内容文字</td><td>color: textTertiary, fontSize: 16</td><td>chat_markdown_sheet.dart:178</td></tr>
+      <tr><td>浮动按钮（顶部）</td><td>right:12, bottom: 32 (近底) / 76 (远底); size 32pt×32pt; icon 16pt</td><td>chat_markdown_sheet.dart:207-217, 244-258</td></tr>
+      <tr><td>浮动按钮阴影</td><td>blur 6, offset (0,2), color: CupertinoColors.black.withValues(alpha: 0.12)</td><td>chat_markdown_sheet.dart:251-253</td></tr>
+      <tr><td>滚动动画</td><td>Duration(milliseconds: 250), Curves.easeOut</td><td>chat_markdown_sheet.dart:66, 75</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.11 「整棵树」Sheet（70% 高）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>Sheet 高度</td><td>MediaQuery.size.height * 0.7（70%）</td><td>chat_outline_sheet.dart:52</td></tr>
+      <tr><td>背景 / 顶角圆角 / 拖拽条</td><td>同 8.10（沿用 sheet 模板）</td><td>chat_outline_sheet.dart:54-67</td></tr>
+      <tr><td>列表 padding</td><td>EdgeInsets.symmetric(vertical: 8)</td><td>chat_outline_sheet.dart:84</td></tr>
+      <tr><td>列表项 padding</td><td>EdgeInsets.symmetric(horizontal: 16, vertical: 12)</td><td>chat_outline_sheet.dart:97-100</td></tr>
+      <tr><td>列表项分隔线</td><td>color: AppColors.border.withValues(alpha: 0.3)</td><td>chat_outline_sheet.dart:104</td></tr>
+      <tr><td>编号 #N</td><td>fontSize: 14, fontWeight: w600, color: accent；编号-内容间距 12pt</td><td>chat_outline_sheet.dart:115-120</td></tr>
+      <tr><td>预览文字</td><td>fontSize: 15, color: textPrimary, maxLines: 2</td><td>chat_outline_sheet.dart:131-132</td></tr>
+      <tr><td>时间戳</td><td>fontSize: 12, color: textTertiary；预览-时间戳间距 4pt</td><td>chat_outline_sheet.dart:139-140</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.12 「选择模型」Panel（45% 高，4 分组）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>Panel maxHeight</td><td>MediaQuery.size.height * 0.45（45%）</td><td>model_selector_panel.dart:74</td></tr>
+      <tr><td>背景 / 顶边线</td><td>CupertinoTheme.scaffoldBackgroundColor / 0.5px AppColors.border</td><td>model_selector_panel.dart:78, 81</td></tr>
+      <tr><td>标题</td><td>CupertinoTheme.textTheme.navTitleTextStyle；padding: L16 T12 R16 B8</td><td>model_selector_panel.dart:90, 93</td></tr>
+      <tr><td>搜索栏</td><td>padding: L12 T0 R12 B8；搜索栏下分隔 height: 0.5 AppColors.border</td><td>model_selector_panel.dart:98, 107-108</td></tr>
+      <tr><td>空状态</td><td>padding: 32/24；textSecondary</td><td>model_selector_panel.dart:114, 119</td></tr>
+      <tr><td>列表 bottom padding</td><td>16pt</td><td>model_selector_panel.dart:124</td></tr>
+      <tr><td>分组标题</td><td>fontSize: 13, fontWeight: w600, color: textSecondary；padding: L16 T12 R16 B4</td><td>model_selector_panel.dart:191, 196-197</td></tr>
+      <tr><td>model item 选中态</td><td>bg: AppColors.accentLight；text: accent w600；icon: AppIcons.check size: 18, color: accent</td><td>model_selector_panel.dart:250-261, 269-272</td></tr>
+      <tr><td>model item 未选中态</td><td>bg: CupertinoColors.transparent；text: textPrimary normal；无 icon</td><td>model_selector_panel.dart:251, 270</td></tr>
+      <tr><td>model item padding</td><td>EdgeInsets.fromLTRB(32, 10, 16, 10)；checkmark padding right:8</td><td>model_selector_panel.dart:252, 257-258</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.13 「我问过的问题」屏</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>列表缩略图</td><td>48pt × 48pt; radius: 8; padding: L16 R12</td><td>user_questions.dart:137, 149-155</td></tr>
+      <tr><td>列表项 padding</td><td>EdgeInsets.symmetric(horizontal: hasImage ? 0 : 16, vertical: 12)</td><td>user_questions.dart:163-166</td></tr>
+      <tr><td>列表项内容高度</td><td>48pt</td><td>user_questions.dart:169</td></tr>
+      <tr><td>列表项文字</td><td>fontSize: 16, color: textPrimary, maxLines: 1</td><td>user_questions.dart:174-178</td></tr>
+      <tr><td>右 chevron</td><td>AppIcons.chevron size: 18, color: textTertiary; padding: right 12</td><td>user_questions.dart:186-190</td></tr>
+      <tr><td>Divider height</td><td>1</td><td>user_questions.dart:238</td></tr>
+      <tr><td>ListView padding</td><td>EdgeInsets.symmetric(vertical: 8)</td><td>user_questions.dart:236</td></tr>
+      <tr><td>空状态文字</td><td>fontSize: 16, color: textTertiary</td><td>user_questions.dart:229-230</td></tr>
+      <tr><td>全屏图片预览 nav</td><td>bg: CupertinoColors.black；title: white 17px/w600；back icon: white 22</td><td>user_questions.dart:81-92</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.14 主题列表屏（chat 入口改造）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>页面背景</td><td>AppColors.surface (#FFF)</td><td>theme_list_screen.dart:23</td></tr>
+      <tr><td>导航栏</td><td>inline；leading back(size: 22 accent)；center "未分类 · 树" 16px/w600 + tertiary</td><td>prototype 改造</td></tr>
+      <tr><td>trailing 区</td><td>树视图图标（24 accent）+ ⋯（accent）+ +（accent, size: 22）</td><td>prototype 改造</td></tr>
+      <tr><td>列表项圆点</td><td>width: 10, height: 10, radius 50%, border: 1.5px；色板：#B8A07A / #6B8E5A / textTertiary</td><td>prototype 改造</td></tr>
+      <tr><td>缩进表示层级</td><td>depth: 0 不缩进；depth: 1+ 缩进 18pt</td><td>prototype 改造</td></tr>
+      <tr><td>列表项标题</td><td>fontSize: 17, color: textPrimary</td><td>ThkListTile 外部</td></tr>
+      <tr><td>副标题"用户补充"</td><td>fontSize: 14, color: textSecondary</td><td>ThkListTile 外部</td></tr>
+      <tr><td>列表项分隔线</td><td>color: AppColors.border, indent: 56</td><td>theme_list_screen.dart:108-109</td></tr>
+      <tr><td>列表空态</td><td>icon: accountTree size: 40, color: textTertiary；text: textSecondary</td><td>theme_list_screen.dart:80-82</td></tr>
+      <tr><td>pinned star</td><td>icon: star size: 18, color: accent</td><td>theme_list_screen.dart:99</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.15 Context 用量条（chat 屏底部）</h3>
+  <table class="token-table">
+    <thead><tr><th>元素</th><th>样式</th><th>源码</th></tr></thead>
+    <tbody>
+      <tr><td>高度</td><td>1pt（极细进度条）</td><td>chat_screen.dart:1321</td></tr>
+      <tr><td>底色</td><td>AppColors.border.withValues(alpha: 0.15)</td><td>chat_screen.dart:1322</td></tr>
+      <tr><td>进度色（&gt; 85%）</td><td>CupertinoColors.systemRed</td><td>chat_screen.dart:1315</td></tr>
+      <tr><td>进度色（0.6 - 0.85）</td><td>AppColors.accent</td><td>chat_screen.dart:1317</td></tr>
+      <tr><td>进度色（&le; 0.6）</td><td>AppColors.accent</td><td>chat_screen.dart:1318</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.16 Chat 模块新增硬编码 / 系统色</h3>
+  <table class="token-table">
+    <thead><tr><th>色值 / 值</th><th>出现位置</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemGreen</td><td>chat_screen.dart:780「提交树结构」、message_bubble.dart:622「复制成功」、chat_markdown_sheet.dart:151「复制成功」</td><td>统一为 AppColors.success（已定义 #34C759 = systemGreen）</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemRed</td><td>chat_screen.dart:1315「context &gt; 85%」、message_bubble.dart:664「retry 按钮」</td><td>统一为 AppColors.destructive</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemTeal</td><td>chat_screen.dart:792「原始 Markdown」icon</td><td>新增 <code>AppColors.markdown</code> 静态色或统一为 accent</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemIndigo</td><td>chat_screen.dart:800「查看整棵树」icon</td><td>统一为 accent（实际视觉差异不大）</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemOrange</td><td>chat_screen.dart:816「我问过的问题」icon</td><td>统一为 accent 或新增 <code>AppColors.question</code></td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.systemBlue</td><td>message_bubble.dart:1088「TTS 播放中」</td><td>统一为 accent</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.black / white</td><td>message_bubble.dart:1131-1143「图片全屏预览 nav」、user_questions.dart:81-92「全屏图片预览 nav」</td><td>保留为系统黑白（全屏预览为深色场景）</td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.transparent</td><td>model_selector_panel.dart:251「未选中 item 背景」</td><td>明确语义化为 <code>AppColors.transparent</code> 常量或直接 <code>Color(0x00000000)</code></td></tr>
+      <tr style="background: #FFFBEB;"><td>CupertinoColors.black.withValues(alpha: 0.12)</td><td>chat_screen.dart:604、chat_markdown_sheet.dart:251「浮按钮阴影」</td><td>新增 <code>AppColors.elevationShadow</code> 或 <code>AppShadows.floating</code> token</td></tr>
+      <tr style="background: #FFFBEB;"><td>Color(0x80000000)</td><td>chat_screen.dart:1175「更多 sheet 遮罩」</td><td>新增 <code>AppColors.scrim</code>（半透明黑遮罩 50%）</td></tr>
+      <tr style="background: #FFFBEB;"><td>AppColors.border.withValues(alpha: 0.15) / 0.3</td><td>chat_screen.dart:1322「context 底色」、chat_outline_sheet.dart:104「分隔线」</td><td>统一为带 alpha 的 <code>AppColors.borderSubtle</code> token</td></tr>
+      <tr style="background: #FFFBEB;"><td>AppColors.textTertiary.withValues(alpha: 0.3 / 0.5)</td><td>chat_markdown_sheet.dart:118「拖拽条」、chat_composer.dart:333, 373, 510「unsupported chip」</td><td>新增 <code>AppColors.disabled</code>（0.5 alpha）和 <code>AppColors.subtle</code>（0.3 alpha）</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.17 Chat 模块新建议 Token（待新增）</h3>
+  <table class="token-table">
+    <thead><tr><th>建议名</th><th>值</th><th>用途</th><th>替代</th></tr></thead>
+    <tbody>
+      <tr><td>AppColors.scrim</td><td>Color(0x80000000)</td><td>Sheet / Dialog 遮罩</td><td>硬编码 0x80000000</td></tr>
+      <tr><td>AppColors.elevationShadow</td><td>CupertinoColors.black.withValues(alpha: 0.12)</td><td>浮按钮阴影</td><td>重复硬编码</td></tr>
+      <tr><td>AppColors.transparent</td><td>Color(0x00000000)</td><td>显式透明</td><td>CupertinoColors.transparent</td></tr>
+      <tr><td>AppColors.markdown</td><td>CupertinoColors.systemTeal</td><td>「原始 Markdown」icon 专属</td><td>系统色</td></tr>
+      <tr><td>AppColors.question</td><td>CupertinoColors.systemOrange</td><td>「我问过的问题」icon 专属</td><td>系统色</td></tr>
+      <tr><td>AppColors.bubbleUser = accentLight（已存在）</td><td>—</td><td>user 气泡背景</td><td>—</td></tr>
+      <tr><td>AppColors.bubbleAssistant = surface + border（已存在）</td><td>—</td><td>assistant 气泡背景 + 0.5px 边框</td><td>—</td></tr>
+      <tr><td>AppColors.thinkingBg = surfaceMuted（已存在）</td><td>—</td><td>思考过程 chip 背景</td><td>—</td></tr>
+      <tr><td>AppSp.chatBubbleRadius</td><td>12pt</td><td>气泡圆角</td><td>硬编码 12</td></tr>
+      <tr><td>AppSp.chatComposerPad</td><td>L12 T4 R12 B4</td><td>composer 外边距</td><td>硬编码 fromLTRB</td></tr>
+      <tr><td>AppSp.imagePreviewHeight</td><td>80pt</td><td>图片预览条高度</td><td>硬编码 80</td></tr>
+      <tr><td>AppSp.imagePreviewThumb</td><td>80pt × 80pt</td><td>图片预览缩略图</td><td>硬编码</td></tr>
+      <tr><td>AppSp.messageMaxWidth</td><td>520pt</td><td>普通气泡最大宽度</td><td>硬编码 520</td></tr>
+      <tr><td>AppSp.messageThumbSize</td><td>200pt × 200pt</td><td>消息内图片缩略图</td><td>硬编码 200</td></tr>
+      <tr><td>AppSp.sheetTopRadius</td><td>12pt</td><td>所有 bottom sheet 顶角</td><td>硬编码 12</td></tr>
+      <tr><td>AppSp.sheetHeightSm</td><td>0.45 (45%)</td><td>选择模型 panel</td><td>硬编码 0.45</td></tr>
+      <tr><td>AppSp.sheetHeightMd</td><td>0.7 (70%)</td><td>整棵树 sheet</td><td>硬编码 0.7</td></tr>
+      <tr><td>AppSp.sheetHeightLg</td><td>0.8 (80%)</td><td>原始 Markdown sheet</td><td>硬编码 0.8</td></tr>
+      <tr><td>AppDur.copyFeedback</td><td>Duration(seconds: 2)</td><td>复制成功状态持续</td><td>硬编码 2s</td></tr>
+      <tr><td>AppDur.sheetScroll</td><td>Duration(milliseconds: 250), Curves.easeOut</td><td>sheet 内滚动动画</td><td>硬编码</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">8.18 Chat 模块开发落地规范（Do / Don't）</h3>
+  <div class="alert alert-info" style="margin-top: 8px;">
+    <span class="alert-icon">✅</span>
+    <div class="alert-body">
+      <strong>DO</strong>
+      <ul style="margin-top: 6px; padding-left: 20px;">
+        <li>气泡圆角 / 内 padding / 字号统一用 <code>AppSp.chatBubbleRadius=12</code> / <code>all(12)</code> / <code>fontSize: 17</code></li>
+        <li>user 气泡 = <code>AppColors.accentLight</code>；assistant 气泡 = <code>AppColors.surface</code> + 0.5px <code>AppColors.border</code></li>
+        <li>思考过程 chip 背景 = <code>AppColors.surfaceMuted</code>，radius = 10</li>
+        <li>浮按钮阴影 = <code>AppColors.elevationShadow</code>（待新增）；位置 right: 16, bottom: 110</li>
+        <li>Sheet 顶角圆角统一 = 12pt；高度按 8.10 / 8.11 / 8.12 三档（80% / 70% / 45%）</li>
+        <li>Sheet 背景用 <code>CupertinoTheme.of(context).scaffoldBackgroundColor</code>，不直接写死 surface</li>
+        <li>Sheet 遮罩用 <code>AppColors.scrim</code>（0x80000000，待新增）</li>
+        <li>复制按钮 copied 态 = <code>AppColors.success</code>（已存在 #34C759 = systemGreen），持续 2s</li>
+        <li>retry 按钮 bg = <code>AppColors.destructive</code>（已存在 #DC2626 = systemRed）</li>
+        <li>输入框 minLines:1 maxLines:6，padding 16/10，radius 20</li>
+        <li>三件套（联网/思考/图片）整体 bg: surface，radius: 14；分隔线 1×20 border</li>
+        <li>图片预览条 = 80pt 高，radius 12，与输入框间距 4pt</li>
+        <li>「更多」sheet 4 项入口 icon 颜色按语义分配：tree 提交=success（绿）、branch=accent（紫）、markdown=markdown teal、整棵树=accent、问题=question orange</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alert alert-critical" style="margin-top: 8px;">
+    <span class="alert-icon">🚫</span>
+    <div class="alert-body">
+      <strong>DON'T</strong>
+      <ul style="margin-top: 6px; padding-left: 20px;">
+        <li>禁止直接 <code>Color(0xFFxxxxxx)</code> 硬编码；走 <code>AppColors</code> token</li>
+        <li>禁止用 <code>CupertinoColors.systemGreen/Red/Blue/Indigo/Teal/Orange</code>，统一为 <code>AppColors.success/destructive/accent/...</code>（新增 markdown/question 静态色）</li>
+        <li>禁止自己拼 <code>CupertinoColors.black.withValues(alpha: 0.12)</code>，用 <code>AppColors.elevationShadow</code>（新增）</li>
+        <li>禁止写 <code>Color(0x80000000)</code> 遮罩，用 <code>AppColors.scrim</code>（新增）</li>
+        <li>禁止气泡写 <code>Color(0xFFEEF2FF)</code>，用 <code>AppColors.accentLight</code></li>
+        <li>禁止 bubble / sheet / image-preview / chat-composer 重复声明圆角、字号、间距，全部走 §8.17 建议 token</li>
+        <li>禁止 <code>Duration(milliseconds: 250)</code> / <code>Duration(seconds: 2)</code> 硬编码，用 <code>AppDur</code> token</li>
+        <li>禁止 sheet 高度 <code>MediaQuery.size.height * X.X</code> 内联写，用 <code>AppSp.sheetHeight*</code> 比例常量</li>
+        <li>禁止 user 气泡用 <code>alignment: end</code>，user / assistant 气泡均 <code>margin-right: auto</code>（左对齐，统一视觉节奏）</li>
+        <li>禁止思考过程 chip 写 <code>Color(0xFFF1F5F9)</code>，用 <code>AppColors.surfaceMuted</code></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════ -->
+<footer style="margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-tertiary); font-size: 13px;">
+  <p><strong>ThkTree Design Spec v0.4</strong> — C 方案 Phase 3：主题 Chat 模块扩展</p>
+  <p style="margin-top: 4px;">已覆盖流程：搜索 → 抽屉 → 设置 → 大模型 → 模型供应商 → 笔记模块（浏览/编辑/生成标题/详情） → 主题列表/主题详情 → 主题 chat（4 屏态 + 5 个 dialog/sheet + 我的提问/整棵树/Markdown/分支） | 数据来源：8 个 widget 源码 + prototype 像素级对照 | 生成时间：2026-07-08</p>
+  <p style="margin-top: 4px;">下一步：① 把 §8.16 偏差按修复难度分级落地回 AppColors / 新增 AppSp / AppDur；② 切换到支持 vision 的模型 / 用户提供文字描述 → 真机截帧逐像素对比 chat 屏</p>
+</footer>
+
+</div><!-- /.spec-container -->
+
+</body>
+</html>

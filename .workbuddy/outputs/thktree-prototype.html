@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ThkTree Prototype — 搜索 / 抽屉 / 设置 / 大模型 / 供应商</title>
+<style>
+  :root {
+    --page-bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface-muted: #F1F5F9;
+    --text: #1E293B;
+    --text-secondary: #64748B;
+    --text-tertiary: #94A3B8;
+    --border: #E2E8F0;
+    --accent: #6366F1;
+    --accent-light: #EEF2FF;
+    --accent-deep: #4F46E5;
+    --destructive: #DC2626;
+    --success: #34C759;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --font-sans: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: var(--font-sans);
+    background: #E2E8F0; display: flex; justify-content: center; align-items: flex-start;
+    min-height: 100vh; padding: 20px 10px;
+  }
+
+  /* ═══ Phone Frame ═══ */
+  .phone-frame {
+    width: 393px; height: 852px; background: var(--surface); border-radius: 50px;
+    border: 3px solid #1a1a1a; overflow: hidden; position: relative;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.1);
+    display: flex; flex-direction: column;
+  }
+  .dynamic-island {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 126px; height: 37px; background: #000; border-radius: 20px; z-index: 100;
+  }
+  .status-bar {
+    height: 54px; padding: 14px 28px 0; display: flex; justify-content: space-between;
+    align-items: flex-start; font-size: 15px; font-weight: 600; z-index: 50; position: relative;
+    color: var(--text);
+  }
+  .status-bar .time { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+  .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+
+  /* ═══ Screen Container ═══ */
+  .screen-area { flex: 1; overflow: hidden; position: relative; }
+  .screen { 
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    background: var(--page-bg);
+  }
+  .screen.active { display: flex; }
+
+  /* ═══ Nav Bar ═══ */
+  .nav-bar {
+    padding: 0 16px; height: 44px; display: flex; align-items: center;
+    background: var(--surface); border-bottom: 0.5px solid var(--border);
+    position: relative; z-index: 10;
+  }
+  .nav-bar .nav-title { font-size: 17px; font-weight: 600; flex: 1; text-align: center; }
+  .nav-btn {
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; cursor: pointer; transition: background 0.15s;
+  }
+  .nav-btn:hover { background: var(--surface-muted); }
+  .nav-btn svg { width: 20px; height: 20px; fill: var(--text); }
+  .nav-back { margin-left: -4px; }
+
+  /* ═══ Large Title Nav ═══ */
+  .large-nav {
+    padding: 0 16px; padding-top: 10px; background: var(--surface);
+    border-bottom: 0.5px solid transparent;
+  }
+  .large-nav .back-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    margin-bottom: 6px;
+  }
+  .large-nav .back-btn:hover { background: var(--surface-muted); }
+  .large-nav .back-btn svg { width: 18px; height: 18px; fill: var(--accent); }
+  .large-nav .large-title {
+    font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; color: var(--text);
+  }
+
+  /* ═══ Content Area ═══ */
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ═══ Search Box ═══ */
+  .search-wrap { padding: 16px; }
+  .search-box {
+    height: 38px; background: var(--surface-muted); border-radius: 12px;
+    display: flex; align-items: center; padding: 0 12px; gap: 6px;
+  }
+  .search-box .search-icon { width: 15px; height: 15px; opacity: 0.45; }
+  .search-box .placeholder { font-size: 16px; color: var(--text-tertiary); }
+
+  /* ═══ Empty State ═══ */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 40px; text-align: center;
+  }
+  .empty-state .icon {
+    width: 48px; height: 48px; stroke: var(--text-tertiary);
+    stroke-width: 1.5; fill: none; margin-bottom: 12px;
+  }
+  .empty-state .msg { font-size: 16px; color: var(--text-secondary); }
+
+  /* ═══ Backup Banner ═══ */
+  .backup-banner {
+    margin: 0 16px 0; padding: 12px 16px; background: var(--surface-muted);
+    border-radius: var(--radius-md); border: 0.5px solid var(--border);
+  }
+  .backup-banner .banner-row { display: flex; align-items: center; gap: 8px; }
+  .backup-banner .banner-icon { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.8; }
+  .backup-banner .banner-text { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .backup-banner .close-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .backup-banner .close-btn svg { width: 13px; height: 13px; stroke: var(--text-tertiary); stroke-width: 2; }
+  .backup-banner .btn-row { display: flex; margin-top: 8px; }
+  .backup-btn {
+    padding: 6px 16px; background: var(--accent); border-radius: var(--radius-sm);
+    color: #fff; font-size: 14px; font-weight: 600; border: none; cursor: pointer;
+  }
+  .backup-btn:hover { background: var(--accent-deep); }
+
+  /* ═══ Tab Bar ═══ */
+  .tab-bar {
+    background: var(--surface); border-top: 0.5px solid var(--border);
+    padding: 6px 0 2px; display: flex;
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 49px; cursor: pointer; position: relative; transition: all 0.2s ease;
+    -webkit-user-select: none; user-select: none;
+  }
+  .tab-item .tab-icon { width: 25px; height: 25px; margin-bottom: 1px; }
+  .tab-item .tab-icon svg { width: 22px; height: 22px; }
+  .tab-item .tab-label { font-size: 10px; transition: color 0.2s; }
+  .tab-item:not(.active) .tab-icon svg { stroke: var(--text-tertiary); fill: none; }
+  .tab-item:not(.active) .tab-label { color: var(--text-tertiary); }
+  .tab-item.active .tab-icon svg { stroke: var(--accent); fill: var(--accent); }
+  .tab-item.active .tab-label { color: var(--accent); font-weight: 500; }
+  .tab-indicator {
+    width: 20px; height: 3px; border-radius: 1.5px; background: var(--accent);
+    margin-top: 0; transition: opacity 0.2s;
+  }
+
+  /* ═══ Drawer Overlay ═══ */
+  .drawer-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.38);
+    z-index: 200; display: none; animation: fadeIn 0.24s ease forwards;
+  }
+  .drawer-overlay.open { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .drawer-panel {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 70%;
+    background: var(--surface); z-index: 201;
+    display: none; flex-direction: column; padding-top: 56px;
+    transform: translateX(-100%);
+    animation: slideIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .drawer-panel.open { display: flex; }
+  @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+  
+  .drawer-title { padding: 0 20px; font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 24px; }
+  .drawer-menu-item {
+    display: flex; align-items: center; padding: 14px 20px; gap: 12px; cursor: pointer;
+    transition: background 0.15s; -webkit-user-select: none;
+  }
+  .drawer-menu-item:hover { background: var(--surface-muted); }
+  .drawer-menu-item .dmi-icon { width: 20px; height: 20px; stroke: var(--text-secondary); fill: none; stroke-width: 1.7; }
+  .drawer-menu-item .dmi-text { font-size: 16px; color: var(--text); flex: 1; }
+  .drawer-menu-item .dmi-arrow { width: 16px; height: 16px; stroke: var(--text-tertiary); fill: none; stroke-width: 2; }
+
+  /* ═══ Settings List ═══ */
+  .settings-list { background: var(--page-bg); padding: 0 0 16px; }
+  .section-header { padding: 20px 24px 6px; font-size: 13px; color: var(--text-secondary); font-weight: 400; }
+  .list-group {
+    margin: 0 20px 20px; background: var(--surface);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 0 0 0.5px var(--border);
+  }
+  .list-row {
+    display: flex; align-items: center; padding: 11px 16px; gap: 12px;
+    border-bottom: 0.5px solid var(--border-light); cursor: pointer;
+    transition: background 0.15s; min-height: 44px;
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background: var(--surface-muted); }
+  .list-row .lr-icon {
+    width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .list-row .lr-icon svg { width: 19px; height: 19px; }
+  .lr-body { flex: 1; min-width: 0; }
+  .lr-title { font-size: 16px; color: var(--text); }
+  .lr-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 1px; }
+  .lr-value { font-size: 16px; color: var(--text-secondary); }
+  .lr-chevron { width: 16px; height: 16px; stroke: #C7C7CC; fill: none; stroke-width: 2; flex-shrink: 0; }
+  .toggle-switch {
+    width: 51px; height: 31px; border-radius: 15.5px; position: relative;
+    flex-shrink: 0; cursor: pointer; transition: background 0.2s;
+    background: #E9E9EA;
+  }
+  .toggle-switch.on { background: var(--success); }
+  .toggle-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+    background: white; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease;
+  }
+  .toggle-switch.on::after { transform: translateX(20px); }
+
+  /* ═══ Fill Card Page Body ═══ */
+  .fill-card-body { padding-top: 12px; flex: 1; overflow-y: auto; }
+  .fill-card-surface {
+    flex: 1; background: var(--surface);
+    display: flex; flex-direction: column;
+  }
+
+  /* ═══ Plain List (LLM settings / providers) ═══ */
+  .plain-list { background: var(--surface); }
+  .plain-list .list-row {
+    border-bottom: 0.5px solid #C5C9D6;
+    background: var(--surface);
+  }
+  .plain-list .list-row:last-child { border-bottom: none; }
+  .plain-list .list-row:active { background: var(--surface-muted); }
+  .provider-row { display: flex; align-items: center; padding: 11px 16px; min-height: 44px; border-bottom: 0.5px solid #C5C9D6; cursor: pointer; }
+  .provider-row:last-child { border-bottom: none; }
+  .provider-row:active { background: var(--surface-muted); }
+  .provider-info { flex: 1; min-width: 0; }
+  .provider-name { font-size: 16px; color: var(--text); }
+  .provider-count { font-size: 13px; color: var(--text-secondary); margin-top: 1px; }
+  .provider-delete { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin-right: -8px; }
+  .provider-delete svg { width: 20px; height: 20px; stroke: #FF3B30; fill: none; stroke-width: 1.8; }
+  .nav-add { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .nav-add svg { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 2; }
+
+  /* ═══ Notes Large Title Header ═══ */
+  .notes-header {
+    padding: 0 16px;
+    padding-top: 10px;
+    background: var(--surface);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .notes-header .large-title { font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; color: var(--text); }
+  .notes-header .add-btn {
+    width: 32px; height: 32px; margin-top: 4px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; cursor: pointer;
+  }
+  .notes-header .add-btn:hover { background: var(--surface-muted); }
+  .notes-header .add-btn svg { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 2; }
+
+  /* ═══ Note List Rows ═══ */
+  .note-list { background: var(--surface); }
+  .note-row {
+    display: flex; align-items: center;
+    padding: 10px 16px; min-height: 44px;
+    border-bottom: 0.5px solid var(--border); cursor: pointer;
+  }
+  .note-row:last-child { border-bottom: none; }
+  .note-row:hover { background: var(--surface-muted); }
+  .note-row .nr-icon { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 1.8; margin-right: 12px; flex-shrink: 0; }
+  .note-row .nr-body { flex: 1; min-width: 0; }
+  .note-row .nr-title { font-size: 16px; color: var(--text); }
+  .note-row .nr-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 1px; }
+  .note-row .nr-trailing { width: 18px; height: 18px; stroke: var(--accent); fill: currentColor; flex-shrink: 0; }
+
+  /* ═══ Note Editor ═══ */
+  .note-editor { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--page-bg); }
+  .editor-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+  .editor-title-row { display: flex; align-items: flex-start; gap: 8px; }
+  .note-title-input {
+    flex: 1; font-size: 28px; font-weight: 600; color: var(--text);
+    background: transparent; border: none; outline: none; line-height: 1.2;
+    font-family: inherit;
+  }
+  .note-title-input::placeholder { color: var(--text-tertiary); }
+  .ai-title-btn {
+    width: 36px; height: 36px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); border-radius: 8px; cursor: pointer;
+  }
+  .ai-title-btn:hover { background: var(--surface-muted); }
+  .ai-title-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .note-body-input {
+    width: 100%; min-height: 240px; margin-top: 16px;
+    font-size: 17px; line-height: 1.6; color: var(--text);
+    background: transparent; border: none; outline: none; resize: none;
+    font-family: inherit;
+  }
+  .note-body-input::placeholder { color: var(--text-tertiary); }
+
+  /* ═══ Markdown Toolbar ═══ */
+  .md-toolbar {
+    height: 44px; background: var(--surface-muted);
+    border-top: 0.5px solid var(--border); display: flex; align-items: center;
+    padding: 0 4px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .md-toolbar button {
+    width: 36px; height: 36px; border: none; background: transparent;
+    color: var(--text); font-size: 16px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 6px; flex-shrink: 0;
+  }
+  .md-toolbar button:hover { background: rgba(0,0,0,0.05); }
+  .md-divider { width: 0.5px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+
+  /* ═══ Generate Title ═══ */
+  .gen-title-list { flex: 1; overflow-y: auto; padding-bottom: 16px; }
+  .gen-custom-input {
+    margin: 12px 16px 8px; padding: 12px;
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 10px; font-size: 17px; color: var(--text);
+    outline: none; width: calc(100% - 32px); box-sizing: border-box;
+  }
+  .gen-custom-input::placeholder { color: var(--text-tertiary); }
+  .gen-section-label { padding: 4px 16px; font-size: 13px; color: var(--text-secondary); }
+  .gen-candidate {
+    margin: 0 16px 8px; padding: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; font-size: 16px; color: var(--text); cursor: pointer;
+  }
+  .gen-candidate.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  /* ═══ Theme Picker Bottom Sheet ═══ */
+  .bottom-sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 50%; background: var(--surface);
+    border-radius: 12px 12px 0 0; z-index: 300;
+    display: none; flex-direction: column; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  }
+  .bottom-sheet.open { display: flex; }
+  .sheet-header { padding: 16px 16px 8px; display: flex; justify-content: space-between; align-items: center; }
+  .sheet-title { font-size: 17px; font-weight: 600; color: var(--text); }
+  .sheet-close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .sheet-list { flex: 1; overflow-y: auto; padding: 0 16px; }
+  .sheet-list-item {
+    padding: 12px 0; border-bottom: 0.5px solid var(--border);
+    font-size: 16px; color: var(--text); display: flex; justify-content: space-between; align-items: center;
+  }
+  .sheet-list-item:last-child { border-bottom: none; }
+  .sheet-list-item svg { width: 16px; height: 16px; stroke: var(--text-tertiary); fill: none; stroke-width: 2; }
+
+  /* ═══ Theme Detail Tree ═══ */
+  .tree-list { background: var(--surface); flex: 1; overflow-y: auto; }
+  .tree-row {
+    height: 56px; display: flex; align-items: center;
+    padding-right: 8px; border-bottom: 0.5px solid var(--border);
+  }
+  .tree-row:last-child { border-bottom: none; }
+  .tree-circle { width: 12px; height: 12px; border-radius: 50%; margin-left: 16px; margin-right: 12px; border: 2px solid; flex-shrink: 0; }
+  .tree-body { flex: 1; min-width: 0; }
+  .tree-title { font-size: 17px; color: var(--text); }
+  .tree-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .tree-handle { width: 24px; height: 24px; stroke: var(--text-tertiary); fill: none; stroke-width: 2; flex-shrink: 0; }
+
+  /* ═══ Screen Switcher (outside phone) ═══ */
+  .screen-switcher {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; background: white; padding: 6px; border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 500;
+    max-width: 95vw; overflow-x: auto; flex-wrap: nowrap;
+  }
+  .sw-btn {
+    padding: 8px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer; transition: all 0.15s; color: var(--text-secondary);
+    background: transparent; white-space: nowrap;
+  }
+  .sw-btn.active { background: var(--accent); color: white; }
+  .sw-btn:not(.active):hover { background: var(--surface-muted); }
+
+  /* ═══ Chat (Theme tab) ═══ */
+  .chat-screen { background: var(--page-bg); }
+  .chat-nav-subtitle {
+    display: block; font-size: 12px; color: var(--accent);
+    font-weight: 500; text-align: center; margin-top: 1px;
+  }
+  .chat-model-pill {
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 12px; color: var(--accent);
+  }
+  .chat-model-pill::after {
+    content: ''; width: 0; height: 0;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 4px solid var(--accent); margin-left: 2px;
+  }
+  .chat-empty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary); font-size: 16px;
+  }
+  .chat-scroll { flex: 1; overflow-y: auto; padding: 8px 12px 0; }
+  .chat-ts {
+    text-align: center; font-size: 12px; color: var(--text-tertiary);
+    padding: 12px 0 8px;
+  }
+  .chat-msg {
+    margin: 6px 0; padding: 12px 14px; border-radius: 14px;
+    max-width: 92%; font-size: 15px; line-height: 1.5;
+  }
+  .chat-msg.user {
+    background: var(--accent-light); color: var(--text);
+    border-top-left-radius: 4px; margin-right: auto;
+  }
+  .chat-msg.assistant {
+    background: var(--surface); color: var(--text);
+    border-top-left-radius: 4px; margin-right: auto;
+    box-shadow: 0 0 0 0.5px var(--border);
+  }
+  .chat-msg .msg-role {
+    display: block; font-size: 12px; color: var(--text-secondary);
+    margin-bottom: 6px; font-weight: 500;
+  }
+  .chat-msg .msg-body { white-space: pre-wrap; }
+  .chat-msg .msg-body p { margin: 0 0 8px; }
+  .chat-msg .msg-body p:last-child { margin-bottom: 0; }
+  .chat-msg .msg-body h2 {
+    font-size: 19px; font-weight: 700; margin: 12px 0 8px; color: var(--text);
+  }
+  .chat-msg .msg-body h3 {
+    font-size: 16px; font-weight: 700; margin: 10px 0 6px; color: var(--text);
+  }
+  .chat-msg .msg-body strong { font-weight: 600; }
+  .chat-msg .msg-body ul, .chat-msg .msg-body ol { padding-left: 20px; margin: 6px 0; }
+  .chat-msg .msg-body li { margin: 3px 0; }
+  .chat-msg .msg-body code {
+    font-family: var(--font-mono); font-size: 13px;
+    background: var(--surface-muted); padding: 1px 5px; border-radius: 4px;
+  }
+  .chat-msg .msg-body table {
+    width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0;
+  }
+  .chat-msg .msg-body th, .chat-msg .msg-body td {
+    border: 0.5px solid var(--border); padding: 6px 10px; text-align: left;
+  }
+  .chat-msg .msg-body th { background: var(--surface-muted); font-weight: 600; }
+  .chat-msg .msg-body td:first-child { font-weight: 600; }
+  .chat-thinking {
+    background: var(--surface-muted); border-radius: 8px; padding: 10px 12px;
+    margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+  }
+  .chat-thinking-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px; font-weight: 500;
+  }
+  .chat-thinking-toggle { color: var(--accent); cursor: pointer; font-size: 13px; }
+  .chat-user-image {
+    width: 200px; height: 130px; border-radius: 10px; object-fit: cover;
+    margin-bottom: 8px; display: block; background: #E2E8F0;
+  }
+  .chat-scroll-btn {
+    position: absolute; right: 12px; bottom: 130px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface); box-shadow: var(--shadow-md);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 5;
+  }
+  .chat-scroll-btn svg { width: 20px; height: 20px; stroke: var(--text); fill: none; stroke-width: 2; }
+
+  /* ═══ Chat Input Area ═══ */
+  .chat-input-area {
+    background: var(--surface); border-top: 0.5px solid var(--border);
+    padding: 8px 12px 6px;
+  }
+  .chat-input-row { display: flex; align-items: center; gap: 8px; }
+  .chat-input {
+    flex: 1; height: 40px; border: none; outline: none;
+    background: var(--surface-muted); border-radius: 20px;
+    padding: 0 16px; font-size: 16px; color: var(--text);
+    font-family: inherit;
+  }
+  .chat-input::placeholder { color: var(--text-tertiary); }
+  .chat-send-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); color: #fff; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .chat-send-btn:disabled { background: var(--surface-muted); cursor: not-allowed; }
+  .chat-send-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2.2; }
+  .chat-send-btn:disabled svg { stroke: var(--text-tertiary); }
+  .chat-toggles {
+    display: flex; align-items: center; gap: 4px;
+    padding: 8px 4px 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .chat-toggle {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 10px; font-size: 13px; color: var(--accent);
+    background: transparent; border: none; cursor: pointer; flex-shrink: 0;
+  }
+  .chat-toggle.disabled { color: var(--text-tertiary); }
+  .chat-toggle svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .chat-toggle-divider { width: 0.5px; height: 14px; background: var(--border); flex-shrink: 0; }
+
+  /* ═══ Image preview above input ═══ */
+  .chat-image-preview {
+    margin: 0 0 6px; padding: 6px 10px; background: var(--surface);
+    border-radius: 10px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 0 0 0.5px var(--border);
+  }
+  .chat-image-thumb {
+    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
+    background: #C7D2FE; flex-shrink: 0;
+  }
+  .chat-image-label { font-size: 14px; color: var(--text-secondary); flex: 1; }
+  .chat-image-remove {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface-muted); color: var(--text-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .chat-image-remove svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+
+  /* ═══ Alert Dialog (新建会话) ═══ */
+  .alert-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 400; display: none; align-items: center; justify-content: center;
+    padding: 0 32px;
+  }
+  .alert-overlay.open { display: flex; }
+  .alert-dialog {
+    width: 100%; background: var(--surface); border-radius: 14px;
+    overflow: hidden; box-shadow: var(--shadow-md);
+  }
+  .alert-title { padding: 18px 16px 12px; text-align: center; font-size: 17px; font-weight: 600; color: var(--text); }
+  .alert-body { padding: 0 16px 12px; }
+  .alert-input-wrap {
+    position: relative; display: flex; align-items: center;
+    background: var(--surface-muted); border-radius: 10px; padding: 0 12px;
+  }
+  .alert-input-wrap input {
+    flex: 1; height: 40px; background: transparent; border: none; outline: none;
+    font-size: 16px; color: var(--text); font-family: inherit;
+  }
+  .alert-input-wrap input::placeholder { color: var(--text-tertiary); }
+  .alert-input-clear {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--text-tertiary); color: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .alert-input-clear svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.4; }
+  .alert-actions {
+    display: flex; border-top: 0.5px solid var(--border);
+  }
+  .alert-actions button {
+    flex: 1; height: 48px; border: none; background: transparent;
+    font-size: 16px; cursor: pointer; font-family: inherit;
+  }
+  .alert-actions button + button { border-left: 0.5px solid var(--border); }
+  .alert-actions .btn-cancel { color: var(--accent); font-weight: 400; }
+  .alert-actions .btn-confirm { color: var(--accent); font-weight: 600; }
+
+  /* ═══ Model Picker Sheet (选择模型) ═══ */
+  .model-picker { height: 65%; }
+  .model-search-wrap { padding: 0 16px 8px; }
+  .model-search-box {
+    height: 38px; background: var(--surface-muted); border-radius: 12px;
+    display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  }
+  .model-search-box svg { width: 15px; height: 15px; stroke: var(--text-tertiary); fill: none; stroke-width: 2; }
+  .model-search-box input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-size: 15px; color: var(--text); font-family: inherit;
+  }
+  .model-search-box input::placeholder { color: var(--text-tertiary); }
+  .model-section-label { padding: 12px 20px 6px; font-size: 14px; font-weight: 600; color: var(--text); }
+  .model-list-item {
+    padding: 12px 20px; font-size: 16px; color: var(--text);
+    border-bottom: 0.5px solid var(--border); cursor: pointer;
+  }
+  .model-list-item:last-child { border-bottom: none; }
+  .model-list-item:active { background: var(--surface-muted); }
+
+  /* ═══ Branch creation sheet (选择创建方式) ═══ */
+  .branch-sheet { height: 55%; }
+  .branch-title { padding: 20px 0 16px; text-align: center; font-size: 17px; font-weight: 600; color: var(--text); }
+  .branch-options { padding: 4px 20px 16px; }
+  .branch-option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 0; cursor: pointer; font-size: 16px; color: var(--text);
+  }
+  .branch-radio {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid var(--text-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .branch-radio.selected { border-color: var(--accent); }
+  .branch-radio.selected::after {
+    content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+  }
+  .branch-actions { display: flex; gap: 12px; padding: 0 20px 24px; }
+  .branch-actions button {
+    flex: 1; height: 48px; border-radius: 12px; border: none;
+    font-size: 16px; font-weight: 500; cursor: pointer; font-family: inherit;
+  }
+  .branch-btn-cancel { background: var(--surface-muted); color: var(--text); }
+  .branch-btn-confirm { background: var(--surface-muted); color: var(--text-tertiary); }
+  .branch-btn-confirm.enabled { background: var(--accent); color: #fff; }
+
+  /* ═══ Markdown viewer sheet (原始 Markdown) ═══ */
+  .md-sheet { height: 88%; }
+  .md-sheet-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-bottom: 0.5px solid var(--border);
+    font-size: 15px;
+  }
+  .md-sheet-action { color: var(--accent); cursor: pointer; font-size: 15px; }
+  .md-sheet-title { font-size: 17px; font-weight: 600; color: var(--text); }
+  .md-sheet-body {
+    flex: 1; overflow-y: auto; padding: 12px 16px;
+    font-family: var(--font-mono); font-size: 12px; line-height: 1.6;
+    color: var(--text); white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* ═══ My Questions Page ═══ */
+  .qpage-nav { background: var(--page-bg); border-bottom: none; }
+  .qpage-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; min-height: 64px; background: var(--surface);
+    border-bottom: 0.5px solid var(--border); cursor: pointer;
+  }
+  .qpage-row:active { background: var(--surface-muted); }
+  .qpage-text { flex: 1; font-size: 16px; color: var(--text); }
+  .qpage-thumb {
+    width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
+    background: #C7D2FE; flex-shrink: 0;
+  }
+  .qpage-question {
+    font-size: 16px; color: var(--text);
+  }
+  .qpage-chevron { width: 16px; height: 16px; stroke: var(--text-tertiary); fill: none; stroke-width: 2; flex-shrink: 0; }
+
+  /* ═══ Tree viewer page (查看整棵树) ═══ */
+  .treeviewer-row {
+    height: 56px; display: flex; align-items: center;
+    padding: 0 16px; background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .treeviewer-row.active { background: var(--accent-light); }
+  .treeviewer-circle { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent); flex-shrink: 0; margin-right: 16px; }
+  .treeviewer-row.active .treeviewer-circle { background: transparent; }
+  .treeviewer-title { font-size: 17px; color: var(--accent); }
+  .treeviewer-row.active .treeviewer-title { color: var(--accent); }
+  .treeviewer-row:not(.active) .treeviewer-circle { border-color: var(--text-tertiary); }
+  .treeviewer-row:not(.active) .treeviewer-title { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ PHONE FRAME ═══════════════════ -->
+<div class="phone-frame">
+  <div class="dynamic-island"></div>
+  <div class="status-bar">
+    <span class="time">13:59</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="none"><path d="M1 4.5C2.5 2 5 1 9 1s6.5 1 8 3.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 7c1-1.5 3-2.5 6-2.5s5 1 6 2.5" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 9.5C6.5 8.5 7.5 8 9 8s2.5.5 3.5 1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      <svg viewBox="0 0 26 13" width="26" height="13" fill="currentColor"><rect x="0" y="4" width="21" height="9" rx="1.5" stroke="currentColor" stroke-width="1" fill="none"/><rect x="23" y="6" width="3" height="5" rx="0.5"/><rect x="2" y="6" width="17" height="5" rx="0.5" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN 1: SEARCH ═══ -->
+  <div class="screen-area" id="screenArea">
+    <div class="screen active" id="screen-search">
+      <div class="nav-bar">
+        <div class="nav-btn" onclick="openDrawer()">
+          <svg viewBox="0 0 20 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="3" x2="17" y2="3"/><line x1="3" y1="7" x2="17" y2="7"/><line x1="3" y1="11" x2="17" y2="11"/></svg>
+        </div>
+        <span class="nav-title">搜索</span>
+        <div style="width:32px"></div>
+      </div>
+      <div class="content">
+        <div class="search-wrap">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>
+            <span class="placeholder">搜索笔记和对话...</span>
+          </div>
+        </div>
+        <div class="empty-state">
+          <svg class="icon" viewBox="0 0 48 48"><circle cx="20" cy="20" r="12"/><path d="M29.5 29.5L41 41" stroke-linecap="round"/></svg>
+          <span class="msg">在知识中寻找连接</span>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item active" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16 16l5.5 5.5" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" data-tab="themes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/><line x1="12" y1="7" x2="12" y2="9"/><line x1="14.5" y1="12" x2="17" y2="12"/><line x1="12" y1="15" x2="12" y2="17"/><line x1="9.5" y1="12" x2="7" y2="12"/></svg></div>
+          <span class="tab-label">主题</span>
+        </div>
+        <div class="tab-item" data-tab="notes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg></div>
+          <span class="tab-label">笔记</span>
+        </div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg></div>
+          <span class="tab-label">Lab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 2: SETTINGS ═══ -->
+    <div class="screen" id="screen-settings">
+      <div class="large-nav">
+        <div class="back-btn" onclick="showScreen('search')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <div class="large-title">ThkTree · 设置</div>
+      </div>
+      <div class="content settings-list">
+        <div class="section-header">语言</div>
+        <div class="list-group">
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M2 12h20"/><path d="M12 2a15 15 0 010 20"/><path d="M12 2a15 15 0 010 20"/></svg>
+            </div>
+            <div class="lr-body">
+              <div class="lr-title">语言</div>
+              <div class="lr-subtitle">跟随系统</div>
+            </div>
+            <span class="lr-value">跟随系统</span>
+            <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+
+        <div class="section-header"></div>
+        <div class="list-group">
+          <div class="list-row" onclick="showScreen('llm-settings')">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><path d="M17.5 19H9a7 7 0 110-14h8.5"/><path d="M16 5l4 4-4 4"/></svg>
+            </div>
+            <span class="lr-title">大模型</span>
+            <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><polygon points="5,3 19,12 5,21"/><path d="M19 12H9"/></svg>
+            </div>
+            <div class="lr-body">
+              <div class="lr-title">语音设置</div>
+              <div class="lr-subtitle">朗读语音、语速设置</div>
+            </div>
+            <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="3"/><circle cx="12" cy="14" r="3"/><path d="M9 7h6"/></svg>
+            </div>
+            <div class="lr-body">
+              <div class="lr-title">Face ID 锁定</div>
+              <div class="lr-subtitle">打开 App 时需要 Face ID 验证</div>
+            </div>
+            <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <div class="section-header">备份与恢复</div>
+        <div class="list-group">
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M13 8h6"/><path d="M13 12h6"/><path d="M13 16h3"/></svg>
+            </div>
+            <div class="lr-body">
+              <div class="lr-title">备份提醒</div>
+              <div class="lr-subtitle">每 3–7 天提醒一次</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12 15 12 3"/></svg>
+            </div>
+            <span class="lr-title">备份数据</span>
+            <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12 3 12 15"/></svg>
+            </div>
+            <span class="lr-title">恢复数据</span>
+            <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+
+        <div class="section-header">Dev Tools</div>
+        <div class="list-group">
+          <div class="list-row">
+            <div class="lr-icon" style="background:#FEFCE8;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#EAB308" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>
+            </div>
+            <div class="lr-body">
+              <div class="lr-title">Dark Mode</div>
+              <div class="lr-subtitle">Light</div>
+            </div>
+            <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            </div>
+            <div class="lr-body">
+              <div class="lr-title">Trigger Backup Reminder</div>
+              <div class="lr-subtitle">Set next reminder to yesterday</div>
+            </div>
+            <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="list-row">
+            <div class="lr-icon" style="background:#EEF2FF;border-radius:6px;">
+              <svg viewBox="0 0 24 24" stroke="#6366F1" fill="none" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16 13 8 13"/><line x1="16 17 8 17"/></svg>
+            </div>
+            <div class="lr-body">
+              <div class="lr-title">日志文件</div>
+              <div class="lr-subtitle" style="font-size:11px;color:var(--text-tertiary)">/Users/yuweikang/Library/Developer/CoreSimula...</div>
+            </div>
+            <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <!-- Tab bar for settings screen too -->
+      <div class="tab-bar">
+        <div class="tab-item" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M29.5 29.5L41 41" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+        </div>
+        <div class="tab-item" data-tab="themes" onclick="switchTab(this)"><div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg></div><span class="tab-label">主题</span></div>
+        <div class="tab-item" data-tab="notes" onclick="switchTab(this)"><div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/></svg></div><span class="tab-label">笔记</span></div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)"><div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1"/></svg></div><span class="tab-label">Lab</span></div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 3: LLM SETTINGS ═══ -->
+    <div class="screen" id="screen-llm-settings">
+      <div class="nav-bar">
+        <div class="nav-btn nav-back" onclick="showScreen('settings')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <span class="nav-title">大模型</span>
+        <div style="width:32px"></div>
+      </div>
+      <div class="content fill-card-body">
+        <div class="fill-card-surface">
+          <div class="plain-list">
+            <div class="list-row" onclick="showScreen('llm-providers')">
+              <span class="lr-title" style="flex:1">模型提供商</span>
+              <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="list-row">
+              <span class="lr-title" style="flex:1">默认模型配置</span>
+              <svg class="lr-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 4: LLM PROVIDERS ═══ -->
+    <div class="screen" id="screen-llm-providers">
+      <div class="nav-bar">
+        <div class="nav-btn nav-back" onclick="showScreen('llm-settings')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <span class="nav-title">模型提供商</span>
+        <div class="nav-add">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="content fill-card-body">
+        <div class="fill-card-surface">
+          <div class="plain-list">
+            <div class="provider-row">
+              <div class="provider-info">
+                <div class="provider-name">DeepSeek</div>
+                <div class="provider-count">2 个提供商</div>
+              </div>
+              <div class="provider-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M10 11v6M14 11v6"/></svg></div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-info">
+                <div class="provider-name">KIMI</div>
+                <div class="provider-count">2 个提供商</div>
+              </div>
+              <div class="provider-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M10 11v6M14 11v6"/></svg></div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-info">
+                <div class="provider-name">Minimax</div>
+                <div class="provider-count">1 个提供商</div>
+              </div>
+              <div class="provider-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M10 11v6M14 11v6"/></svg></div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-info">
+                <div class="provider-name">MIMO</div>
+                <div class="provider-count">暂无提供商</div>
+              </div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-info">
+                <div class="provider-name">豆包</div>
+                <div class="provider-count">3 个提供商</div>
+              </div>
+              <div class="provider-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M10 11v6M14 11v6"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 5: NOTES BROWSE ═══ -->
+    <div class="screen" id="screen-notes-browse">
+      <div class="notes-header">
+        <div class="large-title">笔记</div>
+        <div class="add-btn" onclick="openThemePicker()" title="新建笔记">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>
+          <span class="placeholder">搜索笔记...</span>
+        </div>
+      </div>
+      <div class="content note-list">
+        <div class="note-row" onclick="showScreen('note-detail')">
+          <svg class="nr-icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z" stroke-linecap="round"/></svg>
+          <div class="nr-body"><div class="nr-title">未分类</div><div class="nr-subtitle">2 篇笔记</div></div>
+        </div>
+        <div class="note-row" onclick="showScreen('note-detail')">
+          <svg class="nr-icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z" stroke-linecap="round"/></svg>
+          <div class="nr-body"><div class="nr-title">主题A</div><div class="nr-subtitle">1 篇笔记</div></div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16 16l5.5 5.5" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+        </div>
+        <div class="tab-item" data-tab="themes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg></div>
+          <span class="tab-label">主题</span>
+        </div>
+        <div class="tab-item active" data-tab="notes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg></div>
+          <span class="tab-label">笔记</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></div>
+          <span class="tab-label">Lab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 6: NOTE EDITOR ═══ -->
+    <div class="screen" id="screen-note-editor">
+      <div class="nav-bar">
+        <div class="nav-btn nav-back" onclick="showScreen('notes-browse')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <span class="nav-title">未分类</span>
+        <div class="nav-btn" onclick="showScreen('notes-browse')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l3 3 7-8"/></svg>
+        </div>
+      </div>
+      <div class="note-editor">
+        <div class="editor-scroll">
+          <div class="editor-title-row">
+            <input class="note-title-input" placeholder="无标题">
+            <div class="ai-title-btn" onclick="showScreen('generate-title')" title="AI 生成标题">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <textarea class="note-body-input" placeholder="开始写作..."></textarea>
+        </div>
+        <div class="md-toolbar">
+          <button title="粗体">B</button>
+          <button title="斜体">I</button>
+          <button title="删除线">S</button>
+          <button title="标题">H</button>
+          <div class="md-divider"></div>
+          <button title="无序列表">•</button>
+          <button title="有序列表">1.</button>
+          <button title="复选框">☐</button>
+          <div class="md-divider"></div>
+          <button title="代码">&lt;/&gt;</button>
+          <button title="引用">"</button>
+          <button title="链接">🔗</button>
+          <button title="分隔线">—</button>
+          <div class="md-divider"></div>
+          <button title="表格">▦</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 7: GENERATE TITLE ═══ -->
+    <div class="screen" id="screen-generate-title">
+      <div class="nav-bar">
+        <div class="nav-btn nav-back" onclick="showScreen('note-editor')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l8 8M13 5L5 13"/></svg>
+        </div>
+        <span class="nav-title">生成标题</span>
+        <div class="nav-btn" onclick="showScreen('note-editor')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l3 3 7-8"/></svg>
+        </div>
+      </div>
+      <div class="content">
+        <input class="gen-custom-input" placeholder="输入标题">
+        <div class="gen-section-label">AI 生成的标题</div>
+        <div class="gen-title-list">
+          <div class="gen-candidate selected">AI 标题候选一</div>
+          <div class="gen-candidate">AI 标题候选二</div>
+          <div class="gen-candidate">AI 标题候选三</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 8: NOTE DETAIL ═══ -->
+    <div class="screen" id="screen-note-detail">
+      <div class="nav-bar">
+        <div class="nav-btn nav-back" onclick="showScreen('notes-browse')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <span class="nav-title">AI 标题候选一</span>
+        <div style="display:flex;gap:4px;">
+          <div class="nav-btn" title="从笔记创建对话">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v18M18 3v18M6 12h12"/></svg>
+          </div>
+          <div class="nav-btn" onclick="showScreen('note-editor')" title="编辑">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          </div>
+          <div class="nav-btn" title="更多">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="content" style="background:var(--surface);">
+        <div style="padding:12px 16px 16px;font-size:17px;line-height:1.6;color:var(--text);">
+          <p style="margin-bottom:12px;">这是笔记正文的第一段。输入内容后，标题会根据规则或 AI 生成自动填充。</p>
+          <p>第二段内容，用于展示渲染后的 Markdown 效果。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 9: THEME LIST (主题 chat 入口) ═══ -->
+    <div class="screen" id="screen-theme-list">
+      <div class="notes-header" style="padding-top:4px;">
+        <div class="nav-btn" style="margin-top:6px;width:28px;height:28px;" onclick="showScreen('search')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;">
+          <span style="font-size:16px;font-weight:600;color:var(--text);">未分类</span>
+          <span style="color:var(--text-tertiary);font-size:14px;">·</span>
+          <span style="color:var(--text-tertiary);font-size:14px;">树</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+          <div class="nav-btn" title="树视图" onclick="showScreen('tree-viewer')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="4" rx="1"/><rect x="3" y="13" width="8" height="4" rx="1"/></svg>
+          </div>
+          <div class="nav-btn" title="更多" onclick="openMoreSheet()">
+            <svg viewBox="0 0 24 24" fill="var(--accent)"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
+          </div>
+          <div class="nav-btn" title="新建会话" onclick="openNewChatDialog()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="content note-list">
+        <div class="note-row" onclick="showScreen('chat-empty')">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid #B8A07A;margin-right:12px;flex-shrink:0;"></div>
+          <div class="nr-body"><div class="nr-title">123</div></div>
+          <svg viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M4 7h10M4 11h10M4 15h7" stroke-linecap="round"/></svg>
+        </div>
+        <div class="note-row" onclick="showScreen('chat-empty')">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid #B8A07A;margin-right:12px;flex-shrink:0;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">这是什么</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row" onclick="showScreen('chat-empty')">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid #6B8E5A;margin-right:12px;flex-shrink:0;"></div>
+          <div class="nr-body"><div class="nr-title">1234</div></div>
+        </div>
+        <div class="note-row">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid var(--text-tertiary);margin-right:12px;flex-shrink:0;margin-left:18px;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">123号码含义</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid var(--text-tertiary);margin-right:12px;flex-shrink:0;margin-left:18px;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">冰叶日中花园识别</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid var(--text-tertiary);margin-right:12px;flex-shrink:0;margin-left:18px;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">Ice plant image analysis</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid #B8A07A;margin-right:12px;flex-shrink:0;margin-left:18px;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">Skógafoss瀑布摄影分析</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid var(--text-tertiary);margin-right:12px;flex-shrink:0;margin-left:18px;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">海岸沙丘花卉摄影分析</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid var(--text-tertiary);margin-right:12px;flex-shrink:0;margin-left:18px;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">溪流瀑布慢门摄影分析</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid var(--text-tertiary);margin-right:12px;flex-shrink:0;margin-left:18px;"></div>
+          <div class="nr-body" style="margin-left:18px;"><div class="nr-title">思维模型分类与5大常用</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+        <div class="note-row" onclick="showScreen('chat-with-reply')">
+          <div style="width:10px;height:10px;border-radius:50%;border:1.5px solid #6B8E5A;margin-right:12px;flex-shrink:0;"></div>
+          <div class="nr-body"><div class="nr-title">这是什么</div><div class="nr-subtitle">用户补充</div></div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16 16l5.5 5.5" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+        </div>
+        <div class="tab-item active" data-tab="themes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg></div>
+          <span class="tab-label">主题</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" data-tab="notes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg></div>
+          <span class="tab-label">笔记</span>
+        </div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></div>
+          <span class="tab-label">Lab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 10: THEME DETAIL ═══ -->
+    <div class="screen" id="screen-theme-detail">
+      <div class="nav-bar">
+        <div class="nav-btn nav-back" onclick="showScreen('theme-list')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <span class="nav-title">主题A</span>
+        <div style="display:flex;gap:4px;">
+          <div class="nav-btn" title="文档拆分">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h3"/></svg>
+          </div>
+          <div class="nav-btn" title="更多">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>
+          </div>
+          <div class="nav-btn" title="新建节点">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="content tree-list">
+        <div class="tree-row">
+          <div class="tree-circle" style="border-color:var(--accent);background:var(--accent-light);"></div>
+          <div class="tree-body"><div class="tree-title">根节点</div><div class="tree-subtitle">对话</div></div>
+          <svg class="tree-handle" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg>
+        </div>
+        <div class="tree-row">
+          <div class="tree-circle" style="border-color:#B8A07A;background:#B8A07A22;"></div>
+          <div class="tree-body"><div class="tree-title">子节点</div><div class="tree-subtitle">笔记</div></div>
+          <svg class="tree-handle" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 11: CHAT EMPTY (新建空 chat) ═══ -->
+    <div class="screen chat-screen" id="screen-chat-empty">
+      <div class="nav-bar" style="flex-direction:column;justify-content:center;align-items:stretch;height:auto;padding-top:8px;padding-bottom:8px;">
+        <div style="display:flex;align-items:center;">
+          <div class="nav-btn nav-back" onclick="showScreen('theme-list')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+          </div>
+          <span class="nav-title">AI. agent</span>
+          <div class="nav-btn" onclick="openMoreSheet()">
+            <svg viewBox="0 0 24 24" fill="var(--accent)"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;padding-top:2px;">
+          <span class="chat-model-pill" onclick="openModelPicker()">doubao-seed-2-1-turbo-260628 · 豆包</span>
+        </div>
+      </div>
+      <div class="chat-empty">暂无消息</div>
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <input class="chat-input" placeholder="消息">
+          <button class="chat-send-btn" disabled>
+            <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="chat-toggles">
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
+            联网搜索
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle disabled">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6 2 11c0 2.5 1 4.7 2.7 6.4L4 22l4.6-2.3c1.1.3 2.2.4 3.4.4"/></svg>
+            深度思考（默认）
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 16l-5-5-9 9"/></svg>
+            添加图片
+          </button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16 16l5.5 5.5" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+        </div>
+        <div class="tab-item active" data-tab="themes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg></div>
+          <span class="tab-label">主题</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" data-tab="notes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/></svg></div>
+          <span class="tab-label">笔记</span>
+        </div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></div>
+          <span class="tab-label">Lab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 12: CHAT WITH REPLY (文本问答) ═══ -->
+    <div class="screen chat-screen" id="screen-chat-with-reply">
+      <div class="nav-bar" style="flex-direction:column;justify-content:center;align-items:stretch;height:auto;padding-top:8px;padding-bottom:8px;">
+        <div style="display:flex;align-items:center;">
+          <div class="nav-btn nav-back" onclick="showScreen('theme-list')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+          </div>
+          <span class="nav-title">AI. agent</span>
+          <div class="nav-btn" onclick="openMoreSheet()">
+            <svg viewBox="0 0 24 24" fill="var(--accent)"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;padding-top:2px;">
+          <span class="chat-model-pill" onclick="openModelPicker()">deepseek-v4-flash · DeepSeek</span>
+        </div>
+      </div>
+      <div class="chat-scroll" style="position:relative;">
+        <div class="chat-ts">2026-07-08 19:42:42</div>
+        <div class="chat-msg user">
+          <span class="msg-role">用户</span>
+          <div class="msg-body">what is ai agent</div>
+        </div>
+        <div class="chat-ts">2026-07-08 19:42:52</div>
+        <div class="chat-msg assistant">
+          <span class="msg-role">助手 · DeepSeek V4 Flash · 生成中</span>
+          <div class="msg-body">
+            <h2>What is an AI Agent?</h2>
+            <p>An <strong>AI agent</strong> (also called an intelligent agent) is a software program or system that can <strong>autonomously perceive its environment, process information, make decisions, and take actions</strong> to achieve specific goals — all with minimal human intervention.</p>
+            <h3>Core Characteristics</h3>
+            <table>
+              <thead><tr><th>Component</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>Perception</td><td>Gathers data from its environment (via sensors, APIs, etc.)</td></tr>
+                <tr><td>Reasoning</td><td>Processes information using AI models or rules</td></tr>
+                <tr><td>Action</td><td>Takes steps to affect the environment or complete tasks</td></tr>
+                <tr><td>Autonomy</td><td>Operates independently without constant human guidance</td></tr>
+              </tbody>
+            </table>
+            <h3>How It Differs from a Standard AI</h3>
+            <p>Unlike a passive model that only responds when prompted, an <strong>AI agent</strong> can <em>plan, use tools, and execute multi-step tasks</em> on behalf of a user.</p>
+          </div>
+        </div>
+        <div class="chat-scroll-btn">
+          <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <input class="chat-input" placeholder="消息">
+          <button class="chat-send-btn">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
+          </button>
+        </div>
+        <div class="chat-toggles">
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
+            联网搜索
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle disabled">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6 2 11c0 2.5 1 4.7 2.7 6.4L4 22l4.6-2.3c1.1.3 2.2.4 3.4.4"/></svg>
+            深度思考
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle disabled">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 16l-5-5-9 9"/></svg>
+            不支持图片
+          </button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16 16l5.5 5.5" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+        </div>
+        <div class="tab-item active" data-tab="themes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg></div>
+          <span class="tab-label">主题</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" data-tab="notes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/></svg></div>
+          <span class="tab-label">笔记</span>
+        </div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></div>
+          <span class="tab-label">Lab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 13: CHAT WITH IMAGE PREVIEW (图片已选择) ═══ -->
+    <div class="screen chat-screen" id="screen-chat-image-preview">
+      <div class="nav-bar" style="flex-direction:column;justify-content:center;align-items:stretch;height:auto;padding-top:8px;padding-bottom:8px;">
+        <div style="display:flex;align-items:center;">
+          <div class="nav-btn nav-back" onclick="showScreen('theme-list')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+          </div>
+          <span class="nav-title">AI. agent</span>
+          <div class="nav-btn" onclick="openMoreSheet()">
+            <svg viewBox="0 0 24 24" fill="var(--accent)"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;padding-top:2px;">
+          <span class="chat-model-pill" onclick="openModelPicker()">kimi-k2.5 · KIMI</span>
+        </div>
+      </div>
+      <div class="chat-empty"></div>
+      <div class="chat-input-area">
+        <div class="chat-image-preview">
+          <div class="chat-image-thumb"></div>
+          <span class="chat-image-label">图片已选择</span>
+          <div class="chat-image-remove">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" placeholder="消息">
+          <button class="chat-send-btn" disabled>
+            <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="chat-toggles">
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
+            联网搜索
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6 2 11c0 2.5 1 4.7 2.7 6.4L4 22l4.6-2.3c1.1.3 2.2.4 3.4.4"/></svg>
+            深度思考
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 16l-5-5-9 9"/></svg>
+            添加图片
+          </button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16 16l5.5 5.5" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+        </div>
+        <div class="tab-item active" data-tab="themes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg></div>
+          <span class="tab-label">主题</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" data-tab="notes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/></svg></div>
+          <span class="tab-label">笔记</span>
+        </div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></div>
+          <span class="tab-label">Lab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 14: CHAT MULTIMODAL REPLY (多模态回答) ═══ -->
+    <div class="screen chat-screen" id="screen-chat-multimodal">
+      <div class="nav-bar" style="flex-direction:column;justify-content:center;align-items:stretch;height:auto;padding-top:8px;padding-bottom:8px;">
+        <div style="display:flex;align-items:center;">
+          <div class="nav-btn nav-back" onclick="showScreen('theme-list')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+          </div>
+          <span class="nav-title">AI. agent</span>
+          <div class="nav-btn" onclick="openMoreSheet()">
+            <svg viewBox="0 0 24 24" fill="var(--accent)"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;padding-top:2px;">
+          <span class="chat-model-pill" onclick="openModelPicker()">kimi-k2.5 · KIMI</span>
+        </div>
+      </div>
+      <div class="chat-scroll" style="position:relative;">
+        <div class="chat-ts">2026-07-08 19:44:09</div>
+        <div class="chat-msg user">
+          <span class="msg-role">用户</span>
+          <div class="msg-body">
+            <div style="width:240px;height:160px;border-radius:10px;background:linear-gradient(135deg,#6B7B5A 0%,#3D4A2E 50%,#7A8B6A 100%);margin-bottom:6px;position:relative;overflow:hidden;">
+              <div style="position:absolute;left:30%;top:20%;width:60px;height:120px;background:linear-gradient(180deg,#E8E8E8 0%,#B8C5D0 100%);border-radius:0 0 30px 30px;opacity:0.85;"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(180deg,transparent,#2A3A1E);"></div>
+            </div>
+            ?
+          </div>
+        </div>
+        <div class="chat-ts">2026-07-08 19:44:09</div>
+        <div class="chat-msg assistant">
+          <span class="msg-role">助手 · KIMI K2.5 · 生成中</span>
+          <div class="msg-body">
+            <div class="chat-thinking">
+              <div class="chat-thinking-header">
+                <span>思考过程</span>
+                <span class="chat-thinking-toggle">收起思考过程</span>
+              </div>
+              <div>The user has uploaded an image of a waterfall surrounded by lush greenery and rocky cliffs. The waterfall appears to be Skógafoss in Iceland based on its distinctive shape, the surrounding landscape, and the scale. The image shows the waterfall with a long exposure (smooth water), mist at the base, moss-covered cliffs, and the iconic flat-topped mountain in the background.</div>
+            </div>
+            <h2>瀑布识别结果</h2>
+            <p>这是一张 <strong>Skógafoss 瀑布（斯科加瀑布）</strong> 的摄影作品，位于冰岛南部。</p>
+            <h3>画面分析</h3>
+            <ul>
+              <li><strong>主体</strong>：高约 60 米的瀑布，呈现典型的"水帘"形态</li>
+              <li><strong>环境</strong>：两侧覆盖苔藓的玄武岩峭壁，顶部为平顶山</li>
+              <li><strong>技法</strong>：长曝光使水流呈现丝滑雾化效果</li>
+              <li><strong>氛围</strong>：阴天散射光，低饱和绿调，典型的冰岛阴郁美学</li>
+            </ul>
+            <h3>特征对照</h3>
+            <ul>
+              <li>瀑布宽度约 25 米，单级跌落</li>
+              <li>常年水雾使周围岩壁覆盖厚厚苔藓</li>
+              <li>背景山体被云层笼罩，呈现冷灰调</li>
+            </ul>
+          </div>
+        </div>
+        <div class="chat-scroll-btn">
+          <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <input class="chat-input" placeholder="消息">
+          <button class="chat-send-btn">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
+          </button>
+        </div>
+        <div class="chat-toggles">
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
+            联网搜索
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6 2 11c0 2.5 1 4.7 2.7 6.4L4 22l4.6-2.3c1.1.3 2.2.4 3.4.4"/></svg>
+            深度思考
+          </button>
+          <div class="chat-toggle-divider"></div>
+          <button class="chat-toggle">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 16l-5-5-9 9"/></svg>
+            添加图片
+          </button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" data-tab="search" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16 16l5.5 5.5" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <span class="tab-label">搜索</span>
+        </div>
+        <div class="tab-item active" data-tab="themes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg></div>
+          <span class="tab-label">主题</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" data-tab="notes" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="2" x2="15" y2="2"/></svg></div>
+          <span class="tab-label">笔记</span>
+        </div>
+        <div class="tab-item" data-tab="lab" onclick="switchTab(this)">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M10 4h4l4 4v10a2 2 0 01-2 2H8V6a2 2 0 012-2z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></div>
+          <span class="tab-label">Lab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 15: MY QUESTIONS (我提过的问题) ═══ -->
+    <div class="screen" id="screen-my-questions">
+      <div class="nav-bar qpage-nav">
+        <div class="nav-btn nav-back" onclick="showScreen('chat-with-reply')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <span class="nav-title" style="color:var(--text);font-weight:600;">我问过的问题</span>
+        <div style="width:32px;"></div>
+      </div>
+      <div class="content" style="background:var(--surface);">
+        <div class="qpage-row">
+          <span class="qpage-text">what is ai agent</span>
+          <svg class="qpage-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="qpage-row">
+          <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#6B7B5A,#3D4A2E);flex-shrink:0;"></div>
+          <span class="qpage-text">?</span>
+          <svg class="qpage-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 16: TREE VIEWER (查看整棵树) ═══ -->
+    <div class="screen" id="screen-tree-viewer">
+      <div class="nav-bar qpage-nav">
+        <div class="nav-btn nav-back" onclick="showScreen('chat-with-reply')">
+          <svg viewBox="0 0 18 18" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L5 9l6 5"/></svg>
+        </div>
+        <span class="nav-title" style="color:var(--text);font-weight:600;">AI. agent</span>
+        <div style="width:32px;"></div>
+      </div>
+      <div class="content" style="background:var(--surface);">
+        <div class="treeviewer-row active">
+          <div class="treeviewer-circle"></div>
+          <span class="treeviewer-title">AI. agent</span>
+        </div>
+        <div class="treeviewer-row">
+          <div class="treeviewer-circle"></div>
+          <span class="treeviewer-title">What is AI Agent?</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ THEME PICKER BOTTOM SHEET ═══ -->
+  <div class="bottom-sheet" id="themePicker">
+    <div class="sheet-header">
+      <div class="sheet-title">选择主题</div>
+      <div class="add-btn" title="新建主题">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <div class="sheet-list">
+      <div class="sheet-list-item" onclick="closeThemePicker(); showScreen('note-editor')">
+        <span>未分类</span>
+        <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="sheet-list-item" onclick="closeThemePicker(); showScreen('note-editor')">
+        <span>主题A</span>
+        <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DRAWER PANEL ═══ -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer-panel" id="drawerPanel">
+    <div class="drawer-title">ThkTree</div>
+    <div class="drawer-menu-item" onclick="closeDrawer(); showScreen('settings')">
+      <svg class="dmi-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06A1.65 1.65 0 0015 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.82-.33l-.06-.06a2 2 0 00-2.83 2.83l.06.06A1.65 1.65 0 004.6 19.4a1.65 1.65 0 00.33 1.82l-.06.06a2 2 0 102.83 0l.06-.06A1.65 1.65 0 0019.4 19.4zM12 6a4 4 0 100 8 4 4 0 000-8z" stroke-width="1.8"/></svg>
+      <span class="dmi-text">设置</span>
+      <svg class="dmi-arrow" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="drawer-menu-item" onclick="closeDrawer()">
+      <svg class="dmi-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      <span class="dmi-text">关于</span>
+      <svg class="dmi-arrow" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <!-- ═══ NEW CHAT DIALOG (新建会话) ═══ -->
+  <div class="alert-overlay" id="newChatDialog">
+    <div class="alert-dialog">
+      <div class="alert-title">新建会话</div>
+      <div class="alert-body">
+        <div class="alert-input-wrap">
+          <input id="newChatInput" type="text" value="AI. agent">
+          <div class="alert-input-clear" onclick="document.getElementById('newChatInput').value=''">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="alert-actions">
+        <button class="btn-cancel" onclick="closeNewChatDialog()">取消</button>
+        <button class="btn-confirm" onclick="closeNewChatDialog(); showScreen('chat-empty');">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODEL PICKER SHEET (选择模型) ═══ -->
+  <div class="bottom-sheet model-picker" id="modelPicker">
+    <div class="sheet-header">
+      <div class="sheet-title" style="flex:1;text-align:center;">选择模型</div>
+      <div style="width:32px;"></div>
+    </div>
+    <div class="model-search-wrap">
+      <div class="model-search-box">
+        <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="搜索模型...">
+      </div>
+    </div>
+    <div class="sheet-list">
+      <div class="model-section-label">DeepSeek</div>
+      <div class="model-list-item" onclick="closeModelPicker()">DeepSeek V4 Pro</div>
+      <div class="model-list-item" onclick="closeModelPicker()">DeepSeek V4 Flash</div>
+      <div class="model-section-label">KIMI</div>
+      <div class="model-list-item" onclick="closeModelPicker()">KIMI K2.6</div>
+      <div class="model-section-label">Minimax</div>
+      <div class="model-list-item" onclick="closeModelPicker()">M2.7</div>
+      <div class="model-section-label">豆包</div>
+      <div class="model-list-item" onclick="closeModelPicker()">doubao-seed-2-1-turbo-260628</div>
+    </div>
+  </div>
+
+  <!-- ═══ MORE SHEET (更多操作) ═══ -->
+  <div class="bottom-sheet" id="moreSheet" style="height:45%;">
+    <div class="sheet-list">
+      <div class="sheet-list-item" onclick="closeMoreSheet(); showScreen('my-questions');">
+        <span>我的提问</span>
+        <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="sheet-list-item" onclick="closeMoreSheet(); showScreen('tree-viewer');">
+        <span>查看整棵树</span>
+        <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="sheet-list-item" onclick="closeMoreSheet(); openMdViewer();">
+        <span>原始 Markdown</span>
+        <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="sheet-list-item" onclick="closeMoreSheet(); openBranchSheet();">
+        <span>分支</span>
+        <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MD VIEWER SHEET (原始 Markdown) ═══ -->
+  <div class="bottom-sheet md-sheet" id="mdViewer">
+    <div class="md-sheet-header">
+      <span class="md-sheet-action" onclick="closeMdViewer()">关闭</span>
+      <span class="md-sheet-title">原始 Markdown</span>
+      <span class="md-sheet-action">复制</span>
+    </div>
+    <div class="md-sheet-body">---
+schema: "session/v1"
+themeId: "thm_01KWXJ46OG69HS1CQQFHDA3HRJ"
+nodeId: "nd_01Kx0RFYA8JYPHVPV3M6BVA8AS"
+kind: "chat"
+parentId: null
+title: "AI. agent"
+createdAt: "2026-07-08T11:40:58.056180Z"
+updatedAt: "2026-07-08T11:40:58.056180Z"
+providerId: "preset_kimi"
+modelId: "kimi-k2.5"
+---
+
+## # user · 2026-07-08T11:42:42.658169Z · msg_01Kx0RK4F2XHYXA4M87GPQFEYR
+what is ai agent
+
+## # assistant · 2026-07-08T11:42:52.161158Z · msg_01Kx0RKDR1CV3VMBKP77CEK530 · deepseek-v4-flash
+# What is an AI Agent?
+
+An **AI agent** (also called an intelligent agent) is a software program or system that can **autonomously perceive its environment, process information, make decisions, and take actions** to achieve specific goals — all with minimal human intervention.
+
+## # Core Characteristics
+
+| Component | Description |
+|-----------|-------------|
+| **Perception** | Gathers data from its environment (via sensors, APIs, etc.) |
+| **Reasoning** | Processes information using AI models or rules |
+| **Action** | Takes steps to affect the environment or complete tasks |
+| **Autonomy** | Operates independently without constant human guidance |
+
+## # How It Differs from a Standard AI
+
+Unlike a passive model that only responds when prompted, an **AI agent** can *plan, use tools, and execute multi-step tasks* on behalf of a user.
+
+## # user · 2026-07-08T11:44:09.234567Z · msg_01Kx0RM2G9XYZABC123DEF456
+[image: waterfall-skogafoss.jpg]
+
+?
+
+## # assistant · 2026-07-08T11:44:09.789012Z · msg_01Kx0RM3H0J4K5L6M7N8P9Q0R1 · kimi-k2.5
+# 瀑布识别结果
+
+这是一张 **Skógafoss 瀑布（斯科加瀑布）** 的摄影作品，位于冰岛南部。
+
+## # 画面分析
+
+- **主体**：高约 60 米的瀑布，呈现典型的"水帘"形态
+- **环境**：两侧覆盖苔藓的玄武岩峭壁
+- **技法**：长曝光使水流呈现丝滑雾化效果
+- **氛围**：阴天散射光，低饱和绿调</div>
+  </div>
+
+  <!-- ═══ BRANCH SHEET (选择创建方式) ═══ -->
+  <div class="bottom-sheet branch-sheet" id="branchSheet">
+    <div class="branch-title">选择创建方式</div>
+    <div class="branch-options">
+      <div class="branch-option" onclick="selectBranch(this, 0)">
+        <div class="branch-radio"></div>
+        <span>总结后创建</span>
+      </div>
+      <div class="branch-option" onclick="selectBranch(this, 1)">
+        <div class="branch-radio"></div>
+        <span>使用原始上下文创建</span>
+      </div>
+      <div class="branch-option" onclick="selectBranch(this, 2)">
+        <div class="branch-radio"></div>
+        <span>空白分支</span>
+      </div>
+    </div>
+    <div class="branch-actions">
+      <button class="branch-btn-cancel" onclick="closeBranchSheet()">取消</button>
+      <button class="branch-btn-confirm" id="branchConfirm" onclick="closeBranchSheet()">继续</button>
+    </div>
+  </div>
+</div><!-- /.phone-frame -->
+
+<!-- ═══ Screen Switcher ═══ -->
+<div class="screen-switcher">
+  <button class="sw-btn active" onclick="showScreen('search'); setSw(this)">搜索</button>
+  <button class="sw-btn" onclick="showScreen('settings'); setSw(this)">设置</button>
+  <button class="sw-btn" onclick="showScreen('llm-settings'); setSw(this)">大模型</button>
+  <button class="sw-btn" onclick="showScreen('llm-providers'); setSw(this)">供应商</button>
+  <button class="sw-btn" onclick="showScreen('notes-browse'); setSw(this)">笔记首页</button>
+  <button class="sw-btn" onclick="showScreen('note-editor'); setSw(this)">编辑器</button>
+  <button class="sw-btn" onclick="showScreen('generate-title'); setSw(this)">生成标题</button>
+  <button class="sw-btn" onclick="showScreen('theme-list'); setSw(this)">主题列表</button>
+  <button class="sw-btn" onclick="showScreen('chat-empty'); setSw(this)">Chat·空</button>
+  <button class="sw-btn" onclick="showScreen('chat-with-reply'); setSw(this)">Chat·文本</button>
+  <button class="sw-btn" onclick="showScreen('chat-image-preview'); setSw(this)">Chat·图选</button>
+  <button class="sw-btn" onclick="showScreen('chat-multimodal'); setSw(this)">Chat·多模</button>
+  <button class="sw-btn" onclick="showScreen('my-questions'); setSw(this)">我的提问</button>
+  <button class="sw-btn" onclick="showScreen('tree-viewer'); setSw(this)">整棵树</button>
+  <button class="sw-btn" onclick="openNewChatDialog()">+会话框</button>
+  <button class="sw-btn" onclick="openModelPicker()">选模型</button>
+  <button class="sw-btn" onclick="openMoreSheet()">更多</button>
+  <button class="sw-btn" onclick="openMdViewer()">Markdown</button>
+  <button class="sw-btn" onclick="openBranchSheet()">分支</button>
+</div>
+
+<script>
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  closeThemePicker();
+  closeDrawer();
+  syncTabForScreen(id);
+  syncSwForScreen(id);
+}
+function syncTabForScreen(id) {
+  const map = {
+    'search': 'search', 'settings': 'search', 'llm-settings': 'search', 'llm-providers': 'search',
+    'theme-list': 'themes', 'theme-detail': 'themes',
+    'notes-browse': 'notes', 'note-editor': 'notes', 'generate-title': 'notes', 'note-detail': 'notes'
+  };
+  const activeTab = map[id] || 'search';
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+}
+function switchTab(tabIdOrEl) {
+  let tabId = typeof tabIdOrEl === 'string' ? tabIdOrEl : tabIdOrEl.dataset.tab;
+  const screenMap = { 'search': 'search', 'themes': 'theme-list', 'notes': 'notes-browse', 'lab': 'search' };
+  showScreen(screenMap[tabId] || 'search');
+}
+function openDrawer() {
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawerPanel').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawerPanel').classList.remove('open');
+}
+function openThemePicker() {
+  document.getElementById('themePicker').classList.add('open');
+}
+function closeThemePicker() {
+  document.getElementById('themePicker').classList.remove('open');
+}
+function setSw(el) {
+  document.querySelectorAll('.screen-switcher .sw-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+function syncSwForScreen(id) {
+  const map = {
+    'search': 'search', 'settings': 'settings', 'llm-settings': 'llm-settings', 'llm-providers': 'llm-providers',
+    'theme-list': 'theme-list', 'theme-detail': 'theme-detail',
+    'notes-browse': 'notes-browse', 'note-editor': 'note-editor', 'generate-title': 'generate-title', 'note-detail': 'note-detail',
+    'chat-empty': 'chat-empty', 'chat-with-reply': 'chat-with-reply',
+    'chat-image-preview': 'chat-image-preview', 'chat-multimodal': 'chat-multimodal',
+    'my-questions': 'my-questions', 'tree-viewer': 'tree-viewer'
+  };
+  const activeId = map[id];
+  if (!activeId) return;
+  document.querySelectorAll('.screen-switcher .sw-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${activeId}'`));
+  });
+}
+
+// ═══ Chat Flow Dialogs & Sheets ═══
+function openNewChatDialog() {
+  document.getElementById('newChatDialog').classList.add('open');
+  setTimeout(() => document.getElementById('newChatInput').focus(), 50);
+}
+function closeNewChatDialog() {
+  document.getElementById('newChatDialog').classList.remove('open');
+}
+function openModelPicker() {
+  document.getElementById('modelPicker').classList.add('open');
+}
+function closeModelPicker() {
+  document.getElementById('modelPicker').classList.remove('open');
+}
+function openMoreSheet() {
+  document.getElementById('moreSheet').classList.add('open');
+}
+function closeMoreSheet() {
+  document.getElementById('moreSheet').classList.remove('open');
+}
+function openMdViewer() {
+  document.getElementById('mdViewer').classList.add('open');
+}
+function closeMdViewer() {
+  document.getElementById('mdViewer').classList.remove('open');
+}
+function openBranchSheet() {
+  document.getElementById('branchSheet').classList.add('open');
+}
+function closeBranchSheet() {
+  document.getElementById('branchSheet').classList.remove('open');
+}
+function selectBranch(el, idx) {
+  document.querySelectorAll('.branch-radio').forEach(r => r.classList.remove('selected'));
+  el.querySelector('.branch-radio').classList.add('selected');
+  document.getElementById('branchConfirm').classList.add('enabled');
+}
+
+// Close sheets when clicking outside (for chat-specific sheets)
+document.getElementById('newChatDialog').addEventListener('click', function(e) {
+  if (e.target === this) closeNewChatDialog();
+});
+</script>
+</body>
+</html>
