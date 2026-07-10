@@ -59,6 +59,7 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/',
               pageBuilder: (context, state) => CupertinoPage(
+                name: 'themes-list',
                 child: ThemeListScreen(),
               ),
             ),
@@ -69,6 +70,7 @@ final appRouter = GoRouter(
                 final scrollToNodeId = state.uri.queryParameters['scrollToNodeId'];
                 final searchPrefill = state.uri.queryParameters['searchPrefill'];
                 return CupertinoPage(
+                  name: 'theme-tree-$themeId',
                   child: ThemeDetailScreen(
                     themeId: themeId,
                     scrollToNodeId: scrollToNodeId,
@@ -92,6 +94,7 @@ final appRouter = GoRouter(
                                 : '$themeId/$nodeId',
                           );
                 return CupertinoPage(
+                  name: 'chat-$nodeId',
                   child: ChatScreen(
                     themeId: themeId,
                     nodeId: nodeId,

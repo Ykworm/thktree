@@ -39,6 +39,9 @@ import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
+import 'package:thk_tree/domain/node.dart';
+import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
+    show localizedThemeTitle;
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({
@@ -92,6 +95,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// 切换模型时重置为 false，避免新模型不支持时还保留开启状态）。
   bool _deepThinkingEnabled = false;
 
+  /// 缓存「分支回调」provider 的 notifier 引用。
+  ///
+  /// 在 initState 里读一次并存起来，避免 dispose 时再用 `ref`——
+  /// widget 卸载后 `ref` 依赖的 BuildContext 已失效。
+  BranchFromSelectionNotifier? _branchNotifier;
+
+  /// 我们写入 [branchFromSelectionProvider] 的具体回调闭包。
+  ///
+  /// dispose 时用于精准判断「该 provider 仍是我们设的值」才清空，
+  /// 避免误清掉后挂载的聊天页写入的新值（闭包引用可比较）。
+  void Function(String)? _branchCallback;
+
   @override
   void initState() {
     super.initState();
@@ -100,6 +115,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       title: widget.title,
       autoTriggerReply: widget.autoTriggerReply,
     );
+    // 读 notifier 引用是安全的（不修改 provider，不违反构建期断言），
+    // 缓存起来供 dispose 使用。
+    _branchNotifier = ref.read(branchFromSelectionProvider.notifier);
+    // 把"从活跃选区直接分支"的回调注册到全局 provider，
+    // 供选区工具栏「分支」按钮读取（见 buildClipsContextMenu）。
+    // 这样分支从活跃选区即时触发，不依赖 currentSelectionProvider 的残留值。
+    //
+    // 注意：必须延迟到首帧构建完成后再写 provider。
+    // 在 initState（widget 树构建期）内直接改 provider 会触发 Riverpod 的
+    // `_debugCanModifyProviders` 断言（Tried to modify a provider while the
+    // widget tree was building）。用 addPostFrameCallback 移出构建期。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cb = (text) => unawaited(_branchFromSelection(context, text));
+      _branchCallback = cb;
+      _branchNotifier?.state = cb;
+    });
+  }
+
+  @override
+  void dispose() {
+    // 卸载时清空分支回调，避免被已销毁的 chat 上下文误触发。
+    // 注意：不能在 dispose 同步改 provider —— 此时 widget 树仍在 finalize，
+    // Riverpod 的 _debugCanModifyProviders 断言会拦截（缓存引用也没用，
+    // 因为断言看的是"是否在构建/finalize 期"，不是"是否用 ref"）。
+    // 延迟到微任务，此时已脱离构建期；并用闭包引用做守卫，只清我们自己设的值。
+    final notifier = _branchNotifier;
+    final cb = _branchCallback;
+    Future.microtask(() {
+      if (notifier?.state == cb) notifier?.state = null;
+    });
+    super.dispose();
   }
 
   /// 从当前对话的 providerId/modelId 查找 contextWindow，找不到则 fallback
@@ -204,6 +251,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    // 面包屑：用主题详情 controller 拿全量节点，沿 parentId 回溯祖先链。
+    // 加载中/出错时给空列表（ThkBreadcrumbRow 自动渲染为 SizedBox.shrink）。
+    final themeDetailAsync = ref.watch(
+      themeDetailControllerProvider(widget.themeId),
+    );
+    final crumbs = themeDetailAsync.when(
+      data: (data) => _buildCrumbs(
+        l10n,
+        data.nodes,
+        localizedThemeTitle(l10n, data.themeTitle),
+      ),
+      loading: () => const <BreadcrumbSegment>[],
+      error: (_, __) => const <BreadcrumbSegment>[],
+    );
 
     // 监听 auto title 任务结果，更新本地 _displayedTitle 缓存。
     ref.listen<AsyncValue<AutoTitleState>>(
@@ -411,6 +473,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         children: [
           Column(
             children: [
+              if (crumbs.isNotEmpty)
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 0.5),
+                    ),
+                  ),
+                  child: ThkBreadcrumbRow(crumbs: crumbs),
+                ),
               // 消息列表 - 面板出现时它会被压缩变小
               Expanded(
                 child: Listener(
@@ -623,6 +694,92 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
     );
+  }
+
+  /// 根据当前节点沿 parentId 回溯祖先链，构造面包屑。
+  ///
+  /// 顺序：主题(tab) → 主题树 → 各级祖先节点 → 当前节点（最后一段不可点）。
+  /// 聊天页位于 go_router 的 StatefulShellBranch（themes 分支）内，go_router
+  /// 自己管理该分支的 navigator 栈，因此每段用 [BreadcrumbSegment.goPath]
+  /// 走声明式 `GoRouter.go(path)` 回跳，不能用 popUntil（会把 go_router 的
+  /// route match list 摘空而崩溃）。
+  /// 防御：跳过 title 明显是 ULID/原始 ID 的祖先段；当前节点的回退标题
+  /// 若像 ID 则替换为通用文案，避免在 UI 上暴露 thm_/nd_/msg_ 等内部标识。
+  ///
+  /// 注意：当节点数据可用时（current != null），当前节点标签优先用磁盘上的
+  /// [NodeEntity.title]（真实 title），而非 [widget.title]——后者来自 router extra
+  /// 参数，面包屑 GoRouter.go() 回跳时不传 extra，router 会回退到
+  /// '$themeId/$nodeId' 默认值，若用它做标签会误触发 ID 过滤或暴露内部 ID。
+  static const _ulidPrefixes = ['thm_', 'nd_', 'nt_', 'msg_'];
+
+  bool _looksLikeRawId(String s) =>
+      _ulidPrefixes.any((p) => s.startsWith(p));
+
+  List<BreadcrumbSegment> _buildCrumbs(
+    AppLocalizations l10n,
+    List<NodeEntity> nodes,
+    String themeTitle,
+  ) {
+    final themeId = widget.themeId;
+    final segments = <BreadcrumbSegment>[
+      BreadcrumbSegment(label: l10n.themesTabLabel, goPath: '/'),
+      BreadcrumbSegment(
+        label: themeTitle,
+        goPath: '/themes/$themeId/tree',
+      ),
+    ];
+
+    final current =
+        nodes.where((n) => n.nodeId == widget.nodeId).firstOrNull;
+    if (current == null) {
+      final fallbackTitle = _displayedTitle ?? widget.title;
+      segments.add(
+        BreadcrumbSegment(
+          label: _looksLikeRawId(fallbackTitle)
+              ? l10n.noTitle
+              : fallbackTitle,
+        ),
+      );
+      return segments;
+    }
+
+    // 回溯祖先链：current → … → root
+    final chain = <NodeEntity>[];
+    final byId = {for (final n in nodes) n.nodeId: n};
+    var cursor = current!; // current 已在上方面 null 检查后 return
+    while (true) {
+      chain.add(cursor);
+      final parentId = cursor.parentId;
+      if (parentId == null) break;
+      final parent = byId[parentId];
+      if (parent == null) break;
+      cursor = parent;
+    }
+    chain.removeAt(0); // 去掉 current 本身
+    // 此时 chain 为 [parent … root]，反转后为 [root … parent]
+    for (final n in chain.reversed) {
+      // 跳过 title 是原始 ULID 的节点（创建时未命名、title 回退到了 ID）。
+      if (_looksLikeRawId(n.title)) continue;
+      segments.add(
+        BreadcrumbSegment(
+          label: n.title,
+          goPath: '/themes/$themeId/nodes/${n.nodeId}',
+        ),
+      );
+    }
+    // 当前节点（最后一段，不可点）。
+    // 优先用磁盘上的真实 title（current.title），不用 widget.title——
+    // widget.title 来自 router extra，面包屑 go() 回跳时不传 extra，
+    // router 会回退到 '$themeId/$nodeId' 默认值，暴露内部 ID。
+    final currentLabel = _displayedTitle ?? current!.title;
+    segments.add(
+      BreadcrumbSegment(
+        label: _looksLikeRawId(currentLabel)
+            ? l10n.noTitle
+            : currentLabel,
+      ),
+    );
+    return segments;
   }
 
   void _dismissModelPanel() {
@@ -941,15 +1098,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  /// 从顶部 branch 按钮进入：先弹 sheet 让用户选 mode，再 [_showBranchFlow]。
-  Future<void> _onCreateBranchFromMenu(BuildContext context) async {
-    // 在弹 sheet 之前读取选中文本，避免选区被清除
-    final selected = ref.read(currentSelectionProvider);
-    debugPrint('[ChatScreen] _onCreateBranchFromMenu: selectedText=${selected?.length ?? 'null'} chars');
-
+  /// 从「活跃选区」直接分支：选区工具栏「分支」按钮触发。
+  /// 此时选区一定还在，直接把选中文本作为 source 传入，不经过全局残留选区。
+  Future<void> _branchFromSelection(BuildContext context, String selectedText) async {
     final mode = await showBranchModeSheet(
       context,
-      selectedText: selected,
+      selectedText: selectedText,
     );
     if (mode == null) return;
     if (!context.mounted) return;
@@ -957,7 +1111,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     await _showBranchFlow(
       context,
       mode: mode,
-      selectedText: selected?.trim().isNotEmpty == true ? selected : null,
+      selectedText: selectedText,
+    );
+  }
+
+  /// 从顶部「更多 → 分支」按钮进入：先弹 sheet 让用户选 mode，再 [_showBranchFlow]。
+  /// 注意：此时活跃选区已随浮层打开而收起，不应再用全局残留选区
+  /// （见 [currentSelectionProvider] 的"保留上次有效选区"约定），故 selectedText 传 null。
+  Future<void> _onCreateBranchFromMenu(BuildContext context) async {
+    final mode = await showBranchModeSheet(context);
+    if (mode == null) return;
+    if (!context.mounted) return;
+
+    await _showBranchFlow(
+      context,
+      mode: mode,
+      selectedText: null,
     );
   }
 

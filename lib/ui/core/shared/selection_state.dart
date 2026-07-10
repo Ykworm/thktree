@@ -23,6 +23,26 @@ class CurrentSelectionNotifier extends Notifier<String?> {
   String? build() => null;
 }
 
+/// 从「活跃选区」直接分支的回调持有者。
+///
+/// 由 chat_screen 在挂载时写入（指向其 `_branchFromSelection`），卸载时清空。
+/// 选区工具栏的「分支」按钮读取它，从而能在选区仍活跃时即时分支，
+/// 而不依赖 [currentSelectionProvider] 的残留值（那是为了支持"选中→分享为图片"
+/// 等选区收起后仍要用的场景而故意保留的）。
+///
+/// 用 provider 而非 widget 回调透传，是为了避免向嵌套的 SelectionArea
+/// （消息体 / 推理区 / 表格等）逐个透传函数字段——那些子 widget 多为
+/// `const` 构造，持有函数字段会破坏 `const`。
+final branchFromSelectionProvider =
+    NotifierProvider<BranchFromSelectionNotifier, void Function(String)?>(
+  BranchFromSelectionNotifier.new,
+);
+
+class BranchFromSelectionNotifier extends Notifier<void Function(String)?> {
+  @override
+  void Function(String)? build() => null;
+}
+
 /// 把 SelectionArea 捕获到的选区同步进 [currentSelectionProvider]。
 ///
 /// 写成顶层函数，避免依赖某个 State 的 `ref`，这样无论调用方是
