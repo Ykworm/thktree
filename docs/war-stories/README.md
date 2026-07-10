@@ -86,6 +86,8 @@ YYYY-MM-DD-简短问题描述.md
 ### 2026-07
 
 - `ui-ux/2026-07-09-search-tag-cloud-no-trigger.md` — Tag cloud 点击不触发搜索（ValueNotifier 只在值变化时触发 listener，不触发初始值；动态创建的 SearchResults widget 在 initState 中未处理初始值；initState 检查并处理）
+- `flutter/2026-07-09-chat-breadcrumb-nav-crashes.md` — 聊天页面包屑导航三连崩溃：①initState 同步改 provider（`addPostFrameCallback` 延迟）②dispose finalize 期改 provider（"缓存 notifier 引用"没用，需 `Future.microtask` 延迟）③go_router 路由误用 `popUntil` 摘空栈（改 `GoRouter.go(path)`）；连带修复 `go()` 不传 extra 导致 `widget.title` 回退 `$id/$id` 暴露内部 ULID
+- `flutter/2026-07-09-chat-selection-residual-branch-preview.md` — 复制/选区文本在「创建分支」预览残留（选中→复制/放入抽屉→分支仍预览旧文本；`currentSelectionProvider` 故意保留上次选区以支持"选中→分享为图片"，消费后未清导致残留；新增选区工具栏「分支」按钮读 `branchFromSelectionProvider` 从活跃选区即时分支 + 复制/分支/放入抽屉消费即清 `currentSelectionProvider`；「更多→分支」改传 `selectedText:null`；initState/dispose 写 provider 复用面包屑崩溃的 `addPostFrameCallback`/`Future.microtask` 延迟修法）
 - `packages/2026-07-09-fts5-cjk-tokenization.md` — FTS5 CJK 分词导致子串搜索失败（unicode61 将连续 CJK 视为一个 token；新增 _tokenizeCjk 逐字分词 + _cleanSnippet 清理 + v6 迁移触发索引重建）
 - `flutter/2026-07-08-titlebar-model-mismatch-dual-fallback.md` — Title bar 显示模型与实际调用不一致（显示侧 resolveChatModel 4 级 vs 调用侧内嵌 2 级 fallback，优先级缺失 + 兜底条件不同 + 异步竞态；空白分支 100% 命中；统一为 _resolveChatModelForLlm 复用 1-3 级 + 自行第 4 级查 apiKey；详见 ADR-026）
 - `flutter/2026-07-08-nested-selectionarea-branch-preview.md` — 嵌套 SelectionArea 导致外层 onSelectionChanged 收不到选区（chat 选文字→分支预览消失；GptMarkdown 不可选被迫内层自包 SelectionArea，外层感知不到子选区；用共享 NotifierProvider + 顶层 `syncSelection(context,v)` 从内层透出；顺带踩 riverpod 3.0 移除 StateProvider）

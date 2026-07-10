@@ -62,6 +62,8 @@
 | 聊天内搜索 | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/widgets/chat_search_sheet.dart` | 更多菜单入口，在当前对话的所有消息中搜索文本，高亮显示结果 |
 | 本次发言 | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/user_questions.dart` | 更多菜单入口，展示当前会话所有用户消息列表，支持点击查看对应回复 |
 | Context Usage Bar | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart`（`_ContextUsageBar`） | 对话页底部 1px 高 token 使用率进度条，>85% 变红警示 |
+| 聊天页祖先链面包屑 | chat | ✅ 完成 | 2026-07-09 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart`（`_buildCrumbs`）+ `lib/ui/core/widgets/thk_breadcrumb_nav.dart` | 消息列表顶部 `主题 / 主题名 / 祖先 / 当前` 面包屑，沿 parentId 回溯，点祖先段 `GoRouter.go(path)` 跳回；修 4 个运行时崩溃（initState/dispose 改 provider、go_router 栈摘空、暴露内部 ID），详见 [spec](modules/chat/specs/chat-breadcrumb-nav.md) + [war-story](war-stories/flutter/2026-07-09-chat-breadcrumb-nav-crashes.md) |
+| 选区工具栏分支 + 复制即清选区 | chat | ✅ 完成 | 2026-07-09 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/clips_context_menu.dart` + `lib/ui/core/shared/selection_state.dart` + `lib/ui/features/chat/chat_screen.dart` | 选区菜单（复制 / 全选 / 分支 / 放入抽屉）新增「分支」按钮，从活跃选区即时分支（读 `branchFromSelectionProvider`）；复制 / 放入抽屉 / 分支消费选区后即清除全局选区状态，避免分支预览残留已取消的选区；「更多 → 分支」改传 `selectedText: null`；详见 [war-story](war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md) |
 
 ### 联网搜索
 

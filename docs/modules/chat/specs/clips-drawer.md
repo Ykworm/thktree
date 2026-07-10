@@ -21,11 +21,16 @@ ThkTree 现有的记录方式都比较"重"——开一轮完整对话、写一�
 
 ### 3.1 存入
 
-- **入口**：长按选中文本 → 系统选区菜单追加"放入抽屉"按钮（与"复制""全选"并列）
+- **入口**：长按选中文本 → 系统选区菜单追加"放入抽屉"按钮（与"复制""全选""分支"并列，共 4 项）
 - **来源**：对话消息文本（`MessageBubble` 内的 `SelectionArea`）
 - **反馈**：
   - sheet 当前打开 → 末端短暂高亮新 item + 微振动
   - sheet 未打开 → 仅微振动
+
+> **选区菜单共 4 项**：复制 / 全选 / 分支 / 放入抽屉。其中"复制""分支""放入抽屉"都消费选区，
+> 执行后清除全局选区状态（`currentSelectionProvider`），避免后续分支流程误用残留选区。
+> "分支"从**活跃选区**即时触发（读取 `branchFromSelectionProvider` 回调），详见
+> [war-story：选区文本在分支预览残留](../../war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md)。
 
 ### 3.2 取出
 
@@ -167,7 +172,10 @@ class Clip {
 
 ### 8.3 存入 — TextSelection 菜单扩展
 
-`MessageBubble` 内的 `SelectionArea` 已经通过 `selection_state.dart` 的 `currentSelectionProvider` 捕获选区文本。存入入口在此基础之上追加选区菜单按钮。
+`MessageBubble` 内的 `SelectionArea` 已经通过 `selection_state.dart` 的 `currentSelectionProvider` 捕获选区文本。选区菜单在此基础之上追加按钮，固定 4 项：复制 / 全选 / **分支** / 放入抽屉。
+
+- **分支**：仅当 `branchFromSelectionProvider` 已注册回调（当前在聊天页）时显示，点击从**活跃选区**即时分支，不经过 `currentSelectionProvider` 残留值。
+- **消费即清**：复制 / 放入抽屉 / 分支三个消费选区的动作执行后都 `currentSelectionProvider.notifier.state = null`，避免后续分支流程误用残留选区（详见 [war-story：选区文本在分支预览残留](../../war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md)）。
 
 **技术确认**：Flutter 3.44（项目当前版本），`SelectableText` / `SelectionArea` 的 `contextMenuBuilder` 回调是稳定 API（3.3+ 就有）。可行。
 
@@ -183,6 +191,7 @@ SelectionArea(
       return editableTextState.contextMenu;
     }
     final selectedText = value.text.substring(sel.start, sel.end);
+    final onBranch = ref.read(branchFromSelectionProvider);
     return CupertinoAdaptiveTextSelectionToolbar.buttonItems(
       anchors: editableTextState.contextMenuAnchors,
       buttonItems: [
@@ -191,6 +200,7 @@ SelectionArea(
           onPressed: () {
             Clipboard.setData(ClipboardData(text: selectedText));
             editableTextState.hideToolbar();
+            ref.read(currentSelectionProvider.notifier).state = null; // 消费即清
           },
         ),
         ContextMenuButtonItem(
@@ -199,11 +209,21 @@ SelectionArea(
             SelectionChangedCause.toolbar,
           ),
         ),
+        if (onBranch != null)
+          ContextMenuButtonItem(
+            label: '分支',
+            onPressed: () {
+              editableTextState.hideToolbar();
+              ref.read(currentSelectionProvider.notifier).state = null;
+              onBranch(selectedText); // 从活跃选区即时分支
+            },
+          ),
         ContextMenuButtonItem(
           label: '放入抽屉',
           onPressed: () {
             ref.read(clipStorageProvider).add(selectedText);
             editableTextState.hideToolbar();
+            ref.read(currentSelectionProvider.notifier).state = null; // 消费即清
             // 可选：HapticFeedback 反馈
           },
         ),

@@ -128,3 +128,18 @@ debugPrint('[ChatScreen] _onCreateBranchFromMenu: selectedText=${selected?.lengt
      比"猜被清空"快得多——本问题本质是"从不回调"而非"被清空"。
   3. riverpod 升级到 3.0 后，`StateProvider` 已移除，新状态统一用 `NotifierProvider`；
      看到 `undefined_function: StateProvider` 别犹豫，直接改写法。
+
+## 更新日志（2026-07-09）
+
+本文记录的"选区捕获透出"方案保留，但**分支入口的消费侧行为已演进**，避免残留文本：
+
+- **「更多 → 分支」不再读全局残留选区**：原"解决方案 #3"写的 `_onCreateBranchFromMenu` 读
+  `ref.read(currentSelectionProvider)` 已改为 `selectedText: null`。原因见
+  [`2026-07-09-chat-selection-residual-branch-preview.md`](2026-07-09-chat-selection-residual-branch-preview.md)——
+  `currentSelectionProvider` 故意"保留上次有效选区"以支持"选中 → 分享为图片"，
+  但复制 / 放入抽屉消费选区后不清，会导致分支预览残留用户已取消的选区。
+- **新增「选区工具栏分支」按钮**：选区菜单追加「分支」项，读取新增的
+  `branchFromSelectionProvider`（chat_screen 挂载时注册 `_branchFromSelection` 回调），
+  从**活跃选区**即时分支，不经过残留状态。
+- **消费即清**：复制 / 放入抽屉 / 分支三个消费选区的动作执行后都 `currentSelectionProvider.notifier.state = null`。
+- 选区菜单现为 4 项：复制 / 全选 / 分支 / 放入抽屉（`buildClipsContextMenu`）。

@@ -43,6 +43,8 @@
 - Chat-to-Note（2026-07-04）：assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote` 回调），自动用当前主题创建笔记并跳转 `NoteEditorScreen`
 - 查看原始 Markdown（2026-07-05）：更多菜单入口，底部 sheet 展示当前对话的 `session.md` 原始文件内容（等宽字体），支持一键复制到剪贴板
 - 模型名显示（2026-07-06）：assistant 消息气泡标题显示 LLM 模型名（如 `助手 · gpt-4o`），同对话内切换模型后每条回复标注实际使用的模型；`session.md` 消息头新增可选 `· modelId` 字段，向后兼容旧消息
+- **聊天页祖先链面包屑**（2026-07-09）：节点深埋树里、导航栏只显当前节点标题，不知在第几层。聊天页消息列表顶部加面包屑 `主题 / 主题名 / 祖先1 / … / 当前节点`，沿 `parentId` 回溯（`_buildCrumbs` 读 `themeDetailControllerProvider(themeId).nodes`），点任意祖先段经 `GoRouter.go(path)` 声明式跳回。末段（当前节点）不可点。**不放**主题详情页（tree 页平铺无层级，面包屑无意义）。涉及 4 个运行时崩溃修复（initState/dispose 改 provider 断言、go_router 栈摘空、暴露内部 ULID），详见 [spec](specs/chat-breadcrumb-nav.md) + [war-story](../../war-stories/flutter/2026-07-09-chat-breadcrumb-nav-crashes.md）。
+- **选区工具栏分支 + 复制即清选区**（2026-07-09）：选区菜单（复制 / 全选 / 分支 / 放入抽屉）新增「分支」按钮，从活跃选区即时分支——读取 `branchFromSelectionProvider`（chat_screen 挂载时注册 `_branchFromSelection` 回调，卸载时清空），此刻选区一定还在，直接消费，不经过全局残留选区。复制 / 放入抽屉 / 分支三个"消费选区"的动作执行后清除全局选区状态（`currentSelectionProvider`），避免分支预览残留已取消的选区；「更多 → 分支」改传 `selectedText: null`，不再读残留选区。根因与修法见 [war-story](../../war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md）。
 
 ## 代码文件
 
@@ -61,6 +63,8 @@
 | `lib/ui/core/shared/markdown_builders.dart` | GptMarkdown 自定义构建器（含 `buildLatex`——`FittedBox(scaleDown)` 包裹 `Math.tex`） | 61 |
 | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支流式结束后后台补 title：3 次重试（指数退避 1s/2s/4s）+ 调 LLM + 写 DB + refresh tree；`ref.keepAlive()` 保活（2026-06-29 新增） | 新增 |
 | `integration_test/chat_async_recovery_test.dart` | 后台中断恢复集成测试（4 个 testWidgets：findInterrupted / resumeInterrupted / cancelResumeQueue / bridge.begin-end 配对） | 新增 |
+| `lib/ui/core/widgets/thk_breadcrumb_nav.dart` | 通用面包屑组件：`BreadcrumbSegment`（label + 可选 goPath / routeName）+ `ThkBreadcrumbRow`（分隔符 `/`、末段不可点）；`_popToRoute` 按 goPath 走 `GoRouter.go()` / 否则 `popUntil` | 复用 |
+| `integration_test/chat_breadcrumb_test.dart` | 面包屑回归测试：进聊天页不崩 + 逐段点击回跳正确 + 全程无 provider/go_router 崩溃（纯导航、不依赖 LLM） | 新增 |
 
 ## 子文档
 
@@ -68,6 +72,7 @@
 - 集成测试 — 空白分支自动 title 持久化（case 9.4 DB check / 9.5 空白 E2E / 9.6 提前 pop 后台完成，归属 [branch-creation 测试矩阵](../../_shared/integration-testing/branch-creation.md) § 3.5，2026-06-29）：[docs/_shared/integration-testing/branch-creation.md](../../_shared/integration-testing/branch-creation.md)
 - 集成测试 — 后台中断恢复（iOS only，ChatTaskService + BackgroundTaskBridge）：[docs/_shared/integration-testing/chat-async-recovery.md](../../_shared/integration-testing/chat-async-recovery.md)
 - 集成测试总论 / fixtures / helpers：[docs/_shared/integration-testing/README.md](../../_shared/integration-testing/README.md)
+- 聊天页祖先链面包屑（spec）：[specs/chat-breadcrumb-nav.md](specs/chat-breadcrumb-nav.md)
 
 ## 关键设计原则
 
@@ -102,3 +107,5 @@
 - 2026-07-06：DeepSeek / MiniMax 思维链输出 + Per-session 深度思考开关 + 重发 bug 修复——`_extractClaudeDelta` 补全 `thinking_delta` 解析（修复 DeepSeek-reasoner / V4 等看不见 thinking 的零回报 bug，见 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析)）；新增 `ModelCapability.deepThinking` / `ModelCapability.alwaysThinking` 双 cap 区分（opt-in / 服务端锁定默认开），ChatComposer 加深度思考 chip 镜像 web search 模式；`retryLastMessage` 抽 `_triggerLlmStream` helper，**重发不再重复追加 user 消息**（修复 session.md 每次重发多一份 user 的 bug，见 [ADR-023](../../DECISIONS.md#adr-023-retrylastmessage-重构避免重发重复追加-user-消息)）。详见 [CHANGELOG/2026-07-06](../../CHANGELOG/2026-07-06-deepthinking-toggle.md)。
 - 2026-07-08：模型能力集中校正——KIMI k2.6/k2.5 加入深度思考（关闭显式 `disabled`）；DeepSeek 关闭思考显式发 `disabled`；MiniMax-M3 / KIMI 思考+图片互斥（`!hasImage` 守卫）；KIMI 白名单收窄到 k2.6/k2.5、MiniMax 到 M3；Seed-2.0-pro 联网模型级屏蔽；UI/发送侧 vision 加 `inferCapabilities` fallback；DeepSeek V4 公开 API 不支持视觉已回退视觉代码。详见 [CHANGELOG/2026-07-08](../../CHANGELOG/2026-07-08-model-capabilities-and-thinking-fixes.md)。
 - 2026-07-08（补丁）：Seed-2.0-pro 模型 ID 修正——白名单 `doubao-seed-2-0-pro` → `doubao-seed-2-0-pro-260215`（ARK API 要求带日期后缀，旧 ID 调用失败）；`isModelWebSearchUnsupported` 改为仅屏蔽无日期后缀的旧模型（有后缀的 `260215` 版本支持联网）；新模型走 Responses API（`DoubaoResponsesClient`）而非 legacy Chat Completions。
+- 2026-07-09：聊天页祖先链面包屑——消息列表顶部加 `主题 / 主题名 / 祖先 / 当前` 面包屑，沿 `parentId` 回溯（[spec](specs/chat-breadcrumb-nav.md)）。修 4 个运行时崩溃：①initState 同步写 provider（`addPostFrameCallback` 延迟）②dispose finalize 期改 provider（`Future.microtask` 延迟 + 闭包守卫）③go_router 路由误用 `popUntil` 摘空栈（改 `GoRouter.go(path)` 声明式回跳）④面包屑 `go()` 不传 extra 导致 `widget.title` 回退成 `$id/$id` 暴露内部 ULID（当前节点优先用 `current!.title`，去掉 `/` 误检）。集成测试 `chat_breadcrumb_test.dart` 逐段点击验证。`+1: All tests passed!`。详见 [war-story](../../war-stories/flutter/2026-07-09-chat-breadcrumb-nav-crashes.md) + [CHANGELOG](../../CHANGELOG/2026-07-09-chat-breadcrumb-nav.md)。
+- 2026-07-09：选区文本在「创建分支」预览残留修复——选中文字→复制 / 放入抽屉后，点「更多 → 分支」仍预览旧文本。`currentSelectionProvider` 故意保留上次选区（支持"选中 → 分享为图片"），但消费选区后未清除导致残留。新增选区工具栏「分支」按钮（读 `branchFromSelectionProvider`，chat_screen 挂载时注册 `_branchFromSelection`，从活跃选区即时分支）；复制 / 放入抽屉 / 分支消费即清 `currentSelectionProvider`；「更多 → 分支」改传 `selectedText: null`。`branchFromSelectionProvider` 的注册 / 清空复用面包屑崩溃的 `addPostFrameCallback` / `Future.microtask` 延迟修法（initState / dispose 同步写 provider 会触发 Riverpod 构建期断言）。详见 [war-story](../../war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md)。
