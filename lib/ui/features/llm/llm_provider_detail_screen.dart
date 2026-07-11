@@ -528,10 +528,10 @@ class _ExpandableModelTileState extends State<_ExpandableModelTile> {
           trailing: AnimatedRotation(
             turns: _isExpanded ? 0.25 : 0,
             duration: const Duration(milliseconds: 200),
-            child: const Icon(
+            child: Icon(
               CupertinoIcons.chevron_right,
               size: 18,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.textSecondary,
             ),
           ),
           onTap: () => setState(() => _isExpanded = !_isExpanded),

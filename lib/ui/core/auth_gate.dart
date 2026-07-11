@@ -120,7 +120,7 @@ class _AuthGateState extends ConsumerState<AuthGate> with WidgetsBindingObserver
         if (!_authenticated) ...[
           // Dim the app content and absorb all touches.
           const Positioned.fill(
-            child: ColoredBox(color: Color(0xF0000000)),
+            child: ColoredBox(color: AppColors.scrimStrong),
           ),
           // Lock overlay.
           GestureDetector(
@@ -142,7 +142,7 @@ class _LockScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: CupertinoPageScaffold(
-        backgroundColor: const Color(0x00000000),
+        backgroundColor: AppColors.transparent,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

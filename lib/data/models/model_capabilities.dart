@@ -39,7 +39,8 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   'moonshot-v1-32k-vision-preview': {ModelCapability.text, ModelCapability.vision},
   'moonshot-v1-128k-vision-preview': {ModelCapability.text, ModelCapability.vision},
 
-  // Minimax 多模态 + 推理模型（M3 通过 body.thinking=true 启用 CoT，
+  // Minimax 多模态 + 推理模型（M3 通过 body.thinking={type:adaptive/disabled}
+  // 控制 CoT——对象格式，不是布尔值；省略时默认 adaptive on，关时须显式 disabled。
   // 响应通过 reasoning_content 流式回传）
   'minimax-m3': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
 

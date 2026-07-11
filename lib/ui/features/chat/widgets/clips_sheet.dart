@@ -19,7 +19,7 @@ void showClipsSheet(BuildContext context, TextEditingController controller) {
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
-    backgroundColor: CupertinoColors.transparent,
+    backgroundColor: AppColors.transparent,
     builder: (_) => ClipsSheet(controller: controller),
   );
 }
@@ -98,8 +98,8 @@ class _ClipsSheetState extends ConsumerState<ClipsSheet> {
 
     return Container(
       height: sheetHeight,
-      decoration: const BoxDecoration(
-        color: CupertinoColors.systemBackground,
+      decoration: BoxDecoration(
+        color: AppColors.pageBg,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSp.sheetTopRadius),
         ),
@@ -267,7 +267,7 @@ class _ClipPreviewDialog extends StatelessWidget {
       // 点击背景关闭
       onTap: () => Navigator.of(context).pop(),
       child: Container(
-        color: CupertinoColors.black.withValues(alpha: 0.4),
+        color: AppColors.black.withValues(alpha: 0.4),
         alignment: Alignment.center,
         child: GestureDetector(
           // 点击 card 内部不关闭
@@ -277,7 +277,7 @@ class _ClipPreviewDialog extends StatelessWidget {
             height: cardHeight,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             decoration: BoxDecoration(
-              color: CupertinoColors.systemBackground,
+              color: AppColors.pageBg,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(

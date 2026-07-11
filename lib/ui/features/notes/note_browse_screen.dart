@@ -155,7 +155,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
           child: Center(
             child: Text(
               _error.toString(),
-              style: TextStyle(color: CupertinoColors.systemRed),
+              style: TextStyle(color: AppColors.destructive),
             ),
           ),
         ),

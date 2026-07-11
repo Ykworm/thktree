@@ -1139,6 +1139,15 @@
   "@noTitle": {
     "description": "Note editor title placeholder"
   },
+  "maxNodeDepthReached": "Reached the maximum nesting level ({max}). Cannot create a deeper branch.",
+  "@maxNodeDepthReached": {
+    "description": "Alert shown when creating a branch / moving a note would exceed the maximum node tree depth",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "startWriting": "Start writing...",
   "@startWriting": {
     "description": "Note editor body placeholder"

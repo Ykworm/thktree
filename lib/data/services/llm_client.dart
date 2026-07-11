@@ -286,7 +286,10 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
       }
 
       // 深度思考（OpenAI 兼容协议）：
-      // - MiniMax-M3: `thinking: true`（布尔值）
+      // - MiniMax-M3: `thinking: {type: "adaptive"/"disabled"}`（对象格式！
+      //   ⚠️ 不是布尔值——发 `thinking: true` 会 400。省略时 M3 默认即 adaptive
+      //   （思考开着），所以关时必须显式 disabled，否则开关「关不掉」。
+      //   开时用 adaptive（M3 无独立 enabled，adaptive 即思考 on）。）
       // - KIMI k2.5/k2.6: `thinking: {type: "enabled"/"disabled"}`（对象格式，
       //   与 DeepSeek Anthropic 兼容路径同构；注意 KIMI 默认也是 enabled！
       //   关时必须显式 disabled，否则开关「关不掉」——跟 DeepSeek 同款 bug）
@@ -299,15 +302,18 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
       // 图片请求走非思考模式（图片识别正常），避免报错。
       if (deepThinking && !hasImage) {
         if (providerName.toLowerCase().contains('minimax')) {
-          body['thinking'] = true;
+          // M3 用对象格式；adaptive 即思考 on（无独立 enabled）。
+          body['thinking'] = {'type': 'adaptive'};
         } else if (providerName.toLowerCase().contains('kimi') ||
             providerName.toLowerCase().contains('moonshot')) {
           body['thinking'] = {'type': 'enabled'};
         }
       } else if (!webSearch && !hasImage &&
           (providerName.toLowerCase().contains('kimi') ||
-           providerName.toLowerCase().contains('moonshot'))) {
-        // KIMI 推理模型（k2.5/k2.6）默认开启思考；用户关掉开关时显式 disabled。
+           providerName.toLowerCase().contains('moonshot') ||
+           providerName.toLowerCase().contains('minimax'))) {
+        // KIMI（k2.5/k2.6）/ MiniMax-M3 默认都开启思考；用户关掉开关时须显式 disabled，
+        // 否则省略 thinking → 服务端默认 on → 开关「关不掉」。
         // （webSearch 场景已在上方单独处理：强制 disabled + 禁止同时 reasoning_effort）
         // 含图片时不进入此分支（避免 disabled + image 组合报错）。
         final caps = inferCapabilities(model);

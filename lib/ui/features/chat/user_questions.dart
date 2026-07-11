@@ -78,19 +78,19 @@ class UserQuestionImagePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.black,
+      backgroundColor: AppColors.black,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: CupertinoColors.black,
+        backgroundColor: AppColors.black,
         middle: Text(
           AppLocalizations.of(context)!.myQuestionsTitle,
-          style: const TextStyle(color: CupertinoColors.white),
+          style: const TextStyle(color: AppColors.white),
         ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
           child: const Icon(
             CupertinoIcons.back,
-            color: CupertinoColors.white,
+            color: AppColors.white,
           ),
         ),
       ),

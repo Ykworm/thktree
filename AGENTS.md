@@ -12,13 +12,14 @@
 - 验证优先：实现前先定义验收方式；禁止为凑覆盖率生成低价值测试
 - 搜索：`rg` 优先于 `grep`，任何场景不得跳过
 - context-sync 只改 doc，不改代码、不 commit（详见 `context-sync` skill）
+- 设计 token（code-first）：改色先改 `lib/ui/core/theme/app_colors.dart`（真源），禁止 lib/ 内裸 `CupertinoColors.*` / `Color(0x…)` / `Color.from*`；改完跑 `dart run scripts/sync-design-tokens.dart` 同步 `docs/_shared/design-tokens.yaml`（详见 `docs/_shared/design-system.md`）
 
 ## Doc Map（何时读哪个 doc）
 
 - 架构 / 模块边界 → `docs/ARCHITECTURE.md`
 - 功能清单 → `docs/FEATURES.md`
 - 品牌 / 语气 → `docs/BRAND.md`
-- 设计令牌（全端单一来源）→ `docs/_shared/design-tokens.yaml` + 各模块 `design-tokens.yaml`
+- 设计令牌（code-first 真源）→ `lib/ui/core/theme/app_colors.dart`；镜像 `docs/_shared/design-tokens.yaml`；约定 `docs/_shared/design-system.md`；各模块 `design-tokens.yaml`
 - 存储格式 → `docs/_shared/storage-format.md`
 - 架构决策 → `docs/decisions/`（先看 `INDEX.md`）
 - 集成测试 → `docs/_shared/integration-testing/`（写 / 改测试前必读）

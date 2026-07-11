@@ -361,7 +361,7 @@ class _DaysChips extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: days == selected
-                      ? CupertinoColors.white
+                      ? AppColors.white
                       : AppColors.textSecondary,
                 ),
               ),

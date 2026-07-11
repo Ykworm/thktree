@@ -60,12 +60,12 @@ screens:
     states:
       empty:
         text: "l10n.noNotesYet"
-        textColor: "CupertinoColors.secondaryLabel"
+        textColor: "AppColors.textSecondary"
       loading:
         widget: "CupertinoActivityIndicator"
       error:
         widget: "Text(e.toString())"
-        color: "CupertinoColors.systemRed"
+        color: "AppColors.destructive"
 
   # ── 主题内笔记列表 ────────────────────────────────────────
   ThemeNoteListScreen:
@@ -86,7 +86,7 @@ screens:
       subtitle: "'{noteId} · {updatedAt}'"
       key: "ValueKey(meta.noteId)"
       swipeLeft:
-        color: "CupertinoColors.destructiveRed"
+        color: "AppColors.destructive"
         icon: "AppIcons.delete"
         label: "l10n.swipeDelete"
         confirmDialog:
@@ -114,7 +114,7 @@ screens:
         topPadding: 80
       error:
         widget: "Text(e.toString())"
-        color: "CupertinoColors.systemRed"
+        color: "AppColors.destructive"
         topPadding: 80
 
   # ── 笔记详情 / 阅读页 ────────────────────────────────────
@@ -132,7 +132,7 @@ screens:
     trailingActions:
       copy:
         icon: "AppIcons.copy → AppIcons.checkCircle"
-        iconColor: "AppColors.accent → CupertinoColors.systemGreen (2秒)"
+        iconColor: "AppColors.accent → AppColors.success (2秒)"
         visibility: "仅阅读态 + _body.isNotEmpty"
         action: "Clipboard.setData(_body)"
       branch:
@@ -146,7 +146,7 @@ screens:
         onExitEdit: "_store.writeBody() + bump() + _updateSearchIndex()"
       delete:
         icon: "CupertinoIcons.trash"
-        iconColor: "CupertinoColors.systemRed"
+        iconColor: "AppColors.destructive"
         confirmDialog: "CupertinoAlertDialog + isDestructiveAction"
         afterDelete: "deleteNote() + bump() + pop()"
 

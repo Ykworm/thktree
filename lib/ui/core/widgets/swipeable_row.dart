@@ -191,14 +191,14 @@ class _SwipeableRowState extends State<SwipeableRow>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: CupertinoColors.white, size: 20),
+            Icon(icon, color: AppColors.white, size: 20),
             const SizedBox(height: 2),
             Text(
               label,
               maxLines: 1,
               softWrap: false,
               style: TextStyle(
-                color: CupertinoColors.white,
+                color: AppColors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),

@@ -41,7 +41,7 @@ class LlmSettingsScreen extends StatelessWidget {
                   separatorBuilder: (context, index) => Container(
                     height: 0.5,
                     margin: const EdgeInsetsDirectional.only(start: 16),
-                    color: CupertinoColors.separator.resolveFrom(context),
+                    color: AppColors.border,
                   ),
                   itemBuilder: (context, index) {
                     switch (index) {

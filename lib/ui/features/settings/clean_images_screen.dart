@@ -346,7 +346,7 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
                             padding: const EdgeInsets.all(2),
                             child: const Icon(
                               CupertinoIcons.check_mark,
-                              color: CupertinoColors.white,
+                              color: AppColors.white,
                               size: 16,
                             ),
                           ),
@@ -366,7 +366,7 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
                             child: Text(
                               l10n.cleanImagesInUse,
                               style: const TextStyle(
-                                color: CupertinoColors.white,
+                                color: AppColors.white,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -479,7 +479,7 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: CupertinoColors.separator),
+          top: BorderSide(color: AppColors.border),
         ),
         color: CupertinoTheme.of(context).barBackgroundColor,
       ),
@@ -493,10 +493,10 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             onPressed: count == 0 || _deleting ? null : _delete,
             child: _deleting
-                ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                ? const CupertinoActivityIndicator(color: AppColors.white)
                 : Text(
                     l10n.cleanImagesDeleteSelected(count),
-                    style: const TextStyle(color: CupertinoColors.white),
+                    style: const TextStyle(color: AppColors.white),
                   ),
           ),
         ],

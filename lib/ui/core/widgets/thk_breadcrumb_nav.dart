@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// 面包屑导航段。
 ///
@@ -41,6 +42,7 @@ class ThkBreadcrumbRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Wrap(
+        alignment: WrapAlignment.start,
         spacing: 2,
         runSpacing: 2,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -66,7 +68,7 @@ class ThkBreadcrumbRow extends StatelessWidget {
       '/',
       style: TextStyle(
         fontSize: 12,
-        color: CupertinoColors.separator.resolveFrom(context),
+        color: AppColors.border,
         fontWeight: FontWeight.w400,
       ),
     );
@@ -74,19 +76,28 @@ class ThkBreadcrumbRow extends StatelessWidget {
 
   Widget _segment(BuildContext context, BreadcrumbSegment segment, {required bool isLast}) {
     final isActive = !isLast;
+    // 每段设最大宽度 + 单行省略号：长 title 在本段内截断，而不是占用多行、
+    // 把整行面包屑撑高。配合 tree 最大深度 4 层，基本能把面包屑压在 ≤3 行。
+    // 整行仍用 Wrap 左对齐（默认），不整体居中。
+    const maxSegmentWidth = 160.0;
     return GestureDetector(
       onTap: isActive ? () => _popToRoute(context, segment) : null,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        child: Text(
-          segment.label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.w400 : FontWeight.w500,
-            color: isActive
-                ? CupertinoColors.secondaryLabel.resolveFrom(context)
-                : CupertinoColors.label.resolveFrom(context),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: maxSegmentWidth),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+          child: Text(
+            segment.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isActive ? FontWeight.w400 : FontWeight.w500,
+              color: isActive
+                  ? AppColors.textSecondary
+                  : AppColors.textPrimary,
+            ),
           ),
         ),
       ),

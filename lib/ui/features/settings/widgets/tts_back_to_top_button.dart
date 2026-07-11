@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/features/settings/tts_tokens.dart';
 
 /// Player 页右下角浮按钮："↑ 回到顶部"。
@@ -87,7 +87,7 @@ class _TtsBackToTopButtonState extends ConsumerState<TtsBackToTopButton> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: ui.Color.fromRGBO(0, 0, 0, TtsMotion.backToTopShadowAlpha),
+                      color: AppColors.black.withValues(alpha: TtsMotion.backToTopShadowAlpha),
                       blurRadius: TtsMotion.backToTopShadowBlur,
                       offset: Offset(0, TtsMotion.backToTopShadowOffsetY),
                     ),

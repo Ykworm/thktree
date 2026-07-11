@@ -112,7 +112,7 @@ class ThkButton extends StatelessWidget {
           disabledColor: AppColors.accentDeep.withValues(alpha: 0.4),
           onPressed: _effectiveOnPressed,
           child: DefaultTextStyle(
-            style: TextStyle(color: CupertinoColors.white, fontWeight: FontWeight.w600),
+            style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
             child: _content,
           ),
         );

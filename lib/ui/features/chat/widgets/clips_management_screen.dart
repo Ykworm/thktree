@@ -147,7 +147,7 @@ class _ClipsManagementScreenState extends ConsumerState<ClipsManagementScreen> {
                   color: AppColors.destructive,
                   child: const Icon(
                     AppIcons.delete,
-                    color: CupertinoColors.white,
+                    color: AppColors.white,
                     size: 24,
                   ),
                 ),
@@ -186,7 +186,7 @@ class _ClipsManagementScreenState extends ConsumerState<ClipsManagementScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: CupertinoColors.white,
+                  color: AppColors.white,
                 ),
               ),
             ),

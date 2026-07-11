@@ -172,7 +172,7 @@ screens:
         afterSave: "refresh()"
       - trigger: "swipe left"
         action: "delete"
-        color: "CupertinoColors.destructiveRed"
+        color: "AppColors.destructive"
         icon: "AppIcons.delete"
         flow:
           - "收集子树节点 _collectSubtreeNodes()"
@@ -183,7 +183,7 @@ screens:
           - "Toast: l10n.deletedCount(n)"
       - trigger: "swipe right"
         action: "create branch"
-        color: "CupertinoColors.systemBlue"
+        color: "AppColors.accent"
         icon: "AppIcons.callSplit"
         flow:
           - "showBranchModeSheet()"
@@ -197,7 +197,7 @@ screens:
           background: "systemBlue alpha 0.08"
           indicatorLine:
             width: 2.5
-            color: "systemBlue"
+            color: "AppColors.accent"
             position: "中间节点 → 上边，最后节点 → 下边"
         afterDrop: "refreshNodesOnly()（不走磁盘）"
 
@@ -309,9 +309,9 @@ colorApplication:
       - "节点卡片副标题颜色"
 
   systemColors:
-    - color: "CupertinoColors.destructiveRed"
+    - color: "AppColors.destructive"
       appliesTo: "swipe 左滑（删除）"
-    - color: "CupertinoColors.systemBlue"
+    - color: "AppColors.accent"
       appliesTo: "拖拽 hover 指示线"
 
   rules:
@@ -453,16 +453,16 @@ visualTokens:
   sourceTagSubtitle:
     styles:
       - label: "选中文本"
-        color: "CupertinoColors.systemOrange"
+        color: "AppColors.waveOrange"
         note: "⚠️ 硬编码，建议 → AppColors.accent"
       - label: "对话"
-        color: "CupertinoColors.systemBlue"
+        color: "AppColors.accent"
         note: "⚠️ 硬编码，建议 → AppColors.accent"
       - label: "摘要"
-        color: "CupertinoColors.systemPurple"
+        color: "AppColors.wavePurple"
         note: "⚠️ 硬编码，建议 → AppColors.accent"
       - label: "笔记"
-        color: "CupertinoColors.systemTeal"
+        color: "AppColors.waveTeal"
         note: "⚠️ 硬编码，建议 → AppColors.accent"
     tagBg: "accent 50% 透明 (#6366F180)"
     tagFontSize: 12

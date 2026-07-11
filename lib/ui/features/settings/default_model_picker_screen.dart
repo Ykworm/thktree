@@ -91,7 +91,7 @@ class DefaultModelPickerScreen extends ConsumerWidget {
                         Container(
                           height: 0.5,
                           margin: const EdgeInsetsDirectional.only(start: 16),
-                          color: CupertinoColors.separator.resolveFrom(context),
+                          color: AppColors.border,
                         ),
                     ],
                   ],

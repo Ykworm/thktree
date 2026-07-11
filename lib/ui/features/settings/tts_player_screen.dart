@@ -94,7 +94,7 @@ class _TtsPlayerScreenState extends ConsumerState<TtsPlayerScreen> {
         ttsState.isSpeaking && ttsState.playingMessageId == widget.messageId;
 
     return CupertinoPageScaffold(
-      backgroundColor: const Color(0x00000000), // 让背景透出
+      backgroundColor: AppColors.transparent, // 让背景透出
       navigationBar: ThkNavBar.inline(
         title: l10n.ttsPlay,
         onTitleDoubleTap: _scrollToTop,
@@ -223,7 +223,7 @@ class _PlayButton extends StatelessWidget {
             BoxShadow(
               color: isPlaying
                   ? AppColors.accent.withValues(alpha: 0.3)
-                  : const Color(0x0D000000),
+                  : AppColors.scrimSoft,
               blurRadius: isPlaying ? 16 : 12,
               offset: const Offset(0, 2),
               spreadRadius: -2,
@@ -286,7 +286,7 @@ class _ControlPanel extends StatelessWidget {
                     // 跟上方内容区视觉分离，看起来像"悬浮"面板
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0x0F000000), // ~6% black
+                        color: AppColors.scrimSoft, // ~6% black
                         blurRadius: 8,
                         offset: Offset(0, -2),
                       ),

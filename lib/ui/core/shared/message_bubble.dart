@@ -672,7 +672,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                   onPressed: widget.onRetry,
                                   child: Text(
                                     l10n.retry,
-                                    style: TextStyle(fontSize: 14, color: CupertinoColors.white),
+                                    style: TextStyle(fontSize: 14, color: AppColors.white),
                                   ),
                                 )
                               else
@@ -1099,7 +1099,7 @@ class _TtsPlayButton extends ConsumerWidget {
         isThisPlaying ? AppIcons.ttsPause : AppIcons.ttsSpeak,
         size: 18,
         color: isThisPlaying
-            ? CupertinoColors.systemBlue
+            ? AppColors.accent
             : AppColors.textSecondary,
       ),
     );
@@ -1142,19 +1142,19 @@ class _ImageFullScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.black,
+      backgroundColor: AppColors.black,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: CupertinoColors.black,
+        backgroundColor: AppColors.black,
         middle: Text(
           '图片预览',
-          style: TextStyle(color: CupertinoColors.white),
+          style: TextStyle(color: AppColors.white),
         ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
           child: Icon(
             CupertinoIcons.back,
-            color: CupertinoColors.white,
+            color: AppColors.white,
           ),
         ),
       ),

@@ -127,7 +127,7 @@ class _PerMessageTint extends StatelessWidget {
           palette.title.withValues(alpha: TtsMotion.perMessageTintAlpha),
           BlendMode.softLight,
         ),
-        child: const ColoredBox(color: Color(0x00000000)),
+        child: const ColoredBox(color: AppColors.transparent),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
 import 'package:gpt_markdown/custom_widgets/selectable_adapter.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// Markdown 渲染相关的 builder 集合，集中放在这个文件以便复用和测试。
 
@@ -24,7 +25,7 @@ Widget buildLatex(
       settings: const TexParserSettings(strict: Strict.ignore),
       options: MathOptions(
         sizeUnderTextStyle: MathSize.large,
-        color: textStyle.color ?? CupertinoColors.label.resolveFrom(context),
+        color: textStyle.color ?? AppColors.textPrimary,
         fontSize: textStyle.fontSize,
         mathFontOptions: FontOptions(
           fontFamily: 'Main',

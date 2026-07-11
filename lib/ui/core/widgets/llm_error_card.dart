@@ -62,10 +62,10 @@ class LlmErrorCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: CupertinoColors.systemRed.withValues(alpha: 0.08),
+        color: AppColors.destructive.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: CupertinoColors.systemRed.withValues(alpha: 0.3),
+          color: AppColors.destructive.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -76,7 +76,7 @@ class LlmErrorCard extends StatelessWidget {
           Icon(
             CupertinoIcons.exclamationmark_triangle,
             size: 32,
-            color: CupertinoColors.systemRed,
+            color: AppColors.destructive,
           ),
           const SizedBox(height: 12),
           Text(
@@ -111,7 +111,7 @@ class LlmErrorCard extends StatelessWidget {
   Widget _buildCompact(BuildContext context, AppLocalizations l10n, String message) {
     return Container(
       width: double.infinity,
-      color: CupertinoColors.systemRed.withValues(alpha: 0.1),
+      color: AppColors.destructive.withValues(alpha: 0.1),
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -122,14 +122,14 @@ class LlmErrorCard extends StatelessWidget {
               Icon(
                 CupertinoIcons.exclamationmark_triangle,
                 size: 14,
-                color: CupertinoColors.systemRed,
+                color: AppColors.destructive,
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   message,
                   style: TextStyle(
-                    color: CupertinoColors.systemRed,
+                    color: AppColors.destructive,
                     fontSize: 12,
                   ),
                 ),
@@ -155,13 +155,13 @@ class LlmErrorCard extends StatelessWidget {
               const SizedBox(width: 4),
               CupertinoButton(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                color: CupertinoColors.systemRed,
+                color: AppColors.destructive,
                 minimumSize: Size.zero,
                 onPressed: onRetry,
                 child: Text(
                   l10n.llmErrorRetry,
                   style: const TextStyle(
-                    color: CupertinoColors.white,
+                    color: AppColors.white,
                     fontSize: 13,
                   ),
                 ),

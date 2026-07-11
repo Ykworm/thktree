@@ -316,7 +316,7 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
             child: CupertinoButton.filled(
               onPressed: (_titleValid && !_isSubmitting) ? _submit : null,
               child: _isSubmitting
-                  ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                  ? const CupertinoActivityIndicator(color: AppColors.white)
                   : Text(l10n.done),
             ),
           ),
@@ -379,7 +379,7 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
                         theme.title,
                         style: AppTheme.caption1.copyWith(
                           color: selected
-                              ? CupertinoColors.white
+                              ? AppColors.white
                               : AppColors.textPrimary,
                         ),
                       ),

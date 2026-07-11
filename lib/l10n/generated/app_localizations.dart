@@ -1664,6 +1664,12 @@ abstract class AppLocalizations {
   /// **'No title'**
   String get noTitle;
 
+  /// Alert shown when creating a branch / moving a note would exceed the maximum node tree depth
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the maximum nesting level ({max}). Cannot create a deeper branch.'**
+  String maxNodeDepthReached(int max);
+
   /// Note editor body placeholder
   ///
   /// In en, this message translates to:

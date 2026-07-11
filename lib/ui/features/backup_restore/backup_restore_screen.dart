@@ -11,6 +11,7 @@ import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// 备份与恢复聚合页：自动备份 / 本地备份列表 / 手动备份 / 恢复 / 分享提醒
 class BackupRestoreScreen extends ConsumerStatefulWidget {
@@ -354,7 +355,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
         child: Text(
           title,
-          style: const TextStyle(fontSize: 13, color: CupertinoColors.systemGrey),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
       );
 
@@ -369,7 +370,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          color: CupertinoColors.systemBackground,
+          color: AppColors.pageBg,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             children: [
@@ -385,8 +386,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           subtitle,
-                          style: const TextStyle(
-                              fontSize: 13, color: CupertinoColors.systemGrey),
+                          style: TextStyle(
+                              fontSize: 13, color: AppColors.textSecondary),
                         ),
                       ),
                   ],
@@ -399,11 +400,11 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       );
 
   Widget _backupTile(File f) => Container(
-        color: CupertinoColors.systemBackground,
+        color: AppColors.pageBg,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            const Icon(CupertinoIcons.doc, color: CupertinoColors.systemBlue),
+            const Icon(CupertinoIcons.doc, color: AppColors.accent),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -412,8 +413,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                   Text(_backupLabel(f), style: const TextStyle(fontSize: 16)),
                   Text(
                     _fmtSize(f),
-                    style: const TextStyle(
-                        fontSize: 13, color: CupertinoColors.systemGrey),
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -426,7 +427,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
             CupertinoButton(
               padding: EdgeInsets.zero,
               child: const Icon(CupertinoIcons.delete,
-                  size: 20, color: CupertinoColors.destructiveRed),
+                  size: 20, color: AppColors.destructive),
               onPressed: () => _deleteBackup(f),
             ),
           ],
@@ -437,7 +438,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         padding: const EdgeInsets.all(20),
         child: Text(
           text,
-          style: const TextStyle(color: CupertinoColors.systemGrey),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       );
 }

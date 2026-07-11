@@ -83,6 +83,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _autoTitleTriggered = false;
   /// DB 写新 title 后，缓存为本地展示值，覆盖 widget.title 显示在 nav bar。
   String? _displayedTitle;
+  /// 从磁盘（主题详情 controller）派生的当前节点真实 title。
+  /// 面包屑 go() 跳转不传 extra、router 回退到内部 ID 时，作为 navBar / 面包屑的
+  /// 兜底标题来源，确保跳转后显示可读标题而非 thm_/nd_ ID。
+  String? _currentTitle;
   /// 防抖：自动保存默认模型后置 true，避免重复调用 switchModel。
   bool _autoModelSaved = false;
   String? _panelProviderId;
@@ -257,6 +261,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final themeDetailAsync = ref.watch(
       themeDetailControllerProvider(widget.themeId),
     );
+    // 从磁盘真实数据派生当前节点标题：面包屑 go() 跳转不传 extra，
+    // router 会回退到 '$themeId/$nodeId'（thm_/nd_ ID），必须优先用磁盘 title。
+    // 作为 navBar 主标题与面包屑当前段的兜底来源，避免暴露内部 ID。
+    _currentTitle = themeDetailAsync.whenOrNull(
+      data: (data) => data.nodes
+          .where((n) => n.nodeId == widget.nodeId)
+          .firstOrNull
+          ?.title,
+    );
     final crumbs = themeDetailAsync.when(
       data: (data) => _buildCrumbs(
         l10n,
@@ -409,7 +422,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                _displayedTitle ?? widget.title,
+                _displayedTitle ?? _currentTitle ?? widget.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -474,7 +487,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Column(
             children: [
               if (crumbs.isNotEmpty)
+                // 关键：Column 默认 crossAxisAlignment=center，会让这个非 Expanded
+                // 的 Container 收缩到 Wrap 内容宽度并整体横向居中（视觉上像面包屑
+                // 居中、浪费空间）。用 width:double.infinity + centerLeft 强制占满
+                // 并左对齐，最大化可用显示空间。
                 Container(
+                  width: double.infinity,
+                  alignment: Alignment.centerLeft,
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(color: AppColors.border, width: 0.5),
@@ -732,7 +751,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final current =
         nodes.where((n) => n.nodeId == widget.nodeId).firstOrNull;
     if (current == null) {
-      final fallbackTitle = _displayedTitle ?? widget.title;
+      // 节点数据暂未就绪：优先用磁盘派生的 _currentTitle，避免回退到 router 的
+      // '$themeId/$nodeId' 内部 ID。仍为 ID 形态时降级为通用文案。
+      final fallbackTitle = _currentTitle ?? widget.title;
       segments.add(
         BreadcrumbSegment(
           label: _looksLikeRawId(fallbackTitle)
@@ -768,17 +789,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       );
     }
     // 当前节点（最后一段，不可点）。
-    // 优先用磁盘上的真实 title（current.title），不用 widget.title——
+    // 直接用磁盘真实 title（current.title），不依赖 widget.title——
     // widget.title 来自 router extra，面包屑 go() 回跳时不传 extra，
-    // router 会回退到 '$themeId/$nodeId' 默认值，暴露内部 ID。
-    final currentLabel = _displayedTitle ?? current!.title;
-    segments.add(
-      BreadcrumbSegment(
-        label: _looksLikeRawId(currentLabel)
-            ? l10n.noTitle
-            : currentLabel,
-      ),
-    );
+    // router 会回退到 '$themeId/$nodeId' 默认值（内部 ID），若用它做标签会暴露。
+    final currentLabel = _looksLikeRawId(current!.title)
+        ? l10n.noTitle
+        : current.title;
+    segments.add(BreadcrumbSegment(label: currentLabel));
     return segments;
   }
 
@@ -951,7 +968,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         GridAction(
           label: l10n.chatMarkdown,
           icon: AppIcons.document,
-          color: CupertinoColors.systemTeal,
+          color: AppColors.waveTeal,
           onPressed: () {
             showChatMarkdownSheet(context, widget.nodeId);
           },
@@ -959,7 +976,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         GridAction(
           label: l10n.viewTree,
           icon: AppIcons.accountTree,
-          color: CupertinoColors.systemIndigo,
+          color: AppColors.accent,
           onPressed: () {
             Navigator.of(context).pop();
             context.push(
@@ -970,7 +987,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         GridAction(
           label: l10n.myQuestions,
           icon: AppIcons.chat,
-          color: CupertinoColors.systemOrange,
+          color: AppColors.waveOrange,
           onPressed: () {
             Navigator.of(context).push(
               CupertinoPageRoute(

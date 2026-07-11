@@ -398,7 +398,7 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
         padding: const EdgeInsets.all(16.0),
         child: Text(
           l10n.searchError,
-          style: const TextStyle(color: CupertinoColors.destructiveRed),
+          style: const TextStyle(color: AppColors.destructive),
         ),
       );
     }
@@ -651,7 +651,7 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: CupertinoColors.white,
+                    color: AppColors.white,
                   ),
                 ),
               ),
@@ -875,7 +875,7 @@ class _RecentSearchTagsBodyState extends State<_RecentSearchTagsBody> {
                 '清除全部',
                 style: TextStyle(
                   fontSize: 14,
-                  color: CupertinoColors.destructiveRed,
+                  color: AppColors.destructive,
                 ),
               ),
             ),

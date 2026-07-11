@@ -47,7 +47,7 @@ class _SlideFromLeftRoute extends PageRouteBuilder<_MenuPanel> {
       : super(
           opaque: false,
           barrierDismissible: true,
-          barrierColor: const Color(0x61000000),
+          barrierColor: AppColors.scrimMid,
           transitionDuration: const Duration(milliseconds: 280),
           reverseTransitionDuration: const Duration(milliseconds: 240),
           pageBuilder: (context, animation, secondaryAnimation) =>

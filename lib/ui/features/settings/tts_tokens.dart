@@ -135,9 +135,9 @@ class TtsColors {
   static Color get divider => AppColors.border;
 
   // 交互态
-  static const Color actionActive = CupertinoColors.systemBlue;
+  static const Color actionActive = AppColors.accent;
   // Slate 500，与 AppColors.textSecondary (light mode) 保持一致
-  static const Color actionIdle = Color(0xFF64748B);
+  static Color get actionIdle => AppColors.textSecondary;
   static Color get sliderTrack => AppColors.surfaceMuted;
   static Color get pulseDot => AppColors.champagneGold;
   static Color get checkmark => AppColors.accent;

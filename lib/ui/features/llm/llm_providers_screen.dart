@@ -84,7 +84,7 @@ class LlmProvidersScreen extends ConsumerWidget {
                 separatorBuilder: (context, index) => Container(
                   height: 0.5,
                   margin: const EdgeInsetsDirectional.only(start: 16),
-                  color: CupertinoColors.separator.resolveFrom(context),
+                  color: AppColors.border,
                 ),
                 itemBuilder: (context, index) {
                   final provider = visible[index];
@@ -186,7 +186,7 @@ class _ProviderTile extends StatelessWidget {
               onPressed: onClearModels,
               child: Icon(
                 AppIcons.delete,
-                color: CupertinoColors.destructiveRed,
+                color: AppColors.destructive,
                 size: 20,
               ),
             )

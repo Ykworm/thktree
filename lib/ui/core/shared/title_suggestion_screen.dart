@@ -20,6 +20,7 @@ import 'package:thk_tree/ui/features/settings/default_model_picker_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
+import 'package:thk_tree/domain/node.dart';
 
 /// Title suggestion 屏的入参。
 class TitleSuggestionRequest {
@@ -1041,7 +1042,7 @@ Future<String?> showBranchFlow({
     if (!context.mounted) return null;
     ThkAlert.show(
       context: context,
-      message: l10n.branchFailed(e.toString()),
+      message: _branchErrorMessage(l10n, e),
     );
     return null;
   }
@@ -1112,7 +1113,7 @@ Future<String?> _createBlankBranch({
     if (!context.mounted) return null;
     ThkAlert.show(
       context: context,
-      message: l10n.branchFailed(e.toString()),
+      message: _branchErrorMessage(l10n, e),
     );
     return null;
   }
@@ -1121,6 +1122,17 @@ Future<String?> _createBlankBranch({
 // ============================================================
 // 内部辅助函数
 // ============================================================
+
+/// 把分支/创建过程中的异常转成用户友好文案。
+///
+/// 深度超限（[MaxNodeDepthExceededException]）单独提示，避免把内部异常类名
+/// 暴露给用户；其余异常沿用原有 [AppLocalizations.branchFailed]。
+String _branchErrorMessage(AppLocalizations l10n, Object e) {
+  if (e is MaxNodeDepthExceededException) {
+    return l10n.maxNodeDepthReached(kMaxNodeDepth);
+  }
+  return l10n.branchFailed(e.toString());
+}
 
 /// 跑一个异步 action，期间显示 Cupertino loading dialog（不可关闭）。
 ///

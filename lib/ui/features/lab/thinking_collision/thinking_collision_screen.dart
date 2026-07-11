@@ -211,7 +211,7 @@ class _CollisionCard extends StatelessWidget {
                   child: Icon(
                     CupertinoIcons.bolt_horizontal,
                     size: 16,
-                    color: const Color(0xFFA855F7),
+                    color: AppColors.labAccentPurple,
                   ),
                 ),
                 Expanded(

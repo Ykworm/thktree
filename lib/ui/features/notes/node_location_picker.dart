@@ -159,6 +159,17 @@ class _NodeLocationPickerContentState
   }
 
   void _selectLocation({String? parentId}) {
+    // reparent / 笔记转对话会改变节点的 parentId：若选中的父节点已处于
+    // 最大深度，再挂一层会超过 kMaxNodeDepth，这里提前拦截并提示。
+    if (parentId != null) {
+      final byId = {for (final n in _nodes ?? <NodeEntity>[]) n.nodeId: n};
+      final parentDepth = computeNodeDepth(byId, parentId);
+      if (parentDepth + 1 > kMaxNodeDepth) {
+        final l10n = AppLocalizations.of(context)!;
+        ThkAlert.show(context: context, message: l10n.maxNodeDepthReached(kMaxNodeDepth));
+        return;
+      }
+    }
     Navigator.of(context).pop(NodeLocationResult(
       themeId: _selectedTheme!.themeId,
       themePath: _selectedThemePath!,

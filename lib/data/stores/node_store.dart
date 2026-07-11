@@ -192,6 +192,18 @@ class NodeStore {
       parentDirPath = resolvedParentDir.path;
       dev.log('[NodeStore.createChatNode] parent nodePath=$parentDirPath');
     }
+
+    // 最大深度把关：沿 parentId 链计算父节点当前深度，新建子节点深度 = 父深度 + 1。
+    // 这是所有新建节点（子对话 / 分支 / 文档拆分 / 笔记转对话 / 合并创建）的唯一汇流点，
+    // 在此一处校验即可覆盖全部创建侧入口。
+    if (parentId != null) {
+      final siblings = await listNodes(themeId: themeId);
+      final byId = {for (final n in siblings) n.nodeId: n};
+      final parentDepth = computeNodeDepth(byId, parentId);
+      if (parentDepth + 1 > kMaxNodeDepth) {
+        throw const MaxNodeDepthExceededException(kMaxNodeDepth);
+      }
+    }
     
     final baseNodesDir = Directory(p.join(themePath, 'nodes'));
     final rootParentDir = parentDirPath != null ? Directory(parentDirPath) : baseNodesDir;

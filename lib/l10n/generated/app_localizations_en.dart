@@ -894,6 +894,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noTitle => 'No title';
 
   @override
+  String maxNodeDepthReached(int max) {
+    return 'Reached the maximum nesting level ($max). Cannot create a deeper branch.';
+  }
+
+  @override
   String get startWriting => 'Start writing...';
 
   @override

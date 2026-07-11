@@ -249,7 +249,7 @@ class _ModelItem extends StatelessWidget {
       child: Container(
         color: isSelected
             ? AppColors.accentLight
-            : CupertinoColors.transparent,
+            : AppColors.transparent,
         padding: const EdgeInsets.fromLTRB(32, 10, 16, 10),
         child: Row(
           children: [

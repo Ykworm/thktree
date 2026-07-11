@@ -1,685 +1,87 @@
-# 全局设计 token
-# 从代码和 Markdown 文档提取，供 AI 生成页面时直接引用
-# 生成日期: 2026-07-08 (v0.4 补充 chat/themes 视觉 token)
-# 源文件:
-#   - lib/ui/core/theme/app_colors.dart
-#   - lib/ui/core/theme/app_theme.dart
-#   - lib/ui/core/theme/app_icons.dart
-#   - docs/_shared/design-system.md
-#   - lib/ui/features/chat/chat_screen.dart (§8 新增源)
-#   - lib/ui/core/shared/chat_composer.dart (§8 新增源)
-#   - lib/ui/core/shared/message_bubble.dart (§8 新增源)
-#   - lib/ui/features/chat/widgets/model_selector_panel.dart (§8 新增源)
+# ThkTree Design Tokens — 自动镜像（code-first 真源）
+# 由 scripts/sync-design-tokens.dart 从 lib/ui/core/theme/*.dart 生成
+# 不要手改本文件；改色请改 app_colors.dart 后重跑 `dart run scripts/sync-design-tokens.dart`。
+# 真源：app_colors.dart (color) / app_spacing.dart (dimension) / app_durations.dart (time)
 
-meta:
-  generated: "2026-07-08"
-  version: "0.4"
-  sources:
-    - "lib/ui/core/theme/app_colors.dart"
-    - "lib/ui/core/theme/app_theme.dart"
-    - "lib/ui/core/theme/app_icons.dart"
-    - "docs/_shared/design-system.md"
-    - "lib/ui/features/chat/chat_screen.dart"
-    - "lib/ui/core/shared/chat_composer.dart"
-    - "lib/ui/core/shared/message_bubble.dart"
-    - "lib/ui/features/chat/widgets/model_selector_panel.dart"
+color:
+  primitive:
+    champagneGold: { value: "0xFFC4A77D", label: "香槟金 HSL(36,33%,63%)" }
+    warmGray: { value: "0xFF8E8B82", label: "烟灰 HSL(42,4%,53%)" }
+    dustyRose: { value: "0xFFA89090", label: "玫瑰灰 HSL(0,10%,61%)" }
+    sageGray: { value: "0xFF8B9080", label: "橄榄灰 HSL(80,7%,53%)" }
+    slateBlue: { value: "0xFF6B7B8E", label: "深蓝灰 HSL(210,14%,49%)" }
+    white: { value: "0xFFFFFFFF" }
+    black: { value: "0xFF000000" }
+    transparent: { value: "0x00000000" }
+  semantic:
+    accent: { value: "0xFF3B82F6", label: "现代蓝 — 通用交互色（Lab 同款，白底对比度好）" }
+    accentDeep: { value: "0xFF2563EB", label: "pressed 深蓝" }
+    destructive: { value: "0xFFDC2626" }
+    success: { value: "0xFF34C759", label: "systemGreen" }
+    onSurface: { value: "0xFFFFFFFF", label: "卡片上前景色（白色）" }
+    scrim: { value: "0x80000000" }
+    scrimStrong: { value: "0xF0000000", label: "~94%" }
+    scrimMid: { value: "0x61000000", label: "~38%" }
+    scrimSoft: { value: "0x0D000000", label: "~5%（0x0D / 0x0F 合并）" }
+    questionSourceTag: { value: "0x803B82F6" }
+    accentLight: { light: "0xFFEBF2FE", dark: "0xFF1E3A5F" }
+    pageBg: { light: "0xFFF8FAFC", dark: "0xFF020617" }
+    surface: { light: "0xFFFFFFFF", dark: "0xFF0F172A" }
+    surfaceMuted: { light: "0xFFF1F5F9", dark: "0xFF1E293B" }
+    textPrimary: { light: "0xFF1E293B", dark: "0xFFF1F5F9" }
+    textSecondary: { light: "0xFF64748B", dark: "0xFF94A3B8" }
+    textTertiary: { light: "0xFF94A3B8", dark: "0xFF64748B" }
+    border: { light: "0xFFE2E8F0", dark: "0xFF334155" }
+    elevationShadow: { value: "0x1F000000" }
+    thinkingBg: { ref: "surfaceMuted" }
+    markdownCodeBg: { ref: "pageBg" }
+    userBubbleBg: { ref: "accentLight" }
+    assistantBubbleBg: { ref: "surface" }
+    assistantBubbleBorder: { ref: "border" }
+  decor:
+    labBg: { value: "0xFF0F1035" }
+    labAccentBlue: { value: "0xFF3B82F6" }
+    labAccentOrange: { value: "0xFFF97316" }
+    labAccentPurple: { value: "0xFFA855F7" }
+    waveTeal: { value: "0xFF5AC8FA" }
+    waveOrange: { value: "0xFFFF9500" }
+    wavePurple: { value: "0xFFAF52DE" }
 
-# ============================================================
-# 1. 颜色 — 基础色
-# ============================================================
+  dimension:
+    screenPadding: { value: 16.0, unit: "px" }
+    listItemVerticalPadding: { value: 12.0, unit: "px" }
+    titleToContentGap: { value: 16.0, unit: "px" }
+    cardRadius: { value: 12.0, unit: "px" }
+    buttonRadius: { value: 10.0, unit: "px" }
+    dragBubbleRadius: { value: 10.0, unit: "px" }
+    chatBubbleRadius: { value: 12.0, unit: "px" }
+    modelPillRadius: { value: 6.0, unit: "px" }
+    sheetTopRadius: { value: 14.0, unit: "px" }
+    touchTarget: { value: 44.0, unit: "px" }
+    dragHandle: { value: 52.0, unit: "px" }
+    treeIndent: { value: 28.0, unit: "px" }
+    treeRowHeight: { value: 56.0, unit: "px" }
+    imagePreviewHeight: { value: 80.0, unit: "px" }
+    dividerThickness: { value: 0.5, unit: "px" }
+    chatBubbleMaxWidth: { value: 0.85, unit: "px" }
+    sheetHeightSm: { value: 0.45, unit: "px" }
+    sheetHeightMd: { value: 0.65, unit: "px" }
+    sheetHeightLg: { value: 0.88, unit: "px" }
+    messageInputMinLines: { value: 1, unit: "px" }
+    messageInputMaxLines: { value: 6, unit: "px" }
+    bottomTolerance: { value: 24.0, unit: "px" }
 
-colors:
-  # ── 通用强调色 ──
-  accent:
-    value: "#6366F1"
-    dartRef: "AppColors.accent"
-    usage: "通用交互色，按钮/链接/focus"
-  accentLight:
-    value: "#EEF2FF"
-    dartRef: "AppColors.accentLight"
-    usage: "accent 10% tint，hover 背景、chip 背景"
-  accentDeep:
-    value: "#4F46E5"
-    dartRef: "AppColors.accentDeep"
-    usage: "pressed 态"
-
-  # ── Surface 层 ──
-  pageBg:
-    value: "#F8FAFC"
-    dartRef: "AppColors.pageBg"
-    usage: "Slate 50，页面底色"
-  surface:
-    value: "#FFFFFF"
-    dartRef: "AppColors.surface"
-    usage: "纯白，卡片/弹层"
-  surfaceMuted:
-    value: "#F1F5F9"
-    dartRef: "AppColors.surfaceMuted"
-    usage: "Slate 100，二级区块"
-
-  # ── 文字色 ──
-  textPrimary:
-    value: "#1E293B"
-    dartRef: "AppColors.textPrimary"
-    usage: "Slate 900，标题/正文"
-  textSecondary:
-    value: "#64748B"
-    dartRef: "AppColors.textSecondary"
-    usage: "Slate 500，辅助信息"
-  textTertiary:
-    value: "#94A3B8"
-    dartRef: "AppColors.textTertiary"
-    usage: "Slate 400，placeholder/disabled"
-
-  # ── 结构色 ──
-  border:
-    value: "#E2E8F0"
-    dartRef: "AppColors.border"
-    usage: "Slate 200，分隔线/卡片描边"
-  destructive:
-    value: "#DC2626"
-    dartRef: "AppColors.destructive"
-    usage: "危险操作（删除按钮）"
-  success:
-    value: "#34C759"
-    dartRef: "AppColors.success"
-    usage: "成功状态（对应 systemGreen）"
-  onSurface:
-    value: "#FFFFFF"
-    dartRef: "AppColors.onSurface"
-    usage: "卡片上前景色（白色）"
-
-  # ── Chat / Sheet 语义色 (§8 新增) ──
-  scrim:
-    value: "#00000080"
-    dartRef: "AppColors.scrim"
-    usage: "Bottom Sheet 遮罩（50% 透明黑）— 源码 Color(0x80000000)"
-  elevationShadow:
-    value: "#0000001F"
-    dartRef: "AppColors.elevationShadow"
-    usage: "浮层阴影（7% 透明黑）— 源码 black.withValues(alpha: 0.12)"
-  thinkingBg:
-    value: "#F1F5F9"
-    dartRef: "AppColors.thinkingBg"
-    usage: "思考过程背景 — getter 指向 surfaceMuted，语义别名"
-  markdownCodeBg:
-    value: "#F8FAFC"
-    dartRef: "AppColors.markdownCodeBg"
-    usage: "Markdown 代码块背景 — getter 指向 pageBg，语义别名"
-  userBubbleBg:
-    value: "#EEF2FF"
-    dartRef: "AppColors.userBubbleBg"
-    usage: "用户消息气泡背景 — getter 指向 accentLight，语义别名"
-  assistantBubbleBg:
-    value: "#FFFFFF"
-    dartRef: "AppColors.assistantBubbleBg"
-    usage: "助手消息气泡背景 — getter 指向 surface"
-  assistantBubbleBorder:
-    value: "#E2E8F0"
-    dartRef: "AppColors.assistantBubbleBorder"
-    usage: "助手消息气泡 0.5px 边框 — getter 指向 border"
-  copyFeedbackSuccess:
-    value: "#34C759"
-    dartRef: "AppColors.success"
-    usage: "复制成功 2s icon 变色"
-  questionSourceTag:
-    value: "#6366F180"
-    dartRef: "AppColors.questionSourceTag"
-    usage: "我问过的问题 → 来源标签背景（accent 50% 透明）"
-
-# ============================================================
-# 2. 主题色 — 5 套典雅黑金色调
-# ============================================================
-
-themeColors:
-  description: "5 套主题色，按 themeId.hashCode.abs() % 5 稳定分配"
-  helperMethods:
-    colorForTheme:
-      dartRef: "AppColors.colorForTheme(themeId)"
-      usage: "根据 themeId 返回主题色"
-    tintForTheme:
-      dartRef: "AppColors.tintForTheme(themeId)"
-      usage: "主题色的 15% tint，用于 leading icon 背景"
-  palette:
-    - name: champagneGold
-      value: "#C4A77D"
-      dartRef: "AppColors.champagneGold"
-      hsl: "HSL(36, 33%, 63%)"
-      index: 0
-    - name: warmGray
-      value: "#8E8B82"
-      dartRef: "AppColors.warmGray"
-      hsl: "HSL(42, 4%, 53%)"
-      index: 1
-    - name: dustyRose
-      value: "#A89090"
-      dartRef: "AppColors.dustyRose"
-      hsl: "HSL(0, 10%, 61%)"
-      index: 2
-    - name: sageGray
-      value: "#8B9080"
-      dartRef: "AppColors.sageGray"
-      hsl: "HSL(80, 7%, 53%)"
-      index: 3
-    - name: slateBlue
-      value: "#6B7B8E"
-      dartRef: "AppColors.slateBlue"
-      hsl: "HSL(210, 14%, 49%)"
-      index: 4
-
-# ============================================================
-# 3. 节点色 — 5 套 NodePalette（AppColors 内公开类）
-# ============================================================
-
-nodePalettes:
-  description: "节点卡片配色，基于 nodeId.hashCode.abs() % 5，与主题色完全解耦"
-  dartRef: "NodePalette (app_colors.dart 公开类)"
-  helperMethod:
-    dartRef: "AppColors.paletteForNode(nodeId)"
-  palette:
-    - index: 0
-      circle: "#B8A07A"
-      title: "#4A4A4A"
-      subtitle: "#8B7355"
-      style: "暖金"
-    - index: 1
-      circle: "#7A8B7A"
-      title: "#3D4A3D"
-      subtitle: "#6B7B6B"
-      style: "灰绿"
-    - index: 2
-      circle: "#8B7A8B"
-      title: "#4A3D4A"
-      subtitle: "#7B6B7B"
-      style: "灰紫"
-    - index: 3
-      circle: "#8B7A7A"
-      title: "#4A3D3D"
-      subtitle: "#7B6B6B"
-      style: "灰粉"
-    - index: 4
-      circle: "#7A7A8B"
-      title: "#3D3D4A"
-      subtitle: "#6B6B7B"
-      style: "灰蓝"
-
-# ============================================================
-# 4. 字体
-# ============================================================
-
-typography:
-  # ── Serif Display（Cormorant Garamond）──
-  largeTitle:
-    family: "Cormorant Garamond"
-    fallback: ["PingFang SC"]
-    size: 34
-    weight: 600
-    letterSpacing: 0
-    dartRef: "AppTheme.largeTitle"
-    usage: "屏幕大标题（Large Title），ThkLargeTitlePage 专用"
-  displayTitle:
-    family: "Cormorant Garamond"
-    fallback: ["PingFang SC"]
-    size: 28
-    weight: 600
-    letterSpacing: 0
-    dartRef: "AppTheme.displayTitle"
-    usage: "二级显示标题"
-
-  # ── SF Pro text tokens ──
-  title1:
-    family: ".SF Pro Display"
-    fallback: ["PingFang SC"]
-    size: 28
-    weight: 700
-    letterSpacing: 0.36
-    dartRef: "AppTheme.title1"
-    usage: "Modal 标题"
-  headline:
-    family: ".SF Pro Text"
-    fallback: ["PingFang SC"]
-    size: 17
-    weight: 600
-    letterSpacing: -0.41
-    dartRef: "AppTheme.headline"
-    usage: "列表项主标题"
-  body:
-    family: ".SF Pro Text"
-    fallback: ["PingFang SC"]
-    size: 17
-    weight: 400
-    letterSpacing: -0.41
-    dartRef: "AppTheme.body"
-    usage: "正文"
-  callout:
-    family: ".SF Pro Text"
-    fallback: ["PingFang SC"]
-    size: 16
-    weight: 400
-    letterSpacing: -0.32
-    dartRef: "AppTheme.callout"
-    usage: "强调正文"
-  subhead:
-    family: ".SF Pro Text"
-    fallback: ["PingFang SC"]
-    size: 15
-    weight: 400
-    letterSpacing: -0.24
-    dartRef: "AppTheme.subhead"
-    usage: "次要正文"
-  footnote:
-    family: ".SF Pro Text"
-    fallback: ["PingFang SC"]
-    size: 13
-    weight: 400
-    letterSpacing: -0.08
-    dartRef: "AppTheme.footnote"
-    usage: "注释/时间戳"
-  caption1:
-    family: ".SF Pro Text"
-    fallback: ["PingFang SC"]
-    size: 12
-    weight: 400
-    letterSpacing: 0
-    dartRef: "AppTheme.caption1"
-    usage: "节点卡片副标题/来源标签"
-
-# ============================================================
-# 5. 间距与圆角 — 文档定义（代码中为魔法数字）
-# ============================================================
-
-spacing:
-  screenPadding:
-    value: 16
-    dartRef: "AppSp.screenPadding"
-    usage: "屏幕内边距"
-  listItemVerticalPadding:
-    value: 12
-    dartRef: "AppSp.listItemVerticalPadding"
-    usage: "列表项垂直内边距"
-  cardRadius:
-    value: 12
-    dartRef: "AppSp.cardRadius"
-    usage: "卡片圆角"
-  buttonRadius:
-    value: 10
-    dartRef: "AppSp.buttonRadius"
-    usage: "按钮圆角"
-  dragBubbleRadius:
-    value: 10
-    dartRef: "AppSp.dragBubbleRadius"
-    usage: "拖拽气泡圆角"
-  treeIndent:
-    value: 28
-    dartRef: "AppSp.treeIndent"
-    usage: "树节点缩进步进"
-  treeRowHeight:
-    value: 56
-    dartRef: "AppSp.treeRowHeight"
-    usage: "树节点行高"
-  touchTarget:
-    value: 44
-    dartRef: "AppSp.touchTarget"
-    usage: "圆圈热区（44×44）"
-  dragHandle:
-    value: 52
-    dartRef: "AppSp.dragHandle"
-    usage: "拖拽手柄热区（52×52）"
-  titleToContentGap:
-    value: 16
-    dartRef: "AppSp.titleToContentGap"
-    usage: "大标题到内容间距"
-  dividerThickness:
-    value: 0.5
-    dartRef: "AppSp.dividerThickness"
-    usage: "区块间分隔线粗细"
-
-  # ── Chat / Sheet 间距 (§8 新增) ──
-  chatBubbleRadius:
-    value: 12
-    dartRef: "AppSp.chatBubbleRadius"
-    usage: "消息气泡圆角"
-  chatBubbleMaxWidth:
-    value: 0.85
-    dartRef: "AppSp.chatBubbleMaxWidth"
-    usage: "消息气泡最大宽度比例（85% 屏宽）"
-  sheetHeightSm:
-    value: 0.45
-    dartRef: "AppSp.sheetHeightSm"
-    usage: "Small Sheet 高度比例（45%）— 模型选择器"
-  sheetHeightMd:
-    value: 0.65
-    dartRef: "AppSp.sheetHeightMd"
-    usage: "Medium Sheet 高度比例（65%）— 分支/更多"
-  sheetHeightLg:
-    value: 0.88
-    dartRef: "AppSp.sheetHeightLg"
-    usage: "Large Sheet 高度比例（88%）— Markdown 查看器"
-  imagePreviewHeight:
-  imagePreviewHeight:
-    value: 80
-    dartRef: "AppSp.imagePreviewHeight"
-    usage: "图片预览缩略图高度（80pt）"
-  modelPillRadius:
-    value: 6
-    dartRef: "AppSp.modelPillRadius"
-    usage: "模型选择 pill 圆角（6pt）"
-  sheetTopRadius:
-    value: 14
-    dartRef: "AppSp.sheetTopRadius"
-    usage: "Sheet 顶部圆角（14pt）"
-  messageInputMinLines:
-    value: 1
-    dartRef: "AppSp.messageInputMinLines"
-    usage: "输入框最小行数"
-  messageInputMaxLines:
-    value: 6
-    dartRef: "AppSp.messageInputMaxLines"
-    usage: "输入框最大行数"
-  bottomTolerance:
-    value: 24
-    dartRef: "AppSp.bottomTolerance"
-    usage: "消息列表自动滚底容差（24pt）"
-
-# ============================================================
-# 6. 动画 — 文档定义
-# ============================================================
-
-animation:
-  circleToggle:
-    duration: 200
-    curve: "easeInOut"
-    dartRef: "AppDur.sheetScroll"
-    usage: "圆圈展开/折叠"
-  dragHandleScale:
-    duration: 120
-    curve: "easeOut"
-    dartRef: "AppDur.scrimFade"
-    usage: "拖拽手柄 scale"
-  listRefresh:
-    duration: 200
-    curve: "easeInOut"
-    dartRef: "AppDur.copyFeedback"
-    usage: "列表刷新"
-  modal:
-    duration: 250
-    curve: "easeOut"
-    dartRef: "AppDur.modal"
-    usage: "弹层出现"
-
-  # ── Chat 动效 (§8 新增) ──
-  copyFeedback:
-    duration: 2000
-    curve: null
-    dartRef: "AppDur.copyFeedback"
-    usage: "复制成功 icon 变色持续时间（2s）"
-  sheetScroll:
-    duration: 300
-    curve: "easeOut"
-    dartRef: "AppDur.listScroll"
-    usage: "Sheet 内列表滚动过渡"
-  streamingIndicator:
-    duration: 1500
-    curve: "easeInOut"
-    dartRef: "AppDur.shimmer"
-    usage: "生成中指示器脉动"
-
-# ============================================================
-# 7. 触控反馈
-# ============================================================
-
-haptics:
-  tap:
-    dartRef: "HapticFeedback.selectionClick()"
-    usage: "列表行点击（轻）"
-  dragStart:
-    dartRef: "HapticFeedback.mediumImpact()"
-    usage: "拖拽开始（中）"
-  destructive:
-    dartRef: "HapticFeedback.heavyImpact()"
-    usage: "危险操作前（重）— 当前未使用，预留"
-
-# ============================================================
-# 8. 图标
-# ============================================================
-
-icons:
-  # ── 通用操作 ──
-  add:
-    dartRef: "AppIcons.add"
-    sfSymbol: "sf_plus"
-    usage: "新建"
-  close:
-    dartRef: "AppIcons.close"
-    sfSymbol: "sf_xmark"
-    usage: "关闭"
-  check:
-    dartRef: "AppIcons.check"
-    sfSymbol: "sf_checkmark"
-    usage: "确认/完成"
-  checkCircle:
-    dartRef: "AppIcons.checkCircle"
-    sfSymbol: "sf_checkmark_circle_fill"
-    usage: "复制成功反馈"
-  delete:
-    dartRef: "AppIcons.delete"
-    sfSymbol: "sf_trash"
-    usage: "删除"
-  edit:
-    dartRef: "AppIcons.edit"
-    sfSymbol: "sf_pencil"
-    usage: "编辑"
-  copy:
-    dartRef: "AppIcons.copy"
-    sfSymbol: "sf_square_on_square"
-    usage: "复制"
-  refresh:
-    dartRef: "AppIcons.refresh"
-    sfSymbol: "sf_arrow_clockwise"
-    usage: "刷新/重新索引"
-  search:
-    dartRef: "AppIcons.search"
-    sfSymbol: "sf_magnifyingglass"
-    usage: "搜索"
-  more:
-    dartRef: "AppIcons.more"
-    sfSymbol: "sf_ellipsis"
-    usage: "更多操作"
-
-  # ── 导航 ──
-  back:
-    dartRef: "AppIcons.back"
-    sfSymbol: "sf_chevron_left"
-    usage: "返回"
-  chevronRight:
-    dartRef: "AppIcons.chevronRight"
-    sfSymbol: "sf_chevron_right"
-    usage: "列表项尾部箭头"
-  chevronLeft:
-    dartRef: "AppIcons.chevronLeft"
-    sfSymbol: "sf_chevron_left"
-    usage: "向左箭头"
-
-  # ── 通信/聊天 ──
-  send:
-    dartRef: "AppIcons.send"
-    sfSymbol: "sf_arrow_up_circle_fill"
-    usage: "发送消息"
-  stop:
-    dartRef: "AppIcons.stop"
-    sfSymbol: "sf_stop_circle_fill"
-    usage: "停止生成"
-  chat:
-    dartRef: "AppIcons.chat"
-    sfSymbol: "sf_bubble_left"
-    usage: "对话"
-  forum:
-    dartRef: "AppIcons.forum"
-    sfSymbol: "sf_bubble_left_and_bubble_right"
-    usage: "多轮对话"
-  modelSelector:
-    dartRef: "AppIcons.modelSelector"
-    sfSymbol: "sf_plus_circle_fill"
-    usage: "模型选择入口"
-
-  # ── 内容/文件 ──
-  note:
-    dartRef: "AppIcons.note"
-    sfSymbol: "sf_list_clipboard"
-    usage: "笔记"
-  folder:
-    dartRef: "AppIcons.folder"
-    sfSymbol: "sf_folder"
-    usage: "主题/文件夹"
-  download:
-    dartRef: "AppIcons.download"
-    sfSymbol: "sf_square_and_arrow_down"
-    usage: "下载"
-  share:
-    dartRef: "AppIcons.share"
-    sfSymbol: "sf_square_and_arrow_up"
-    usage: "分享"
-  star:
-    dartRef: "AppIcons.star"
-    sfSymbol: "sf_star"
-    usage: "收藏"
-
-  # ── 设置/提供商 ──
-  settings:
-    dartRef: "AppIcons.settings"
-    sfSymbol: "sf_gearshape"
-    usage: "设置"
-  extensionIcon:
-    dartRef: "AppIcons.extensionIcon"
-    sfSymbol: "sf_puzzlepiece_extension"
-    usage: "扩展"
-  cloud:
-    dartRef: "AppIcons.cloud"
-    sfSymbol: "sf_cloud"
-    usage: "云端"
-
-  # ── 树/分支 ──
-  accountTree:
-    dartRef: "AppIcons.accountTree"
-    sfSymbol: "sf_circle_hexagonpath"
-    usage: "树结构/空状态引导"
-  callSplit:
-    dartRef: "AppIcons.callSplit"
-    sfSymbol: "sf_arrow_turn_down_right"
-    usage: "分支操作"
-  branch:
-    dartRef: "AppIcons.branch"
-    sfSymbol: "sf_arrow_trianglehead_branch"
-    usage: "分支箭头"
-  sparkles:
-    dartRef: "AppIcons.sparkles"
-    sfSymbol: "sf_sparkles"
-    usage: "AI/模型选择"
-
-  # ── 实验/Lab（SF Symbol 走 AppIcons） ──
-  lab:
-    dartRef: "AppIcons.lab"
-    sfSymbol: "sf_flask"
-    usage: "Lab tab"
-
-  # ── 实验/Lab（svg 资源，走 SvgPicture.asset） ──
-  themeUnselectSvg:
-    file: "assets/icons/theme_unselect.svg"
-    usage: "主题 tab 未选 svg 图标（不走 AppIcons，flutter_svg 直接渲染）"
-
-# ============================================================
-# 9. 组件库
-# ============================================================
-
-components:
-  ThkNavBar:
-    file: "lib/ui/core/widgets/thk_nav_bar.dart"
-    dartRef: "ThkNavBar"
-    variants:
-      inline: "嵌入式导航栏，无大标题，用于表单/详情/弹层"
-    usage: "所有页面的顶部导航，不直接用 CupertinoNavigationBar"
-
-  ThkLargeTitlePage:
-    file: "lib/ui/core/widgets/thk_nav_bar.dart"
-    dartRef: "ThkLargeTitlePage"
-    usage: "有滚动内容的页面，自带大标题 + slivers"
-
-  ThkListTile:
-    file: "lib/ui/core/widgets/thk_list_tile.dart"
-    dartRef: "ThkListTile"
-    usage: "列表项，不直接用 CupertinoListTile"
-    props:
-      title: "String"
-      subtitle: "String?"
-      leading: "Widget?"
-      trailing: "Widget?"
-      themeId: "String? — 传入后自动渲染 3px 书脊线"
-      onTap: "VoidCallback?"
-
-  ThkListSection:
-    file: "lib/ui/core/widgets/thk_list_section.dart"
-    dartRef: "ThkListSection"
-    usage: "列表容器，包裹多个 ThkListTile"
-
-  SwipeableRow:
-    file: "lib/ui/core/widgets/swipeable_row.dart"
-    dartRef: "SwipeableRow"
-    usage: "滑动手势容器"
-    props:
-      onSwipeLeft: "VoidCallback? — 左滑回调"
-      onSwipeRight: "VoidCallback? — 右滑回调"
-      leftActionLabel: "String"
-      leftActionIcon: "IconData"
-      leftActionColor: "Color — 通常 destructiveRed"
-      rightActionLabel: "String"
-      rightActionIcon: "IconData"
-      rightActionColor: "Color — 通常 systemBlue"
-
-  ThkButton:
-    file: "lib/ui/core/widgets/thk_button.dart"
-    dartRef: "ThkButton"
-    usage: "通用按钮"
-    variants:
-      primary: "accent (#6366F1) + 白字，主操作，每页最多 1 个"
-      secondary: "surfaceMuted + textPrimary，次要操作"
-      destructive: "destructive (#DC2626) + 白字，危险操作，须二次确认"
-
-  ThkTextField:
-    file: "lib/ui/core/widgets/thk_text_field.dart"
-    dartRef: "ThkTextField"
-    usage: "Cupertino 风格输入框"
-    props:
-      controller: "TextEditingController"
-      placeholder: "String"
-      autofocus: "bool"
-      maxLength: "int?"
-
-  ThkAlert:
-    file: "lib/ui/core/widgets/thk_alert.dart"
-    dartRef: "ThkAlert"
-    usage: "轻量提示弹窗"
-    method: "ThkAlert.show(context, message:, defaultAction:)"
-
-  ThkActionSheet:
-    file: "lib/ui/core/widgets/thk_action_sheet.dart"
-    dartRef: "ThkActionSheet"
-    usage: "操作选择弹窗"
-
-  MarkdownToolbar:
-    file: "lib/ui/core/widgets/markdown_toolbar.dart"
-    dartRef: "MarkdownToolbar"
-    usage: "Markdown 格式工具栏，配合编辑器使用"
-
-  # ── 共享组件 ──
-  ShareCardWidget:
-    file: "lib/ui/core/shared/share_card_widget.dart"
-    dartRef: "ShareCardWidget"
-    usage: "分享卡片，用 RepaintBoundary 包裹后截图生成图片，仅渲染不展示在页面上"
-    props:
-      userQuestion: "String? — 用户提问"
-      assistantAnswer: "String — AI 回答"
-    style:
-      cardWidth: 400
-      padding: 20
-      radius: 16
-    renderer: "GptMarkdown（渲染 assistantAnswer）"
+  time:
+    sheetScroll: { value: 200, unit: "ms" }
+    scrimFade: { value: 120, unit: "ms" }
+    copyFeedback: { value: 200, unit: "ms" }
+    modal: { value: 250, unit: "ms" }
+    streamingIndicator: { value: 2000, unit: "ms" }
+    listScroll: { value: 300, unit: "ms" }
+    shimmer: { value: 1500, unit: "ms" }
+    sheetScrollCurve: { value: "easeInOut", type: "curve" }
+    scrimFadeCurve: { value: "easeOut", type: "curve" }
+    copyFeedbackCurve: { value: "easeInOut", type: "curve" }
+    modalCurve: { value: "easeOut", type: "curve" }
+    listScrollCurve: { value: "easeOut", type: "curve" }
+    shimmerCurve: { value: "easeInOut", type: "curve" }

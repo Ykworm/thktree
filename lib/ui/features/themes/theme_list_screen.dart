@@ -4,11 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
-import 'package:thk_tree/ui/features/settings/settings_controller.dart' show brightnessProvider;
+import 'package:thk_tree/ui/features/settings/settings_controller.dart'
+    show brightnessProvider;
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
-    show kUncategorizedThemeTitle, localizedThemeTitle, formatRelativeTime;
+    show
+        kUncategorizedThemeTitle,
+        localizedThemeTitle,
+        formatRelativeTime;
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 import 'package:thk_tree/domain/theme.dart';
 
@@ -46,11 +50,33 @@ class ThemeListScreen extends ConsumerWidget {
             },
           ),
           themesAsync.when(
-            data: (themes) => SliverList(
-              delegate: SliverChildListDelegate(
-                _buildThemeList(themes, l10n, ref, context),
-              ),
-            ),
+            data: (themes) {
+              if (themes.isEmpty) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(AppIcons.accountTree,
+                            size: 40, color: AppColors.textTertiary),
+                        SizedBox(height: 12),
+                        Text(l10n.noThemesYet,
+                            style: TextStyle(color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSp.screenPadding),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(
+                    _buildThemeRows(themes, l10n, ref, context),
+                  ),
+                ),
+              );
+            },
             loading: () => SliverFillRemaining(
               child: Center(child: CupertinoActivityIndicator()),
             ),
@@ -64,53 +90,90 @@ class ThemeListScreen extends ConsumerWidget {
   }
 }
 
-List<Widget> _buildThemeList(
+/// 紧凑列表行：Lab 式彩色图标徽章（themeTileColorFor）+ 轻微 tint 底。
+/// 列表天然保证每行尺寸一致；彩色只出现在 leading 徽章区。
+List<Widget> _buildThemeRows(
   List<ThemeEntity> themes,
   AppLocalizations l10n,
   WidgetRef ref,
   BuildContext context,
 ) {
-  if (themes.isEmpty) {
-    return [
+  final rows = <Widget>[];
+  for (int i = 0; i < themes.length; i++) {
+    final theme = themes[i];
+    final tileColor = AppColors.themeTileColorFor(theme.themeId);
+    rows.add(
       Padding(
-        padding: const EdgeInsets.only(top: 80),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(AppIcons.accountTree, size: 40, color: AppColors.textTertiary),
-              const SizedBox(height: 12),
-              Text(l10n.noThemesYet, style: TextStyle(color: AppColors.textSecondary)),
-            ],
+        padding: const EdgeInsets.only(bottom: 12),
+        child: GestureDetector(
+          onLongPress: () => _showThemeActions(context, ref, theme, l10n),
+          onTap: () => context.push('/themes/${theme.themeId}/tree'),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: BoxDecoration(
+              color: tileColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.border,
+                width: AppSp.dividerThickness,
+              ),
+            ),
+            child: Row(
+              children: [
+                // 彩色图标徽章（Lab 式）
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: tileColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    AppIcons.accountTree,
+                    color: tileColor,
+                    size: 22,
+                  ),
+                ),
+                SizedBox(width: 12),
+                // 标题 + 副标题
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        localizedThemeTitle(l10n, theme.title),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        theme.lastMessagePreview ??
+                            formatRelativeTime(l10n, theme.updatedAtUtcIso8601),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                // trailing
+                theme.pinned
+                    ? Icon(AppIcons.star, color: AppColors.accent, size: 16)
+                    : Icon(CupertinoIcons.chevron_right,
+                        color: AppColors.textTertiary, size: 16),
+              ],
+            ),
           ),
         ),
       ),
-    ];
+    );
   }
-
-  return [
-    for (int i = 0; i < themes.length; i++) ...[
-      GestureDetector(
-        onLongPress: () => _showThemeActions(context, ref, themes[i], l10n),
-        child: ThkListTile(
-          title: localizedThemeTitle(l10n, themes[i].title),
-          subtitle: themes[i].lastMessagePreview ??
-              formatRelativeTime(l10n, themes[i].updatedAtUtcIso8601),
-          trailing: themes[i].pinned
-              ? Icon(AppIcons.star, color: AppColors.accent, size: 18)
-              : ThkListTile.chevron,
-          themeId: themes[i].themeId,
-          leading: Icon(AppIcons.folder),
-          onTap: () => context.push('/themes/${themes[i].themeId}/tree'),
-        ),
-      ),
-      if (i < themes.length - 1)
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 56),
-          child: Container(height: AppSp.dividerThickness, color: AppColors.border),
-        ),
-    ],
-  ];
+  return rows;
 }
 
 Future<void> _showThemeActions(

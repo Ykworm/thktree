@@ -260,7 +260,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                         separatorBuilder: (_, _) => Container(
                           height: 0.5,
                           margin: const EdgeInsets.symmetric(horizontal: 16),
-                          color: CupertinoColors.separator.resolveFrom(context),
+                          color: AppColors.border,
                         ),
                         itemBuilder: (context, i) => _TreeRowView(
                           themeId: widget.themeId,
@@ -377,6 +377,14 @@ class _TreeRowView extends ConsumerWidget {
     final children = _children();
     final isCollapsed = collapsedIds.contains(node.nodeId);
     final hasChildren = children.isNotEmpty;
+    // 已达最大嵌套深度（节点层级 4 层）时禁用「分支」入口：
+    // SwipeableRow 在 onSwipeRight == null 时自动隐藏该 action。
+    // 分支本质是在当前节点下创建子节点，再深一层就会超过 kMaxNodeDepth。
+    final atMaxDepth = computeNodeDepth(
+          {for (final n in allNodes) n.nodeId: n},
+          node.nodeId,
+        ) >=
+        kMaxNodeDepth;
     final palette = AppColors.paletteForNode(node.nodeId);
     // ── Source type label ──
     final sourceLabel = _sourceTypeLabel(l10n, node.sourceType);
@@ -481,22 +489,20 @@ class _TreeRowView extends ConsumerWidget {
         final indicatorSide = isLastChild
             ? const Border(
                 bottom: BorderSide(
-                  color: CupertinoColors.systemBlue,
+                  color: AppColors.accent,
                   width: 2.5,
                 ),
               )
             : const Border(
                 top: BorderSide(
-                  color: CupertinoColors.systemBlue,
+                  color: AppColors.accent,
                   width: 2.5,
                 ),
               );
         return Container(
           decoration: isHovering
               ? BoxDecoration(
-                  color: CupertinoColors.systemBlue
-                      .resolveFrom(context)
-                      .withValues(alpha: 0.08),
+                  color: AppColors.accent.withValues(alpha: 0.08),
                   border: indicatorSide,
                 )
               : null,
@@ -505,13 +511,15 @@ class _TreeRowView extends ConsumerWidget {
               Expanded(
                 child: SwipeableRow(
                   onSwipeLeft: () => _handleDelete(context, ref, l10n, node: node, themeId: themeId, allNodes: allNodes),
-                  onSwipeRight: () => _onCreateBranchFromMenu(context, ref, node: node),
+                  onSwipeRight: atMaxDepth
+                      ? null
+                      : () => _onCreateBranchFromMenu(context, ref, node: node),
                   leftActionLabel: l10n.swipeDelete,
                   leftActionIcon: AppIcons.delete,
-                  leftActionColor: CupertinoColors.destructiveRed,
+                  leftActionColor: AppColors.destructive,
                   rightActionLabel: l10n.swipeBranch,
                   rightActionIcon: AppIcons.callSplit,
-                  rightActionColor: CupertinoColors.systemBlue,
+                  rightActionColor: AppColors.accent,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => context.push(
@@ -622,7 +630,7 @@ class _DragHandleState extends State<_DragHandle>
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: CupertinoColors.black
+                    color: AppColors.black
                         .withValues(alpha: 0.2),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
@@ -939,7 +947,7 @@ Future<bool?> _confirmDeleteNode(
                                   : CupertinoIcons.square,
                               size: 20,
                               color: acknowledged
-                                  ? CupertinoColors.systemRed
+                                  ? AppColors.destructive
                                   : AppColors.textSecondary,
                             ),
                           ),

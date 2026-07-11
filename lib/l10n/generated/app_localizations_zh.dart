@@ -851,6 +851,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noTitle => '无标题';
 
   @override
+  String maxNodeDepthReached(int max) {
+    return '已达到最大嵌套层级（$max）。无法再创建更深的子分支。';
+  }
+
+  @override
   String get startWriting => '开始写点什么...';
 
   @override

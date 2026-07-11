@@ -24,6 +24,7 @@ import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
 import 'package:thk_tree/ui/features/notes/generate_title_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
+import 'package:thk_tree/domain/node.dart';
 
 class NoteDetailScreen extends ConsumerStatefulWidget {
   const NoteDetailScreen({
@@ -334,7 +335,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
           GridAction(
             label: _copied ? l10n.copied : l10n.copy,
             icon: _copied ? AppIcons.checkCircle : AppIcons.copy,
-            color: _copied ? CupertinoColors.systemGreen : AppColors.accent,
+            color: _copied ? AppColors.success : AppColors.accent,
             onPressed: _copyAll,
           ),
         GridAction(
@@ -352,7 +353,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         GridAction(
           label: l10n.moveNote,
           icon: AppIcons.folder,
-          color: CupertinoColors.systemIndigo,
+          color: AppColors.accent,
           onPressed: _moveToTheme,
         ),
       ],
@@ -360,7 +361,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         GridAction(
           label: l10n.delete,
           icon: AppIcons.delete,
-          color: CupertinoColors.systemRed,
+          color: AppColors.destructive,
           onPressed: _deleteNote,
         ),
       ],
@@ -468,9 +469,12 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
+      final message = e is MaxNodeDepthExceededException
+          ? l10n.maxNodeDepthReached(kMaxNodeDepth)
+          : l10n.branchFailed(e.toString());
       ThkAlert.show(
         context: context,
-        message: l10n.branchFailed(e.toString()),
+        message: message,
       );
     }
   }
@@ -556,7 +560,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       return Center(
         child: Text(
           _error.toString(),
-          style: TextStyle(color: CupertinoColors.systemRed),
+          style: TextStyle(color: AppColors.destructive),
         ),
       );
     }
@@ -719,7 +723,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
           child: Center(
             child: Text(
               '${l10n.noNotesYet}: $_error',
-              style: TextStyle(color: CupertinoColors.systemRed),
+              style: TextStyle(color: AppColors.destructive),
             ),
           ),
         ),
@@ -798,7 +802,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
               },
               leftActionLabel: l10n.swipeDelete,
               leftActionIcon: AppIcons.delete,
-              leftActionColor: CupertinoColors.destructiveRed,
+              leftActionColor: AppColors.destructive,
               child: ThkListTile(
                 title: metas[i].title,
                 subtitle: metas[i].preview != null
