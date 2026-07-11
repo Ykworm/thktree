@@ -57,7 +57,7 @@ class ThemeListScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(AppIcons.accountTree,
+                        Icon(AppIcons.branch,
                             size: 40, color: AppColors.textTertiary),
                         SizedBox(height: 12),
                         Text(l10n.noThemesYet,
@@ -120,15 +120,15 @@ List<Widget> _buildThemeRows(
             ),
             child: Row(
               children: [
-                // 彩色图标徽章（Lab 式）
+                // 彩色图标徽章（Lab 式 · 正圆 + branch）
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: tileColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    AppIcons.accountTree,
+                    AppIcons.branch,
                     color: tileColor,
                     size: 22,
                   ),
