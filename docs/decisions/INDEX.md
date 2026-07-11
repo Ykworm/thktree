@@ -42,4 +42,5 @@
 | ADR-024 | 自动备份采用"前台补偿"而非 iOS BGTaskScheduler | [ADR-024-自动备份采用-前台补偿-而非-iOS-BGTaskScheduler.md](ADR-024-自动备份采用-前台补偿-而非-iOS-BGTaskScheduler.md) |
 | ADR-025 | Markdown 链接打开方式——flutter_custom_tabs（SFSafariViewController）而非 url_launcher / in-app WebView | [ADR-025-Markdown-链接打开方式-flutter_custom_tabs-SFSafariViewController-而非-url_launcher-in-app-WebView.md](ADR-025-Markdown-链接打开方式-flutter_custom_tabs-SFSafariViewController-而非-url_launcher-in-app-WebView.md) |
 | ADR-026 | 模型解析统一为单一数据源——`_resolveChatModelForLlm` 复用 `resolveChatModel` 优先级 | [ADR-026-模型解析统一为单一数据源-_resolveChatModelForLlm-复用-resolveChatModel-优先级.md](ADR-026-模型解析统一为单一数据源-_resolveChatModelForLlm-复用-resolveChatModel-优先级.md) |
+| ADR-028 | Android 端采用 Flutter 同仓库 + 底部导航/导航栏壳 | [ADR-028-Android端采用Flutter-同仓库+底部导航导航栏壳.md](ADR-028-Android端采用Flutter-同仓库+底部导航导航栏壳.md) |
 
