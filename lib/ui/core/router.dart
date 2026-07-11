@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
@@ -8,6 +9,7 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
+import 'package:thk_tree/ui/platform/android/android_navigation_shell.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/lab/lab_placeholder_screen.dart';
@@ -249,6 +251,10 @@ class _MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Android 底部导航/导航栏壳；其余平台沿用移动端 Cupertino tab bar 壳。
+    if (Platform.isAndroid) {
+      return AndroidNavigationShell(navigationShell: navigationShell);
+    }
     final l10n = AppLocalizations.of(context)!;
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
