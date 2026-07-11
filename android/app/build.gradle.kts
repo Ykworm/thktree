@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.thktree.thk_tree"
-    compileSdk = flutter.compileSdkVersion
+    // Flutter 3.44 的 flutter.compileSdkVersion 默认低于 36，
+    // 而 flutter_plugin_android_lifecycle 要求 compileSdk ≥ 36，显式提到 36。
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
