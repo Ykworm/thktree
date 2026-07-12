@@ -274,6 +274,15 @@ flutter test integration_test/ \
 - 测试主题/节点/聊天等 UI 流程——必须用 iOS Simulator（不能在 host 上跑）
 - 推荐 iPhone 15 Pro / iPhone 16 系列
 
+### 7.6 跑 macOS 桌面端
+```bash
+# macOS 桌面端集成测试需要 network.client entitlement + MemStore
+flutter test integration_test/desktop_theme_chat_e2e_test.dart \
+  --dart-define-from-file=build/dart_define.json \
+  -d macos
+```
+详见 [macos-desktop-e2e.md](./macos-desktop-e2e.md)。
+
 ### 7.6 配置 LLM Key
 
 第一次跑前必须创建工程外 JSON 配置（**不放工程内**，避免 `.gitignore` 失误导致 Key 进 release 包），并经生成器压缩后注入：
@@ -335,6 +344,11 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | frontend_server `URI parse error` | 直接把 pretty-print JSON 喂给 `--dart-define-from-file`，含字面 `\n` 触发 URI 解析错 | 必须先跑 `tools/gen_dart_define.dart` 压缩为单行紧凑 JSON |
 | `Unknown LlmProvider: xxx` | activeProvider 用了不在 enum 里的值 | 参考 [fixtures.md § 6](./fixtures.md) |
 | 超时但 UI 没动 | Riverpod state 没刷新 | 加 `await tester.pump(Duration(milliseconds: 500))` |
+| macOS: 流式不开始（发送后 stop_button 不出现） | macOS Sandbox 缺 `network.client` entitlement，HTTP 出站被拦截 | 在 `macos/Runner/DebugProfile.entitlements` 加 `<key>com.apple.security.network.client</key><true/>` |
+| macOS: Keychain 写失败（`PlatformException -34018`） | macOS Sandbox 无 Keychain Sharing entitlement | 集成测试用 `_MemStore` 替代 `FlutterSecureStorage`（见 [macos-desktop-e2e.md § 4.2](./macos-desktop-e2e.md#42-内存安全存储)） |
+| macOS: 创建后文字找不到（`waitForText` 超时） | `SliverList`/`ListView.separated` 懒加载，离屏 widget 未构建 | 用 `tester.scrollUntilVisible(find.text(...), 100, scrollable: find.byType(Scrollable).first)` |
+| macOS: 发送按钮 tap/send 后无反应 | CupertinoTextField multiline 不响应 `receiveAction(send)` | 用 `tester.sendKeyEvent(LogicalKeyboardKey.enter)` |
+| macOS: 默认模型不对（显示 gpt-4o 而不是 DeepSeek/Kimi） | `SettingsController` 读 `settingsStoreProvider`，空 store 返回空 `AppSettings` → 降级到第一个 provider | 预填 `settingsStoreProvider` 的 keys（`chat_default_provider_id`/`chat_default_model_id`），见 [macos-desktop-e2e.md § 4.2](./macos-desktop-e2e.md#42-内存安全存储) |
 
 ### 8.4 抓取日志
 - iOS Simulator 日志：`flutter logs`（开新终端跑）
@@ -357,24 +371,101 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 
 ---
 
-## 10. 测试现状速览表
+## 10. 测试文件清单
 
-| 文件 | 行数 | testWidgets | 场景 | 实现状态 | 阻塞点 | Spec |
-|------|------|-------------|------|----------|--------|------|
-| `chat_streaming_test.dart` | 172 | 3 | 流式 / 空消息 / 快速连续 | ❌ TODO 占位 | 缺 `navigateToChat`、缺 ValueKey 验证 | [chat-streaming.md](./chat-streaming.md) |
-| `llm_error_retry_test.dart` | 411 | 5 | 错误态展示 / 重试触发 / 上报链路 / cancelled 不渲染 / i18n 文案 | ✅ **完整可跑通** | 无（mock LlmClient + mock SettingsStore） | — |
-| `backup_restore_test.dart` | 68 | 4 | 备份恢复往返 / 文件格式 / 冲突 / 覆盖 | ❌ 纯 TODO 空壳 | settings 页缺 ValueKey、缺文件 schema | [backup-restore.md](./backup-restore.md) |
-| `branch_creation_test.dart` | 217+ | 7 + 3 待补 | 4 种模式组合 + 2 取消 + 1 fallback + 空白分支 6 case（含 9.4 实跑通过 + 9.5/9.6 待用户测） | ⚠️ 部分（前置完成，核心 TODO） | 缺选中文本交互、缺模式 sheet ValueKey、case 9.5/9.6 待实跑 | [branch-creation.md](./branch-creation.md) |
-| `node_reorder_test.dart` | 153 | 3 | 同层重排 / 跨层禁止 / 刷新保持 | ⚠️ 部分（手写 Key，未跑通） | 拖拽把手 ValueKey 待核实 | [node-reorder.md](./node-reorder.md) |
-| `chat_async_recovery_test.dart` | 442 | 4 | 后台中断恢复：findInterrupted / resumeInterrupted / cancelResumeQueue / bridge.begin-end 配对 | ✅ **完整可跑通** | 无 | [chat-async-recovery.md](./chat-async-recovery.md) |
-| [note-crud.md](./note-crud.md) | 笔记 CRUD 集成测试 spec |
-| `theme_chat_e2e_test.dart` | 291 | 1 | 主题 → 节点 → 聊天 2 round | ✅ **完整可跑通** | 无 | [theme-chat-e2e.md](./theme-chat-e2e.md) |
-| `note_crud_test.dart` | 245 | 1 | 笔记 CRUD 生命周期（创建/编辑/重命名/持久化/删除） | ✅ **完整可跑通** | 无 | [note-crud.md](./note-crud.md) |
+### 10.1 移动端（iOS，共 10 个可跑通）
 
-**实现状态图例**：
-- ✅ 完整可跑通
-- ⚠️ 部分实现（前置完成，核心逻辑待补）
-- ❌ 纯 TODO / 占位
+| 文件 | 场景 | 状态 | Spec |
+|------|------|------|------|
+| `theme_chat_e2e_test.dart` | 主题 → 节点 → 聊天 2 round 完整链路 | ✅ | [theme-chat-e2e.md](./theme-chat-e2e.md) |
+| `note_crud_test.dart` | 笔记 CRUD 生命周期（创建/编辑/重命名/持久化/删除） | ✅ | [note-crud.md](./note-crud.md) |
+| `llm_error_retry_test.dart` | LLM 错误态展示 / 重试触发 / 上报 / cancelled / i18n | ✅ | —（mock，内嵌场景表） |
+| `chat_async_recovery_test.dart` | 后台中断恢复：find/resume/cancel/bridge 配对 | ✅ | [chat-async-recovery.md](./chat-async-recovery.md) |
+| `branch_creation_test.dart` | 4 种分支模式：empty / 原始上下文 / 总结 / bookmark | ⚠️ | [branch-creation.md](./branch-creation.md) |
+| `node_reorder_test.dart` | 同层重排 / 跨层禁止 / 刷新保持 | ⚠️ | [node-reorder.md](./node-reorder.md) |
+| `chat_streaming_test.dart` | 流式发送 / 空消息拦截 / 快速连续发送 | ❌ | [chat-streaming.md](./chat-streaming.md) |
+| `backup_restore_test.dart` | 备份恢复往返 / 文件格式 / 冲突 / 覆盖 | ❌ | [backup-restore.md](./backup-restore.md) |
+| `offline_test.dart` | Mock LLM 断网/超时/重试 | ✅ | —（内嵌） |
+| `search_test.dart` | 全文搜索 CRUD + 排序 | ✅ | — |
+
+### 10.2 移动端（iOS，共 9 个无专门 spec 的专项测试）
+
+| 文件 | 场景 | 状态 |
+|------|------|------|
+| `chat_latex_overflow_test.dart` | LaTeX 公式溢出修复验证 | ✅ |
+| `chat_breadcrumb_test.dart` | 聊天面包屑导航 | ✅ |
+| `keyword_ranking_test.dart` | Lab → 关键词排行 | ✅ |
+| `lab_tab_test.dart` | Lab 页面 tab 切换 + 独立入口 | ✅ |
+| `note_title_required_test.dart` | 笔记标题必填校验 | ✅ |
+| `note_to_chat_test.dart` | 笔记转对话 | ✅ |
+| `note_search_test.dart` | 笔记搜索 | ✅ |
+| `topic_library_tree_note_test.dart` | 搜狗话题库 → 树 → 笔记全链路 | ✅ |
+| `search_settings_button_test.dart` | 搜索页设置按钮 tap → 设置页 | ✅ |
+
+### 10.3 macOS 桌面端
+
+**已写且验证通过（4 个）：**
+
+| 文件 | 场景 | 状态 | Spec |
+|------|------|------|------|
+| `desktop_theme_chat_e2e_test.dart` | 侧栏 → 三栏展开 → 主题 → 节点 → 聊天 2 round | ✅ | [macos-desktop-e2e.md](./macos-desktop-e2e.md) |
+| `desktop_shell_smoke_test.dart` | 桌面壳渲染冒烟（sidebar + 内容区） | ✅ | — |
+| `desktop_sidebar_nav_test.dart` | 侧栏四个入口切换（搜索/主题/笔记/Lab） | ✅ | — |
+| `desktop_comprehensive_e2e_test.dart` | 3主题×3层 + 分支模式 + 图片 + 合并 + 排序 + 分享 | 🔧 骨架 | — |
+
+**iOS 测试已复制到 macOS worktree 但未验证（20 个）：**
+
+| 文件 | 需适配的点 |
+|------|-----------|
+| `theme_chat_e2e_test.dart` | 导航入口：底部 tab → 侧栏 `sidebar_item_1` |
+| `note_crud_test.dart` | 笔记入口从导航栈 push → NotesWorkspace 两栏 |
+| `llm_error_retry_test.dart` | LLM 路径一致，需在 macOS 运行确认 |
+| `chat_async_recovery_test.dart` | 恢复逻辑一致，需验证 |
+| `branch_creation_test.dart` | 分支入口走 GestureDetector 而非 ActionSheet |
+| `node_reorder_test.dart` | 拖拽行为一致，需验证 |
+| `offline_test.dart` | Mock LLM 一致，需验证 |
+| `search_test.dart` | 搜索走桌面 SearchWorkspace，需调整 |
+| `chat_latex_overflow_test.dart` | 渲染一致，需验证 |
+| `chat_breadcrumb_test.dart` | 面包屑导航一致，需验证 |
+| `keyword_ranking_test.dart` | Lab 页一致，需验证 |
+| `lab_tab_test.dart` | Lab 页一致，需验证 |
+| `chat_streaming_test.dart` | 同上 |
+| `backup_restore_test.dart` | 同上 |
+| `note_title_required_test.dart` | 同上 |
+| `note_to_chat_test.dart` | 同上 |
+| `note_search_test.dart` | 同上 |
+| `topic_library_tree_note_test.dart` | 同上 |
+| `search_settings_button_test.dart` | 同上 |
+
+**macOS 专属交互有待开发测试（0/10）：**
+
+| 待开发 | 场景 |
+|--------|------|
+| `desktop_context_menu_test.dart` | 右键菜单（节点更多操作） |
+| `desktop_shortcut_test.dart` | 快捷键：Cmd+N / Cmd+Enter / Cmd+, / Cmd+F / Cmd+B / Cmd+S |
+| `desktop_hover_test.dart` | 鼠标 hover 效果 |
+| `desktop_menu_bar_test.dart` | 原生菜单栏（ThkTree → 设置/关于/退出，文件 → 新建） |
+| `desktop_image_picker_test.dart` | File picker 选图片 + 聊天发送 |
+| `desktop_window_resize_test.dart` | 窗口缩放 → PaneScaffold breakpoint 切换 |
+| `desktop_pane_drag_resize_test.dart` | 拖动分隔条调整三栏宽度 |
+| `desktop_share_export_test.dart` | 分享导出（Markdown 复制 / 图片保存） |
+| `desktop_dark_mode_test.dart` | 外观：浅色 / 深色 / 跟随系统 |
+| `desktop_model_switch_test.dart` | 聊天中切换模型 + 模型面板交互 |
+
+### 10.4 Support 文件
+
+| 文件 | 作用 |
+|------|------|
+| `test_helpers.dart` | UI 工具函数（`waitForText` / `waitForWidget` / `_createXxx`） |
+| `_support/llm_test_config.dart` | LLM 配置解析 + `toAppSettings()` / `toLlmConfigStore()` |
+| `_support/in_memory_llm_config_store.dart` | 假 LlmConfigStore（API Key 从 Map 读） |
+| `_support/step_timer.dart` | 步骤计时代理 |
+| `_support/search_fixtures.dart` | 搜索测试 fixtures |
+| `_support/failing_search_service.dart` | Mock 搜索服务 |
+| `_support/topic_library.dart` | 话题库测试数据 |
+| `_support/topic_llm_client.dart` | 话题库 Mock LLM |
+
+**状态图例**：✅ 完整可跑通 | ⚠️ 部分实现 | ❌ TODO/占位 | 🔧 骨架/开发中
 
 ---
 
@@ -391,6 +482,7 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | [branch-creation.md](./branch-creation.md) | 分支创建测试 spec |
 | [node-reorder.md](./node-reorder.md) | 节点拖拽测试 spec |
 | [note-crud.md](./note-crud.md) | 笔记 CRUD 集成测试 spec |
+| [macos-desktop-e2e.md](./macos-desktop-e2e.md) | macOS 桌面端 E2E 测试 spec（7 个 macOS 专属 bug 修复记录） |
 | [docs/modules/llm/specs/integration-test-llm-injection.md](../../modules/llm/specs/integration-test-llm-injection.md) | LLM 注入原理详细版（208 行） |
 | [lib/main_test.dart](../../../lib/main_test.dart) | 唯一 ProviderScope 注入点 |
 
