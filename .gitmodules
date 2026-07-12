@@ -1,0 +1,3 @@
+[submodule "integration_test"]
+	path = integration_test
+	url = https://gitee.com/ykfork/thktree-e2e-tests.git
