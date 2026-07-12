@@ -29,7 +29,7 @@ import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
-import '_support/in_memory_llm_config_store.dart';
+import '../_support/in_memory_llm_config_store.dart';
 
 /// 本地定义 llmClientProvider（已从 app_services.dart 移除）。
 final llmClientProvider = FutureProvider<LlmClient>((ref) async {

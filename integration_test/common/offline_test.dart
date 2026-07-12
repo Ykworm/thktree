@@ -10,8 +10,8 @@ import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
-import '_support/in_memory_llm_config_store.dart';
-import 'test_helpers.dart';
+import '../_support/in_memory_llm_config_store.dart';
+import '../_support/test_helpers.dart';
 
 /// 本地定义 llmClientProvider（已从 app_services.dart 移除）。
 final llmClientProvider = FutureProvider<LlmClient>((ref) async {

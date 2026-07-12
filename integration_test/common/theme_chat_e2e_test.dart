@@ -20,9 +20,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/main_test.dart';
-import '_support/llm_test_config.dart';
-import '_support/step_timer.dart';
-import 'test_helpers.dart';
+import '../_support/llm_test_config.dart';
+import '../_support/step_timer.dart';
+import '../_support/test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

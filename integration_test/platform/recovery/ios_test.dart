@@ -41,7 +41,7 @@ import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/data/stores/session_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
-import '_support/in_memory_llm_config_store.dart';
+import '../../_support/in_memory_llm_config_store.dart';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Mock：BackgroundTaskBridge — 计数 begin/end 调用。

@@ -13,10 +13,10 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/thk_list_tile.dart';
 
-import '_support/in_memory_llm_config_store.dart';
-import '_support/llm_test_config.dart';
-import '_support/topic_library.dart';
-import 'test_helpers.dart';
+import '../_support/in_memory_llm_config_store.dart';
+import '../_support/llm_test_config.dart';
+import '../_support/topic_library.dart';
+import '../_support/test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

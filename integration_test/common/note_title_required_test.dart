@@ -12,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
-import 'test_helpers.dart';
+import '../_support/test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
