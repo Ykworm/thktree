@@ -1,8 +1,16 @@
 # 测试工程化方案（详细版）
 
-> 状态：Phase 0-4 待执行（Phase 5 skill 已完成）；三端当前为未提交半成品平铺结构
+> 状态：业务 dart 三端已 commit；主仓 Phase 1 已完成并 commit；android Phase 0.2+2/3 已完成并 commit（branch/image/share 三 feature）；macOS Phase 0.3+2 已完成并 commit（230cf02，desktop 12 文件归位 platform/desktop/）；三端 integration_test 重排全部完成，flutter analyze 仅剩预存 LlmClient mock override 历史债（三端共有，不在本次范围）。下一步：用户实测后合并回 dev。
 > 日期：2026-07-12
 > 适用：ThkTree 主仓库 + thktree-android / thktree-macos worktree
+>
+> ## 进度日志
+> - **业务 commit（三端）**：主仓 `4ed0838`(fix ui B4) + `85a3353`(docs+skill)；android `76dcc3d`+`14a936d`；macos `6ed544b`(lib+macos) + `996b311`(docs)。修正：android 误删 tracked tools 已 `git checkout -- tools/` 恢复；macos 测试文件误入业务 commit 已 `reset --soft HEAD~2` 重提。
+> - **Phase 1 主仓重排**：`2bc90ea` `refactor(test): integration_test 按平台/feature 重排`。common/(19) + platform/recovery/ios_test + _support/(test_helpers 移入，topic_library 等 7 个共享 fixture 本就在 HEAD _support/ 已在位)。flutter analyze 0 import 路径错误；5 个 LlmClient mock `invalid_override` 为已知历史债（接口加 deepThinking/webSearch 形参，mock 未跟上），不在本次范围。
+> - **发现**：主仓实际 base 是 `codex/ui-flatten-polish` 而非 plan 假设的 `f600f57`；`_support/` 共享 fixture 在 HEAD 已正确位于 `integration_test/_support/`（非 rsync 产物）。
+> - **待办**：android/macos worktree 采用主仓结构 + 各自平台文件（macos desktop_*.dart 归位 platform/desktop/，android 新建 image/share/branch）。同步须用 `git checkout <main> -- <选择性路径>`（避免冲掉 macos 独有 desktop 文件），禁再用 rsync 整目录覆盖。
+> - **Android Phase 2/3 完成**（分支 feat/android-app）：`ca3cb6d` `feat(android-test): branch/image/share 三 feature E2E`。新建 `platform/branch/`(branch_shared + android_test，断言 `l10n.branch`)、`platform/image/`(image_shared + android_test，复用 branch_shared)、`platform/share/`(share_shared + android_test)。踩坑：*_shared 缺 `ValueKey`/`Image` → 加 `package:flutter/widgets.dart`；`l10n.branchLabel` 不存在 → 改 `l10n.branch`；`l10n.share` 不存在 → 移除断言改 TODO。新文件 0 error。
+> - **macOS Phase 0.3+2 完成**（分支 feat/macos-desktop）：`230cf02` `refactor(macos-test): integration_test 对齐主仓重排`。_support/ 收 test_helpers + topic_library 等 7 fixture（topic_llm_client 采主仓版含 deepThinking，修复 invalid_override）；common/ 19 用例；desktop 12 文件（shell_smoke/sidebar_nav/theme_chat/comprehensive + 8 desktop_*_helpers/nav/fixtures）归位 platform/desktop/ 保留 desktop_ 前缀、import 改 `../../_support/`；chat_async_recovery 归位 platform/recovery/ios_test。踩坑：desktop_test_fixtures 的 `import 'llm_test_config.dart'` 无前缀被 sed 漏掉 → 改 `../../_support/llm_test_config.dart`；误删 ios Package.resolved 已 `git checkout` 恢复；两个冗余 stash（desktop unique / rsync _shared 残留）已核验内容无丢失后丢弃。flutter analyze：desktop 重排引入 0 新 error，全 integration_test 仅剩 7 个预存 LlmClient mock override 历史债。
 
 ---
 
