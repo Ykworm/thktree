@@ -149,6 +149,15 @@ flutter test integration_test/ -d <device>
 - 人话 case 目录 `docs/test-cases-catalog.md` + `test-data/topics.md` 已随子模块落盘
 - 详细进度见主仓 `docs/test-engineering-plan.md`（Phase 0–4 全完成）
 
+## 测试结果存放（results/，在子模块内）
+
+- 模型：每个 case 每端一份结果文件，**跑完覆盖旧结果，不堆历史**
+- 路径：`results/<CASE-ID>/<platform>.md`（ios/android/macos 各一份，互不被覆盖）
+- 失败截图：`results/artifacts/<CASE-ID>-<platform>.png`（gitignore，不进仓库）
+- 运行：`bash integration_test/tools/run_e2e.sh <CASE-ID> <platform>`（自动从 catalog 解析脚本 + `--plain-name`，注入真实 LLM key）
+- **LLM 硬约束：绝对禁止 mock**，缺真实 key 时 runner 拒绝运行
+- 格式与提交约定见子模块 `integration_test/results/README.md`
+
 ## 红线
 
 - `common/` 禁止出现任何 `Platform.is*` / `defaultTargetPlatform` 分支
