@@ -19,8 +19,8 @@ import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 
-import '_support/failing_search_service.dart';
-import 'test_helpers.dart';
+import '../_support/failing_search_service.dart';
+import '../_support/test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

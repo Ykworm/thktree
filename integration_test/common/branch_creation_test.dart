@@ -10,8 +10,8 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/widgets/thk_text_field.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 
-import '_support/llm_test_config.dart';
-import 'test_helpers.dart';
+import '../_support/llm_test_config.dart';
+import '../_support/test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

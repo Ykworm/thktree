@@ -13,10 +13,10 @@ import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 
-import '_support/in_memory_llm_config_store.dart';
-import '_support/llm_test_config.dart';
-import '_support/topic_llm_client.dart';
-import 'test_helpers.dart';
+import '../_support/in_memory_llm_config_store.dart';
+import '../_support/llm_test_config.dart';
+import '../_support/topic_llm_client.dart';
+import '../_support/test_helpers.dart';
 
 /// 本地定义 llmClientProvider（已从 app_services.dart 移除）。
 final llmClientProvider = FutureProvider<LlmClient>((ref) async {

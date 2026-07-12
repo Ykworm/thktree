@@ -14,7 +14,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:thk_tree/main_test.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/thk_list_tile.dart';
-import 'test_helpers.dart';
+import '../_support/test_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
