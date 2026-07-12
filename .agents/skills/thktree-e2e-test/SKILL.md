@@ -1,6 +1,6 @@
 ---
 name: thktree-e2e-test
-description: ThkTree Flutter 集成测试（integration_test）工程化规范。覆盖目录结构（_support/ + common/ + platform/<feature>/）、命名规则、新测试放置判定流程、运行命令、三端 worktree 约定（ThkTree 主仓改 common/_support/ios、thktree-android 改 android、thktree-macos 改 macos/desktop）。写或改任何 integration_test 文件、新增 E2E 用例、或在某平台 worktree 跑测试前，必须加载本 skill。
+description: ThkTree Flutter 集成测试（integration_test）工程化规范。integration_test 是独立 git 子模块（gitee.com/ykfork/thktree-e2e-tests，branch master）。覆盖目录结构（_support/ + common/ + platform/<feature>/ + platform/desktop/ + platform/recovery/）、人话版 test case 目录（integration_test/docs/test-cases-catalog.md，规范真源）、命名规则、新测试放置判定、运行命令、三端 worktree 子模块协作约定。写或改任何 integration_test 文件、新增 E2E 用例、或在某平台 worktree 跑测试前，必须加载本 skill。
 agent_created: true
 ---
 
@@ -15,6 +15,29 @@ agent_created: true
 
 > 本 skill 是规范单一真源。AGENTS.md 只留指针，不内联此内容。
 
+## integration_test 是独立子模块（2026-07-12 起）
+
+`integration_test/` **不再**内嵌在各端 app 仓库，而是独立 git 子模块：
+
+- 远端：`https://gitee.com/ykfork/thktree-e2e-tests.git`（**branch 恒为 `master`**）
+- 各端 worktree（ThkTree 主仓 / thktree-android / thktree-macos）通过 `.gitmodules` + gitlink **pin 同一 master**，三端测试真源一致
+- 本地未初始化时先跑：`git submodule update --init`
+
+**为什么抽子模块**：之前三端共享 integration_test 靠 selective checkout / stash 同步，易翻车；子模块单真源，「改 master → 各 worktree `git submodule update` 提 pin」更干净，且允许外部贡献者直接给子模块 master 提 PR（开源友好）。
+
+**贡献测试 case 的正确流程**：
+
+```
+1. 进入子模块目录：cd integration_test
+2. 确保 master 最新：git checkout master && git pull
+3. 改/加测试 Dart + 改 docs/test-cases-catalog.md（人话 case 内容）
+4. 在子模块内提交：git add -A && git commit && git push origin master
+5. 回到 app worktree 提 pin：git add integration_test && git commit -m "test: bump e2e submodule"
+```
+
+> 改测试 **只动子模块仓库**，不要在各 app worktree 内直接编辑 integration_test/（会被 submodule 覆盖/冲突）。
+> 别人也改了 master 时：子模块里 `git pull`，app worktree 里 `git submodule update` 即可同步最新。
+
 ## 目标目录结构（规范态）
 
 ```
@@ -22,47 +45,47 @@ integration_test/
 │
 ├── _support/                        ← 全局 helpers & fixtures（三端共享，不含 Platform 分支）
 │   ├── test_helpers.dart               通用工具（waitForText, pumpAndSettle…）
-│   ├── topic_library.dart              3×3×3×4 树 fixture 定义
-│   ├── topic_llm_client.dart           mock LLM client
+│   ├── topic_library.dart              3×3×3×4 树 fixture 定义（含交叉引用注释，改需同步 test-data/topics.md）
+│   ├── topic_llm_client.dart           mock LLM client（⚠️ 有 invalid_override 历史债，见红线）
 │   ├── search_fixtures.dart            搜索测试磁盘直写 fixture
 │   ├── llm_test_config.dart            --dart-define-from-file 加载 LLM key
 │   ├── in_memory_llm_config_store.dart 内存 LLM config（免 Keychain）
 │   ├── failing_search_service.dart     搜索失败 fake service
-│   └── step_timer.dart                 步骤计时
+│   ├── step_timer.dart                 步骤计时
+│   └── test-data/topics.md             主题+文章 seed（人话可读镜像，TREE-1 消费）
 │
 ├── common/                          ← 跨平台测例（三端 CI 都跑，禁止 Platform.is* / defaultTargetPlatform）
 │   ├── theme_chat_e2e_test.dart
 │   ├── branch_creation_test.dart
 │   ├── node_reorder_test.dart
 │   ├── merge_chat_button_test.dart
-│   ├── chat_streaming_test.dart
-│   ├── chat_breadcrumb_test.dart
-│   ├── chat_latex_overflow_test.dart
+│   ├── chat_streaming_test.dart / chat_breadcrumb_test.dart / chat_latex_overflow_test.dart
 │   ├── note_*.dart / search_*.dart / offline_test.dart / backup_restore_test.dart
-│   ├── topic_library_tree_note_test.dart   3×3×3×4 树生成+校验
+│   ├── topic_library_tree_note_test.dart   3×3×3×4 树生成+校验（消费 test-data/topics.md）
 │   └── llm_error_retry_test.dart
 │
-└── platform/                        ← 平台有关，按 feature 拆
+├── docs/
+│   └── test-cases-catalog.md            ← 人话版 test case 目录（**规范真源**），每条含完整 case 内容 + 平台覆盖/差异/Run
+│
+└── platform/                        ← 平台有关，按 feature 拆（现行态，2026-07-12）
     ├── branch/
     │   ├── branch_shared.dart          公共步骤（建节点、发消息、断言分支存在）
-    │   ├── ios_test.dart               iOS: 长按选文本→branch
-    │   ├── android_test.dart           Android: 点 branch 按钮（无 SelectionArea）
-    │   └── macos_test.dart             macOS: 右键菜单→branch
+    │   └── android_test.dart           Android: 点 branch 按钮（无 SelectionArea）
     ├── image/
     │   ├── image_shared.dart
-    │   ├── android_test.dart           Android: 拍照 + 相册
-    │   └── ios_test.dart               iOS: 相机 + Photo Library
+    │   └── android_test.dart           Android: 拍照 + 相册
     ├── share/
     │   ├── share_shared.dart
-    │   ├── android_test.dart           Android: share→系统分享→保存
-    │   └── ios_test.dart               iOS: UIActivityViewController
+    │   └── android_test.dart           Android: share→系统分享→保存
     ├── recovery/
-    │   ├── recovery_shared.dart
     │   └── ios_test.dart               iOS: 后台任务中断→恢复
-    └── desktop/                      ← macOS 独有
-        ├── desktop_shared.dart + theme_chat_test.dart + comprehensive_test.dart
-        └── *_helpers.dart（nav/node/chat/branch/interaction/primitive/theme）
+    └── desktop/                      ← macOS 独有（右键代替长按、菜单代替 sheet、多栏布局）
+        ├── shell_smoke_test.dart / sidebar_nav_test.dart / theme_chat_test.dart / comprehensive_test.dart
+        └── desktop_*_helpers.dart（nav/node/chat/branch/interaction/primitive/theme/fixtures）
 ```
+
+> **iOS 的 branch（长按选词）目前落在 `common/branch_creation_test.dart` 内**（不是 platform/branch/ios_test），macOS 的 branch 落在 `platform/desktop/*`。`platform/branch/` 目前仅 Android。这与早前计划（每 feature 三端各一文件）不同——实际重排时按「能跑就归位」原则落地，不强制对称。
+> **人话 test case 目录 = `integration_test/docs/test-cases-catalog.md`**：开发者即需求方，md 写满 case 内容（前置/步骤/预期/边界），Dart 是实现。贡献者改 md 设计 case 不需写 Dart。
 
 ## 命名规则
 
@@ -100,30 +123,36 @@ flutter test integration_test/platform/branch/android_test.dart -d emulator-5554
 flutter test integration_test/ -d <device>
 ```
 
-## Worktree 约定（避免三端合并冲突）
+## Worktree / 子模块协作约定
 
-| 仓库 | 只改 | 禁止碰 |
+`integration_test/` 是子模块，三端共享同一 master。因此**没有「某 worktree 只改某平台目录」的物理隔离**——隔离靠的是协作纪律：
+
+| 平台 | 你去改子模块里的 | 提交到 |
 |---|---|---|
-| ThkTree（主仓，dev） | `common/` ` _support/` `platform/*/ios_test.dart` | 其他平台目录 |
-| thktree-android | `platform/*/android_test.dart` | `common/` `ios_test.dart` `macos_test.dart` |
-| thktree-macos | `platform/*/macos_test.dart` `platform/desktop/` | 其他平台目录 |
+| iOS | `common/` `platform/*/ios_test.dart` `platform/recovery/ios_test.dart` | 子模块 master |
+| Android | `platform/*/android_test.dart` | 子模块 master |
+| macOS | `platform/desktop/*` | 子模块 master |
+| 跨平台 | `common/` `_support/` | 子模块 master |
 
-- 重排一律用 `git mv`（不是 `mv`），保留 rename 历史
-- import 路径修正后必须 `flutter analyze integration_test/` 0 error
-- 提交：代码 commit 与文档 commit 分离
+- 在**任一** app worktree 里 `cd integration_test` 即可改子模块；改完在子模块内 commit + push master
+- 子模块内重排文件一律用 `git mv`（不是 `mv`），保留 rename 历史
+- import 路径修正后必须 `flutter analyze integration_test/` 0 error（允许预存的 `topic_llm_client` 等 LlmClient mock `invalid_override` 历史债，见红线）
+- 子模块内提交同样遵循**代码 commit 与文档 commit 分离**（Dart 一个 commit、catalog/test-data 一个 commit）
+- app worktree 侧只提交「bump submodule pin」：`git add integration_test && git commit -m "test: bump e2e submodule"`
 
-## 迁移状态（重要，2026-07-12）
+## 现行态（2026-07-12 重排完成 + 子模块化）
 
-当前 `integration_test/` 正从旧结构（`_shared/ + android/ + ios/ + macos/`）向本规范迁移。
-Phase 0–4 进度见 `docs/test-engineering-plan.md`。迁移完成前：
-
-- 若实际目录与本规范不符，**以 `test-engineering-plan.md` 的 Phase 状态为准**，不要盲目新建 `common/` 或 `platform/`
-- macOS worktree 的 `desktop_*.dart` 尚未归位（Phase 2 待执行）
-- Android 的 `platform/image|share|branch/android_test.dart` 尚待新建（Phase 3 待执行）
+- 三端（ThkTree 主仓 / thktree-android / thktree-macos）`integration_test/` 已统一为子模块引用，pin 同一 master
+- 旧结构（`_shared/ + android/ + ios/ + macos/` 平铺）已完全迁移到 `_support/ + common/ + platform/<feature>/ + platform/desktop/ + platform/recovery/`
+- macOS 桌面测试已归位 `platform/desktop/`（12 文件，保留 desktop_ 前缀，import 改 `../../_support/`）
+- Android `platform/{branch,image,share}/android_test.dart` 已建
+- 人话 case 目录 `docs/test-cases-catalog.md` + `test-data/topics.md` 已随子模块落盘
+- 详细进度见主仓 `docs/test-engineering-plan.md`（Phase 0–4 全完成）
 
 ## 红线
 
 - `common/` 禁止出现任何 `Platform.is*` / `defaultTargetPlatform` 分支
-- 各 worktree 只改自己平台目录，禁止跨平台改他人文件
+- **禁止在各 app worktree 内直接编辑 `integration_test/` 下的文件**——改测试必须进子模块仓库（见上「集成测试是独立子模块」）
 - 禁止为凑覆盖率生成低价值测试（见 AGENTS.md 红线）
 - B4 手势冲突修复已落地 `lib/ui/core/shared/message_bubble.dart`：Android 跳过 `SelectionArea`，iOS/macOS 不变；新增 Android 交互测试时不要依赖文本选区
+- 人话 case 目录 `docs/test-cases-catalog.md` 是规范真源：新增/修改测试 case 时**同步更新 catalog**（Dart 实现必须忠实于 md 描述的 case 内容）
