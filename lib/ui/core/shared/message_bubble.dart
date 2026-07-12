@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart' show SelectableText, SelectionArea;
 import 'package:thk_tree/ui/core/shared/selection_state.dart';
 import 'package:thk_tree/ui/core/shared/clips_context_menu.dart';
@@ -436,6 +437,21 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     }
   }
 
+  /// 按平台决定是否包裹 SelectionArea。
+  /// Android: 直接返回 child（SelectionArea 跟 Scrollable 冲突导致手势异常）。
+  /// iOS/macOS: 包裹 SelectionArea 保留文本选择 + 上下文菜单。
+  Widget _buildSelectionAware({required Widget child}) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return child;
+    }
+    return SelectionArea(
+      onSelectionChanged: (v) => syncSelection(context, v),
+      contextMenuBuilder: (context, editableTextState) =>
+          buildClipsContextMenu(context, editableTextState),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -587,10 +603,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                 widget.message.body.trim().isNotEmpty)
                               const SizedBox(height: 8),
                             if (widget.message.body.trim().isNotEmpty)
-                              SelectionArea(
-                                onSelectionChanged: (v) => syncSelection(context, v),
-                                contextMenuBuilder: (context, editableTextState) =>
-                                    buildClipsContextMenu(context, editableTextState),
+                              _buildSelectionAware(
                                 child: GptMarkdown(
                                   sanitizedBody,
                                   style: baseStyle,
@@ -775,34 +788,55 @@ class _ReasoningSection extends StatelessWidget {
           ),
           if (isExpanded) ...[
             const SizedBox(height: 8),
-            SelectionArea(
-              onSelectionChanged: (v) => syncSelection(context, v),
-              contextMenuBuilder: (context, editableTextState) =>
-                  buildClipsContextMenu(context, editableTextState),
-              child: GptMarkdown(
-                sanitizedReasoning,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
-                ),
-                onLinkTap: (url, _) => openMarkdownLink(context, url),
-                tableBuilder: (ctx, rows, style, cfg) {
-                  final tableMarkdown = _tableRowsToMarkdown(rows);
-                  return _TableWithActions(
-                    tableRows: rows,
-                    textStyle: style,
-                    onCopy: () => _copyTextToClipboard(tableMarkdown),
-                    onExpand: () => onExpandTable(ctx, tableMarkdown),
-                  );
-                },
-                codeBuilder: _buildCodeBlock,
-                latexBuilder: buildLatex,
-                useDollarSignsForLatex: true,
-              ),
-            ),
-          ],
-        ],
-      ),
+            defaultTargetPlatform == TargetPlatform.android
+                ? GptMarkdown(
+                    sanitizedReasoning,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textSecondary,
+                    ),
+                    onLinkTap: (url, _) => openMarkdownLink(context, url),
+                    tableBuilder: (ctx, rows, style, cfg) {
+                      final tableMarkdown = _tableRowsToMarkdown(rows);
+                      return _TableWithActions(
+                        tableRows: rows,
+                        textStyle: style,
+                        onCopy: () => _copyTextToClipboard(tableMarkdown),
+                        onExpand: () => onExpandTable(ctx, tableMarkdown),
+                      );
+                    },
+                    codeBuilder: _buildCodeBlock,
+                    latexBuilder: buildLatex,
+                    useDollarSignsForLatex: true,
+                  )
+                : SelectionArea(
+                    onSelectionChanged: (v) => syncSelection(context, v),
+                    contextMenuBuilder: (context, editableTextState) =>
+                        buildClipsContextMenu(context, editableTextState),
+                    child: GptMarkdown(
+                      sanitizedReasoning,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textSecondary,
+                      ),
+                      onLinkTap: (url, _) => openMarkdownLink(context, url),
+                      tableBuilder: (ctx, rows, style, cfg) {
+                        final tableMarkdown = _tableRowsToMarkdown(rows);
+                        return _TableWithActions(
+                          tableRows: rows,
+                          textStyle: style,
+                          onCopy: () => _copyTextToClipboard(tableMarkdown),
+                          onExpand: () => onExpandTable(ctx, tableMarkdown),
+                        );
+                      },
+                      codeBuilder: _buildCodeBlock,
+                      latexBuilder: buildLatex,
+                      useDollarSignsForLatex: true,
+                    ),
+                  ),
+              ],
+            ],
+          ),
     );
   }
 }
@@ -996,13 +1030,9 @@ class _MarkdownTableView extends StatelessWidget {
           expanded: expanded,
         );
 
-        return SelectionArea(
-          onSelectionChanged: (v) => syncSelection(context, v),
-          contextMenuBuilder: (context, editableTextState) =>
-              buildClipsContextMenu(context, editableTextState),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Table(
+        final table = SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Table(
               border: TableBorder.all(
                 color: AppColors.border,
                 width: 1,
@@ -1032,8 +1062,15 @@ class _MarkdownTableView extends StatelessWidget {
                 );
               }).toList(),
             ),
-          ),
         );
+        return defaultTargetPlatform == TargetPlatform.android
+            ? table
+            : SelectionArea(
+                onSelectionChanged: (v) => syncSelection(context, v),
+                contextMenuBuilder: (context, editableTextState) =>
+                    buildClipsContextMenu(context, editableTextState),
+                child: table,
+              );
       },
     );
   }

@@ -265,7 +265,6 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
                         ),
                         CupertinoButton(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          minimumSize: Size.zero,
                           onPressed: _selectedNodeIds.isEmpty
                               ? null
                               : () => _onMergeAndCreate(data.nodes),
