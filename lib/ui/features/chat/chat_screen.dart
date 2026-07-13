@@ -13,8 +13,6 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
-import 'package:thk_tree/ui/core/theme/app_durations.dart';
-import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/auto_title_controller.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
@@ -92,6 +90,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// 防抖：自动保存默认模型后置 true，避免重复调用 switchModel。
   bool _autoModelSaved = false;
+
+  /// 模型选择弹层是否打开。打开期间禁用 chat scaffold 的
+  /// resizeToAvoidBottomInset，避免键盘弹起时底下对话区被挤压、
+  /// 透过弹层半透明遮罩露出留白。弹层面板自己用 viewInsets 上移避键盘。
+  bool _modelSheetOpen = false;
 
   /// 滚动位置：是否接近底部（控制浮动按钮显隐）。
   bool _isNearBottom = true;
@@ -393,7 +396,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     // 模型选择：点击导航栏标题区域弹出底部选择面板（不再上推挤占对话空间）。
-    final openModelSelector = () {
+    final openModelSelector = () async {
       if (isStreaming) return;
       FocusScope.of(context).unfocus();
       var nextProviderId = currentProviderId;
@@ -410,7 +413,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           }
         }
       }
-      showModelSelectorSheet(
+      // 弹层打开期间禁用 chat scaffold resize，避免键盘弹起时
+      // 底下对话区被挤压、透过半透明遮罩露出留白。
+      setState(() => _modelSheetOpen = true);
+      await showModelSelectorSheet(
         context: context,
         currentProviderId: nextProviderId,
         currentModelId: nextModelId,
@@ -426,9 +432,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           }
         },
       );
+      if (mounted) {
+        setState(() => _modelSheetOpen = false);
+      }
     };
 
     return CupertinoPageScaffold(
+      // 模型选择弹层打开期间禁用 resize：键盘弹起时由弹层面板自己上移避让，
+      // 避免 scaffold 把对话区顶起、透过弹层半透明遮罩露出留白。
+      resizeToAvoidBottomInset: !_modelSheetOpen,
       backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: '',

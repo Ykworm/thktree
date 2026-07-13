@@ -11,25 +11,32 @@ import 'package:thk_tree/data/models/llm_provider_config.dart';
 ///
 /// 面板从底部滑入，带半透明遮罩；点击面板外部关闭。选中模型后先关闭弹层，
 /// 再回调 [onModelSelected]。键盘弹起时面板自动上移避开搜索框。
-void showModelSelectorSheet({
+Future<void> showModelSelectorSheet({
   required BuildContext context,
   required String? currentProviderId,
   required String? currentModelId,
   required void Function(String providerId, String modelId) onModelSelected,
-}) {
-  showCupertinoModalPopup<void>(
+}) async {
+  await showCupertinoModalPopup<void>(
     context: context,
-    builder: (ctx) => Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: ModelSelectorPanel(
-          currentProviderId: currentProviderId,
-          currentModelId: currentModelId,
-          onModelSelected: (providerId, modelId) {
-            Navigator.of(ctx).pop();
-            onModelSelected(providerId, modelId);
-          },
+    builder: (ctx) => ColoredBox(
+      // 不透明背景盖住底下 chat：showCupertinoModalPopup 的 barrier 默认只有
+      // ~20% 黑，键盘弹起后遮罩区变大，会透出底下对话区的空白被当成“留白”。
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: ModelSelectorPanel(
+            currentProviderId: currentProviderId,
+            currentModelId: currentModelId,
+            onModelSelected: (providerId, modelId) {
+              Navigator.of(ctx).pop();
+              onModelSelected(providerId, modelId);
+            },
+          ),
         ),
       ),
     ),
