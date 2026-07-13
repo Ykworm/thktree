@@ -437,7 +437,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     };
 
-    return CupertinoPageScaffold(
+    // _MainShell（iOS）会把 MediaQuery.viewInsets.bottom 减去 tabBar 高度，
+    // 以让底部 tab 栏在键盘弹起时保持可见。但 ChatScreen 是全屏 push 页面，
+    // 键盘弹起时 tabBar 被键盘遮住不存在，被减的部分会导致 Scaffold resize
+    // 少留空间，在输入栏下方出现空白。这里通过 View 获取未被篡改的原始
+    // 键盘高度（物理像素→逻辑像素），恢复正确的 viewInsets 给内部 Scaffold。
+    final mq = MediaQuery.of(context);
+    final view = View.of(context);
+    final realBottomInset = view.viewInsets.bottom / view.devicePixelRatio;
+
+    return MediaQuery(
+      data: mq.copyWith(
+        viewInsets: mq.viewInsets.copyWith(bottom: realBottomInset),
+      ),
+      child: CupertinoPageScaffold(
       // 模型选择弹层打开期间禁用 resize：键盘弹起时由弹层面板自己上移避让，
       // 避免 scaffold 把对话区顶起、透过弹层半透明遮罩露出留白。
       resizeToAvoidBottomInset: !_modelSheetOpen,
@@ -732,6 +745,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
         ],
+      ),
       ),
     );
   }

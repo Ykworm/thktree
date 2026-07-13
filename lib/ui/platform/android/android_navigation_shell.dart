@@ -71,6 +71,8 @@ class _AndroidNavigationShellState extends State<AndroidNavigationShell>
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final keyboardOpen = mq.viewInsets.bottom > 0;
     final l10n = AppLocalizations.of(context)!;
     final items = <AndroidNavItem>[
       AndroidNavItem(icon: Icons.search, label: l10n.searchTabLabel),
@@ -147,10 +149,14 @@ class _AndroidNavigationShellState extends State<AndroidNavigationShell>
                     child: widget.navigationShell,
                   ),
                 ),
-                Material(
-                  color: AppColors.surface,
-                  child: chrome,
-                ),
+                // 键盘弹出时隐藏底部导航栏：Column 不会自动让出空间，
+                // 保留它会导致子页面（如 ChatScreen）的
+                // resizeToAvoidBottomInset 在键盘上方多出导航栏高度的空白。
+                if (!keyboardOpen)
+                  Material(
+                    color: AppColors.surface,
+                    child: chrome,
+                  ),
               ],
             ),
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
+import 'package:thk_tree/ui/core/shared/link_launcher.dart';
+import 'package:thk_tree/ui/core/shared/markdown_builders.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 
 /// 分享卡片 Widget —— 用于截图生成图片
 ///
@@ -30,7 +32,7 @@ class ShareCardWidget extends StatelessWidget {
 
     final blocks = <Widget>[];
     for (var i = 0; i < messages.length; i++) {
-      blocks.add(_buildMessageBlock(messages[i]));
+      blocks.add(_buildMessageBlock(context, messages[i]));
       if (i < messages.length - 1) blocks.add(const SizedBox(height: 16));
     }
 
@@ -101,7 +103,7 @@ class ShareCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageBlock(ShareMessage m) {
+  Widget _buildMessageBlock(BuildContext context, ShareMessage m) {
     if (m.role == SessionRole.user) {
       final hasText = m.text.trim().isNotEmpty;
       return Container(
@@ -141,6 +143,9 @@ class ShareCardWidget extends StatelessWidget {
     }
 
     // ── 助手消息 ──
+    // 复用与聊天界面一致的 builder（markdown_builders.dart）：
+    // 否则 gpt_markdown 默认 CodeField 会用 Theme.onInverseSurface（亮色下为深色块），
+    // 导致分享图里代码块/表格变成不可见的暗色矩形。
     return GptMarkdown(
       m.text,
       style: TextStyle(
@@ -148,6 +153,14 @@ class ShareCardWidget extends StatelessWidget {
         height: 1.6,
         color: AppColors.textPrimary,
       ),
+      codeBuilder: buildCodeBlock,
+      tableBuilder: (ctx, rows, style, cfg) => MarkdownTableView(
+        tableRows: rows,
+        textStyle: style,
+      ),
+      latexBuilder: buildLatex,
+      useDollarSignsForLatex: true,
+      onLinkTap: (url, _) => openMarkdownLink(context, url),
     );
   }
 }

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
-import 'package:flutter/material.dart' show SelectableText, SelectionArea;
+import 'package:flutter/material.dart' show SelectionArea;
 import 'package:thk_tree/ui/core/shared/selection_state.dart';
 import 'package:thk_tree/ui/core/shared/clips_context_menu.dart';
 import 'package:flutter/services.dart';
@@ -27,7 +27,6 @@ final _tableSepPattern = RegExp(r'^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|$');
 final _looseTableSepPattern = RegExp(
   r'^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$',
 );
-final _htmlBreakPattern = RegExp(r'<br\s*/?>', caseSensitive: false);
 
 /// 全角标点 → 半角映射（仅 markdown 语法相关字符）
 const _fullWidthToHalf = <String, String>{
@@ -272,7 +271,7 @@ String _tableRowsToMarkdown(List<CustomTableRow> tableRows) {
 
 String _tableFieldsToMarkdownRow(List<CustomTableField> fields) {
   final cells = fields.map((field) {
-    final normalized = _normalizeTableCellText(field.data).replaceAll('\n', '<br>');
+    final normalized = normalizeTableCellText(field.data).replaceAll('\n', '<br>');
     return _escapeMarkdownTableCell(normalized);
   }).toList();
   return '| ${cells.join(' | ')} |';
@@ -618,7 +617,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                       onExpand: () => _showExpanded(ctx, tableMarkdown),
                                     );
                                   },
-                                  codeBuilder: _buildCodeBlock,
+                                  codeBuilder: buildCodeBlock,
                                   latexBuilder: buildLatex,
                                   useDollarSignsForLatex: true,
                                 ),
@@ -805,7 +804,7 @@ class _ReasoningSection extends StatelessWidget {
                         onExpand: () => onExpandTable(ctx, tableMarkdown),
                       );
                     },
-                    codeBuilder: _buildCodeBlock,
+                    codeBuilder: buildCodeBlock,
                     latexBuilder: buildLatex,
                     useDollarSignsForLatex: true,
                   )
@@ -829,7 +828,7 @@ class _ReasoningSection extends StatelessWidget {
                           onExpand: () => onExpandTable(ctx, tableMarkdown),
                         );
                       },
-                      codeBuilder: _buildCodeBlock,
+                      codeBuilder: buildCodeBlock,
                       latexBuilder: buildLatex,
                       useDollarSignsForLatex: true,
                     ),
@@ -866,7 +865,7 @@ class _TableWithActions extends StatelessWidget {
           0,
           (max, row) => math.max(max, row.fields.length),
         );
-        final columnWidth = _resolveTableColumnWidth(
+        final columnWidth = resolveTableColumnWidth(
           availableWidth: availableWidth,
           columnCount: columnCount,
           expanded: false,
@@ -918,7 +917,7 @@ class _TableWithActions extends StatelessWidget {
                   ],
                 ),
               ),
-              _MarkdownTableView(
+              MarkdownTableView(
                 tableRows: tableRows,
                 textStyle: textStyle,
               ),
@@ -928,29 +927,6 @@ class _TableWithActions extends StatelessWidget {
       },
     );
   }
-}
-
-Widget _buildCodeBlock(
-  BuildContext context,
-  String name,
-  String code,
-  bool closed,
-) {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: SelectableText(
-      code,
-      style: TextStyle(
-        fontFamily: 'monospace',
-        fontSize: 14,
-      ),
-    ),
-  );
 }
 
 class _TableExpandedView extends StatelessWidget {
@@ -978,14 +954,14 @@ class _TableExpandedView extends StatelessWidget {
             _sanitizeMarkdown(content, stripThinkTags: true),
             style: baseStyle,
             onLinkTap: (url, _) => openMarkdownLink(context, url),
-            codeBuilder: _buildCodeBlock,
+            codeBuilder: buildCodeBlock,
             tableBuilder: (
               context,
               tableRows,
               textStyle,
               config,
             ) {
-              return _MarkdownTableView(
+              return MarkdownTableView(
                 tableRows: tableRows,
                 textStyle: textStyle,
                 expanded: true,
@@ -999,103 +975,6 @@ class _TableExpandedView extends StatelessWidget {
     );
   }
 }
-
-class _MarkdownTableView extends StatelessWidget {
-  const _MarkdownTableView({
-    required this.tableRows,
-    required this.textStyle,
-    this.expanded = false,
-  });
-
-  final List<CustomTableRow> tableRows;
-  final TextStyle textStyle;
-  final bool expanded;
-
-  @override
-  Widget build(BuildContext context) {
-    final columnCount = tableRows.fold<int>(
-      0,
-      (maxColumns, row) => math.max(maxColumns, row.fields.length),
-    );
-    if (columnCount == 0) return const SizedBox.shrink();
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final fallbackWidth = MediaQuery.of(context).size.width - 48;
-        final availableWidth =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : fallbackWidth;
-        final columnWidth = _resolveTableColumnWidth(
-          availableWidth: availableWidth,
-          columnCount: columnCount,
-          expanded: expanded,
-        );
-
-        final table = SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Table(
-              border: TableBorder.all(
-                color: AppColors.border,
-                width: 1,
-              ),
-              defaultColumnWidth: FixedColumnWidth(columnWidth),
-              defaultVerticalAlignment: TableCellVerticalAlignment.top,
-              children: tableRows.map((row) {
-                return TableRow(
-                  decoration: row.isHeader
-                      ? BoxDecoration(color: AppColors.surfaceMuted)
-                      : null,
-                  children: row.fields.map((cell) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: GptMarkdown(
-                        _normalizeTableCellText(cell.data),
-                        style: row.isHeader
-                            ? textStyle.copyWith(fontWeight: FontWeight.w600)
-                            : textStyle,
-                        textAlign: cell.alignment,
-                        onLinkTap: (url, _) => openMarkdownLink(context, url),
-                        latexBuilder: buildLatex,
-                        useDollarSignsForLatex: true,
-                      ),
-                    );
-                  }).toList(),
-                );
-              }).toList(),
-            ),
-        );
-        return defaultTargetPlatform == TargetPlatform.android
-            ? table
-            : SelectionArea(
-                onSelectionChanged: (v) => syncSelection(context, v),
-                contextMenuBuilder: (context, editableTextState) =>
-                    buildClipsContextMenu(context, editableTextState),
-                child: table,
-              );
-      },
-    );
-  }
-}
-
-double _resolveTableColumnWidth({
-  required double availableWidth,
-  required int columnCount,
-  required bool expanded,
-}) {
-  const cellHorizontalPadding = 16.0;
-  final minColumnWidth = expanded ? 180.0 : 120.0;
-  final maxColumnWidth = expanded ? 420.0 : 280.0;
-  final usableWidth = math.max(
-    minColumnWidth,
-    availableWidth - (columnCount * cellHorizontalPadding),
-  );
-  final targetWidth = usableWidth / columnCount;
-  return targetWidth.clamp(minColumnWidth, maxColumnWidth).toDouble();
-}
-
-String _normalizeTableCellText(String value) {
-  return value.replaceAll(_htmlBreakPattern, '\n').trim();
-}
-
 
 /// MessageBubble 上的"播放"按钮。assistant 消息可见，streaming 时隐藏。
 /// 点击后 push [TtsPlayerScreen] 跳到全屏播放器。
