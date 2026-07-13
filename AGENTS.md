@@ -22,7 +22,7 @@
 - 设计令牌（code-first 真源）→ `lib/ui/core/theme/app_colors.dart`；镜像 `docs/_shared/design-tokens.yaml`；约定 `docs/_shared/design-system.md`；各模块 `design-tokens.yaml`
 - 存储格式 → `docs/_shared/storage-format.md`
 - 架构决策 → `docs/decisions/`（先看 `INDEX.md`）
-- 集成测试 → `docs/_shared/integration-testing/`（写 / 改测试前必读）
+- 集成测试 → `thktree-e2e-test` skill（写 / 改 `integration_test/` 前调用），目录结构与规范见 `docs/_shared/integration-testing/`
 - 实战踩坑 → `docs/war-stories/`
 - 规划草稿 → `docs/_tmp/<topic>.md`
 
