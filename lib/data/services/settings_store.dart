@@ -138,8 +138,8 @@ class SettingsStore {
   Future<AppSettings> load() async {
     final locale = await _secureStorage.read(key: _keyLocale);
     final faceIdStr = await _secureStorage.read(key: _keyFaceIdEnabled);
-    // Default: true (Face ID ON by default)
-    final faceIdEnabled = faceIdStr == null ? true : faceIdStr == 'true';
+    // Default: false (app-lock OFF by default — avoids blocking dev/test runs)
+    final faceIdEnabled = faceIdStr == null ? false : faceIdStr == 'true';
 
     final darkModeStr = await _secureStorage.read(key: _keyDarkMode);
     final darkMode = darkModeStr == 'true';

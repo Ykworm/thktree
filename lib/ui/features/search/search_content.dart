@@ -78,11 +78,13 @@ class SearchResultItem extends ConsumerWidget {
             ],
             if (result.snippet.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(
-                result.snippet,
-                style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+              RichText(
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                text: _buildSnippetSpan(
+                  result.snippet,
+                  TextStyle(fontSize: 14, color: AppColors.textTertiary),
+                ),
               ),
             ],
           ],
@@ -90,6 +92,34 @@ class SearchResultItem extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Parse a snippet string that may contain `<b>...</b>` highlight markers (emitted
+/// by [SearchService]) into a [TextSpan] with bold segments.
+TextSpan _buildSnippetSpan(String snippet, TextStyle baseStyle) {
+  final spans = <InlineSpan>[];
+  final regex = RegExp(r'<b>(.*?)<\/b>', caseSensitive: false);
+  var lastIndex = 0;
+
+  for (final match in regex.allMatches(snippet)) {
+    if (match.start > lastIndex) {
+      spans.add(TextSpan(
+        text: snippet.substring(lastIndex, match.start),
+        style: baseStyle,
+      ));
+    }
+    spans.add(TextSpan(
+      text: match.group(1),
+      style: baseStyle.copyWith(fontWeight: FontWeight.w600),
+    ));
+    lastIndex = match.end;
+  }
+
+  if (lastIndex < snippet.length) {
+    spans.add(TextSpan(text: snippet.substring(lastIndex), style: baseStyle));
+  }
+
+  return TextSpan(children: spans);
 }
 
 /// Navigate to the right screen for a [SearchResult].

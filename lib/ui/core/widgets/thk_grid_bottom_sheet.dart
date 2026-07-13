@@ -4,12 +4,16 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 /// 网格底栏操作项。
 class GridAction {
   const GridAction({
+    this.key,
     required this.label,
     required this.icon,
     required this.color,
     required this.onPressed,
   });
 
+  /// 可选的测试钩子 key。仅「更多」浮层里的分支项会设置
+  /// [ValueKey('branch_button')]，方便集成测试先开「更多」再定位分支入口。
+  final Key? key;
   final String label;
   final IconData icon;
   final Color color;

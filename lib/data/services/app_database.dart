@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:sqflite/sqflite.dart';
 
 class AppDatabase {
@@ -62,8 +63,20 @@ CREATE TABLE IF NOT EXISTS nodes (
 ''');
   await db.execute('CREATE INDEX IF NOT EXISTS idx_nodes_theme_parent ON nodes(themeId, parentId)');
 
-  // FTS5 search index — uses content redundancy for snippet() support
-  await db.execute('''
+  // FTS5 search index — uses content redundancy for snippet() support.
+  // 在 Android 等默认未启用 FTS5 模块的系统上，降级为普通表，保证数据库
+  // 仍能打开，主题列表、预览等不依赖 FTS5 的查询继续工作。
+  await _createSearchIndex(db);
+}
+
+/// 创建 search_index。优先 FTS5 虚拟表；平台不支持时降级为普通表。
+///
+/// 部分 Android 系统 SQLite 默认未启用 FTS5 模块，若此时强制建虚拟表
+/// 会导致整个数据库打开失败，进而所有依赖数据库的 provider 都卡住。
+/// 降级为普通表后主题列表、预览等不依赖 FTS5 的查询仍可工作。
+Future<void> _createSearchIndex(Database db) async {
+  try {
+    await db.execute('''
 CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
   entityType,
   entityId,
@@ -74,6 +87,20 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
   updatedAt UNINDEXED
 )
 ''');
+  } catch (e) {
+    dev.log('[app_database] FTS5 unavailable, falling back to plain search_index table: $e');
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS search_index (
+  entityType TEXT,
+  entityId TEXT,
+  themeId TEXT,
+  themeTitle TEXT,
+  entityTitle TEXT,
+  content TEXT,
+  updatedAt TEXT
+)
+''');
+  }
 }
 
 /// v3: add sortOrder, sourceExcerpt, sourceType columns to nodes table
@@ -89,19 +116,9 @@ Future<void> _migrateV3(Database db) async {
   ''');
 }
 
-/// v4: add FTS5 search_index virtual table
+/// v4: add FTS5 search_index table (fallback to plain table on unsupported SQLite).
 Future<void> _migrateV4(Database db) async {
-  await db.execute('''
-CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
-  entityType,
-  entityId,
-  themeId,
-  themeTitle UNINDEXED,
-  entityTitle,
-  content,
-  updatedAt UNINDEXED
-)
-''');
+  await _createSearchIndex(db);
 }
 
 /// v5: add pinned column to themes table
@@ -117,19 +134,12 @@ Future<void> _migrateV5(Database db) async {
 /// character (see `SearchService._tokenizeCjk`). Old rows use the old
 /// format, so we drop and recreate the table. `searchServiceProvider`
 /// detects the empty table and auto-rebuilds from disk on next launch.
+///
+/// 注意：在 FTS5 未启用的系统上（如默认 Android SQLite），回退为普通表，
+/// 搜索功能受限，但其余查询可继续工作。
 Future<void> _migrateV6(Database db) async {
   await db.execute('DROP TABLE IF EXISTS search_index');
-  await db.execute('''
-CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
-  entityType,
-  entityId,
-  themeId,
-  themeTitle UNINDEXED,
-  entityTitle,
-  content,
-  updatedAt UNINDEXED
-)
-''');
+  await _createSearchIndex(db);
 }
 
 Future<void> _addColumnIfNotExists(

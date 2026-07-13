@@ -42,6 +42,12 @@ class SearchService {
   final AppPaths paths;
   final NoteStore Function(String themeId) noteStoreFactory;
 
+  /// Cached FTS5 availability. Null until first determined. On Android
+  /// builds without the SQLite FTS5 module, [app_database] creates a plain
+  /// `search_index` table (not FTS5), so the FTS5 syntax (MATCH / snippet /
+  /// bm25) is unavailable and we must route to the LIKE fallback.
+  bool? _fts5Supported;
+
   // ---------------------------------------------------------------------------
   // Query
   // ---------------------------------------------------------------------------
@@ -51,6 +57,10 @@ class SearchService {
   /// Returns up to [limit] results sorted by BM25 relevance then updatedAt
   /// descending. Falls back to LIKE query for CJK substring matching when
   /// FTS5 returns no results.
+  ///
+  /// On platforms without the SQLite FTS5 module (e.g. some Android builds),
+  /// the FTS5 query throws — in that case we degrade gracefully to a LIKE
+  /// substring match rather than returning empty results.
   Future<List<SearchResult>> search(String query, {int limit = 50}) async {
     if (query.trim().isEmpty) return [];
 
@@ -61,6 +71,12 @@ class SearchService {
     try {
       // Ensure search_index table exists before querying.
       await _ensureSearchIndexTable();
+
+      // Already known to be a plain-table (no FTS5) platform → skip the FTS5
+      // attempt entirely and go straight to the LIKE fallback.
+      if (_fts5Supported == false) {
+        return await _searchWithLike(query, limit);
+      }
 
       // Flat query — FTS5 helper functions (snippet/bm25) cannot be invoked
       // inside a subquery that is wrapped by GROUP BY at the outer level;
@@ -89,6 +105,9 @@ class SearchService {
         LIMIT ?
       ''', [sanitized, limit]);
 
+      // FTS5 query succeeded → mark supported and use its results.
+      _fts5Supported = true;
+
       final results = rows.map((row) => SearchResult(
         entityType: row['entityType']! as String,
         entityId: row['entityId']! as String,
@@ -110,9 +129,17 @@ class SearchService {
       // ASCII by default, so "Flutter" matches "flutter" and vice versa.
       return await _searchWithLike(query, limit);
     } on DatabaseException catch (e, st) {
-      dev.log('[SearchService.search] FTS5 query failed: $e\n$st');
-      // Return empty results instead of crashing the UI when index is missing/corrupt.
-      return [];
+      // FTS5 unavailable (e.g. Android without the FTS5 module): the
+      // search_index table is a plain table and MATCH/snippet/bm25 are
+      // unknown. Degrade to a LIKE substring match instead of crashing or
+      // returning empty results.
+      _fts5Supported = false;
+      dev.log('[SearchService.search] FTS5 unavailable, falling back to LIKE: $e\n$st');
+      try {
+        return await _searchWithLike(query, limit);
+      } catch (_) {
+        return [];
+      }
     }
   }
 

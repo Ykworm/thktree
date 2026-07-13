@@ -81,6 +81,12 @@ Widget _buildProviderScope({
       localeProvider.overrideWith(() => LocaleNotifier(initialLocale)),
       if (llmSettings != null)
         appSettingsProvider.overrideWith((ref) async => llmSettings),
+      // settingsControllerProvider.build() 读的是 settingsStoreProvider.load()，
+      // 不是 appSettingsProvider。所以必须同时 override settingsStoreProvider，
+      // 否则 chat_controller 从 Keychain 读到空 settings（chatDefaultProviderId=null），
+      // resolveChatModel fallback 到 preset_openai（无 key）→ 返回 null → 测试超时。
+      if (llmSettings != null)
+        settingsStoreProvider.overrideWithValue(InMemorySettingsStore(llmSettings)),
       if (llmConfigStore != null)
         llmConfigStoreProvider.overrideWithValue(llmConfigStore),
       ...extraOverrides,
@@ -122,4 +128,22 @@ class ThkTreeApp extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// 测试用内存 SettingsStore，绕过 Keychain。
+///
+/// settingsControllerProvider.build() 读的是 settingsStoreProvider.load()，
+/// 不是 appSettingsProvider。所以 createTestApp 只 override appSettingsProvider
+/// 无效——chat_controller 仍从 Keychain 读到空 settings
+///（chatDefaultProviderId=null），resolveChatModel fallback 到 preset_openai
+///（无 key）→ _resolveChatModelForLlm 返回 null → 插入 [未配置 API Key] → 测试超时。
+class InMemorySettingsStore extends SettingsStore {
+  InMemorySettingsStore(AppSettings settings)
+      : _settings = settings,
+        super(secureStorage: const FlutterSecureStorage());
+
+  final AppSettings _settings;
+
+  @override
+  Future<AppSettings> load() async => _settings;
 }
