@@ -7,12 +7,39 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 
-/// 模型选择面板，采用上推布局（面板出现时对话内容上推）。
+/// 弹出模型选择面板（底部弹层）。
 ///
-/// 支持按模型名/提供商名搜索过滤。
-/// 点击 panel 外部（消息列表 / context bar / 输入框 / 模型按钮 / panel 内
-/// 标题栏空白）会关闭 panel，panel 内部 tap 由 panel 自身消化，不会触发
-/// 外部 dismiss 行为。panel 不再提供关闭按钮，依靠外部点击完成 dismiss。
+/// 面板从底部滑入，带半透明遮罩；点击面板外部关闭。选中模型后先关闭弹层，
+/// 再回调 [onModelSelected]。键盘弹起时面板自动上移避开搜索框。
+void showModelSelectorSheet({
+  required BuildContext context,
+  required String? currentProviderId,
+  required String? currentModelId,
+  required void Function(String providerId, String modelId) onModelSelected,
+}) {
+  showCupertinoModalPopup<void>(
+    context: context,
+    builder: (ctx) => Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: ModelSelectorPanel(
+          currentProviderId: currentProviderId,
+          currentModelId: currentModelId,
+          onModelSelected: (providerId, modelId) {
+            Navigator.of(ctx).pop();
+            onModelSelected(providerId, modelId);
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+/// 模型选择面板（作为底部弹层内容，由 [showModelSelectorSheet] 弹出）。
+///
+/// 支持按模型名/提供商名搜索过滤。点击面板外部（弹层遮罩）关闭，
+/// 选中模型后关闭弹层并回调。
 class ModelSelectorPanel extends ConsumerStatefulWidget {
   const ModelSelectorPanel({
     super.key,
@@ -48,26 +75,35 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
       data: (providers) {
         // 只显示已配置好的提供商：有模型列表或有已选中的模型
         var configuredProviders = providers
-            .where((p) =>
-                p.models.isNotEmpty ||
-                (p.selectedModelId != null &&
-                    p.selectedModelId!.isNotEmpty))
+            .where(
+              (p) =>
+                  p.models.isNotEmpty ||
+                  (p.selectedModelId != null && p.selectedModelId!.isNotEmpty),
+            )
             .toList();
 
         // 搜索过滤
         if (_query.isNotEmpty) {
           final q = _query.toLowerCase();
-          configuredProviders = configuredProviders.map((p) {
-            final matchedModels = p.models
-                .where((m) =>
-                    m.name.toLowerCase().contains(q) ||
-                    m.id.toLowerCase().contains(q))
-                .toList();
-            return (provider: p, matchedModels: matchedModels);
-          }).where((e) =>
-              e.matchedModels.isNotEmpty ||
-              e.provider.name.toLowerCase().contains(q)).toList()
-              .map((e) => e.provider).toList();
+          configuredProviders = configuredProviders
+              .map((p) {
+                final matchedModels = p.models
+                    .where(
+                      (m) =>
+                          m.name.toLowerCase().contains(q) ||
+                          m.id.toLowerCase().contains(q),
+                    )
+                    .toList();
+                return (provider: p, matchedModels: matchedModels);
+              })
+              .where(
+                (e) =>
+                    e.matchedModels.isNotEmpty ||
+                    e.provider.name.toLowerCase().contains(q),
+              )
+              .toList()
+              .map((e) => e.provider)
+              .toList();
         }
 
         return ConstrainedBox(
@@ -77,21 +113,34 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
           child: Container(
             decoration: BoxDecoration(
               color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.border,
-                ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppSp.sheetTopRadius),
               ),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 拖拽指示条
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: Container(
+                    width: 36,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.textTertiary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                  ),
+                ),
                 // 标题栏
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                   child: Text(
                     l10n.selectModel,
-                    style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
+                    style: CupertinoTheme.of(
+                      context,
+                    ).textTheme.navTitleTextStyle,
                   ),
                 ),
                 // 搜索栏（始终挂载，避免无结果时被卸载导致焦点跳到输入框）
@@ -112,13 +161,19 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
                 Flexible(
                   child: configuredProviders.isEmpty
                       ? Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 24,
+                          ),
                           child: Text(
-                            _query.isEmpty ? l10n.pleaseFetchModels : l10n.noModelsFound,
+                            _query.isEmpty
+                                ? l10n.pleaseFetchModels
+                                : l10n.noModelsFound,
                             textAlign: TextAlign.center,
-                            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                            style: CupertinoTheme.of(context)
+                                .textTheme
+                                .textStyle
+                                .copyWith(color: AppColors.textSecondary),
                           ),
                         )
                       : ListView.builder(
@@ -169,18 +224,23 @@ class _ProviderGroup extends StatelessWidget {
     if (query.isNotEmpty) {
       final q = query.toLowerCase();
       models = models
-          .where((m) =>
-              m.name.toLowerCase().contains(q) ||
-              m.id.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.name.toLowerCase().contains(q) ||
+                m.id.toLowerCase().contains(q),
+          )
           .toList();
     }
 
     final hasModels = models.isNotEmpty;
     // 没有 models 但有 selectedModelId 时，搜索时也需匹配
-    final hasSelectedModel = provider.selectedModelId != null &&
+    final hasSelectedModel =
+        provider.selectedModelId != null &&
         provider.selectedModelId!.isNotEmpty &&
         (query.isEmpty ||
-            provider.selectedModelId!.toLowerCase().contains(query.toLowerCase()));
+            provider.selectedModelId!.toLowerCase().contains(
+              query.toLowerCase(),
+            ));
 
     if (!hasModels && !hasSelectedModel) return const SizedBox.shrink();
 
@@ -247,9 +307,7 @@ class _ModelItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        color: isSelected
-            ? AppColors.accentLight
-            : AppColors.transparent,
+        color: isSelected ? AppColors.accentLight : AppColors.transparent,
         padding: const EdgeInsets.fromLTRB(32, 10, 16, 10),
         child: Row(
           children: [
@@ -266,11 +324,8 @@ class _ModelItem extends StatelessWidget {
               child: Text(
                 model.name,
                 style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                  color: isSelected
-                      ? AppColors.accent
-                      : AppColors.textPrimary,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? AppColors.accent : AppColors.textPrimary,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ),

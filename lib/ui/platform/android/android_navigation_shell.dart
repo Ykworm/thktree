@@ -109,7 +109,17 @@ class _AndroidNavigationShellState extends State<AndroidNavigationShell>
         : SafeArea(
             top: false,
             bottom: true,
-            child: navChrome,
+            // NavigationBar 内部自带 SafeArea（默认 top:true），会消费
+            // MediaQuery.padding.top（状态栏高度），在 tab bar 顶部撑出
+            // 一段 surface 色空白。用 removePadding 把 padding.top 清零，
+            // 让 NavigationBar 内部的 SafeArea 不再添加顶部 padding。
+            child: Builder(
+              builder: (innerContext) => MediaQuery.removePadding(
+                context: innerContext,
+                removeTop: true,
+                child: navChrome,
+              ),
+            ),
           );
 
     return Theme(

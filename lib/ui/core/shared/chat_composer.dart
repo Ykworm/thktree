@@ -102,7 +102,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -149,7 +149,6 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                     maxLines: 6,
                     keyboardType: TextInputType.multiline,
                     autocorrect: false,
-                    enableSuggestions: false,
                     enableInteractiveSelection: true,
                     textCapitalization: TextCapitalization.none,
                     smartDashesType: SmartDashesType.disabled,
@@ -534,6 +533,7 @@ class _ImageButton extends StatelessWidget {
         : AppColors.textTertiary.withValues(alpha: 0.5);
 
     return CupertinoButton(
+      key: const ValueKey('attach_image_button'),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       onPressed: supported && !isStreaming ? onPick : null,
       child: Row(

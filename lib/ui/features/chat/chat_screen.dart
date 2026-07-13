@@ -70,7 +70,6 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final ChatControllerParams _args;
   final _chatListKey = GlobalKey<ChatListViewState>();
-  bool _showModelPanel = false;
 
   // ---- 图片选择状态 ----
   Uint8List? _selectedImageData;
@@ -79,18 +78,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   // ---- 空白分支（A 模式）后置自动 title 生成 ----
   /// 上次 build 的 isStreaming，用于检测 true → false 边沿。
   bool _wasStreaming = false;
+
   /// 防抖：触发过一次就永远 true（避免 retry / 重新加载时重复触发）。
   bool _autoTitleTriggered = false;
+
   /// DB 写新 title 后，缓存为本地展示值，覆盖 widget.title 显示在 nav bar。
   String? _displayedTitle;
+
   /// 从磁盘（主题详情 controller）派生的当前节点真实 title。
   /// 面包屑 go() 跳转不传 extra、router 回退到内部 ID 时，作为 navBar / 面包屑的
   /// 兜底标题来源，确保跳转后显示可读标题而非 thm_/nd_ ID。
   String? _currentTitle;
+
   /// 防抖：自动保存默认模型后置 true，避免重复调用 switchModel。
   bool _autoModelSaved = false;
-  String? _panelProviderId;
-  String? _panelModelId;
 
   /// 滚动位置：是否接近底部（控制浮动按钮显隐）。
   bool _isNearBottom = true;
@@ -148,7 +149,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final notifier = _branchNotifier;
     final cb = _branchCallback;
     Future.microtask(() {
-      if (notifier?.state == cb) notifier?.state = null;
+      try {
+        if (notifier?.state == cb) notifier?.state = null;
+      } catch (_) {
+        // Provider 已随 ProviderScope 销毁，无需清理。
+      }
     });
     super.dispose();
   }
@@ -160,7 +165,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (providers != null) {
         final provider = providers.where((p) => p.id == providerId).firstOrNull;
         if (provider != null) {
-          final model = provider.models.where((m) => m.id == modelId).firstOrNull;
+          final model = provider.models
+              .where((m) => m.id == modelId)
+              .firstOrNull;
           if (model != null) {
             return model.contextWindow;
           }
@@ -222,10 +229,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final notesDir = Directory('${paths.themesDir.path}/$themeId/notes');
       final store = NoteStore(notesDir: notesDir);
 
-      final meta = await store.createNote(
-        themeId: themeId,
-        title: tempTitle,
-      );
+      final meta = await store.createNote(themeId: themeId, title: tempTitle);
       await store.writeBody(meta.noteId, message.body);
 
       ref.read(noteListVersionProvider.notifier).bump();
@@ -245,10 +249,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ThkAlert.show(
-        context: context,
-        message: 'Failed to save note: $e',
-      );
+      ThkAlert.show(context: context, message: 'Failed to save note: $e');
     }
   }
 
@@ -265,10 +266,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // router 会回退到 '$themeId/$nodeId'（thm_/nd_ ID），必须优先用磁盘 title。
     // 作为 navBar 主标题与面包屑当前段的兜底来源，避免暴露内部 ID。
     _currentTitle = themeDetailAsync.whenOrNull(
-      data: (data) => data.nodes
-          .where((n) => n.nodeId == widget.nodeId)
-          .firstOrNull
-          ?.title,
+      data: (data) =>
+          data.nodes.where((n) => n.nodeId == widget.nodeId).firstOrNull?.title,
     );
     final crumbs = themeDetailAsync.when(
       data: (data) => _buildCrumbs(
@@ -305,7 +304,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     final messagesAsync = ref.watch(chatControllerProvider(_args));
     final isStreaming = messagesAsync.maybeWhen(
-      data: (messages) => messages.any((m) => m.status == SessionMessageStatus.streaming),
+      data: (messages) =>
+          messages.any((m) => m.status == SessionMessageStatus.streaming),
       orElse: () => false,
     );
 
@@ -319,12 +319,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           // 委托给 AutoTitleController（任务与 widget 解耦：
           // 即使 widget 后续 dispose，Notifier 自己的 ref 仍能跑完任务并写 DB / 刷 tree）。
           final container = ProviderScope.containerOf(context, listen: false);
-          container.read(autoTitleControllerProvider(widget.nodeId).notifier).runIfNeeded(
-            themeId: widget.themeId,
-            currentTitle: _displayedTitle ?? widget.title,
-            transcript: _collectTranscriptForTitle(),
-            placeholder: placeholder,
-          );
+          container
+              .read(autoTitleControllerProvider(widget.nodeId).notifier)
+              .runIfNeeded(
+                themeId: widget.themeId,
+                currentTitle: _displayedTitle ?? widget.title,
+                transcript: _collectTranscriptForTitle(),
+                placeholder: placeholder,
+              );
         });
       }
     }
@@ -351,22 +353,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     currentModelId = resolved.$2.isNotEmpty ? resolved.$2 : null;
 
     // 自动保存到 session.md 以便模型选择器显示选中状态
-    if (currentProviderId != null && currentModelId != null && !_autoModelSaved) {
+    if (currentProviderId != null &&
+        currentModelId != null &&
+        !_autoModelSaved) {
       _autoModelSaved = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await ref.read(chatControllerProvider(_args).notifier).switchModel(currentProviderId!, currentModelId!);
+        await ref
+            .read(chatControllerProvider(_args).notifier)
+            .switchModel(currentProviderId!, currentModelId!);
       });
     }
 
-    final effectiveProviderId = _showModelPanel ? (_panelProviderId ?? currentProviderId) : currentProviderId;
-    final effectiveModelId = _showModelPanel ? (_panelModelId ?? currentModelId) : currentModelId;
-
     // 联网搜索状态
     final currentProviderType = chatCtrl.providerType;
-    final webSearchSupported = currentProviderType != null &&
-        webSearchSupportMap[currentProviderType] == WebSearchSupport.supported &&
+    final webSearchSupported =
+        currentProviderType != null &&
+        webSearchSupportMap[currentProviderType] ==
+            WebSearchSupport.supported &&
         !isModelWebSearchUnsupported(currentModelId ?? '');
-    final webSearchEnabled = webSearchSupported &&
+    final webSearchEnabled =
+        webSearchSupported &&
         (settings?.isWebSearchEnabled(currentProviderType.name) ?? true);
 
     // 深度思考状态：当前模型命中白名单才显示可点击的 chip，
@@ -375,15 +381,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // 注意：「始终开启」（豆包）优先级最高——它跟「用户可控 toggle」互斥，
     // UI 上只显示一个 chip，要么是只读的 "深度思考（默认）"，要么是可点击的 toggle，
     // 不会同时出现。
-    final deepThinkingSupported =
-        _isDeepThinkingSupported(effectiveProviderId, effectiveModelId);
-    final alwaysThinking =
-        _isAlwaysThinking(effectiveProviderId, effectiveModelId);
+    final deepThinkingSupported = _isDeepThinkingSupported(
+      currentProviderId,
+      currentModelId,
+    );
+    final alwaysThinking = _isAlwaysThinking(currentProviderId, currentModelId);
 
-    final modelSubtitle = _resolveModelSubtitle(effectiveProviderId, effectiveModelId);
+    final modelSubtitle = _resolveModelSubtitle(
+      currentProviderId,
+      currentModelId,
+    );
 
-    // 模型选择面板切换逻辑：原绑定输入栏 sparkles 按钮，现挂到导航栏 middle
-    final toggleModelPanel = () {
+    // 模型选择：点击导航栏标题区域弹出底部选择面板（不再上推挤占对话空间）。
+    final openModelSelector = () {
       if (isStreaming) return;
       FocusScope.of(context).unfocus();
       var nextProviderId = currentProviderId;
@@ -400,14 +410,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           }
         }
       }
-      if (!_showModelPanel && nextProviderId != null && nextModelId != null) {
-        _panelProviderId = nextProviderId;
-        _panelModelId = nextModelId;
-        if (chatCtrl.providerId == null || chatCtrl.modelId == null) {
-          ref.read(chatControllerProvider(_args).notifier).switchModel(nextProviderId!, nextModelId!);
-        }
-      }
-      setState(() => _showModelPanel = !_showModelPanel);
+      showModelSelectorSheet(
+        context: context,
+        currentProviderId: nextProviderId,
+        currentModelId: nextModelId,
+        onModelSelected: (providerId, modelId) async {
+          await ref
+              .read(chatControllerProvider(_args).notifier)
+              .switchModel(providerId, modelId);
+          if (mounted) {
+            setState(() {
+              // 模型变了，深度思考状态重置（保守默认：新模型可能不支持）
+              _deepThinkingEnabled = false;
+            });
+          }
+        },
+      );
     };
 
     return CupertinoPageScaffold(
@@ -415,7 +433,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       navigationBar: ThkNavBar.inline(
         title: '',
         middle: GestureDetector(
-          onTap: toggleModelPanel,
+          onTap: openModelSelector,
           onDoubleTapDown: (_) => _chatListKey.currentState?.scrollToTop(),
           behavior: HitTestBehavior.opaque,
           child: Column(
@@ -476,9 +494,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           child: Icon(
             AppIcons.more,
             size: 24,
-            color: isStreaming
-                ? AppColors.textTertiary
-                : AppColors.accent,
+            color: isStreaming ? AppColors.textTertiary : AppColors.accent,
           ),
         ),
       ),
@@ -501,11 +517,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                   child: ThkBreadcrumbRow(crumbs: crumbs),
                 ),
-              // 消息列表 - 面板出现时它会被压缩变小
+              // 消息列表
               Expanded(
                 child: Listener(
                   onPointerDown: (_) {
-                    _dismissModelPanel();
                     FocusScope.of(context).unfocus();
                   },
                   child: messagesAsync.when(
@@ -521,7 +536,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       onSelectionChanged: (value) {
                         final text = value?.plainText;
                         if (text != null && text.trim().isNotEmpty) {
-                          ref.read(currentSelectionProvider.notifier).state = text;
+                          ref.read(currentSelectionProvider.notifier).state =
+                              text;
                         }
                       },
                       child: ChatListView(
@@ -533,12 +549,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           }
                         },
                         messageBuilder: (context, message) {
-                          final isLastAssistant = message.role == SessionRole.assistant &&
-                              message.status != SessionMessageStatus.streaming &&
-                              message == messages.lastWhere(
-                                (m) => m.role == SessionRole.assistant,
-                                orElse: () => message,
-                              );
+                          final isLastAssistant =
+                              message.role == SessionRole.assistant &&
+                              message.status !=
+                                  SessionMessageStatus.streaming &&
+                              message ==
+                                  messages.lastWhere(
+                                    (m) => m.role == SessionRole.assistant,
+                                    orElse: () => message,
+                                  );
 
                           String? userQuestion;
                           Uint8List? userQuestionImage;
@@ -556,17 +575,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           }
 
                           // 时间戳显示逻辑：第一条、角色切换、或间隔 > 2 分钟
-                          final showTimestamp = _shouldShowTimestamp(messages, message);
+                          final showTimestamp = _shouldShowTimestamp(
+                            messages,
+                            message,
+                          );
 
                           return MessageBubble(
                             message: message,
                             showTimestamp: showTimestamp,
                             onRetry: isLastAssistant
-                                ? () => ref.read(chatControllerProvider(_args).notifier).retryLastMessage()
+                                ? () => ref
+                                      .read(
+                                        chatControllerProvider(_args).notifier,
+                                      )
+                                      .retryLastMessage()
                                 : null,
                             userQuestion: userQuestion,
                             userQuestionImage: userQuestionImage,
-                            onSaveToNote: message.role == SessionRole.assistant &&
+                            onSaveToNote:
+                                message.role == SessionRole.assistant &&
                                     message.status == SessionMessageStatus.done
                                 ? () => _saveMessageAsNote(message)
                                 : null,
@@ -576,109 +603,91 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ),
                     ),
                     error: (e, st) => Center(child: Text(e.toString())),
-                    loading: () => const Center(child: CupertinoActivityIndicator()),
+                    loading: () =>
+                        const Center(child: CupertinoActivityIndicator()),
                   ),
                 ),
               ),
               // Context 使用条
               messagesAsync.maybeWhen(
                 data: (messages) {
-                  final contextWindow = _resolveContextWindow(effectiveProviderId, effectiveModelId);
-                  return Listener(
-                    onPointerDown: (_) => _dismissModelPanel(),
-                    child: _ContextUsageBar(
-                      messages: messages,
-                      contextWindow: contextWindow,
-                    ),
+                  final contextWindow = _resolveContextWindow(
+                    currentProviderId,
+                    currentModelId,
+                  );
+                  return _ContextUsageBar(
+                    messages: messages,
+                    contextWindow: contextWindow,
                   );
                 },
                 orElse: () => const SizedBox.shrink(),
               ),
               // 输入框
-              // Listener 用于在 panel 显示时拦截 ChatComposer 区域的 pointer down
-              // 事件关闭 panel。不拦截事件本身（不影响 TextField 聚焦、按钮点击）
-              // —— 仅为“先关 panel”这一动作提供了一个在 pointer down 阶段就能触发
-              // 的轻量级路径，避免 TextField 的 TapGestureRecognizer 在 arena 中赢
-              // 而导致外层 GestureDetector 无法关闭 panel 的问题。
-              Listener(
-                onPointerDown: (_) {
-                  _dismissModelPanel();
+              ChatComposer(
+                hintText: l10n.messageHint,
+                isStreaming: isStreaming,
+                onSend: (text, {imageData, imageMimeType}) async {
+                  await ref
+                      .read(chatControllerProvider(_args).notifier)
+                      .sendUserMessage(
+                        text,
+                        imageData: imageData,
+                        imageMimeType: imageMimeType,
+                      );
+                  // 发送后清除图片选择状态
+                  if (mounted) {
+                    setState(() {
+                      _selectedImageData = null;
+                      _selectedImageMimeType = null;
+                    });
+                  }
                 },
-                child: ChatComposer(
-                  hintText: l10n.messageHint,
-                  isStreaming: isStreaming,
-                  onSend: (text, {imageData, imageMimeType}) async {
-                    await ref.read(chatControllerProvider(_args).notifier).sendUserMessage(
-                      text,
-                      imageData: imageData,
-                      imageMimeType: imageMimeType,
-                    );
-                    // 发送后清除图片选择状态
-                    if (mounted) {
-                      setState(() {
-                        _selectedImageData = null;
-                        _selectedImageMimeType = null;
-                      });
-                    }
-                  },
-                  onStopStreaming: () async {
-                    await ref.read(chatControllerProvider(_args).notifier).stopStreaming();
-                  },
-                  webSearchEnabled: webSearchEnabled,
-                  webSearchSupported: webSearchSupported,
-                  onWebSearchToggle: webSearchSupported
-                      ? () {
-                          ref.read(settingsControllerProvider.notifier).saveWebSearchEnabled(
-                            currentProviderType.name,
-                            !webSearchEnabled,
-                          );
-                        }
-                      : null,
-                  deepThinkingEnabled: _deepThinkingEnabled,
-                  deepThinkingSupported: deepThinkingSupported,
-                  onDeepThinkingToggle: (deepThinkingSupported && !alwaysThinking)
-                      ? () {
-                          final next = !_deepThinkingEnabled;
-                          setState(() => _deepThinkingEnabled = next);
-                          // 同步到底层 controller（用于 build 下一帧决定是否传 thinking 参数）
-                          ref.read(chatControllerProvider(_args).notifier).setDeepThinking(next);
-                        }
-                      : null,
-                  alwaysThinking: alwaysThinking,
-                  onImagePick: () => _showImagePicker(context),
-                  imageSupported: _isImageSupported(currentProviderId, currentModelId),
-                  selectedImageData: _selectedImageData,
-                  selectedImageMimeType: _selectedImageMimeType,
-                  onImageRemove: () {
-                    if (mounted) {
-                      setState(() {
-                        _selectedImageData = null;
-                        _selectedImageMimeType = null;
-                      });
-                    }
-                  },
-                ),
-              ),
-              // 模型面板（出现在输入框下方，取代软键盘位置）
-              if (_showModelPanel && !isStreaming)
-                Flexible(
-                  child: ModelSelectorPanel(
-                    currentProviderId: effectiveProviderId,
-                    currentModelId: effectiveModelId,
-                    onModelSelected: (providerId, modelId) async {
-                      await ref.read(chatControllerProvider(_args).notifier).switchModel(providerId, modelId);
-                      _panelProviderId = providerId;
-                      _panelModelId = modelId;
-                      if (mounted) {
-                        setState(() {
-                          _showModelPanel = false;
-                          // 模型变了，深度思考状态重置（保守默认：新模型可能不支持）
-                          _deepThinkingEnabled = false;
-                        });
+                onStopStreaming: () async {
+                  await ref
+                      .read(chatControllerProvider(_args).notifier)
+                      .stopStreaming();
+                },
+                webSearchEnabled: webSearchEnabled,
+                webSearchSupported: webSearchSupported,
+                onWebSearchToggle: webSearchSupported
+                    ? () {
+                        ref
+                            .read(settingsControllerProvider.notifier)
+                            .saveWebSearchEnabled(
+                              currentProviderType.name,
+                              !webSearchEnabled,
+                            );
                       }
-                    },
-                  ),
+                    : null,
+                deepThinkingEnabled: _deepThinkingEnabled,
+                deepThinkingSupported: deepThinkingSupported,
+                onDeepThinkingToggle: (deepThinkingSupported && !alwaysThinking)
+                    ? () {
+                        final next = !_deepThinkingEnabled;
+                        setState(() => _deepThinkingEnabled = next);
+                        // 同步到底层 controller（用于 build 下一帧决定是否传 thinking 参数）
+                        ref
+                            .read(chatControllerProvider(_args).notifier)
+                            .setDeepThinking(next);
+                      }
+                    : null,
+                alwaysThinking: alwaysThinking,
+                onImagePick: () => _showImagePicker(context),
+                imageSupported: _isImageSupported(
+                  currentProviderId,
+                  currentModelId,
                 ),
+                selectedImageData: _selectedImageData,
+                selectedImageMimeType: _selectedImageMimeType,
+                onImageRemove: () {
+                  if (mounted) {
+                    setState(() {
+                      _selectedImageData = null;
+                      _selectedImageMimeType = null;
+                    });
+                  }
+                },
+              ),
             ],
           ),
           // 浮动滚动按钮：离开底部时显示，点击回到底部
@@ -731,8 +740,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// '$themeId/$nodeId' 默认值，若用它做标签会误触发 ID 过滤或暴露内部 ID。
   static const _ulidPrefixes = ['thm_', 'nd_', 'nt_', 'msg_'];
 
-  bool _looksLikeRawId(String s) =>
-      _ulidPrefixes.any((p) => s.startsWith(p));
+  bool _looksLikeRawId(String s) => _ulidPrefixes.any((p) => s.startsWith(p));
 
   List<BreadcrumbSegment> _buildCrumbs(
     AppLocalizations l10n,
@@ -742,23 +750,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final themeId = widget.themeId;
     final segments = <BreadcrumbSegment>[
       BreadcrumbSegment(label: l10n.themesTabLabel, goPath: '/'),
-      BreadcrumbSegment(
-        label: themeTitle,
-        goPath: '/themes/$themeId/tree',
-      ),
+      BreadcrumbSegment(label: themeTitle, goPath: '/themes/$themeId/tree'),
     ];
 
-    final current =
-        nodes.where((n) => n.nodeId == widget.nodeId).firstOrNull;
+    final current = nodes.where((n) => n.nodeId == widget.nodeId).firstOrNull;
     if (current == null) {
       // 节点数据暂未就绪：优先用磁盘派生的 _currentTitle，避免回退到 router 的
       // '$themeId/$nodeId' 内部 ID。仍为 ID 形态时降级为通用文案。
       final fallbackTitle = _currentTitle ?? widget.title;
       segments.add(
         BreadcrumbSegment(
-          label: _looksLikeRawId(fallbackTitle)
-              ? l10n.noTitle
-              : fallbackTitle,
+          label: _looksLikeRawId(fallbackTitle) ? l10n.noTitle : fallbackTitle,
         ),
       );
       return segments;
@@ -797,11 +799,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         : current.title;
     segments.add(BreadcrumbSegment(label: currentLabel));
     return segments;
-  }
-
-  void _dismissModelPanel() {
-    if (!_showModelPanel || !mounted) return;
-    setState(() => _showModelPanel = false);
   }
 
   /// 检查当前模型是否支持图片
@@ -901,7 +898,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     try {
       final picker = ImagePicker();
-      final source = action == 'camera' ? ImageSource.camera : ImageSource.gallery;
+      final source = action == 'camera'
+          ? ImageSource.camera
+          : ImageSource.gallery;
       final pickedFile = await picker.pickImage(source: source);
       if (pickedFile == null || !mounted) return;
 
@@ -925,7 +924,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// 判断是否应该在该消息上方显示时间戳。
   ///
   /// 规则：第一条消息、角色切换、或与前一条同角色但间隔 > 2 分钟。
-  static bool _shouldShowTimestamp(List<SessionMessage> messages, SessionMessage message) {
+  static bool _shouldShowTimestamp(
+    List<SessionMessage> messages,
+    SessionMessage message,
+  ) {
     final idx = messages.indexOf(message);
     if (idx <= 0) return true;
 
@@ -949,55 +951,55 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     // 用 Overlay 直接画"更多"菜单，不走 Navigator 路由栈 —— 这样不会触发
     // primary focus 转移，底层 SelectionArea 的选区高亮得以保持。
-    unawaited(_showOverlayMoreActions(
-      context: context,
-      actions: [
-        if (widget.isDocSplit)
+    unawaited(
+      _showOverlayMoreActions(
+        context: context,
+        actions: [
+          if (widget.isDocSplit)
+            GridAction(
+              label: l10n.submitTreeStructure,
+              icon: AppIcons.checkCircle,
+              color: AppColors.success,
+              onPressed: () => unawaited(_onSubmitDocSplit()),
+            ),
           GridAction(
-            label: l10n.submitTreeStructure,
-            icon: AppIcons.checkCircle,
-            color: AppColors.success,
-            onPressed: () => unawaited(_onSubmitDocSplit()),
+            key: const ValueKey('branch_button'),
+            label: l10n.swipeBranch,
+            icon: AppIcons.branch,
+            color: AppColors.accent,
+            onPressed: () => unawaited(_onCreateBranchFromMenu(context)),
           ),
-        GridAction(
-          label: l10n.swipeBranch,
-          icon: AppIcons.branch,
-          color: AppColors.accent,
-          onPressed: () => unawaited(_onCreateBranchFromMenu(context)),
-        ),
-        GridAction(
-          label: l10n.chatMarkdown,
-          icon: AppIcons.document,
-          color: AppColors.waveTeal,
-          onPressed: () {
-            showChatMarkdownSheet(context, widget.nodeId);
-          },
-        ),
-        GridAction(
-          label: l10n.viewTree,
-          icon: AppIcons.accountTree,
-          color: AppColors.accent,
-          onPressed: () {
-            Navigator.of(context).pop();
-            context.push(
+          GridAction(
+            label: l10n.chatMarkdown,
+            icon: AppIcons.document,
+            color: AppColors.waveTeal,
+            onPressed: () {
+              showChatMarkdownSheet(context, widget.nodeId);
+            },
+          ),
+          GridAction(
+            label: l10n.viewTree,
+            icon: AppIcons.accountTree,
+            color: AppColors.accent,
+            onPressed: () => context.go(
               '/themes/${widget.themeId}/full-tree?currentNodeId=${widget.nodeId}',
-            );
-          },
-        ),
-        GridAction(
-          label: l10n.myQuestions,
-          icon: AppIcons.chat,
-          color: AppColors.waveOrange,
-          onPressed: () {
-            Navigator.of(context).push(
-              CupertinoPageRoute(
-                builder: (_) => UserQuestionsListPage(args: _args),
-              ),
-            );
-          },
-        ),
-      ],
-    ));
+            ),
+          ),
+          GridAction(
+            label: l10n.myQuestions,
+            icon: AppIcons.chat,
+            color: AppColors.waveOrange,
+            onPressed: () {
+              Navigator.of(context).push(
+                CupertinoPageRoute(
+                  builder: (_) => UserQuestionsListPage(args: _args),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   /// 用 [OverlayEntry] 直接在 Overlay 上画"更多"菜单，避免 [showModalBottomSheet]
@@ -1027,19 +1029,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!completer.isCompleted) completer.complete();
     }
 
-    entry = OverlayEntry(builder: (ctx) {
-      return _MoreActionsOverlayPanel(
-        actions: actions,
-        onPicked: (action) => dismiss(action.onPressed),
-        onDismiss: () => dismiss(),
-      );
-    });
+    entry = OverlayEntry(
+      builder: (ctx) {
+        return _MoreActionsOverlayPanel(
+          actions: actions,
+          onPicked: (action) => dismiss(action.onPressed),
+          onDismiss: () => dismiss(),
+        );
+      },
+    );
 
     Overlay.of(context, rootOverlay: true).insert(entry);
     return completer.future;
   }
 
-  Future<void> _onOpenOutline(BuildContext context, List<SessionMessage> messages) async {
+  Future<void> _onOpenOutline(
+    BuildContext context,
+    List<SessionMessage> messages,
+  ) async {
     // 注意：ThkGridBottomSheet 已经 pop 了自身，不要再 pop
     final selected = await showChatOutlineSheet(context, messages);
     if (selected != null && mounted) {
@@ -1047,7 +1054,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  Future<void> _onOpenSearch(BuildContext context, List<SessionMessage> messages) async {
+  Future<void> _onOpenSearch(
+    BuildContext context,
+    List<SessionMessage> messages,
+  ) async {
     // 注意：ThkGridBottomSheet 已经 pop 了自身，不要再 pop
     final selected = await showChatSearchSheet(context, messages);
     if (selected != null && mounted) {
@@ -1073,7 +1083,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
       if (lastAssistantBody == null) {
         if (!mounted) return;
-        ThkAlert.show(context: context, message: l10n.docSplitNoAssistantMessage);
+        ThkAlert.show(
+          context: context,
+          message: l10n.docSplitNoAssistantMessage,
+        );
         return;
       }
 
@@ -1106,8 +1119,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         return;
       }
 
-      ref.read(themeDetailControllerProvider(widget.themeId).notifier).refresh();
-      ThkAlert.show(context: context, message: l10n.docSplitSuccess(createdCount));
+      ref
+          .read(themeDetailControllerProvider(widget.themeId).notifier)
+          .refresh();
+      ThkAlert.show(
+        context: context,
+        message: l10n.docSplitSuccess(createdCount),
+      );
       context.go('/themes/${widget.themeId}/tree');
     } catch (e) {
       if (!mounted) return;
@@ -1117,19 +1135,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// 从「活跃选区」直接分支：选区工具栏「分支」按钮触发。
   /// 此时选区一定还在，直接把选中文本作为 source 传入，不经过全局残留选区。
-  Future<void> _branchFromSelection(BuildContext context, String selectedText) async {
-    final mode = await showBranchModeSheet(
-      context,
-      selectedText: selectedText,
-    );
+  Future<void> _branchFromSelection(
+    BuildContext context,
+    String selectedText,
+  ) async {
+    final mode = await showBranchModeSheet(context, selectedText: selectedText);
     if (mode == null) return;
     if (!context.mounted) return;
 
-    await _showBranchFlow(
-      context,
-      mode: mode,
-      selectedText: selectedText,
-    );
+    await _showBranchFlow(context, mode: mode, selectedText: selectedText);
   }
 
   /// 从顶部「更多 → 分支」按钮进入：先弹 sheet 让用户选 mode，再 [_showBranchFlow]。
@@ -1140,11 +1154,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (mode == null) return;
     if (!context.mounted) return;
 
-    await _showBranchFlow(
-      context,
-      mode: mode,
-      selectedText: null,
-    );
+    await _showBranchFlow(context, mode: mode, selectedText: null);
   }
 
   /// 触发"创建分支"全流程。
@@ -1163,9 +1173,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     required BranchMode mode,
     String? selectedText,
   }) async {
-    debugPrint('[ChatScreen._showBranchFlow] mode=$mode, '
-        'selectedText=${selectedText?.length ?? 'null'} chars, '
-        'preview=${selectedText?.substring(0, (selectedText.length).clamp(0, 80)) ?? 'null'}');
+    debugPrint(
+      '[ChatScreen._showBranchFlow] mode=$mode, '
+      'selectedText=${selectedText?.length ?? 'null'} chars, '
+      'preview=${selectedText?.substring(0, (selectedText.length).clamp(0, 80)) ?? 'null'}',
+    );
     final l10n = AppLocalizations.of(context)!;
     try {
       // 1. 构造 parentTranscript
@@ -1213,10 +1225,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       );
     } catch (e) {
       if (!context.mounted) return;
-      ThkAlert.show(
-        context: context,
-        message: l10n.branchFailed(e.toString()),
-      );
+      ThkAlert.show(context: context, message: l10n.branchFailed(e.toString()));
     }
   }
 
@@ -1225,15 +1234,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final messagesAsync = ref.read(chatControllerProvider(_args));
     return messagesAsync.maybeWhen(
       data: (messages) {
-        final lastUser = messages
-            .where((m) => m.role == SessionRole.user)
-            .lastOrNull
-            ?.body ??
+        final lastUser =
+            messages
+                .where((m) => m.role == SessionRole.user)
+                .lastOrNull
+                ?.body ??
             '';
-        final lastAssistant = messages
-            .where((m) => m.role == SessionRole.assistant)
-            .lastOrNull
-            ?.body ??
+        final lastAssistant =
+            messages
+                .where((m) => m.role == SessionRole.assistant)
+                .lastOrNull
+                ?.body ??
             '';
         return 'User: $lastUser\nAssistant: $lastAssistant';
       },
@@ -1249,11 +1260,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     // 构造分享消息列表（保留每条消息的图片）
     final shareMessages = loaded.map((m) {
-      return ShareMessage(
-        role: m.role,
-        text: m.body,
-        image: m.imageData,
-      );
+      return ShareMessage(role: m.role, text: m.body, image: m.imageData);
     }).toList();
 
     if (shareMessages.isEmpty) return;
@@ -1278,10 +1285,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       print('分享整个聊天失败: $e');
       print('堆栈: $stackTrace');
       if (!mounted) return;
-      ThkAlert.show(
-        context: context,
-        message: '内容过多，无法保存为图片',
-      );
+      ThkAlert.show(context: context, message: '内容过多，无法保存为图片');
     }
   }
 
@@ -1290,8 +1294,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<List<SessionMessage>> _loadShareImages(
     List<SessionMessage> messages,
   ) async {
-    final needLoad =
-        messages.where((m) => m.imagePath != null && m.imageData == null).toList();
+    final needLoad = messages
+        .where((m) => m.imagePath != null && m.imageData == null)
+        .toList();
     if (needLoad.isEmpty) return messages;
 
     try {
@@ -1328,7 +1333,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return messages;
     }
   }
-
 }
 
 /// "更多"菜单的 Overlay 浮层 —— 用 [OverlayEntry] 直接画，不走 Navigator 路由栈，
@@ -1369,7 +1373,9 @@ class _MoreActionsOverlayPanel extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1407,8 +1413,7 @@ class _MoreActionsOverlayGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // 与 _ActionGrid 保持一致：4 列，spacing=12，每项宽度 clamp 到 [80, 84]
-        final maxFourColumnWidth =
-            (constraints.maxWidth - 12 * (4 - 1)) / 4;
+        final maxFourColumnWidth = (constraints.maxWidth - 12 * (4 - 1)) / 4;
         final itemWidth = maxFourColumnWidth.clamp(80.0, 84.0);
         return Align(
           alignment: Alignment.centerLeft,
@@ -1434,10 +1439,7 @@ class _MoreActionsOverlayGrid extends StatelessWidget {
 
 /// "更多"菜单的单个 item —— 圆形 tint 图标 + 文字标签，点击触发 [onPicked]。
 class _MoreActionsOverlayItem extends StatelessWidget {
-  const _MoreActionsOverlayItem({
-    required this.action,
-    required this.onPicked,
-  });
+  const _MoreActionsOverlayItem({required this.action, required this.onPicked});
 
   final GridAction action;
   final void Function(GridAction action) onPicked;
@@ -1448,6 +1450,7 @@ class _MoreActionsOverlayItem extends StatelessWidget {
     final tintColor = action.color.withAlpha(25);
 
     return GestureDetector(
+      key: action.key,
       onTap: () => onPicked(action),
       behavior: HitTestBehavior.opaque,
       child: Column(
@@ -1458,15 +1461,8 @@ class _MoreActionsOverlayItem extends StatelessWidget {
           Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: tintColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              action.icon,
-              size: 22,
-              color: action.color,
-            ),
+            decoration: BoxDecoration(color: tintColor, shape: BoxShape.circle),
+            child: Icon(action.icon, size: 22, color: action.color),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1500,8 +1496,8 @@ class _ContextUsageBar extends StatelessWidget {
     final color = ratio > 0.85
         ? AppColors.destructive
         : ratio > 0.6
-            ? AppColors.accent
-            : AppColors.accent;
+        ? AppColors.accent
+        : AppColors.accent;
 
     return Container(
       height: 1,

@@ -15,6 +15,11 @@
       "source": "/Users/yuweikang/dev/ykcode/ThkTree/.agents/skills",
       "sourceType": "local",
       "computedHash": "placeholder"
+    },
+    "minimax-multimodal-toolkit": {
+      "source": "/Users/yuweikang/dev/ykcode/ThkTree/.agents/skills",
+      "sourceType": "local",
+      "computedHash": "placeholder"
     }
   }
 }

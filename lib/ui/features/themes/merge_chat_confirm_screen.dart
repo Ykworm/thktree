@@ -44,9 +44,9 @@ class MergeChatConfirmScreen extends ConsumerStatefulWidget {
 
 class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen> {
   final TextEditingController _titleController = TextEditingController();
+  final FocusNode _titleFocusNode = FocusNode();
   String? _selectedParentId; // null = root (top level)
   bool _isSubmitting = false;
-  bool _titleValid = false;
 
   // Cross-tree selection state (only used when [widget.crossTree] is true).
   String? _selectedThemeId; // currently selected target tree
@@ -56,11 +56,15 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
   void initState() {
     super.initState();
     _selectedThemeId = widget.themeId;
+    _titleFocusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
     if (widget.crossTree) _loadThemes();
   }
 
   @override
   void dispose() {
+    _titleFocusNode.dispose();
     _titleController.dispose();
     super.dispose();
   }
@@ -78,10 +82,8 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
   }
 
   void _onTitleChanged(String value) {
-    final isValid = value.trim().isNotEmpty;
-    if (isValid != _titleValid) {
-      setState(() => _titleValid = isValid);
-    }
+    // Always rebuild so the button reads the real controller text.
+    setState(() {});
   }
 
   Future<void> _submit() async {
@@ -249,6 +251,8 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
             children: [
               CupertinoTextField(
                 controller: _titleController,
+                focusNode: _titleFocusNode,
+                autofocus: true,
                 placeholder: l10n.newSession,
                 onChanged: _onTitleChanged,
                 style: AppTheme.body,
@@ -257,8 +261,13 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
+                  color: _titleFocusNode.hasFocus
+                      ? AppColors.accentLight
+                      : AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(10),
+                  border: _titleFocusNode.hasFocus
+                      ? Border.all(color: AppColors.accent, width: 1.0)
+                      : null,
                 ),
               ),
             ],
@@ -281,7 +290,7 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
         // Tree selector.
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.only(top: 4, bottom: 64),
             children: [
               // Cross-tree selector (only when entry allows spanning trees).
               if (widget.crossTree) _buildThemeSelector(l10n),
@@ -314,7 +323,10 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
           child: SizedBox(
             width: double.infinity,
             child: CupertinoButton.filled(
-              onPressed: (_titleValid && !_isSubmitting) ? _submit : null,
+              onPressed:
+                  (_titleController.text.trim().isNotEmpty && !_isSubmitting)
+                      ? _submit
+                      : null,
               child: _isSubmitting
                   ? const CupertinoActivityIndicator(color: AppColors.white)
                   : Text(l10n.done),

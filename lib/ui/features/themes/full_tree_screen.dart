@@ -192,7 +192,16 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
-              onPressed: () => context.pop(),
+              onPressed: () {
+                if (widget.currentNodeId != null) {
+                  // 从 chat 页进入：go() 不会走回退，必须显式 go 回聊天页
+                  context.go(
+                    '/themes/${widget.themeId}/nodes/${widget.currentNodeId}',
+                  );
+                } else {
+                  context.pop();
+                }
+              },
               child: const Icon(AppIcons.back),
             ),
             trailing: trailing,
