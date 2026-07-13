@@ -46,6 +46,7 @@
 - 输出计划 → `writing-plans` skill
 - 同步文档 → `context-sync` skill
 - 工具优先级 → `conventions/tool-priority.md`
+- Flutter 写码踩坑约束（文件 I/O / Riverpod / …）→ `conventions/flutter-pitfalls.md`
 - 功能开发主线 → `flutter-dev` skill；平台原生问题按需 `ios-application-dev` / `android-native-dev`
 - 完整开发闭环 → `workflow` skill
 
