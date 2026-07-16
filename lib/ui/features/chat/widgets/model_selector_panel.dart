@@ -19,27 +19,43 @@ Future<void> showModelSelectorSheet({
 }) async {
   await showCupertinoModalPopup<void>(
     context: context,
-    builder: (ctx) => ColoredBox(
-      // 不透明背景盖住底下 chat：showCupertinoModalPopup 的 barrier 默认只有
-      // ~20% 黑，键盘弹起后遮罩区变大，会透出底下对话区的空白被当成“留白”。
-      color: AppColors.pageBg,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: ModelSelectorPanel(
-            currentProviderId: currentProviderId,
-            currentModelId: currentModelId,
-            onModelSelected: (providerId, modelId) {
-              Navigator.of(ctx).pop();
-              onModelSelected(providerId, modelId);
-            },
+    builder: (ctx) {
+      // shell 为叠 tab 注入了额外 padding.bottom；弹层若继承会把面板挤扁/顶飞。
+      // 用 View 原始 padding 还原系统安全区。
+      final view = View.of(ctx);
+      final raw = MediaQueryData.fromView(view);
+      final mq = MediaQuery.of(ctx);
+      return MediaQuery(
+        data: mq.copyWith(
+          padding: raw.padding,
+          viewPadding: raw.viewPadding,
+          // 键盘 inset 用引擎原始值，避免被 shell 篡改
+          viewInsets: raw.viewInsets,
+        ),
+        child: Builder(
+          builder: (inner) => ColoredBox(
+            // 半透明遮罩：与白卡面板区分；仍挡住 chat 误认「留白」
+            color: AppColors.scrim.withValues(alpha: 0.35),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(inner).bottom,
+                ),
+                child: ModelSelectorPanel(
+                  currentProviderId: currentProviderId,
+                  currentModelId: currentModelId,
+                  onModelSelected: (providerId, modelId) {
+                    Navigator.of(ctx).pop();
+                    onModelSelected(providerId, modelId);
+                  },
+                ),
+              ),
+            ),
           ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 
@@ -113,20 +129,30 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
               .toList();
         }
 
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * AppSp.sheetHeightSm,
-          ),
+        // 固定高度白卡贴底：与遮罩/pageBg 分离；Expanded 列表占满剩余空间
+        final sheetH =
+            MediaQuery.sizeOf(context).height * AppSp.sheetHeightMd;
+        return SizedBox(
+          height: sheetH,
           child: Container(
             decoration: BoxDecoration(
-              color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+              color: AppColors.surface,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppSp.sheetTopRadius),
               ),
+              border: Border(
+                top: BorderSide(color: AppColors.border, width: 0.5),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1A1F2933),
+                  blurRadius: 24,
+                  offset: Offset(0, -4),
+                ),
+              ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 // 拖拽指示条
                 Padding(
@@ -165,7 +191,7 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
                   color: AppColors.border,
                 ),
                 // 模型列表 / 空状态
-                Flexible(
+                Expanded(
                   child: configuredProviders.isEmpty
                       ? Padding(
                           padding: const EdgeInsets.symmetric(
@@ -185,7 +211,6 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.only(bottom: 16),
-                          shrinkWrap: true,
                           itemCount: configuredProviders.length,
                           itemBuilder: (context, index) {
                             final provider = configuredProviders[index];
