@@ -27,8 +27,9 @@ class ThemeListScreen extends ConsumerWidget {
     final themesAsync = ref.watch(themeListControllerProvider);
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
-      // P3：主题列表页级静光（非树节点行、非 Chat）
+      // P3：主题列表页级静光；蓝光从 large title 一带释放
       child: ThkPageAtmosphere(
+        titleContentHeight: 96,
         child: CustomScrollView(
           slivers: [
             ThkNavBar.large(

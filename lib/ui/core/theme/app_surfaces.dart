@@ -93,21 +93,21 @@ class AppGlass {
 /// L0 页级氛围光 token（P3）。仅主题列表 / 搜索等静页；Chat/笔记/设置默认不用。
 ///
 /// 静态 soft radial，非 Aurora 动画 mesh。改 [enabled] 可整段关掉。
-/// 剂量：纸底上要「一眼能感到角有色」，再谈克制；≤5% 在暖纸上等于没有。
+/// 剂量：克制可见——比「看不见」略强，比「海报光」弱一截。
 class AppAtmosphere {
   AppAtmosphere._();
 
   /// 总开关（无设置页项；需要时可 false）
   static bool enabled = true;
 
-  /// 右上 blue 核心约 18%（径向淡出）
+  /// 自 title bar 释出的 blue（核心约 10%，径向淡出）
   static Color get blueGlow =>
-      AppColors.accent.withValues(alpha: 0.18);
+      AppColors.accent.withValues(alpha: 0.10);
 
-  /// 左下 sage 核心约 16%
+  /// 左下 sage（约 8%，更弱，只托底）
   static Color get sageGlow =>
-      AppColors.paletteSage.withValues(alpha: 0.16);
+      AppColors.paletteSage.withValues(alpha: 0.08);
 
-  /// 光斑直径：覆盖约半屏，边缝/卡间纸底才看得见
-  static const blobSize = 460.0;
+  /// 光斑参考直径（painter 会按屏宽再 clamp）
+  static const blobSize = 380.0;
 }
