@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// iOS 风格导航栏，支持 Large Title 和 Inline Title 双模式。
 ///
@@ -105,7 +106,8 @@ class ThkLargeTitlePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: backgroundColor,
+      // 默认 paper 画布，便于分组/白卡浮在纸上
+      backgroundColor: backgroundColor ?? AppColors.pageBg,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       child: CustomScrollView(
         slivers: [

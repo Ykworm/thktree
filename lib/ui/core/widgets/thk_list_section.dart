@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 
 /// iOS Settings 风格的 inset grouped 列表分组容器。
 ///
@@ -47,7 +49,11 @@ class ThkListSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 分组外区域用 paper；分组本体白卡 + hair + 轻影（Warm Paper L1/L2）
     return CupertinoListSection.insetGrouped(
+      backgroundColor: AppColors.pageBg,
+      decoration: AppSurfaces.contentCard(radius: AppSp.cardRadius),
+      separatorColor: AppColors.border,
       header: header != null
           ? Text(
               header!,

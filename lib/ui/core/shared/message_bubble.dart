@@ -16,7 +16,7 @@ import 'package:thk_tree/data/services/share_service.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
-import 'package:thk_tree/ui/core/theme/app_spacing.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/settings/tts_controller.dart';
@@ -495,10 +495,6 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     if (statusText != null) titleParts.add(statusText);
     final displayTitle = titleParts.join(' · ');
 
-    final backgroundColor = isUser
-        ? AppColors.accentLight
-        : AppColors.surface;
-
     final body = widget.message.body.isEmpty ? ' ' : widget.message.body;
     final sanitizedBody = body;
     final reasoning = widget.message.reasoning?.trim();
@@ -539,10 +535,9 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
               child: Container(
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(AppSp.chatBubbleRadius),
-                ),
+                decoration: isUser
+                    ? AppSurfaces.userBubble()
+                    : AppSurfaces.assistantBubble(),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(

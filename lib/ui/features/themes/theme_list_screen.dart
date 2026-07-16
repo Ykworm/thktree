@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart'
     show brightnessProvider;
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -25,7 +26,7 @@ class ThemeListScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final themesAsync = ref.watch(themeListControllerProvider);
     return CupertinoPageScaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.pageBg,
       child: CustomScrollView(
         slivers: [
           ThkNavBar.large(
@@ -110,14 +111,8 @@ List<Widget> _buildThemeRows(
           onTap: () => context.push('/themes/${theme.themeId}/tree'),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: BoxDecoration(
-              color: tileColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.border,
-                width: AppSp.dividerThickness,
-              ),
-            ),
+            // 纸上白卡：彩色只落在 leading 徽章，不再整行 tint
+            decoration: AppSurfaces.contentCard(radius: 14),
             child: Row(
               children: [
                 // 彩色图标徽章（Lab 式 · 正圆 + branch）

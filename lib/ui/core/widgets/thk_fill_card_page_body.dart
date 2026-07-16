@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 
 class ThkFillCardPageBody extends StatelessWidget {
   const ThkFillCardPageBody({
@@ -31,12 +32,13 @@ class ThkFillCardPageBody extends StatelessWidget {
               bottomPadding,
             ),
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(borderRadius),
-              ),
+              decoration: borderRadius > 0
+                  ? AppSurfaces.contentCard(radius: borderRadius)
+                  : BoxDecoration(color: AppColors.surface),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(borderRadius),
+                borderRadius: BorderRadius.circular(
+                  borderRadius > 0 ? borderRadius : 0,
+                ),
                 child: child,
               ),
             ),

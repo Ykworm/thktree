@@ -200,7 +200,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             .toList(growable: false);
         roots.sort(_compareNodes);
         return CupertinoPageScaffold(
-          backgroundColor: AppColors.surface,  // 使用设计系统的白色
+          backgroundColor: AppColors.pageBg,
           navigationBar: ThkNavBar.inline(
             title:
                 l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),

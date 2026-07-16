@@ -7,6 +7,7 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart' show brightnessProvider;
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
@@ -104,7 +105,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
     }
     final l10n = AppLocalizations.of(context)!;
     return CupertinoPageScaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.pageBg,
       resizeToAvoidBottomInset: false,
       child: CustomScrollView(
         slivers: [
@@ -183,41 +184,44 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
         ),
       );
     }
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final tn = allThemes[index];
-          return Column(
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      sliver: SliverToBoxAdapter(
+        child: DecoratedBox(
+          decoration: AppSurfaces.contentCard(),
+          child: Column(
             children: [
-              ThkListTile(
-                key: ValueKey(tn.themeId),
-                title: localizedThemeTitle(l10n, tn.title),
-                subtitle: l10n.noteCount(tn.noteCount),
-                leading: Icon(AppIcons.folder),
-                themeId: tn.themeId,
-                onTap: () {
-                  Navigator.of(context).push(
-                    CupertinoPageRoute(
-                      builder: (_) => ThemeNoteListScreen(
-                        themeId: tn.themeId,
-                        notesDir: '${tn.themePath}/notes',
+              for (var index = 0; index < allThemes.length; index++) ...[
+                ThkListTile(
+                  key: ValueKey(allThemes[index].themeId),
+                  title: localizedThemeTitle(l10n, allThemes[index].title),
+                  subtitle: l10n.noteCount(allThemes[index].noteCount),
+                  leading: Icon(AppIcons.folder),
+                  themeId: allThemes[index].themeId,
+                  onTap: () {
+                    final tn = allThemes[index];
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(
+                        builder: (_) => ThemeNoteListScreen(
+                          themeId: tn.themeId,
+                          notesDir: '${tn.themePath}/notes',
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              if (index < allThemes.length - 1)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 56),
-                  child: Container(
-                    height: 0.5,
-                    color: AppColors.border,
-                  ),
+                    );
+                  },
                 ),
+                if (index < allThemes.length - 1)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 56),
+                    child: Container(
+                      height: 0.5,
+                      color: AppColors.border,
+                    ),
+                  ),
+              ],
             ],
-          );
-        },
-        childCount: allThemes.length,
+          ),
+        ),
       ),
     );
   }
