@@ -2,6 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 
 /// 典雅黑金主题配置
 class AppTheme {
@@ -14,7 +15,8 @@ class AppTheme {
         brightness: Brightness.light,
         primaryColor: AppColors.accent,
         scaffoldBackgroundColor: AppColors.pageBg,
-        barBackgroundColor: AppColors.surface,
+        // 壳层玻璃（半透 / Android 不透明 paper）
+        barBackgroundColor: AppGlass.navBarBackground,
         textTheme: CupertinoTextThemeData(
           primaryColor: AppColors.accent,
           textStyle: TextStyle(
@@ -32,7 +34,7 @@ class AppTheme {
         brightness: Brightness.dark,
         primaryColor: AppColors.accent,
         scaffoldBackgroundColor: AppColors.pageBg,
-        barBackgroundColor: AppColors.surface,
+        barBackgroundColor: AppGlass.navBarBackground,
         textTheme: CupertinoTextThemeData(
           primaryColor: AppColors.accent,
           textStyle: TextStyle(

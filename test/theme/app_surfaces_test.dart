@@ -30,4 +30,13 @@ void main() {
     expect(AppColors.pageBg, isNot(AppColors.surface));
     expect(AppColors.pageBg.toARGB32(), 0xFFF7F5F0);
   });
+
+  test('AppGlass fill is translucent; opaque fallback is solid paper-warm', () {
+    expect(AppGlass.fill.a, lessThan(1.0));
+    expect(AppGlass.fill.toARGB32() & 0x00FFFFFF, 0x00FFFFFF);
+    expect(AppGlass.fillOpaque.a, 1.0);
+    expect(AppGlass.fillOpaque.toARGB32(), 0xFFF3EFE8);
+    expect(AppGlass.blurSigma, 14.0);
+    expect(AppGlass.chromeFill, anyOf(AppGlass.fill, AppGlass.fillOpaque));
+  });
 }

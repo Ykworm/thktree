@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 
 /// iOS 风格导航栏，支持 Large Title 和 Inline Title 双模式。
 ///
@@ -38,7 +39,8 @@ class ThkNavBar {
       alwaysShowMiddle: alwaysShowMiddle,
       padding: padding,
       border: border,
-      backgroundColor: backgroundColor,
+      // 半透时 Flutter/Cupertino 会走磨砂；Android 为不透明 paper
+      backgroundColor: backgroundColor ?? AppGlass.navBarBackground,
     );
   }
 
@@ -72,7 +74,7 @@ class ThkNavBar {
       automaticallyImplyMiddle: automaticallyImplyMiddle,
       padding: padding,
       border: border,
-      backgroundColor: backgroundColor,
+      backgroundColor: backgroundColor ?? AppGlass.navBarBackground,
     );
   }
 }

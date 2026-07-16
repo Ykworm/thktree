@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/widgets/thk_glass_bar.dart';
 
 /// 网格底栏操作项。
 class GridAction {
@@ -65,11 +66,10 @@ class _SheetContent extends StatelessWidget {
     // 覆盖 showModalBottomSheet 的默认 SafeArea，手动用缩小间距替代
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final bottomSafeGap = bottomInset > 0 ? 8.0 : 4.0;
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    const sheetRadius = BorderRadius.vertical(top: Radius.circular(16));
+    return ThkGlassBar(
+      borderRadius: sheetRadius,
+      border: Border.all(color: AppColors.border, width: 0.5),
       child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

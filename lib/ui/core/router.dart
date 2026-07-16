@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/widgets/thk_glass_bar.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/platform/android/android_navigation_shell.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
@@ -307,13 +308,8 @@ class _MainShell extends ConsumerWidget {
     const activeColor = AppColors.accent;
     final inactiveColor = AppColors.textTertiary;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-        ),
-      ),
+    // 壳层轻玻璃（iOS blur；Android 不透明 paper），锁在 tab 高度条带
+    return ThkGlassBar(
       child: SafeArea(
         top: false,
         child: Padding(

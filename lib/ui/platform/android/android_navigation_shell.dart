@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/platform/android/android_brightness_controller.dart';
 import 'package:thk_tree/ui/platform/android/android_color_scheme.dart';
 import 'package:thk_tree/ui/platform/android/android_nav_bar.dart';
@@ -130,7 +131,7 @@ class _AndroidNavigationShellState extends State<AndroidNavigationShell>
           ? Row(
               children: [
                 Material(
-                  color: AppColors.surface,
+                  color: AppGlass.fillOpaque,
                   child: chrome,
                 ),
                 Expanded(
@@ -152,9 +153,10 @@ class _AndroidNavigationShellState extends State<AndroidNavigationShell>
                 // 键盘弹出时隐藏底部导航栏：Column 不会自动让出空间，
                 // 保留它会导致子页面（如 ChatScreen）的
                 // resizeToAvoidBottomInset 在键盘上方多出导航栏高度的空白。
+                // Android 壳层：不透明 paper-warm（AppGlass 降级），无 blur
                 if (!keyboardOpen)
                   Material(
-                    color: AppColors.surface,
+                    color: AppGlass.fillOpaque,
                     child: chrome,
                   ),
               ],
