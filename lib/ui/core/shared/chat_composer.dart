@@ -109,160 +109,132 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
     final attachEnabled =
         widget.onImagePick != null && widget.imageSupported && !widget.isStreaming;
 
-    // 整块区域不铺底色；输入胶囊用真磨砂，才能透出背后消息/paper/tab
+    final showThinkingTool =
+        widget.alwaysThinking || widget.onDeepThinkingToggle != null;
+
+    // 一体化磨砂容器：输入框与工具行同一个玻璃壳，
+    // 开关文字落在玻璃上而不是裸叠在消息上，才清晰可读。
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (widget.selectedImageData != null) ...[
-            _ImagePreview(
-              imageData: widget.selectedImageData!,
-              onRemove: widget.onImageRemove!,
-            ),
-            const SizedBox(height: 6),
-          ],
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: _ComposerGlassShell(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Focus(
-                    onKeyEvent: (node, event) {
-                      if (!widget.enabled) return KeyEventResult.ignored;
-                      if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                      if (event.logicalKey != LogicalKeyboardKey.enter &&
-                          event.logicalKey != LogicalKeyboardKey.numpadEnter) {
-                        return KeyEventResult.ignored;
-                      }
-                      final composing = _controller.value.composing;
-                      if (composing.isValid && !composing.isCollapsed) {
-                        return KeyEventResult.ignored;
-                      }
-                      if (HardwareKeyboard.instance.isShiftPressed ||
-                          HardwareKeyboard.instance.isControlPressed) {
-                        _insertNewline();
-                        return KeyEventResult.handled;
-                      }
-                      _send();
-                      return KeyEventResult.handled;
-                    },
-                    child: CupertinoTextField(
-                      key: const ValueKey('chat_input'),
-                      controller: _controller,
-                      focusNode: _inputFocusNode,
-                      enabled: widget.enabled,
-                      autofocus: true,
-                      minLines: 1,
-                      maxLines: 6,
-                      keyboardType: TextInputType.multiline,
-                      autocorrect: false,
-                      enableInteractiveSelection: true,
-                      textCapitalization: TextCapitalization.none,
-                      smartDashesType: SmartDashesType.disabled,
-                      smartQuotesType: SmartQuotesType.disabled,
-                      placeholder: widget.hintText,
-                      // + 在输入框内侧最左
-                      prefix: widget.onImagePick != null
-                          ? Padding(
-                              padding: const EdgeInsets.only(left: 2),
-                              child: CupertinoButton(
-                                key: const ValueKey('attach_image_button'),
-                                padding: const EdgeInsets.all(6),
-                                minimumSize: const Size(32, 32),
-                                onPressed: attachEnabled
-                                    ? widget.onImagePick
-                                    : null,
-                                child: Icon(
-                                  AppIcons.add,
-                                  size: 22,
-                                  color: attachEnabled
-                                      ? AppColors.accent
-                                      : AppColors.textTertiary,
-                                ),
-                              ),
-                            )
-                          : null,
-                      // 底色交给外层磨砂壳，字段本身透明
-                      decoration: const BoxDecoration(
-                        color: AppColors.transparent,
-                      ),
-                      padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
-                      onSubmitted: (_) {
-                        final composing = _controller.value.composing;
-                        if (composing.isValid && !composing.isCollapsed) {
-                          return;
-                        }
-                        if (HardwareKeyboard.instance.isShiftPressed ||
-                            HardwareKeyboard.instance.isControlPressed) {
-                          return;
-                        }
-                        _send();
-                      },
-                    ),
-                  ),
-                ),
+      child: _ComposerGlassShell(
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.selectedImageData != null) ...[
+              _ImagePreview(
+                imageData: widget.selectedImageData!,
+                onRemove: widget.onImageRemove!,
               ),
-              const SizedBox(width: 6),
-              _RoundIconButton(
-                onPressed: _openClipsSheet,
-                child: Icon(
-                  AppIcons.clips,
-                  size: 20,
-                  color: AppColors.accent,
-                ),
-              ),
-              const SizedBox(width: 6),
-              _RoundIconButton(
-                buttonKey: ValueKey(
-                  widget.isStreaming ? 'stop_button' : 'send_button',
-                ),
-                onPressed: widget.enabled
-                    ? widget.isStreaming
-                        ? _stopStreaming
-                        : _send
-                    : null,
-                child: Icon(
-                  widget.isStreaming ? AppIcons.stop : AppIcons.send,
-                  size: 20,
-                  color: widget.enabled
-                      ? AppColors.accent
-                      : AppColors.textTertiary,
-                ),
-              ),
+              const _HairDivider(),
             ],
-          ),
-          if (showTools) ...[
-            const SizedBox(height: 4),
-            // 无底色条，chip 直接浮在透明区
-            Row(
-              children: [
-                if (widget.onWebSearchToggle != null) ...[
-                  _WebSearchToggle(
-                    enabled: widget.webSearchEnabled,
-                    supported: widget.webSearchSupported,
-                    isStreaming: widget.isStreaming,
-                    onToggle: widget.onWebSearchToggle!,
+            Focus(
+              onKeyEvent: (node, event) {
+                if (!widget.enabled) return KeyEventResult.ignored;
+                if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                if (event.logicalKey != LogicalKeyboardKey.enter &&
+                    event.logicalKey != LogicalKeyboardKey.numpadEnter) {
+                  return KeyEventResult.ignored;
+                }
+                final composing = _controller.value.composing;
+                if (composing.isValid && !composing.isCollapsed) {
+                  return KeyEventResult.ignored;
+                }
+                if (HardwareKeyboard.instance.isShiftPressed ||
+                    HardwareKeyboard.instance.isControlPressed) {
+                  _insertNewline();
+                  return KeyEventResult.handled;
+                }
+                _send();
+                return KeyEventResult.handled;
+              },
+              child: CupertinoTextField(
+                key: const ValueKey('chat_input'),
+                controller: _controller,
+                focusNode: _inputFocusNode,
+                enabled: widget.enabled,
+                autofocus: true,
+                minLines: 1,
+                maxLines: 6,
+                keyboardType: TextInputType.multiline,
+                autocorrect: false,
+                enableInteractiveSelection: true,
+                textCapitalization: TextCapitalization.none,
+                smartDashesType: SmartDashesType.disabled,
+                smartQuotesType: SmartQuotesType.disabled,
+                placeholder: widget.hintText,
+                // 底色交给外层磨砂壳，字段本身透明
+                decoration: const BoxDecoration(
+                  color: AppColors.transparent,
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                onSubmitted: (_) {
+                  final composing = _controller.value.composing;
+                  if (composing.isValid && !composing.isCollapsed) {
+                    return;
+                  }
+                  if (HardwareKeyboard.instance.isShiftPressed ||
+                      HardwareKeyboard.instance.isControlPressed) {
+                    return;
+                  }
+                  _send();
+                },
+              ),
+            ),
+            // 工具行：+ / 碎片 / 功能 chips …… 发送（Kimi 式收进玻璃壳内）
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 0, 8, 6),
+              child: Row(
+                children: [
+                  if (widget.onImagePick != null)
+                    _ToolbarIconButton(
+                      buttonKey: const ValueKey('attach_image_button'),
+                      icon: AppIcons.add,
+                      onPressed: attachEnabled ? widget.onImagePick : null,
+                    ),
+                  _ToolbarIconButton(
+                    icon: AppIcons.clips,
+                    onPressed: _openClipsSheet,
                   ),
-                  if (widget.alwaysThinking ||
-                      widget.onDeepThinkingToggle != null)
-                    _barDivider,
+                  if (showTools) ...[
+                    const SizedBox(width: 4),
+                    if (widget.onWebSearchToggle != null) ...[
+                      _WebSearchToggle(
+                        enabled: widget.webSearchEnabled,
+                        supported: widget.webSearchSupported,
+                        isStreaming: widget.isStreaming,
+                        onToggle: widget.onWebSearchToggle!,
+                      ),
+                      if (showThinkingTool) const SizedBox(width: 6),
+                    ],
+                    if (widget.alwaysThinking)
+                      _AlwaysThinkingIndicator(isStreaming: widget.isStreaming)
+                    else if (widget.onDeepThinkingToggle != null)
+                      _DeepThinkingToggle(
+                        enabled: widget.deepThinkingEnabled,
+                        supported: widget.deepThinkingSupported,
+                        isStreaming: widget.isStreaming,
+                        onToggle: widget.onDeepThinkingToggle!,
+                      ),
+                  ],
+                  const Spacer(),
+                  _SendButton(
+                    buttonKey: ValueKey(
+                      widget.isStreaming ? 'stop_button' : 'send_button',
+                    ),
+                    isStreaming: widget.isStreaming,
+                    onPressed: widget.enabled
+                        ? widget.isStreaming
+                            ? _stopStreaming
+                            : _send
+                        : null,
+                  ),
                 ],
-                if (widget.alwaysThinking)
-                  _AlwaysThinkingIndicator(isStreaming: widget.isStreaming)
-                else if (widget.onDeepThinkingToggle != null)
-                  _DeepThinkingToggle(
-                    enabled: widget.deepThinkingEnabled,
-                    supported: widget.deepThinkingSupported,
-                    isStreaming: widget.isStreaming,
-                    onToggle: widget.onDeepThinkingToggle!,
-                  ),
-              ],
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -326,16 +298,144 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
   }
 }
 
-/// 统一底边栏内部的分隔线
-final Widget _barDivider = SizedBox(
-  width: 1,
-  height: 20,
-  child: DecoratedBox(
-    decoration: BoxDecoration(color: AppColors.border),
-  ),
-);
+/// 预览条与输入框之间的 hair 分隔线
+class _HairDivider extends StatelessWidget {
+  const _HairDivider();
 
-/// 联网搜索开关（紧凑横条，放在输入框下方）
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: AppSp.dividerThickness,
+      margin: const EdgeInsets.symmetric(horizontal: 14),
+      color: AppColors.border.withValues(alpha: 0.7),
+    );
+  }
+}
+
+/// 工具行左侧的纯 icon 按钮（+ / 碎片）：无底，accent 色
+class _ToolbarIconButton extends StatelessWidget {
+  const _ToolbarIconButton({
+    required this.icon,
+    this.onPressed,
+    this.buttonKey,
+  });
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final Key? buttonKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      key: buttonKey,
+      padding: const EdgeInsets.all(6),
+      minimumSize: const Size(32, 32),
+      onPressed: onPressed,
+      child: Icon(
+        icon,
+        size: 20,
+        color: onPressed != null ? AppColors.accent : AppColors.textQuaternary,
+      ),
+    );
+  }
+}
+
+/// 发送 / 停止：iOS 风格实心圆 glyph，accent 色，无需额外底色
+class _SendButton extends StatelessWidget {
+  const _SendButton({
+    required this.isStreaming,
+    this.onPressed,
+    this.buttonKey,
+  });
+
+  final bool isStreaming;
+  final VoidCallback? onPressed;
+  final Key? buttonKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      key: buttonKey,
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(36, 36),
+      onPressed: onPressed,
+      child: Icon(
+        isStreaming ? AppIcons.stop : AppIcons.send,
+        size: 30,
+        color: onPressed != null ? AppColors.accent : AppColors.textQuaternary,
+      ),
+    );
+  }
+}
+
+/// 功能开关的统一 pill chip：
+/// - active：accentLight 底 + accent 字（一眼看出「开着」）
+/// - 可点但关闭：hair 边 + ink-2 灰字
+/// - 不可点（不支持 / 流式中）：弱化灰
+class _ToolChip extends StatelessWidget {
+  const _ToolChip({
+    required this.icon,
+    required this.label,
+    this.active = false,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+
+  /// 视觉激活态（accent）。只读 indicator 也可为 true（onPressed 为 null）。
+  final bool active;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color fg = active
+        ? AppColors.accent
+        : onPressed != null
+            ? AppColors.textSecondary
+            : AppColors.textTertiary.withValues(alpha: 0.6);
+
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(0, 30),
+      onPressed: onPressed,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.accent.withValues(alpha: 0.12)
+              : AppColors.transparent,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: active
+                ? AppColors.accent.withValues(alpha: 0.35)
+                : AppColors.borderStrong.withValues(alpha: 0.6),
+            width: AppSp.dividerThickness,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: fg),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 联网搜索开关 chip（输入壳内工具行）
 class _WebSearchToggle extends StatelessWidget {
   const _WebSearchToggle({
     required this.enabled,
@@ -351,40 +451,16 @@ class _WebSearchToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = supported
-        ? (enabled ? AppColors.accent : AppColors.textTertiary)
-        : AppColors.textTertiary.withValues(alpha: 0.5);
-
-    return CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    return _ToolChip(
+      icon: enabled ? AppIcons.globe : AppIcons.globeSlash,
+      label: supported ? '联网搜索' : '不支持联网',
+      active: enabled && supported,
       onPressed: supported && !isStreaming ? onToggle : null,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            enabled ? AppIcons.globe : AppIcons.globeSlash,
-            size: 14,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            supported
-                ? (enabled ? '联网搜索' : '联网搜索')
-                : '不支持联网',
-            style: TextStyle(fontSize: 12, color: color),
-          ),
-        ],
-      ),
     );
   }
 }
 
-/// 深度思考开关（联网搜索右边，UI 与 web search 镜像）
-///
-/// 与 `_WebSearchToggle` 的核心区别是文案/icon：
-/// - enabled：紫色 + 大脑 icon + "深度思考"
-/// - disabled (但 supported)：灰色 + 大脑 icon 暗淡 + "深度思考"
-/// - 不支持当前模型：灰色 "不支持深度思考"，按下不响应
+/// 深度思考常开只读 chip（豆包 Seed 类模型）
 class _AlwaysThinkingIndicator extends StatelessWidget {
   const _AlwaysThinkingIndicator({required this.isStreaming});
 
@@ -392,31 +468,17 @@ class _AlwaysThinkingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 始终开启（不可点击），弱化色让用户知道这是只读状态而非可操作控件
-    final color = AppColors.textTertiary.withValues(alpha: 0.5);
-
-    return CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      onPressed: null, // 只读，永远 disabled
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            AppIcons.brain,
-            size: 14,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '深度思考（默认）',
-            style: TextStyle(fontSize: 12, color: color),
-          ),
-        ],
-      ),
+    // 始终开启（不可点击）：active 视觉但无交互，表明这是状态而非开关
+    return const _ToolChip(
+      icon: AppIcons.brain,
+      label: '深度思考（默认）',
+      active: true,
+      onPressed: null,
     );
   }
 }
 
+/// 深度思考开关 chip，与 `_WebSearchToggle` 镜像
 class _DeepThinkingToggle extends StatelessWidget {
   const _DeepThinkingToggle({
     required this.enabled,
@@ -432,35 +494,16 @@ class _DeepThinkingToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = supported
-        ? (enabled ? AppColors.accent : AppColors.textTertiary)
-        : AppColors.textTertiary.withValues(alpha: 0.5);
-
-    return CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    return _ToolChip(
+      icon: AppIcons.brain,
+      label: supported ? '深度思考' : '不支持深度思考',
+      active: enabled && supported,
       onPressed: supported && !isStreaming ? onToggle : null,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            AppIcons.brain,
-            size: 14,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            supported
-                ? (enabled ? '深度思考' : '深度思考')
-                : '不支持深度思考',
-            style: TextStyle(fontSize: 12, color: color),
-          ),
-        ],
-      ),
     );
   }
 }
 
-/// 图片预览条（输入框上方）
+/// 图片预览条（玻璃壳内顶部，透明底 + hair 分隔）
 class _ImagePreview extends StatelessWidget {
   const _ImagePreview({
     required this.imageData,
@@ -472,39 +515,36 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: AppSp.imagePreviewHeight,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSp.cardRadius),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppSp.cardRadius),
+            borderRadius: BorderRadius.circular(8),
             child: Image.memory(
               imageData,
-              width: AppSp.imagePreviewHeight,
-              height: AppSp.imagePreviewHeight,
+              width: 56,
+              height: 56,
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               '图片已选择',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: AppColors.textSecondary,
               ),
             ),
           ),
           CupertinoButton(
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.all(6),
+            minimumSize: const Size(32, 32),
             onPressed: onRemove,
             child: Icon(
               AppIcons.close,
-              size: 20,
+              size: 18,
               color: AppColors.textTertiary,
             ),
           ),
@@ -514,36 +554,10 @@ class _ImagePreview extends StatelessWidget {
   }
 }
 
-/// 碎片 / 发送：磨砂圆钮。
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.child,
-    this.onPressed,
-    this.buttonKey,
-  });
-
-  final Widget child;
-  final VoidCallback? onPressed;
-  final Key? buttonKey;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ComposerGlassShell(
-      borderRadius: BorderRadius.circular(22),
-      child: CupertinoButton(
-        key: buttonKey,
-        padding: const EdgeInsets.all(10),
-        minimumSize: const Size(40, 40),
-        onPressed: onPressed,
-        child: child,
-      ),
-    );
-  }
-}
-
-/// 输入胶囊 / 圆钮共用：Clip + BackdropFilter + 低 alpha 暖白。
+/// 一体化输入壳：Clip + BackdropFilter + 半透暖白（对齐 AppGlass token）。
 ///
 /// 仅 alpha 叠在 pageBg 上仍像实心；必须 blur 背后内容才有「玻璃」。
+/// 轻影让壳从消息上「浮」起来；背后必须是消息列表像素（见 chat_screen Stack）。
 class _ComposerGlassShell extends StatelessWidget {
   const _ComposerGlassShell({
     required this.child,
@@ -555,39 +569,45 @@ class _ComposerGlassShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 更透的 fill + 强 blur；背后必须是消息列表像素（见 chat_screen Stack）
-    const fill = Color(0x66FFFFFF); // ~40% 白
-    final body = DecoratedBox(
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: borderRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.45),
-          width: AppSp.dividerThickness,
-        ),
-      ),
-      child: child,
-    );
-
     if (!AppGlass.useBlur) {
-      return ClipRRect(
-        borderRadius: borderRadius,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.9),
-            borderRadius: borderRadius,
-            border: Border.all(color: AppColors.border),
-          ),
+      // Android / 降级：不透明 paper-warm
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppGlass.fillOpaque,
+          borderRadius: borderRadius,
+          border: Border.all(color: AppColors.border),
+        ),
+        child: ClipRRect(
+          borderRadius: borderRadius,
           child: child,
         ),
       );
     }
 
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: body,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: AppSurfaces.cardShadowSm,
+      ),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: AppGlass.blurSigma,
+            sigmaY: AppGlass.blurSigma,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppGlass.fill,
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.45),
+                width: AppSp.dividerThickness,
+              ),
+            ),
+            child: child,
+          ),
+        ),
       ),
     );
   }
