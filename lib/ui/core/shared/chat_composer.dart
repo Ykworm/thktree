@@ -101,18 +101,20 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
 
   @override
   Widget build(BuildContext context) {
-    // 底边留给 SafeArea/tab；此处只留输入区与 tab 玻璃之间的呼吸间距
     final showTools = widget.onWebSearchToggle != null ||
         widget.onDeepThinkingToggle != null ||
         widget.alwaysThinking;
 
+    final attachEnabled =
+        widget.onImagePick != null && widget.imageSupported && !widget.isStreaming;
+
+    // 整块 composer 背景透明；只有输入胶囊本身轻微描边，底下 paper/tab 玻璃可透出
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 图片预览条（在输入框上方）
           if (widget.selectedImageData != null) ...[
             _ImagePreview(
               imageData: widget.selectedImageData!,
@@ -120,18 +122,10 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
             ),
             const SizedBox(height: 6),
           ],
-          // 主输入行：[+ 附图片] [输入框] [碎片] [发送]
+          // 主输入行：字段内左侧 + ；右侧碎片/发送
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (widget.onImagePick != null) ...[
-                _AttachPlusButton(
-                  supported: widget.imageSupported,
-                  isStreaming: widget.isStreaming,
-                  onPick: widget.onImagePick!,
-                ),
-                const SizedBox(width: 6),
-              ],
               Expanded(
                 child: Focus(
                   onKeyEvent: (node, event) {
@@ -168,18 +162,37 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                     smartDashesType: SmartDashesType.disabled,
                     smartQuotesType: SmartQuotesType.disabled,
                     placeholder: widget.hintText,
+                    // + 在输入框内侧最左
+                    prefix: widget.onImagePick != null
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: CupertinoButton(
+                              key: const ValueKey('attach_image_button'),
+                              padding: const EdgeInsets.all(6),
+                              minimumSize: const Size(32, 32),
+                              onPressed: attachEnabled
+                                  ? widget.onImagePick
+                                  : null,
+                              child: Icon(
+                                AppIcons.add,
+                                size: 22,
+                                color: attachEnabled
+                                    ? AppColors.accent
+                                    : AppColors.textTertiary,
+                              ),
+                            ),
+                          )
+                        : null,
                     decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.92),
+                      // 低 alpha：透出 paper / 底栏磨砂
+                      color: AppColors.surface.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: AppColors.border,
+                        color: AppColors.border.withValues(alpha: 0.65),
                         width: AppSp.dividerThickness,
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
                     onSubmitted: (_) {
                       final composing = _controller.value.composing;
                       if (composing.isValid && !composing.isCollapsed) return;
@@ -221,48 +234,32 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
               ),
             ],
           ),
-          // 仅联网 / 深度思考（图片已迁到输入行 +）
+          // 工具 chip：无底条容器，避免再盖一层不透明背景
           if (showTools) ...[
-            const SizedBox(height: 6),
-            // 半透明条：让底下 tab 玻璃透出来，避免实心白条压住磨砂
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.border.withValues(alpha: 0.8),
-                  width: AppSp.dividerThickness,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Row(
-                  children: [
-                    if (widget.onWebSearchToggle != null) ...[
-                      _WebSearchToggle(
-                        enabled: widget.webSearchEnabled,
-                        supported: widget.webSearchSupported,
-                        isStreaming: widget.isStreaming,
-                        onToggle: widget.onWebSearchToggle!,
-                      ),
-                      if (widget.alwaysThinking ||
-                          widget.onDeepThinkingToggle != null)
-                        _barDivider,
-                    ],
-                    if (widget.alwaysThinking)
-                      _AlwaysThinkingIndicator(
-                        isStreaming: widget.isStreaming,
-                      )
-                    else if (widget.onDeepThinkingToggle != null)
-                      _DeepThinkingToggle(
-                        enabled: widget.deepThinkingEnabled,
-                        supported: widget.deepThinkingSupported,
-                        isStreaming: widget.isStreaming,
-                        onToggle: widget.onDeepThinkingToggle!,
-                      ),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                if (widget.onWebSearchToggle != null) ...[
+                  _WebSearchToggle(
+                    enabled: widget.webSearchEnabled,
+                    supported: widget.webSearchSupported,
+                    isStreaming: widget.isStreaming,
+                    onToggle: widget.onWebSearchToggle!,
+                  ),
+                  if (widget.alwaysThinking ||
+                      widget.onDeepThinkingToggle != null)
+                    _barDivider,
+                ],
+                if (widget.alwaysThinking)
+                  _AlwaysThinkingIndicator(isStreaming: widget.isStreaming)
+                else if (widget.onDeepThinkingToggle != null)
+                  _DeepThinkingToggle(
+                    enabled: widget.deepThinkingEnabled,
+                    supported: widget.deepThinkingSupported,
+                    isStreaming: widget.isStreaming,
+                    onToggle: widget.onDeepThinkingToggle!,
+                  ),
+              ],
             ),
           ],
         ],
@@ -517,34 +514,7 @@ class _ImagePreview extends StatelessWidget {
   }
 }
 
-/// 输入行左侧「+」：打开图片选择（拍照/相册）。
-class _AttachPlusButton extends StatelessWidget {
-  const _AttachPlusButton({
-    required this.supported,
-    required this.isStreaming,
-    required this.onPick,
-  });
-
-  final bool supported;
-  final bool isStreaming;
-  final VoidCallback onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = supported && !isStreaming;
-    return _RoundIconButton(
-      buttonKey: const ValueKey('attach_image_button'),
-      onPressed: enabled ? onPick : null,
-      child: Icon(
-        AppIcons.add,
-        size: 22,
-        color: enabled ? AppColors.accent : AppColors.textTertiary,
-      ),
-    );
-  }
-}
-
-/// 与输入框同高感的圆形/圆角图标钮（碎片、发送、+）。
+/// 碎片 / 发送：轻透明圆钮（无实心白底）。
 class _RoundIconButton extends StatelessWidget {
   const _RoundIconButton({
     required this.child,
@@ -560,10 +530,10 @@ class _RoundIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.92),
+        color: AppColors.surface.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: AppColors.border,
+          color: AppColors.border.withValues(alpha: 0.65),
           width: AppSp.dividerThickness,
         ),
       ),
