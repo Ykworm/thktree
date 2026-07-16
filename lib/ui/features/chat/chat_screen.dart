@@ -619,7 +619,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               },
                             ),
                           ),
-                        ),
                         error: (e, st) => Center(child: Text(e.toString())),
                         loading: () => const Center(
                           child: CupertinoActivityIndicator(),
