@@ -101,8 +101,13 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
 
   @override
   Widget build(BuildContext context) {
+    // 底边留给 SafeArea/tab；此处只留输入区与 tab 玻璃之间的呼吸间距
+    final showTools = widget.onWebSearchToggle != null ||
+        widget.onDeepThinkingToggle != null ||
+        widget.alwaysThinking;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -113,11 +118,20 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
               imageData: widget.selectedImageData!,
               onRemove: widget.onImageRemove!,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
           ],
+          // 主输入行：[+ 附图片] [输入框] [碎片] [发送]
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (widget.onImagePick != null) ...[
+                _AttachPlusButton(
+                  supported: widget.imageSupported,
+                  isStreaming: widget.isStreaming,
+                  onPick: widget.onImagePick!,
+                ),
+                const SizedBox(width: 6),
+              ],
               Expanded(
                 child: Focus(
                   onKeyEvent: (node, event) {
@@ -155,11 +169,17 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                     smartQuotesType: SmartQuotesType.disabled,
                     placeholder: widget.hintText,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.surface.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: AppColors.border,
+                        width: AppSp.dividerThickness,
+                      ),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     onSubmitted: (_) {
                       final composing = _controller.value.composing;
                       if (composing.isValid && !composing.isCollapsed) return;
@@ -172,93 +192,76 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              // 碎片库按钮
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppSp.cardRadius),
-                ),
-                child: CupertinoButton(
-                  padding: const EdgeInsets.all(8),
-                  onPressed: _openClipsSheet,
-                  child: Icon(
-                    AppIcons.clips,
-                    size: 20,
-                    color: AppColors.accent,
-                  ),
+              const SizedBox(width: 6),
+              _RoundIconButton(
+                onPressed: _openClipsSheet,
+                child: Icon(
+                  AppIcons.clips,
+                  size: 20,
+                  color: AppColors.accent,
                 ),
               ),
-              const SizedBox(width: 4),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppSp.cardRadius),
+              const SizedBox(width: 6),
+              _RoundIconButton(
+                buttonKey: ValueKey(
+                  widget.isStreaming ? 'stop_button' : 'send_button',
                 ),
-                child: CupertinoButton(
-                  key: ValueKey(widget.isStreaming ? 'stop_button' : 'send_button'),
-                  padding: const EdgeInsets.all(8),
-                  onPressed: widget.enabled
-                      ? widget.isStreaming
-                          ? _stopStreaming
-                          : _send
-                      : null,
-                  child: Icon(
-                    widget.isStreaming ? AppIcons.stop : AppIcons.send,
-                    size: 20,
-                    color: widget.enabled
-                        ? AppColors.accent
-                        : AppColors.textTertiary,
-                  ),
+                onPressed: widget.enabled
+                    ? widget.isStreaming
+                        ? _stopStreaming
+                        : _send
+                    : null,
+                child: Icon(
+                  widget.isStreaming ? AppIcons.stop : AppIcons.send,
+                  size: 20,
+                  color: widget.enabled
+                      ? AppColors.accent
+                      : AppColors.textTertiary,
                 ),
               ),
             ],
           ),
-          // 联网搜索、深度思考和图片：统一底边栏（单一 surface 容器 + 分隔线）
-          if (widget.onWebSearchToggle != null ||
-              widget.onDeepThinkingToggle != null ||
-              widget.alwaysThinking ||
-              widget.onImagePick != null) ...[
-            const SizedBox(height: 4),
-            Container(
+          // 仅联网 / 深度思考（图片已迁到输入行 +）
+          if (showTools) ...[
+            const SizedBox(height: 6),
+            // 半透明条：让底下 tab 玻璃透出来，避免实心白条压住磨砂
+            DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppSp.sheetTopRadius),
+                color: AppColors.surface.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.8),
+                  width: AppSp.dividerThickness,
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                children: [
-                  if (widget.onWebSearchToggle != null) ...[
-                    _WebSearchToggle(
-                      enabled: widget.webSearchEnabled,
-                      supported: widget.webSearchSupported,
-                      isStreaming: widget.isStreaming,
-                      onToggle: widget.onWebSearchToggle!,
-                    ),
-                    if (widget.alwaysThinking ||
-                        widget.onDeepThinkingToggle != null ||
-                        widget.onImagePick != null)
-                      _barDivider,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Row(
+                  children: [
+                    if (widget.onWebSearchToggle != null) ...[
+                      _WebSearchToggle(
+                        enabled: widget.webSearchEnabled,
+                        supported: widget.webSearchSupported,
+                        isStreaming: widget.isStreaming,
+                        onToggle: widget.onWebSearchToggle!,
+                      ),
+                      if (widget.alwaysThinking ||
+                          widget.onDeepThinkingToggle != null)
+                        _barDivider,
+                    ],
+                    if (widget.alwaysThinking)
+                      _AlwaysThinkingIndicator(
+                        isStreaming: widget.isStreaming,
+                      )
+                    else if (widget.onDeepThinkingToggle != null)
+                      _DeepThinkingToggle(
+                        enabled: widget.deepThinkingEnabled,
+                        supported: widget.deepThinkingSupported,
+                        isStreaming: widget.isStreaming,
+                        onToggle: widget.onDeepThinkingToggle!,
+                      ),
                   ],
-                  if (widget.alwaysThinking) ...[
-                    _AlwaysThinkingIndicator(isStreaming: widget.isStreaming),
-                    if (widget.onImagePick != null) _barDivider,
-                  ] else if (widget.onDeepThinkingToggle != null) ...[
-                    _DeepThinkingToggle(
-                      enabled: widget.deepThinkingEnabled,
-                      supported: widget.deepThinkingSupported,
-                      isStreaming: widget.isStreaming,
-                      onToggle: widget.onDeepThinkingToggle!,
-                    ),
-                    if (widget.onImagePick != null) _barDivider,
-                  ],
-                  if (widget.onImagePick != null)
-                    _ImageButton(
-                      supported: widget.imageSupported,
-                      isStreaming: widget.isStreaming,
-                      onPick: widget.onImagePick!,
-                    ),
-                ],
+                ),
               ),
             ),
           ],
@@ -514,9 +517,9 @@ class _ImagePreview extends StatelessWidget {
   }
 }
 
-/// 图片按钮（联网搜索旁边）
-class _ImageButton extends StatelessWidget {
-  const _ImageButton({
+/// 输入行左侧「+」：打开图片选择（拍照/相册）。
+class _AttachPlusButton extends StatelessWidget {
+  const _AttachPlusButton({
     required this.supported,
     required this.isStreaming,
     required this.onPick,
@@ -528,28 +531,48 @@ class _ImageButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = supported
-        ? AppColors.accent
-        : AppColors.textTertiary.withValues(alpha: 0.5);
+    final enabled = supported && !isStreaming;
+    return _RoundIconButton(
+      buttonKey: const ValueKey('attach_image_button'),
+      onPressed: enabled ? onPick : null,
+      child: Icon(
+        AppIcons.add,
+        size: 22,
+        color: enabled ? AppColors.accent : AppColors.textTertiary,
+      ),
+    );
+  }
+}
 
-    return CupertinoButton(
-      key: const ValueKey('attach_image_button'),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      onPressed: supported && !isStreaming ? onPick : null,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            AppIcons.image,
-            size: 14,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            supported ? '添加图片' : '不支持图片',
-            style: TextStyle(fontSize: 12, color: color),
-          ),
-        ],
+/// 与输入框同高感的圆形/圆角图标钮（碎片、发送、+）。
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({
+    required this.child,
+    this.onPressed,
+    this.buttonKey,
+  });
+
+  final Widget child;
+  final VoidCallback? onPressed;
+  final Key? buttonKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.border,
+          width: AppSp.dividerThickness,
+        ),
+      ),
+      child: CupertinoButton(
+        key: buttonKey,
+        padding: const EdgeInsets.all(10),
+        minimumSize: const Size(40, 40),
+        onPressed: onPressed,
+        child: child,
       ),
     );
   }
