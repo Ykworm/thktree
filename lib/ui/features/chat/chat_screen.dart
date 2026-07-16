@@ -554,7 +554,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           child: ChatListView(
                             key: _chatListKey,
                             messages: messages,
-                            bottomContentInset: 120,
+                            // 双条毛玻璃（输入 pill + 工具 pill）更高，留足滚到底空白
+                            bottomContentInset: 168,
                             onScrollPositionChanged: (nearBottom) {
                               if (_isNearBottom != nearBottom) {
                                 setState(() => _isNearBottom = nearBottom);
