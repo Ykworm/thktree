@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:ui' show ImageFilter;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/widgets/clips_sheet.dart';
 
@@ -108,7 +109,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
     final attachEnabled =
         widget.onImagePick != null && widget.imageSupported && !widget.isStreaming;
 
-    // 整块 composer 背景透明；只有输入胶囊本身轻微描边，底下 paper/tab 玻璃可透出
+    // 整块区域不铺底色；输入胶囊用真磨砂，才能透出背后消息/paper/tab
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Column(
@@ -122,86 +123,85 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
             ),
             const SizedBox(height: 6),
           ],
-          // 主输入行：字段内左侧 + ；右侧碎片/发送
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: Focus(
-                  onKeyEvent: (node, event) {
-                    if (!widget.enabled) return KeyEventResult.ignored;
-                    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                    if (event.logicalKey != LogicalKeyboardKey.enter &&
-                        event.logicalKey != LogicalKeyboardKey.numpadEnter) {
-                      return KeyEventResult.ignored;
-                    }
-                    final composing = _controller.value.composing;
-                    if (composing.isValid && !composing.isCollapsed) {
-                      return KeyEventResult.ignored;
-                    }
-                    if (HardwareKeyboard.instance.isShiftPressed ||
-                        HardwareKeyboard.instance.isControlPressed) {
-                      _insertNewline();
-                      return KeyEventResult.handled;
-                    }
-                    _send();
-                    return KeyEventResult.handled;
-                  },
-                  child: CupertinoTextField(
-                    key: const ValueKey('chat_input'),
-                    controller: _controller,
-                    focusNode: _inputFocusNode,
-                    enabled: widget.enabled,
-                    autofocus: true,
-                    minLines: 1,
-                    maxLines: 6,
-                    keyboardType: TextInputType.multiline,
-                    autocorrect: false,
-                    enableInteractiveSelection: true,
-                    textCapitalization: TextCapitalization.none,
-                    smartDashesType: SmartDashesType.disabled,
-                    smartQuotesType: SmartQuotesType.disabled,
-                    placeholder: widget.hintText,
-                    // + 在输入框内侧最左
-                    prefix: widget.onImagePick != null
-                        ? Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: CupertinoButton(
-                              key: const ValueKey('attach_image_button'),
-                              padding: const EdgeInsets.all(6),
-                              minimumSize: const Size(32, 32),
-                              onPressed: attachEnabled
-                                  ? widget.onImagePick
-                                  : null,
-                              child: Icon(
-                                AppIcons.add,
-                                size: 22,
-                                color: attachEnabled
-                                    ? AppColors.accent
-                                    : AppColors.textTertiary,
-                              ),
-                            ),
-                          )
-                        : null,
-                    decoration: BoxDecoration(
-                      // 低 alpha：透出 paper / 底栏磨砂
-                      color: AppColors.surface.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.65),
-                        width: AppSp.dividerThickness,
-                      ),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
-                    onSubmitted: (_) {
+                child: _ComposerGlassShell(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Focus(
+                    onKeyEvent: (node, event) {
+                      if (!widget.enabled) return KeyEventResult.ignored;
+                      if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                      if (event.logicalKey != LogicalKeyboardKey.enter &&
+                          event.logicalKey != LogicalKeyboardKey.numpadEnter) {
+                        return KeyEventResult.ignored;
+                      }
                       final composing = _controller.value.composing;
-                      if (composing.isValid && !composing.isCollapsed) return;
+                      if (composing.isValid && !composing.isCollapsed) {
+                        return KeyEventResult.ignored;
+                      }
                       if (HardwareKeyboard.instance.isShiftPressed ||
                           HardwareKeyboard.instance.isControlPressed) {
-                        return;
+                        _insertNewline();
+                        return KeyEventResult.handled;
                       }
                       _send();
+                      return KeyEventResult.handled;
                     },
+                    child: CupertinoTextField(
+                      key: const ValueKey('chat_input'),
+                      controller: _controller,
+                      focusNode: _inputFocusNode,
+                      enabled: widget.enabled,
+                      autofocus: true,
+                      minLines: 1,
+                      maxLines: 6,
+                      keyboardType: TextInputType.multiline,
+                      autocorrect: false,
+                      enableInteractiveSelection: true,
+                      textCapitalization: TextCapitalization.none,
+                      smartDashesType: SmartDashesType.disabled,
+                      smartQuotesType: SmartQuotesType.disabled,
+                      placeholder: widget.hintText,
+                      // + 在输入框内侧最左
+                      prefix: widget.onImagePick != null
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 2),
+                              child: CupertinoButton(
+                                key: const ValueKey('attach_image_button'),
+                                padding: const EdgeInsets.all(6),
+                                minimumSize: const Size(32, 32),
+                                onPressed: attachEnabled
+                                    ? widget.onImagePick
+                                    : null,
+                                child: Icon(
+                                  AppIcons.add,
+                                  size: 22,
+                                  color: attachEnabled
+                                      ? AppColors.accent
+                                      : AppColors.textTertiary,
+                                ),
+                              ),
+                            )
+                          : null,
+                      // 底色交给外层磨砂壳，字段本身透明
+                      decoration: const BoxDecoration(
+                        color: AppColors.transparent,
+                      ),
+                      padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
+                      onSubmitted: (_) {
+                        final composing = _controller.value.composing;
+                        if (composing.isValid && !composing.isCollapsed) {
+                          return;
+                        }
+                        if (HardwareKeyboard.instance.isShiftPressed ||
+                            HardwareKeyboard.instance.isControlPressed) {
+                          return;
+                        }
+                        _send();
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -234,9 +234,9 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
               ),
             ],
           ),
-          // 工具 chip：无底条容器，避免再盖一层不透明背景
           if (showTools) ...[
             const SizedBox(height: 4),
+            // 无底色条，chip 直接浮在透明区
             Row(
               children: [
                 if (widget.onWebSearchToggle != null) ...[
@@ -514,7 +514,7 @@ class _ImagePreview extends StatelessWidget {
   }
 }
 
-/// 碎片 / 发送：轻透明圆钮（无实心白底）。
+/// 碎片 / 发送：磨砂圆钮。
 class _RoundIconButton extends StatelessWidget {
   const _RoundIconButton({
     required this.child,
@@ -528,21 +528,62 @@ class _RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.65),
-          width: AppSp.dividerThickness,
-        ),
-      ),
+    return _ComposerGlassShell(
+      borderRadius: BorderRadius.circular(22),
       child: CupertinoButton(
         key: buttonKey,
         padding: const EdgeInsets.all(10),
         minimumSize: const Size(40, 40),
         onPressed: onPressed,
         child: child,
+      ),
+    );
+  }
+}
+
+/// 输入胶囊 / 圆钮共用：Clip + BackdropFilter + 低 alpha 暖白。
+///
+/// 仅 alpha 叠在 pageBg 上仍像实心；必须 blur 背后内容才有「玻璃」。
+class _ComposerGlassShell extends StatelessWidget {
+  const _ComposerGlassShell({
+    required this.child,
+    required this.borderRadius,
+  });
+
+  final Widget child;
+  final BorderRadius borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final useBlur = AppGlass.useBlur;
+    final fill = useBlur
+        ? AppColors.surface.withValues(alpha: 0.42)
+        : AppColors.surface.withValues(alpha: 0.88);
+
+    Widget body = DecoratedBox(
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: borderRadius,
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.55),
+          width: AppSp.dividerThickness,
+        ),
+      ),
+      child: child,
+    );
+
+    if (!useBlur) {
+      return ClipRRect(borderRadius: borderRadius, child: body);
+    }
+
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: AppGlass.blurSigma,
+          sigmaY: AppGlass.blurSigma,
+        ),
+        child: body,
       ),
     );
   }

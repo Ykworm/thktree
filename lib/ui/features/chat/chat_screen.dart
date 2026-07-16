@@ -510,234 +510,259 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
       ),
-      // bottom:true 吃到 shell 为叠 tab 注入的 padding.bottom，避免输入区/气泡被底栏盖住。
-      // top:false：顶栏由 CupertinoPageScaffold 自己处理。
+      // bottom:true 避让叠层 tab；composer 叠在消息列表上才能磨到气泡（真玻璃）。
       child: SafeArea(
         top: false,
         bottom: true,
-        child: Stack(
-        children: [
-          Column(
-            children: [
-              if (crumbs.isNotEmpty)
-                // 关键：Column 默认 crossAxisAlignment=center，会让这个非 Expanded
-                // 的 Container 收缩到 Wrap 内容宽度并整体横向居中（视觉上像面包屑
-                // 居中、浪费空间）。用 width:double.infinity + centerLeft 强制占满
-                // 并左对齐，最大化可用显示空间。
-                Container(
-                  width: double.infinity,
-                  alignment: Alignment.centerLeft,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: AppColors.border, width: 0.5),
-                    ),
+        child: Column(
+          children: [
+            if (crumbs.isNotEmpty)
+              Container(
+                width: double.infinity,
+                alignment: Alignment.centerLeft,
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.border, width: 0.5),
                   ),
-                  child: ThkBreadcrumbRow(crumbs: crumbs),
                 ),
-              // 消息列表
-              Expanded(
-                child: Listener(
-                  onPointerDown: (_) {
-                    FocusScope.of(context).unfocus();
-                  },
-                  child: messagesAsync.when(
-                    data: (messages) => SelectionArea(
-                      // 注意：消息列表是「嵌套 SelectionArea」——每条 MessageBubble
-                      // 内部各自包了一个 SelectionArea（GptMarkdown 自身不可选）。
-                      // 嵌套下外层 SelectionArea 的 onSelectionChanged 收不到子选区，
-                      // 所以这里几乎不会回调；选区实际由 MessageBubble 内的
-                      // SelectionArea 捕获并写入 currentSelectionProvider。
-                      // 保留写入仅作兜底（万一外层能拿到选区时同步）。
-                      contextMenuBuilder: (context, editableTextState) =>
-                          buildClipsContextMenu(context, editableTextState),
-                      onSelectionChanged: (value) {
-                        final text = value?.plainText;
-                        if (text != null && text.trim().isNotEmpty) {
-                          ref.read(currentSelectionProvider.notifier).state =
-                              text;
-                        }
-                      },
-                      child: ChatListView(
-                        key: _chatListKey,
-                        messages: messages,
-                        onScrollPositionChanged: (nearBottom) {
-                          if (_isNearBottom != nearBottom) {
-                            setState(() => _isNearBottom = nearBottom);
-                          }
+                child: ThkBreadcrumbRow(crumbs: crumbs),
+              ),
+            Expanded(
+              child: Stack(
+                children: [
+                  // 消息列表铺满，底部留白给浮层 composer
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 118),
+                      child: Listener(
+                        onPointerDown: (_) {
+                          FocusScope.of(context).unfocus();
                         },
-                        messageBuilder: (context, message) {
-                          final isLastAssistant =
-                              message.role == SessionRole.assistant &&
-                              message.status !=
-                                  SessionMessageStatus.streaming &&
-                              message ==
-                                  messages.lastWhere(
-                                    (m) => m.role == SessionRole.assistant,
-                                    orElse: () => message,
-                                  );
-
-                          String? userQuestion;
-                          Uint8List? userQuestionImage;
-                          if (message.role == SessionRole.assistant) {
-                            final idx = messages.indexOf(message);
-                            if (idx > 0) {
-                              for (var i = idx - 1; i >= 0; i--) {
-                                if (messages[i].role == SessionRole.user) {
-                                  userQuestion = messages[i].body;
-                                  userQuestionImage = messages[i].imageData;
-                                  break;
-                                }
+                        child: messagesAsync.when(
+                          data: (messages) => SelectionArea(
+                            contextMenuBuilder:
+                                (context, editableTextState) =>
+                                    buildClipsContextMenu(
+                              context,
+                              editableTextState,
+                            ),
+                            onSelectionChanged: (value) {
+                              final text = value?.plainText;
+                              if (text != null && text.trim().isNotEmpty) {
+                                ref
+                                    .read(currentSelectionProvider.notifier)
+                                    .state = text;
                               }
-                            }
-                          }
+                            },
+                            child: ChatListView(
+                              key: _chatListKey,
+                              messages: messages,
+                              onScrollPositionChanged: (nearBottom) {
+                                if (_isNearBottom != nearBottom) {
+                                  setState(() => _isNearBottom = nearBottom);
+                                }
+                              },
+                              messageBuilder: (context, message) {
+                                final isLastAssistant =
+                                    message.role == SessionRole.assistant &&
+                                    message.status !=
+                                        SessionMessageStatus.streaming &&
+                                    message ==
+                                        messages.lastWhere(
+                                          (m) =>
+                                              m.role == SessionRole.assistant,
+                                          orElse: () => message,
+                                        );
 
-                          // 时间戳显示逻辑：第一条、角色切换、或间隔 > 2 分钟
-                          final showTimestamp = _shouldShowTimestamp(
-                            messages,
-                            message,
-                          );
+                                String? userQuestion;
+                                Uint8List? userQuestionImage;
+                                if (message.role == SessionRole.assistant) {
+                                  final idx = messages.indexOf(message);
+                                  if (idx > 0) {
+                                    for (var i = idx - 1; i >= 0; i--) {
+                                      if (messages[i].role ==
+                                          SessionRole.user) {
+                                        userQuestion = messages[i].body;
+                                        userQuestionImage =
+                                            messages[i].imageData;
+                                        break;
+                                      }
+                                    }
+                                  }
+                                }
 
-                          return MessageBubble(
-                            message: message,
-                            showTimestamp: showTimestamp,
-                            onRetry: isLastAssistant
-                                ? () => ref
-                                      .read(
-                                        chatControllerProvider(_args).notifier,
-                                      )
-                                      .retryLastMessage()
-                                : null,
-                            userQuestion: userQuestion,
-                            userQuestionImage: userQuestionImage,
-                            onSaveToNote:
-                                message.role == SessionRole.assistant &&
-                                    message.status == SessionMessageStatus.done
-                                ? () => _saveMessageAsNote(message)
-                                : null,
-                            onShareEntireChat: () => _shareEntireChat(messages),
-                          );
-                        },
+                                final showTimestamp = _shouldShowTimestamp(
+                                  messages,
+                                  message,
+                                );
+
+                                return MessageBubble(
+                                  message: message,
+                                  showTimestamp: showTimestamp,
+                                  onRetry: isLastAssistant
+                                      ? () => ref
+                                            .read(
+                                              chatControllerProvider(_args)
+                                                  .notifier,
+                                            )
+                                            .retryLastMessage()
+                                      : null,
+                                  userQuestion: userQuestion,
+                                  userQuestionImage: userQuestionImage,
+                                  onSaveToNote: message.role ==
+                                              SessionRole.assistant &&
+                                          message.status ==
+                                              SessionMessageStatus.done
+                                      ? () => _saveMessageAsNote(message)
+                                      : null,
+                                  onShareEntireChat: () =>
+                                      _shareEntireChat(messages),
+                                );
+                              },
+                            ),
+                          ),
+                          error: (e, st) =>
+                              Center(child: Text(e.toString())),
+                          loading: () => const Center(
+                            child: CupertinoActivityIndicator(),
+                          ),
+                        ),
                       ),
                     ),
-                    error: (e, st) => Center(child: Text(e.toString())),
-                    loading: () =>
-                        const Center(child: CupertinoActivityIndicator()),
                   ),
-                ),
-              ),
-              // Context 使用条
-              messagesAsync.maybeWhen(
-                data: (messages) {
-                  final contextWindow = _resolveContextWindow(
-                    currentProviderId,
-                    currentModelId,
-                  );
-                  return _ContextUsageBar(
-                    messages: messages,
-                    contextWindow: contextWindow,
-                  );
-                },
-                orElse: () => const SizedBox.shrink(),
-              ),
-              // 输入框
-              ChatComposer(
-                hintText: l10n.messageHint,
-                isStreaming: isStreaming,
-                onSend: (text, {imageData, imageMimeType}) async {
-                  await ref
-                      .read(chatControllerProvider(_args).notifier)
-                      .sendUserMessage(
-                        text,
-                        imageData: imageData,
-                        imageMimeType: imageMimeType,
-                      );
-                  // 发送后清除图片选择状态
-                  if (mounted) {
-                    setState(() {
-                      _selectedImageData = null;
-                      _selectedImageMimeType = null;
-                    });
-                  }
-                },
-                onStopStreaming: () async {
-                  await ref
-                      .read(chatControllerProvider(_args).notifier)
-                      .stopStreaming();
-                },
-                webSearchEnabled: webSearchEnabled,
-                webSearchSupported: webSearchSupported,
-                onWebSearchToggle: webSearchSupported
-                    ? () {
-                        ref
-                            .read(settingsControllerProvider.notifier)
-                            .saveWebSearchEnabled(
-                              currentProviderType.name,
-                              !webSearchEnabled,
+                  // 底部浮层：磨砂输入区叠在消息上
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        messagesAsync.maybeWhen(
+                          data: (messages) {
+                            final contextWindow = _resolveContextWindow(
+                              currentProviderId,
+                              currentModelId,
                             );
-                      }
-                    : null,
-                deepThinkingEnabled: _deepThinkingEnabled,
-                deepThinkingSupported: deepThinkingSupported,
-                onDeepThinkingToggle: (deepThinkingSupported && !alwaysThinking)
-                    ? () {
-                        final next = !_deepThinkingEnabled;
-                        setState(() => _deepThinkingEnabled = next);
-                        // 同步到底层 controller（用于 build 下一帧决定是否传 thinking 参数）
-                        ref
-                            .read(chatControllerProvider(_args).notifier)
-                            .setDeepThinking(next);
-                      }
-                    : null,
-                alwaysThinking: alwaysThinking,
-                onImagePick: () => _showImagePicker(context),
-                imageSupported: _isImageSupported(
-                  currentProviderId,
-                  currentModelId,
-                ),
-                selectedImageData: _selectedImageData,
-                selectedImageMimeType: _selectedImageMimeType,
-                onImageRemove: () {
-                  if (mounted) {
-                    setState(() {
-                      _selectedImageData = null;
-                      _selectedImageMimeType = null;
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-          // 浮动滚动按钮：离开底部时显示，点击回到底部
-          if (!_isNearBottom)
-            Positioned(
-              right: 16,
-              bottom: 110,
-              child: GestureDetector(
-                onTap: () => _chatListKey.currentState?.scrollToBottom(),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.elevationShadow,
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                            return _ContextUsageBar(
+                              messages: messages,
+                              contextWindow: contextWindow,
+                            );
+                          },
+                          orElse: () => const SizedBox.shrink(),
+                        ),
+                        ChatComposer(
+                          hintText: l10n.messageHint,
+                          isStreaming: isStreaming,
+                          onSend: (text, {imageData, imageMimeType}) async {
+                            await ref
+                                .read(
+                                  chatControllerProvider(_args).notifier,
+                                )
+                                .sendUserMessage(
+                                  text,
+                                  imageData: imageData,
+                                  imageMimeType: imageMimeType,
+                                );
+                            if (mounted) {
+                              setState(() {
+                                _selectedImageData = null;
+                                _selectedImageMimeType = null;
+                              });
+                            }
+                          },
+                          onStopStreaming: () async {
+                            await ref
+                                .read(
+                                  chatControllerProvider(_args).notifier,
+                                )
+                                .stopStreaming();
+                          },
+                          webSearchEnabled: webSearchEnabled,
+                          webSearchSupported: webSearchSupported,
+                          onWebSearchToggle: webSearchSupported
+                              ? () {
+                                  ref
+                                      .read(
+                                        settingsControllerProvider.notifier,
+                                      )
+                                      .saveWebSearchEnabled(
+                                        currentProviderType.name,
+                                        !webSearchEnabled,
+                                      );
+                                }
+                              : null,
+                          deepThinkingEnabled: _deepThinkingEnabled,
+                          deepThinkingSupported: deepThinkingSupported,
+                          onDeepThinkingToggle:
+                              (deepThinkingSupported && !alwaysThinking)
+                                  ? () {
+                                      final next = !_deepThinkingEnabled;
+                                      setState(
+                                        () => _deepThinkingEnabled = next,
+                                      );
+                                      ref
+                                          .read(
+                                            chatControllerProvider(_args)
+                                                .notifier,
+                                          )
+                                          .setDeepThinking(next);
+                                    }
+                                  : null,
+                          alwaysThinking: alwaysThinking,
+                          onImagePick: () => _showImagePicker(context),
+                          imageSupported: _isImageSupported(
+                            currentProviderId,
+                            currentModelId,
+                          ),
+                          selectedImageData: _selectedImageData,
+                          selectedImageMimeType: _selectedImageMimeType,
+                          onImageRemove: () {
+                            if (mounted) {
+                              setState(() {
+                                _selectedImageData = null;
+                                _selectedImageMimeType = null;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!_isNearBottom)
+                    Positioned(
+                      right: 16,
+                      bottom: 120,
+                      child: GestureDetector(
+                        onTap: () =>
+                            _chatListKey.currentState?.scrollToBottom(),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.surface.withValues(alpha: 0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.elevationShadow,
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            AppIcons.chevronDown,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    AppIcons.chevronDown,
-                    size: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                    ),
+                ],
               ),
             ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
