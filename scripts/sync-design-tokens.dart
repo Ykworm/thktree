@@ -7,16 +7,17 @@
 // 改色流程：改 app_colors.dart → 跑本脚本 → yaml + HTML 第 9 节 自动同步（不漂）。
 import 'dart:io';
 
-const root = '/Users/yuweikang/dev/ykcode/ThkTree';
-const outPath = '$root/docs/_shared/design-tokens.yaml';
-const htmlPath =
+// Repo root = parent of scripts/（worktree / 主仓均可，禁止写死绝对路径）
+final root = File(Platform.script.toFilePath()).parent.parent.path;
+final outPath = '$root/docs/_shared/design-tokens.yaml';
+final htmlPath =
     '$root/docs/_shared/design-audit/thktree-design-spec.html';
 const htmlMarkerStart = '<!-- AUTOGEN_TOKEN_TABLE_START -->';
 const htmlMarkerEnd = '<!-- AUTOGEN_TOKEN_TABLE_END -->';
 
-const colorFile = '$root/lib/ui/core/theme/app_colors.dart';
-const spacingFile = '$root/lib/ui/core/theme/app_spacing.dart';
-const durationFile = '$root/lib/ui/core/theme/app_durations.dart';
+final colorFile = '$root/lib/ui/core/theme/app_colors.dart';
+final spacingFile = '$root/lib/ui/core/theme/app_spacing.dart';
+final durationFile = '$root/lib/ui/core/theme/app_durations.dart';
 
 final hexRe = RegExp(r'0x([0-9A-Fa-f]{8})');
 

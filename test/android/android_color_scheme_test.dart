@@ -12,10 +12,8 @@ void main() {
     final s = androidColorScheme();
 
     expect(s.brightness, Brightness.light);
-    // 通用交互色：现代蓝必须成为 primary（而非 Material 默认紫）。
     expect(s.primary, AppColors.accent);
-    expect(s.primary.toARGB32(), 0xFF3B82F6);
-    // 中性底座 + 错误色
+    expect(s.primary.toARGB32(), 0xFF4A7AB5);
     expect(s.surface, AppColors.surface);
     expect(s.onSurface, AppColors.textPrimary);
     expect(s.error, AppColors.destructive);
@@ -29,10 +27,9 @@ void main() {
     final s = androidColorScheme();
 
     expect(s.brightness, Brightness.dark);
-    // 暗色下 surface 应为 Slate 900（非白），验证取的是 AppColors 暗值。
     expect(s.surface.toARGB32(), AppColors.surface.toARGB32());
     expect(s.surface, isNot(equals(const Color(0xFFFFFFFF))));
-    expect(s.primary, AppColors.accent); // accent 不随亮度变
+    expect(s.primary, AppColors.accent);
   });
 
   test('androidTheme 底部导航高度 ≥ 48 触摸区', () {
@@ -44,8 +41,8 @@ void main() {
     );
   });
 
-  test('全局只有一个可见的真源：accent 即 handoff 指定的现代蓝', () {
-    // 若此处失败，说明有人改了 AppColors.accent，需同步 review。
-    expect(AppColors.accent.toARGB32(), 0xFF3B82F6);
+  test('全局 accent 为 Warm Paper 雾蓝（非旧 Tailwind 鲜蓝）', () {
+    expect(AppColors.accent.toARGB32(), 0xFF4A7AB5);
+    expect(AppColors.accent.toARGB32(), isNot(0xFF3B82F6));
   });
 }

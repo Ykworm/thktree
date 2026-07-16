@@ -24,8 +24,8 @@ const double kAndroidMinTouchTarget = 48.0;
 /// 不接收 brightness 参数：直接读取 [AppColors.brightness]（已随系统/设置切换），
 /// 所有 getter 返回的就是当前亮度下的值，保证与 App 其余部分完全一致。
 ///
-/// 映射原则（handoff §2.7）：
-/// - `accent #3B82F6` → primary
+/// 映射原则：
+/// - `accent`（雾蓝 paper blue）→ primary
 /// - `textPrimary` → onSurface / onBackground
 /// - `surface` / `pageBg` → surface / background
 /// - `destructive` → error
@@ -36,7 +36,7 @@ ColorScheme androidColorScheme() {
   final isDark = AppColors.brightness == Brightness.dark;
   return ColorScheme(
     brightness: AppColors.brightness,
-    // 通用交互色：现代蓝
+    // 通用交互色：雾蓝 accent
     primary: AppColors.accent,
     onPrimary: AppColors.onSurface, // 白
     primaryContainer: AppColors.accentLight,

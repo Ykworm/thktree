@@ -5,34 +5,41 @@
 
 color:
   primitive:
-    champagneGold: { value: "0xFFC4A77D", label: "香槟金 HSL(36,33%,63%)" }
-    warmGray: { value: "0xFF8E8B82", label: "烟灰 HSL(42,4%,53%)" }
-    dustyRose: { value: "0xFFA89090", label: "玫瑰灰 HSL(0,10%,61%)" }
-    sageGray: { value: "0xFF8B9080", label: "橄榄灰 HSL(80,7%,53%)" }
-    slateBlue: { value: "0xFF6B7B8E", label: "深蓝灰 HSL(210,14%,49%)" }
+    champagneGold: { value: "0xFFC4A77D", label: "香槟金" }
+    warmGray: { value: "0xFF8E8B82", label: "烟灰" }
+    dustyRose: { value: "0xFFA89090", label: "玫瑰灰" }
+    sageGray: { value: "0xFF8B9080", label: "橄榄灰" }
+    slateBlue: { value: "0xFF6B7B8E", label: "深蓝灰" }
     white: { value: "0xFFFFFFFF" }
     black: { value: "0xFF000000" }
     transparent: { value: "0x00000000" }
   semantic:
-    accent: { value: "0xFF3B82F6", label: "现代蓝 — 通用交互色（Lab 同款，白底对比度好）" }
-    accentDeep: { value: "0xFF2563EB", label: "pressed 深蓝" }
-    destructive: { value: "0xFFDC2626" }
-    success: { value: "0xFF34C759", label: "systemGreen" }
-    onSurface: { value: "0xFFFFFFFF", label: "卡片上前景色（白色）" }
+    paletteBlue: { value: "0xFF4A7AB5" }
+    paletteSage: { value: "0xFF5A9E7F" }
+    paletteClay: { value: "0xFFC47856" }
+    paletteGold: { value: "0xFFC9A24E" }
+    palettePlum: { value: "0xFF8B6AAE" }
+    accent: { value: "0xFF4A7AB5", label: "paper blue — 唯一主交互" }
+    accentDeep: { value: "0xFF3D6A9E", label: "pressed" }
+    destructive: { value: "0xFFDC2626", label: "硬红保留" }
+    success: { value: "0xFF5A9E7F", label: "sage" }
+    onSurface: { value: "0xFFFFFFFF" }
     scrim: { value: "0x80000000" }
-    scrimStrong: { value: "0xF0000000", label: "~94%" }
-    scrimMid: { value: "0x61000000", label: "~38%" }
-    scrimSoft: { value: "0x0D000000", label: "~5%（0x0D / 0x0F 合并）" }
-    questionSourceTag: { value: "0x803B82F6" }
-    accentLight: { light: "0xFFEBF2FE", dark: "0xFF1E3A5F" }
-    pageBg: { light: "0xFFF8FAFC", dark: "0xFF020617" }
+    scrimStrong: { value: "0xF0000000" }
+    scrimMid: { value: "0x61000000" }
+    scrimSoft: { value: "0x0D000000" }
+    questionSourceTag: { value: "0x804A7AB5" }
+    accentLight: { light: "0xFFEDF2F8", dark: "0xFF1E3A5F" }
+    pageBg: { light: "0xFFF7F5F0", dark: "0xFF020617" }
     surface: { light: "0xFFFFFFFF", dark: "0xFF0F172A" }
-    surfaceMuted: { light: "0xFFF1F5F9", dark: "0xFF1E293B" }
-    textPrimary: { light: "0xFF1E293B", dark: "0xFFF1F5F9" }
-    textSecondary: { light: "0xFF64748B", dark: "0xFF94A3B8" }
-    textTertiary: { light: "0xFF94A3B8", dark: "0xFF64748B" }
-    border: { light: "0xFFE2E8F0", dark: "0xFF334155" }
-    elevationShadow: { value: "0x1F000000" }
+    surfaceMuted: { light: "0xFFF3EFE8", dark: "0xFF1E293B" }
+    textPrimary: { light: "0xFF1F2933", dark: "0xFFF1F5F9" }
+    textSecondary: { light: "0xFF4A5568", dark: "0xFF94A3B8" }
+    textTertiary: { light: "0xFF8492A6", dark: "0xFF64748B" }
+    textQuaternary: { light: "0xFFB8C2CC", dark: "0xFF475569" }
+    border: { light: "0xFFE8E4DC", dark: "0xFF334155" }
+    borderStrong: { light: "0xFFD9D3C8", dark: "0xFF475569" }
+    elevationShadow: { value: "0x1A1F2933" }
     thinkingBg: { ref: "surfaceMuted" }
     markdownCodeBg: { ref: "pageBg" }
     userBubbleBg: { ref: "accentLight" }
