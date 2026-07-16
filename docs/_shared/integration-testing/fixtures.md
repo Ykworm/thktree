@@ -44,7 +44,7 @@ flutter test integration_test/theme_chat_e2e_test.dart \
   --dart-define-from-file=build/dart_define.json
 ```
 
-> **为什么需要生成器**：Flutter 的 `--dart-define-from-file` 只接受 `{"KEY":"VALUE"}` 简单映射，且注入的 value 不能含字面换行符。直接把 `~/.thktree/test_llm_config.json`（pretty-print，含字面 `\n`）喂过去会触发 `frontend_server` 的 URI 解析错。详见 [design § 3](../../../_tmp/2026-06-20-llm-test-config-redesign.md#3-方案总览) 与 ADR-013。
+> **为什么需要生成器**：Flutter 的 `--dart-define-from-file` 只接受 `{"KEY":"VALUE"}` 简单映射，且注入的 value 不能含字面换行符。直接把 `~/.thktree/test_llm_config.json`（pretty-print，含字面 `\n`）喂过去会触发 `frontend_server` 的 URI 解析错。详见 [design 第 3 节](../../../_tmp/2026-06-20-llm-test-config-redesign.md#3-方案总览) 与 ADR-013。
 
 ⚠️ **如果忘了传 `--dart-define-from-file`**，会抛：
 ```
@@ -54,7 +54,7 @@ StateError: LLM 测试配置未注入。
 
 准备步骤:
   1. 在工程外创建 test_llm_config.json,JSON 结构见
-     docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7
+     docs/_tmp/2026-06-20-llm-test-config-redesign.md 第 7 节
   2. 填入对应厂商的 apiKey(推荐放 ~/.thktree/)
   3. 运行:
        dart run tools/gen_dart_define.dart \
@@ -97,7 +97,7 @@ JSON 配置文件的结构与字段定义：
 }
 ```
 
-设计文档里有完整字段定义与各厂商示例： [docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7](../../../_tmp/2026-06-20-llm-test-config-redesign.md)。
+设计文档里有完整字段定义与各厂商示例： [docs/_tmp/2026-06-20-llm-test-config-redesign.md 第 7 节](../../../_tmp/2026-06-20-llm-test-config-redesign.md)。
 
 ### 2.2 字段说明
 
@@ -116,7 +116,7 @@ JSON 配置文件的结构与字段定义：
 mkdir -p ~/.thktree
 
 # 从设计文档复制示例 JSON 到本地路径
-# （设计文档 § 7 有完整结构，也可以从 docs/_tmp/... 手动复制一份）
+# （设计文档 第 7 节 有完整结构，也可以从 docs/_tmp/... 手动复制一份）
 $EDITOR ~/.thktree/test_llm_config.json   # 填入真实 Key
 
 # 验证 JSON 合法
@@ -148,7 +148,7 @@ StateError: LLM 测试配置未注入。
 
 准备步骤:
   1. 在工程外创建 test_llm_config.json，JSON 结构见
-     docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7
+     docs/_tmp/2026-06-20-llm-test-config-redesign.md 第 7 节
   2. 填入对应厂商的 apiKey（推荐放 ~/.thktree/）
   3. 运行:
        dart run tools/gen_dart_define.dart \
@@ -213,7 +213,7 @@ final config = await LlmTestConfig.loadFromAsset(
 
 ### 4.1 为什么需要两层
 
-`chat_controller.sendUserMessage()` 在 3 个路径查找 API Key（详见 [docs/modules/llm/specs/integration-test-llm-injection.md § 2](../../modules/llm/specs/integration-test-llm-injection.md#2-chat_controller-真实的-key-查找链3-路径)）：
+`chat_controller.sendUserMessage()` 在 3 个路径查找 API Key（详见 [docs/modules/llm/specs/integration-test-llm-injection.md 第 2 节](../../modules/llm/specs/integration-test-llm-injection.md#2-chat_controller-真实的-key-查找链3-路径)）：
 
 ```
 路径 A：session 级 model  → configStore.getProvider(id).readApiKey(id)
@@ -254,7 +254,7 @@ settings.apiKey  // ← 永远走不到
 
 ### 4.4 推荐注入方式（lib/main_test.dart）
 
-`createTestApp` 当前只有 3 个参数（`locale` / `llmSettings` / `llmConfigStore`），双注入已经全部覆盖。如果未来要 inject 其他 provider，详见 [integration-test-llm-injection.md § 4](../../modules/llm/specs/integration-test-llm-injection.md) 的后续路线图。
+`createTestApp` 当前只有 3 个参数（`locale` / `llmSettings` / `llmConfigStore`），双注入已经全部覆盖。如果未来要 inject 其他 provider，详见 [integration-test-llm-injection.md 第 4 节](../../modules/llm/specs/integration-test-llm-injection.md) 的后续路线图。
 
 ```dart
 Future<Widget> createTestApp({

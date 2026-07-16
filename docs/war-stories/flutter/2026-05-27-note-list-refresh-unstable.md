@@ -145,7 +145,7 @@ Future<void> _loadThemeNotes() async {
 
 ## 参考链接
 
-- [笔记功能开发进度](../modules/notes/CHANGELOG.md) — § 3 刷新机制设计
+- [笔记功能开发进度](../modules/notes/CHANGELOG.md) — 第 3 节 刷新机制设计
 - [TECH-DEBT.md](../TECH-DEBT.md) — `appPathsProvider` 未就绪时笔记列表短暂空态
 
 ## 复盘

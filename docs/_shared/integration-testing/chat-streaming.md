@@ -78,7 +78,7 @@ testWidgets('发送消息并等待流式回复', (tester) async {
 
   // ──── 导航：主题列表 → 主题详情 → 节点 → 聊天页 ────
   // 复用 theme_chat_e2e_test.dart 的辅助函数
-  // （或者提取到 _support/，见 helpers.md § 8.3）
+  // （或者提取到 _support/，见 helpers.md 第 8.3 节）
 
   await _switchToTab(tester, '主题');  // ⚠️ 需要实现或 import
   await _createTheme(tester, '聊天测试主题');
@@ -229,7 +229,7 @@ testWidgets('快速连续发送消息', (tester) async {
 - `config.toAppSettings()` — 转 AppSettings
 - `config.toLlmConfigStore()` — 转 InMemoryLlmConfigStore
 
-**所有 chat 相关测试都需要这个**（否则 chat_controller 路径 B 拿不到 Key，详见 [fixtures.md § 4](./fixtures.md#4-toappsettings-vs-tollmconfigstore-双注入)）。
+**所有 chat 相关测试都需要这个**（否则 chat_controller 路径 B 拿不到 Key，详见 [fixtures.md 第 4 节](./fixtures.md#4-toappsettings-vs-tollmconfigstore-双注入)）。
 
 ---
 
@@ -248,7 +248,7 @@ Future<void> _createNode(WidgetTester tester, String title) async { ... }
 
 **chat_streaming_test.dart 要用的话**有 2 个选择：
 1. 复制一份到本文件底部（**有重复**，违背 DRY）
-2. 把这些 helper 提到 `_support/test_helpers.dart`（**推荐**，见 helpers.md § 8.3）
+2. 把这些 helper 提到 `_support/test_helpers.dart`（**推荐**，见 helpers.md 第 8.3 节）
 
 ### 6.2 ValueKey 待核实
 
@@ -273,7 +273,7 @@ Future<void> _createNode(WidgetTester tester, String title) async { ... }
 mkdir -p ~/.thktree
 cp docs/_tmp/2026-06-20-llm-test-config-redesign.md ~/.thktree/test_llm_config.example.md   # 参考 JSON 结构
 $EDITOR ~/.thktree/test_llm_config.json
-# 填入真 Key（参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7 JSON 结构）
+# 填入真 Key（参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md 第 7 节 JSON 结构）
 
 # 2. 启动 iOS Simulator
 open -a Simulator
@@ -302,7 +302,7 @@ flutter test integration_test/chat_streaming_test.dart \
 1. **共享前置**：把导航代码（创建主题→节点→进聊天页）抽成 `setUp` 或私有 helper
 2. **提取 LLM 加载到 setUpAll**：避免每个 testWidgets 重复 `LlmTestConfig.loadFromDefine`
 3. **改用 ValueKey 定位**：所有 `find.text` 都换成 `find.byKey`，提高稳定性
-4. **共享 helper 到 _support/**：见 helpers.md § 8.3
+4. **共享 helper 到 _support/**：见 helpers.md 第 8.3 节
 5. **CI 注入**：CI runner 在 `~/.thktree/test_llm_config.json` 预置 Key，命令行只传路径，不把 Key 写进任何脚本
 
 ---

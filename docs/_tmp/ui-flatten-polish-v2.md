@@ -7,22 +7,22 @@
 
 ---
 
-## §0 设计原则（不可违反，做每页前先过一遍）
+## 第 0 节 设计原则（不可违反，做每页前先过一遍）
 
 来自 `ardot-ui-design` 移动端 guidelines + 通用 web app system prompt（`guidelines-web-app.md`）：
 
-1. **Purpose First**（§1 webapp）— 一屏一主问题、一主动作。三页的「主问题」是下面 §3 Screen Blueprint 里的 "Header" 注释。
-2. **Constraint Over Decoration**（§14 webapp）— 不服务于导航/理解/决策/行动的视觉元素**不存在**。mockup 里出现前先问：这回答了什么问题？
-3. **System Status Visibility**（§6 webapp）— 每个数据驱动面都要画 loading / empty / error / success + 业务专属态。绝不能只画 happy path。
-4. **Action Hierarchy**（§7 webapp）— 一主一次，破坏性动作与"罕见动作"必须视觉降级或进 overflow 菜单。
-5. **Density Intentionality**（§9 webapp）— 一屏内密度模式统一，不混 air/medium/compact。
-6. **Recognition Over Recall**（§5 webapp）— 任何操作必须当下可见，不靠用户记忆。
+1. **Purpose First**（第 1 节 webapp）— 一屏一主问题、一主动作。三页的「主问题」是下面 第 3 节 Screen Blueprint 里的 "Header" 注释。
+2. **Constraint Over Decoration**（第 14 节 webapp）— 不服务于导航/理解/决策/行动的视觉元素**不存在**。mockup 里出现前先问：这回答了什么问题？
+3. **System Status Visibility**（第 6 节 webapp）— 每个数据驱动面都要画 loading / empty / error / success + 业务专属态。绝不能只画 happy path。
+4. **Action Hierarchy**（第 7 节 webapp）— 一主一次，破坏性动作与"罕见动作"必须视觉降级或进 overflow 菜单。
+5. **Density Intentionality**（第 9 节 webapp）— 一屏内密度模式统一，不混 air/medium/compact。
+6. **Recognition Over Recall**（第 5 节 webapp）— 任何操作必须当下可见，不靠用户记忆。
 7. **Mobile Vertical Stack**（mobile guidelines）— Status Bar（62px SF Pro/Inter）→ App Content（**单 wrapper** + gap 控距，标题字号全 app 统一）→ Bottom Bar（pill-style 3-5 tabs，4-5 个为止）。
 8. **状态 first-class**（mobile guidelines 明确写）— 4 states 不是装饰，是必经路径。
 
 ---
 
-## §1 设计 Token 体系（**不是抄 hex，是建角色**）
+## 第 1 节 设计 Token 体系（**不是抄 hex，是建角色**）
 
 ### 1.1 现状（app_colors.dart 已有的，按角色重命名）
 
@@ -87,7 +87,7 @@ slateBlue      #6B7B8E  蓝灰
 
 ---
 
-## §2 三页 Screen Blueprint（每页按 mobile guidelines 拆）
+## 第 2 节 三页 Screen Blueprint（每页按 mobile guidelines 拆）
 
 ### 2.1 Chat 对话页
 
@@ -186,7 +186,7 @@ slateBlue      #6B7B8E  蓝灰
 
 ---
 
-## §3 状态矩阵（**这是 v1 漏掉的关键**）
+## 第 3 节 状态矩阵（**这是 v1 漏掉的关键**）
 
 ### 3.1 Chat 状态（8 态）
 
@@ -224,7 +224,7 @@ slateBlue      #6B7B8E  蓝灰
 
 ---
 
-## §4 功能映射（**改设计要能改代码，否则是装饰**）
+## 第 4 节 功能映射（**改设计要能改代码，否则是装饰**）
 
 ### 4.1 Chat 页组件 → 源码
 
@@ -265,7 +265,7 @@ slateBlue      #6B7B8E  蓝灰
 
 ---
 
-## §5 不做清单（**Constraint Over Decoration**）
+## 第 5 节 不做清单（**Constraint Over Decoration**）
 
 mockup 阶段，每加一个元素前过一遍这个清单：
 
@@ -282,7 +282,7 @@ mockup 阶段，每加一个元素前过一遍这个清单：
 
 ---
 
-## §6 决策链（v1 → v2）
+## 第 6 节 决策链（v1 → v2）
 
 - v1: 知识树加连接线（**撤销**，用户改主意）
 - v1: 主题色卡片网格 2 列（**保留**）
@@ -294,7 +294,7 @@ mockup 阶段，每加一个元素前过一遍这个清单：
 
 ---
 
-## §7 验收方式
+## 第 7 节 验收方式
 
 - **必做**：brief 逐节拍板（用户逐条 OK）→ 才出视觉稿
 - **必做**：视觉稿必须覆盖所有列出的状态（v1 只画 happy path 失败）
@@ -304,8 +304,8 @@ mockup 阶段，每加一个元素前过一遍这个清单：
 
 ---
 
-## §8 下一步
+## 第 8 节 下一步
 
-1. ⏳ 用户拍板 §1（token）+ §3（状态）—— 这是 v1 没做到的根因
+1. ⏳ 用户拍板 第 1 节（token）+ 第 3 节（状态）—— 这是 v1 没做到的根因
 2. ⏳ 出 mockup：ardot canvas（已恢复，fileId 702356760232399）三页 + 各页关键状态
 3. ⏳ 拍板 mockup → 落 Dart

@@ -20,39 +20,39 @@
 
 ```mermaid
 graph TB
-    A[ThkTree 边界 Case 风险域] --> B[LLM 流式与协议]
-    A --> C[数据存储与一致性]
-    A --> D[iOS 生命周期]
-    A --> E[状态管理]
-    A --> F[多 Provider 兼容]
-    A --> G[UI 渲染与性能]
-    A --> H[导入导出]
-    A --> I[LLM 回复安全]
+ A[ThkTree 边界 Case 风险域] --> B[LLM 流式与协议]
+ A --> C[数据存储与一致性]
+ A --> D[iOS 生命周期]
+ A --> E[状态管理]
+ A --> F[多 Provider 兼容]
+ A --> G[UI 渲染与性能]
+ A --> H[导入导出]
+ A --> I[LLM 回复安全]
 
-    B --> B1[SSE 协议边界]
-    B --> B2[Token / 上下文窗口]
-    B --> B3[重试与幂等性]
+ B --> B1[SSE 协议边界]
+ B --> B2[Token / 上下文窗口]
+ B --> B3[重试与幂等性]
 
-    C --> C1[Markdown 文件完整性]
-    C --> C2[SQLite FTS5 索引]
-    C --> C3[树结构操作]
+ C --> C1[Markdown 文件完整性]
+ C --> C2[SQLite FTS5 索引]
+ C --> C3[树结构操作]
 
-    D --> D1[后台中断恢复]
-    D --> D2[Low Memory / 系统杀进程]
+ D --> D1[后台中断恢复]
+ D --> D2[Low Memory / 系统杀进程]
 
-    E --> E1[Riverpod 生命周期]
+ E --> E1[Riverpod 生命周期]
 
-    F --> F1[Provider 切换一致性]
-    F --> F2[API 格式兼容]
+ F --> F1[Provider 切换一致性]
+ F --> F2[API 格式兼容]
 
-    G --> G1[大树渲染性能]
-    G --> G2[Markdown / LaTeX 渲染]
+ G --> G1[大树渲染性能]
+ G --> G2[Markdown / LaTeX 渲染]
 
-    H --> H1[导出一致性]
-    H --> H2[导入兼容性]
+ H --> H1[导出一致性]
+ H --> H2[导入兼容性]
 
-    I --> I1[回复含存储格式冲突]
-    I --> I2[回复含特殊字符]
+ I --> I1[回复含存储格式冲突]
+ I --> I2[回复含特殊字符]
 ```
 
 ---
@@ -128,7 +128,7 @@ graph TB
 - **风险分析**：空 summary 注入 prompt 后可能影响 LLM 行为（如 LLM 认为没有上下文），与文件不存在的行为可能有差异。
 - **建议验证方式**：创建空 body 的 `context-summary.md`，验证 prompt 构造是否有差异。
 - **相关代码**：context-summary 读取与注入逻辑
-- **相关文档**：[storage-format.md § 5](storage-format.md#5-contextsummarymd已确认总结)
+- **相关文档**：[storage-format.md 第 5 节](storage-format.md#5-contextsummarymd已确认总结)
 
 ---
 
@@ -140,9 +140,9 @@ graph TB
 - **影响模块**：chat（`FileWriteQueue` + `ChatController`）
 - **场景描述**：第一次流式输出写入 500 字后网络断连，`<!-- streaming -->` 标记残留。用户点重试，新的 assistant 消息块开始追加写入。
 - **风险分析**：若旧 streaming 块未正确清理，文件中可能出现两个 assistant 块（一个 streaming 残留 + 一个新回复），或重复拼接导致内容混乱。
-- **建议验证方式**：Mock LLM 流式中途断连，验证重试后 session.md 文件结构是否符合 [storage-format § 4.4-4.5](storage-format.md#44-流式中间态必须) 规范。
+- **建议验证方式**：Mock LLM 流式中途断连，验证重试后 session.md 文件结构是否符合 [storage-format 第 4.4 节-4.5](storage-format.md#44-流式中间态必须) 规范。
 - **相关代码**：`FileWriteQueue`、`SessionStore`
-- **相关文档**：[storage-format.md § 4.5 错误态](storage-format.md#45-错误态必须)
+- **相关文档**：[storage-format.md 第 4.5 节 错误态](storage-format.md#45-错误态必须)
 
 #### EC-009 Stop 后立即重试
 
@@ -182,7 +182,7 @@ graph TB
 - **场景描述**：`---` 分隔符被截断或缺失（如写入到一半断电），解析器遇到非法 frontmatter。
 - **风险分析**：若解析器直接 crash，整个节点不可读；若降级为空 session，用户历史对话丢失。
 - **建议验证方式**：构造 frontmatter 损坏的 session.md 文件，验证解析器是否降级处理而非崩溃。
-- **相关文档**：[storage-format.md § 4.2](storage-format.md#42-frontmattersessionv1必须)
+- **相关文档**：[storage-format.md 第 4.2 节](storage-format.md#42-frontmattersessionv1必须)
 
 #### EC-013 文件编码混用（`\r\n` vs `\n`）
 
@@ -191,7 +191,7 @@ graph TB
 - **场景描述**：用户从 Windows 粘贴文本（含 `\r\n`）到对话输入框，内容写入 session.md。
 - **风险分析**：消息块标题行解析依赖 `\n` 分割，`\r\n` 可能导致标题行匹配失败（行尾多出 `\r`），消息边界识别错误。
 - **建议验证方式**：构造含 `\r\n` 的 session.md，验证消息块解析是否正常。
-- **相关文档**：[storage-format.md § 2.1](storage-format.md#21-编码与换行)（规范要求统一 `\n`）
+- **相关文档**：[storage-format.md 第 2.1 节](storage-format.md#21-编码与换行)（规范要求统一 `\n`）
 
 ---
 
@@ -205,7 +205,7 @@ graph TB
 - **风险分析**：搜索结果静默遗漏已有内容，用户以为"搜不到"等于"不存在"。
 - **建议验证方式**：写入笔记后手动删除 FTS5 索引行，验证搜索是否遗漏，以及 `reindex` 后是否恢复。
 - **相关代码**：`SearchService`、`AppDatabase`
-- **相关文档**：[search README](../modules/search/README.md)、[storage-format.md § 8](storage-format.md#8-reindex重建索引必须支持)
+- **相关文档**：[search README](../modules/search/README.md)、[storage-format.md 第 8 节](storage-format.md#8-reindex重建索引必须支持)
 
 #### EC-015 FTS5 分词器与多语言混合 — ✅ 已修复（2026-07-08）
 
@@ -236,7 +236,7 @@ graph TB
 - **风险分析**：重建涉及扫描所有 `.md` 文件 + 逐条写入 FTS5，若在主 isolate 执行可能导致 jank。
 - **建议验证方式**：构造 500 条笔记数据，触发 reindex 并观察 UI 响应。
 - **相关代码**：`AppDatabase.reindex()`、[tools/repair_index_from_disk.py](../../tools/repair_index_from_disk.py)
-- **相关文档**：[storage-format.md § 8](storage-format.md#8-reindex重建索引必须支持)
+- **相关文档**：[storage-format.md 第 8 节](storage-format.md#8-reindex重建索引必须支持)
 
 #### EC-043 搜索结果重复（FTS5 无主键 + upsert 累加）— ✅ 已修复（2026-06-29）
 
@@ -244,28 +244,28 @@ graph TB
 - **影响模块**：search（`SearchService` + `AppDatabase`）
 - **场景描述**：`search_index` 是 FTS5 虚拟表（见 [`app_database.dart`](../../lib/data/services/app_database.dart) 行 64-73），schema 中**无显式主键**（7 列均为普通列）；FTS5 虚拟表**不支持**标准 SQLite `UNIQUE` 约束。`SearchService.upsertNote`（[search_service.dart](../../lib/data/services/search_service.dart) 行 111-138）与 `SearchService.upsertMessage`（同行 144-164）历史上使用的 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)` 在 FTS5 虚拟表上**静默失效**（不抛错也不替换，仍插入新 rowid 行）。`SearchService.search`（同行 53-101）历史上直接 `SELECT ... FROM search_index MATCH ?`，未做 `GROUP BY entityType, entityId` / `DISTINCT` 去重。
 - **风险分析**：同一 `(entityType, entityId)` 在 `search_index` 中可存在 N 条重复行；搜索时全部返回，UI 列表出现重复条目。具体累加触发点：
-  - **笔记保存**：`note_editor_screen.dart` 行 143 `_updateSearchIndex` + `note_detail_screen.dart` 行 127 `_updateSearchIndex` → 同一笔记保存 N 次 → 出现 N 条
-  - **LLM 流式 onDone**：`chat_task_service.dart` 行 138-148 `onDone` → 行 167-202 `_updateSearchIndex` → `upsertMessage` → 同一对话 N 轮 LLM 完成 → 出现 N 条
-  - **iOS 后台重发叠加**：按 [ADR-015](../DECISIONS.md) disk-first 策略 + `bc353815` 后台重发实现，每次重发都再调一次 `upsertMessage` → 翻倍累加
-  - **严重性量化**：编辑 5 次的笔记搜索命中 5 条；10 轮对话搜索命中 10 条；后台重发一次再翻倍
+ - **笔记保存**：`note_editor_screen.dart` 行 143 `_updateSearchIndex` + `note_detail_screen.dart` 行 127 `_updateSearchIndex` → 同一笔记保存 N 次 → 出现 N 条
+ - **LLM 流式 onDone**：`chat_task_service.dart` 行 138-148 `onDone` → 行 167-202 `_updateSearchIndex` → `upsertMessage` → 同一对话 N 轮 LLM 完成 → 出现 N 条
+ - **iOS 后台重发叠加**：按 [ADR-015](../DECISIONS.md) disk-first 策略 + `bc353815` 后台重发实现，每次重发都再调一次 `upsertMessage` → 翻倍累加
+ - **严重性量化**：编辑 5 次的笔记搜索命中 5 条；10 轮对话搜索命中 10 条；后台重发一次再翻倍
 - **建议验证方式**（集成测试 / UI 可见性断言）：
-  1. 同一笔记连续 `upsertNote` 3 次后，搜索该笔记关键字，断言 `SearchResult` 列表长度 = 1（当前预期失败：实际返回 3）
-  2. mock LLM 触发 3 轮 `finishAssistant` 后，搜索该对话关键字，断言 `message` 类型结果数 = 1（当前预期失败：实际返回 3）
-  3. 验证 `rebuildAll` 路径（先 `DELETE FROM search_index` 再 INSERT）搜索结果正常，作为对照基准——说明问题不来自数据写入路径，仅来自 upsert 的 in-place 更新
+ 1. 同一笔记连续 `upsertNote` 3 次后，搜索该笔记关键字，断言 `SearchResult` 列表长度 = 1（当前预期失败：实际返回 3）
+ 2. mock LLM 触发 3 轮 `finishAssistant` 后，搜索该对话关键字，断言 `message` 类型结果数 = 1（当前预期失败：实际返回 3）
+ 3. 验证 `rebuildAll` 路径（先 `DELETE FROM search_index` 再 INSERT）搜索结果正常，作为对照基准——说明问题不来自数据写入路径，仅来自 upsert 的 in-place 更新
 - **修复方向**：✅ **已完整修复**（2026-06-29，commit `9205baa` + `cb9891f`）
-  - **方案 A（源头去重）**：`upsertNote` 改用 `db.transaction` 包裹 `DELETE + INSERT`，替换原 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)`。FTS5 虚拟表不支持 `UNIQUE` / PRIMARY KEY，`ConflictAlgorithm.replace` 在 FTS5 上**静默失效**（不抛错也不替换，而是插入新 rowid 行），必须改为显式 DELETE + INSERT 事务保证同 `(entityType, entityId)` 只保留一行
-  - **方案 B（查询兜底）**：⚠️ 上游 commit `9205baa` 的子查询 + GROUP BY 方案在 iOS SQLite 实测失败（`unable to use function snippet/bm25 in the requested context`）。下游 commit `cb9891f` **重写为扁平查询**：`search()` 直接 `SELECT ... FROM search_index MATCH ?`，`snippet(search_index, 5, '<b>', '</b>', '...', 40)` 取 col=5（content 列），`ORDER BY bm25(...) ASC, updatedAt DESC`。代价：放弃 GROUP BY 兜底历史脏数据，改为依靠方案 A 的事务 DELETE+INSERT 在每个新 upsert 时自动清理。
-  - **修复范围扩大到 message 端**：下游 commit `cb9891f` 同步修复 `upsertMessage` 同款 bug（`ConflictAlgorithm.replace` 同样静默失效）；此前按 memory「问题修复范围最小化原则」暂未扩大，但本次用户实测发现 chat 搜索完全不可用，触发扩大修复。
+ - **方案 A（源头去重）**：`upsertNote` 改用 `db.transaction` 包裹 `DELETE + INSERT`，替换原 `db.insert(..., conflictAlgorithm: ConflictAlgorithm.replace)`。FTS5 虚拟表不支持 `UNIQUE` / PRIMARY KEY，`ConflictAlgorithm.replace` 在 FTS5 上**静默失效**（不抛错也不替换，而是插入新 rowid 行），必须改为显式 DELETE + INSERT 事务保证同 `(entityType, entityId)` 只保留一行
+ - **方案 B（查询兜底）**：⚠️ 上游 commit `9205baa` 的子查询 + GROUP BY 方案在 iOS SQLite 实测失败（`unable to use function snippet/bm25 in the requested context`）。下游 commit `cb9891f` **重写为扁平查询**：`search()` 直接 `SELECT ... FROM search_index MATCH ?`，`snippet(search_index, 5, '<b>', '</b>', '...', 40)` 取 col=5（content 列），`ORDER BY bm25(...) ASC, updatedAt DESC`。代价：放弃 GROUP BY 兜底历史脏数据，改为依靠方案 A 的事务 DELETE+INSERT 在每个新 upsert 时自动清理。
+ - **修复范围扩大到 message 端**：下游 commit `cb9891f` 同步修复 `upsertMessage` 同款 bug（`ConflictAlgorithm.replace` 同样静默失效）；此前按 memory「问题修复范围最小化原则」暂未扩大，但本次用户实测发现 chat 搜索完全不可用，触发扩大修复。
 - **验证状态**：✅ 已通过集成测试 + 用户实测
-  - **Case 5（新增，2026-06-29）**：`integration_test/note_search_test.dart` Case 5——新建笔记 → 填标题+正文 → `pump(500ms)` 触发防抖 → 点 √ 触发第 2 次 `_saveNow` → 搜索唯一关键词 → 断言 `_countSearchResultEntities() == 1`
-  - **Case 1-4（回归）**：全部保持原断言，GROUP BY 去重不破坏现有搜索行为
+ - **Case 5（新增，2026-06-29）**：`integration_test/note_search_test.dart` Case 5——新建笔记 → 填标题+正文 → `pump(500ms)` 触发防抖 → 点 √ 触发第 2 次 `_saveNow` → 搜索唯一关键词 → 断言 `_countSearchResultEntities() == 1`
+ - **Case 1-4（回归）**：全部保持原断言，GROUP BY 去重不破坏现有搜索行为
 - **修复 commits**：`9205baa`（note 端 + 上游方案 B）+ `cb9891f`（message 端同步 + 方案 B 重写为扁平查询）
 - **相关代码**（修复后）：
-  - `lib/data/services/search_service.dart` 行 53-101（`search` 扁平查询 + col=5，下游 commit `cb9891f` 重写）
-  - `lib/data/services/search_service.dart` 行 111-138（`upsertNote` 事务化 DELETE+INSERT，上游 commit `9205baa`）
-  - `lib/data/services/search_service.dart` 行 154-180（`upsertMessage` 事务化 DELETE+INSERT，下游 commit `cb9891f` 同步修复）
-  - `integration_test/note_search_test.dart` Case 5
-- **相关文档**：[CHANGELOG 2026-06-29](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)、[search 模块 README § 关键设计原则](../../modules/search/README.md)
+ - `lib/data/services/search_service.dart` 行 53-101（`search` 扁平查询 + col=5，下游 commit `cb9891f` 重写）
+ - `lib/data/services/search_service.dart` 行 111-138（`upsertNote` 事务化 DELETE+INSERT，上游 commit `9205baa`）
+ - `lib/data/services/search_service.dart` 行 154-180（`upsertMessage` 事务化 DELETE+INSERT，下游 commit `cb9891f` 同步修复）
+ - `integration_test/note_search_test.dart` Case 5
+- **相关文档**：[CHANGELOG 2026-06-29](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)、[search 模块 README 关键设计原则](../../modules/search/README.md)
 
 ---
 
@@ -496,7 +496,7 @@ graph TB
 - **场景描述**：导出文件的 `schema` 字段为 `session/v2`，但当前 app 只支持 `session/v1`。
 - **风险分析**：需验证是否有版本检测和降级处理，还是直接解析失败。
 - **建议验证方式**：构造高版本 schema 的导入文件，验证错误提示。
-- **相关文档**：[storage-format.md § 9](storage-format.md#9-版本升级schema-迁移)
+- **相关文档**：[storage-format.md 第 9 节](storage-format.md#9-版本升级schema-迁移)
 
 ---
 
@@ -510,7 +510,7 @@ graph TB
 - **风险分析**：解析器可能将 LLM 回复中的该行误认为新消息块边界，导致消息被错误分割，后续所有消息解析错位。
 - **建议验证方式**：让 LLM 回复包含 `## user · 2026-01-01T00:00:00.000Z · msg_test` 格式的文本，验证解析器是否正确处理。
 - **相关代码**：`SessionStore` 消息块解析逻辑
-- **相关文档**：[storage-format.md § 4.3](storage-format.md#43-消息块标题行必须)
+- **相关文档**：[storage-format.md 第 4.3 节](storage-format.md#43-消息块标题行必须)
 
 #### EC-042 回复含零宽字符 / RTL 覆盖字符
 

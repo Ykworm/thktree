@@ -18,7 +18,7 @@
 
 ## 2. 功能列表
 
-> 完整状态见 [`../../FEATURES.md`](../../FEATURES.md) § 1.
+> 完整状态见 [`../../FEATURES.md`](../../FEATURES.md) 第 1 节.
 
 | Feature | 状态 | 最后更新 | 备注 |
 |---------|------|----------|------|
@@ -81,7 +81,7 @@ lib/ui/features/themes/
 
 ## 6. 维护要点
 
-- **新增屏幕**：在 `lib/ui/features/themes/` 加 screen + controller，并在本 README § 3 更新文件清单。
+- **新增屏幕**：在 `lib/ui/features/themes/` 加 screen + controller，并在本 README 第 3 节 更新文件清单。
 - **改交互逻辑**：**必须**同步更新 `visual/theme-detail-design.md` 对应章节（设计文档是 source of truth）。
 - **5 套配色变更**：在 `theme_detail_screen.dart` 改 `_nodePalettes` 常量，**同时**在 visual 文档更新色值表。
 - **AI 改代码时**：AI 识别到变动后应**主动**提醒用户检核 FEATURES.md 状态列是否需更新。

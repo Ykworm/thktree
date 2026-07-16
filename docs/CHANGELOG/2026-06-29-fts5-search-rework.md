@@ -5,7 +5,7 @@
 | 日期 | 2026-06-29 |
 | 范围 | `lib/data/services/search_service.dart` `search()` + `upsertMessage()` 重写 + war-story 补强 + CHANGELOG 修正 hash + EC-043 状态升"完整修复" |
 | 上游 | [CHANGELOG 2026-06-29-fts5-upsert-repeat.md](./2026-06-29-fts5-upsert-repeat.md)（commit `9205baa`） |
-| 配套文档 | [edge-cases-backlog § EC-043](../_shared/edge-cases-backlog.md)（已标 ✅ 完整修复） · [war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)（新增"方案 B 重写原因"段） |
+| 配套文档 | [edge-cases-backlog EC-043](../_shared/edge-cases-backlog.md)（已标 ✅ 完整修复） · [war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)（新增"方案 B 重写原因"段） |
 | 状态 | 🟢 完成（代码 commit `cb9891f`，文档待用户统一收口） |
 
 ## 背景
@@ -39,20 +39,20 @@
 ```dart
 // lib/data/services/search_service.dart upsertMessage
 await db.transaction((txn) async {
-  await txn.delete(
-    'search_index',
-    where: 'entityType = ? AND entityId = ?',
-    whereArgs: ['message', nodeId],
-  );
-  await txn.insert('search_index', {
-    'entityType': 'message',
-    'entityId': nodeId,
-    'themeId': themeId,
-    'themeTitle': themeTitle,
-    'entityTitle': nodeTitle,
-    'content': body,
-    'updatedAt': DateTime.now().toUtc().toIso8601String(),
-  });
+ await txn.delete(
+ 'search_index',
+ where: 'entityType = ? AND entityId = ?',
+ whereArgs: ['message', nodeId],
+ );
+ await txn.insert('search_index', {
+ 'entityType': 'message',
+ 'entityId': nodeId,
+ 'themeId': themeId,
+ 'themeTitle': themeTitle,
+ 'entityTitle': nodeTitle,
+ 'content': body,
+ 'updatedAt': DateTime.now().toUtc().toIso8601String(),
+ });
 });
 ```
 
@@ -62,14 +62,14 @@ await db.transaction((txn) async {
 
 ```sql
 SELECT
-  entityType,
-  entityId,
-  themeId,
-  themeTitle,
-  entityTitle,
-  snippet(search_index, 5, '<b>', '</b>', '...', 40) AS snippet,
-  updatedAt,
-  bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
+ entityType,
+ entityId,
+ themeId,
+ themeTitle,
+ entityTitle,
+ snippet(search_index, 5, '<b>', '</b>', '...', 40) AS snippet,
+ updatedAt,
+ bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
 FROM search_index
 WHERE search_index MATCH ?
 ORDER BY rank ASC, updatedAt DESC
@@ -100,10 +100,10 @@ LIMIT ?
 ### 文件变更
 
 - `lib/data/services/search_service.dart`
-  - `search()`：扁平查询 + col=5 + `ORDER BY rank ASC, updatedAt DESC`
-  - `search()` 加注释：FTS5 helper function 列索引 + 子查询上下文限制
-  - `upsertMessage()`：事务化 `DELETE + INSERT`，与 `upsertNote` 同款
-  - `upsertMessage()` 加注释：FTS5 无主键语义
+ - `search()`：扁平查询 + col=5 + `ORDER BY rank ASC, updatedAt DESC`
+ - `search()` 加注释：FTS5 helper function 列索引 + 子查询上下文限制
+ - `upsertMessage()`：事务化 `DELETE + INSERT`，与 `upsertNote` 同款
+ - `upsertMessage()` 加注释：FTS5 无主键语义
 
 ### `flutter analyze` 静态检查
 
@@ -143,13 +143,13 @@ LIMIT ?
 本次同步修正了上游文档中的 3 处错误（不影响功能）：
 
 1. **CHANGELOG 2026-06-29-fts5-upsert-repeat.md** + **war-story 2026-06-29-fts5-conflict-replace-silent.md** + **edge-cases-backlog.md EC-043** 共同引用了不存在的 commit hash `fce454f`，实际为 `9205baa` —— 全部修正
-2. **docs/modules/search/README.md § 关键设计原则** 行 44 写"子查询 + GROUP BY 兜底"，与实际扁平查询不符 —— 改写为实际方案
+2. **docs/modules/search/README.md 关键设计原则** 行 44 写"子查询 + GROUP BY 兜底"，与实际扁平查询不符 —— 改写为实际方案
 3. **edge-cases-backlog.md EC-043** 状态从"已修复（修复范围最小化，message 端未修）"升级为"✅ 完整修复（commit `cb9891f`）"
 
 ## 关联
 
 - [CHANGELOG 2026-06-29-fts5-upsert-repeat.md](./2026-06-29-fts5-upsert-repeat.md) — 上游 commit `9205baa`，note 端修复
-- [edge-cases-backlog § EC-043](../_shared/edge-cases-backlog.md) — 标 ✅ 完整修复
+- [edge-cases-backlog EC-043](../_shared/edge-cases-backlog.md) — 标 ✅ 完整修复
 - [war-story 2026-06-29 FTS5 ConflictAlgorithm 静默失效](../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md) — 已补"方案 B 重写原因"
-- [docs/modules/search/README.md § 关键设计原则](../modules/search/README.md) — 已改写为实际方案
+- [docs/modules/search/README.md 关键设计原则](../modules/search/README.md) — 已改写为实际方案
 - docs/_tmp/2026-06-29-fts5-upsert-repeat-v1.md — 上游 brainstorming 草稿

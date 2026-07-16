@@ -111,6 +111,6 @@ trailing: CupertinoButton(
 ## 关联
 
 - 上游 brainstorming — 用户确认"保留现状 + ✓ 按钮拦截"方案
-- [笔记模块 CHANGELOG § 11](../modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29) — 模块级详细记录
+- [笔记模块 CHANGELOG 第 11 节](../modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29) — 模块级详细记录
 - [笔记模块 README](../modules/notes/README.md) — 功能列表"标题必填校验"行
-- [FEATURES.md § 2](../FEATURES.md) — 功能总表"标题必填校验"行
+- [FEATURES.md 第 2 节](../FEATURES.md) — 功能总表"标题必填校验"行

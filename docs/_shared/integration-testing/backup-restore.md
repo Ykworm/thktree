@@ -31,7 +31,7 @@
 | 3 | `恢复冲突处理测试` | ❌ TODO 空壳 | FilePicker 平台通道无法操作 |
 | 4 | `恢复覆盖模式测试` | ❌ TODO 空壳 | FilePicker 平台通道无法操作 |
 
-> **2026-07-08 更新**：自动备份功能已上线。新测试重点应补充 § 5.5 的自动备份路径，而非继续投入 UI 触发 Share 的高成本测试。
+> **2026-07-08 更新**：自动备份功能已上线。新测试重点应补充 第 5.5 节 的自动备份路径，而非继续投入 UI 触发 Share 的高成本测试。
 
 ```dart
 // 当前 68 行的结构（line 1-68）
@@ -324,7 +324,7 @@ Future<ImportResult> restoreBackupZip({
 
 ## 5. 编写路线（4 个 testWidgets 完整代码）
 
-> **前提**：已完成 § 4 的 ValueKey + helper 准备工作。
+> **前提**：已完成 第 4 节 的 ValueKey + helper 准备工作。
 
 ### 5.1 完整备份和恢复往返测试
 
@@ -618,9 +618,9 @@ testWidgets('自动备份原子写入中断自愈', (tester) async {
 
 按依赖顺序：
 
-1. **🔴 `BackupRestoreScreen` ValueKey 缺失**（§ 3.5）—— 不补则 UI 测试无法进入聚合页/触发各入口
-2. **🔴 Share/FilePicker 平台通道**（§ 4.2）—— iOS 系统面板集成测试点不到，手动备份/恢复必须绕过或 mock
-3. **🟡 `_createTheme` / `_createNode` 未提升到 `_support/`**（§ 4.3）—— 复用性差，多个测试都得复制粘贴
+1. **🔴 `BackupRestoreScreen` ValueKey 缺失**（第 3.5 节）—— 不补则 UI 测试无法进入聚合页/触发各入口
+2. **🔴 Share/FilePicker 平台通道**（第 4.2 节）—— iOS 系统面板集成测试点不到，手动备份/恢复必须绕过或 mock
+3. **🟡 `_createTheme` / `_createNode` 未提升到 `_support/`**（第 4.3 节）—— 复用性差，多个测试都得复制粘贴
 4. **🟡 `appPathsProvider` 是否能直接读** —— `AppPaths.backupsDir` getter 需确认是否存在
 5. **🟢 package_info 未集成** —— `appVersion: '1.0.0'` 是 hardcode，不影响测试，但建议跟进
 6. **🟢 自动备份 24h 周期** —— 测试需 mock `lastAutoBackupAt` 或直接调 `AutoBackupService.maybeBackup`，不能等 24h
@@ -686,7 +686,7 @@ flutter test integration_test/ -d "<iOS Simulator>"
 - [x] 底层实现剖析（ExportService / ImportService / 聚合页 UI 入口 / 原子写入）
 - [x] ValueKey 缺失清单（含聚合页与横幅）
 - [x] 编写前置依赖（4.1-4.3）
-- [x] 5 个 testWidgets 完整代码（含 § 5.5 自动备份）
+- [x] 5 个 testWidgets 完整代码（含 第 5.5 节 自动备份）
 - [x] 阻塞点汇总
 - [x] 风险与边界
 - [x] 执行命令
@@ -697,7 +697,7 @@ flutter test integration_test/ -d "<iOS Simulator>"
 - [ ] 给冲突对话框按钮加 `restore_overwrite_button` / `restore_merge_button` ValueKey
 - [ ] 把 `_createTheme` / `_createNode` / `_switchToTab` 提升到 `integration_test/_support/`
 - [ ] 新增 `integration_test/_support/backup_helpers.dart`（`createBackupZip` / `restoreBackupZip`）
-- [ ] 实现 § 5.1-5.5 五个 testWidgets 实际代码
+- [ ] 实现 第 5.1 节-5.5 五个 testWidgets 实际代码
 - [ ] 跑通 + 截图验证
 
 ---

@@ -15,7 +15,7 @@
 
 ### 1.1 视觉层：文档 vs 代码 打架（一致性缺口 #1，最高优先级）
 
-- 设计系统"宪法"（`docs/_shared/design-system.md` §1 / §2.1）明确主品牌色 **Riviera Blue `#183451`** + 强调 **Terracotta `#A9601C`**，中性底座目标 **Soft Ivory `#F3ECDE`**。
+- 设计系统"宪法"（`docs/_shared/design-system.md` 第 1 节 / 第 2.1 节）明确主品牌色 **Riviera Blue `#183451`** + 强调 **Terracotta `#A9601C`**，中性底座目标 **Soft Ivory `#F3ECDE`**。
 - 但代码真相源（`lib/ui/core/theme/app_colors.dart`）主色仍是 **Indigo `#6366F1`**，pageBg 仍是 **Slate 50 `#F8FAFC`**。文档自己都标注"迁移到 Riviera Blue 是独立代码迁移工单"。
 - 结论：你**已经有品牌宪法，但它没被执行**。这是"自己跟自己不一致"的源头。
 
@@ -115,7 +115,7 @@
 
 - `design-tokens.yaml` 已是结构化 token，但 `app_colors.dart` 与之不同步。
 - 建议：以 `app_colors.dart` 为运行时唯一真相源，`design-tokens.yaml` 作文档镜像，加 CI 校验（`rg` 查 `CupertinoColors` 直引、断言 accent 值）。
-- 深色模式目标态（design-system.md §2.8）已有定义，落地即可统一暗色表达。
+- 深色模式目标态（design-system.md 第 2.8 节）已有定义，落地即可统一暗色表达。
 
 ### 4.3 视觉资产包（Brand Kit）
 

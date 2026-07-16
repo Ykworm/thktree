@@ -3,7 +3,7 @@
 | 属性 | 说明 |
 |------|------|
 | 日期 | 2026-06-22 |
-| 范围 | `integration_test/branch_creation_test.dart`（7 个 testWidgets）+ 8 个 ValueKey 补全（4 个文件）+ branch-creation.md 状态行 / § 2 测试矩阵 / § 10 Checklist 三处更新 + DECISIONS.md 新增 ADR-015 |
+| 范围 | `integration_test/branch_creation_test.dart`（7 个 testWidgets）+ 8 个 ValueKey 补全（4 个文件）+ branch-creation.md 状态行 / 第 2 节 测试矩阵 / 第 10 节 Checklist 三处更新 + DECISIONS.md 新增 ADR-015 |
 | 设计文档 | [`docs/_shared/integration-testing/branch-creation.md`](../_shared/integration-testing/branch-creation.md) |
 | ADR | [ADR-015](../DECISIONS.md#adr-015-分支创建集成测试-4-chat-并行推进翻转不实现-case-1-7旧决策) |
 | 状态 | 🟡 部分完成（case 1/2/3/4 实跑通过；case 5/6/7 scaffold 待补） |
@@ -12,12 +12,12 @@
 
 ThkTree 分支创建（branch creation）是 chat 页核心交互链路：从右上角"分支"按钮 → 模式选择 sheet（raw / summarize）→ 标题选择（LLM 生成候选）→ 创建子节点 + 写入 source 内容 + push 新对话。spec `docs/_shared/integration-testing/branch-creation.md` 列出 7 个 testWidgets 覆盖 4 个核心矩阵 + 3 个边界场景，但截至 2026-06-18 全部以"scaffold + 注释 TODO"状态存在——`testWidgets` 函数体只有前置 setup，核心断言步骤全部用 `// TODO: ...` 占位。
 
-spec § 8 当时给出的"不实现"理由有两条：
+spec 第 8 节 当时给出的"不实现"理由有两条：
 
 1. **SelectionArea 选区构造在 Flutter tester 中难以精确模拟**——分支创建的"选中文本"路径需要模拟用户在 chat 消息上拖拽选区，但 `WidgetTester` 不支持原生拖拽选区手势，导致 `SelectionArea` 的 `selectionChanged` 回调无法触发。
-2. **case 7 需 LLM HTTP channel mock 工具未建**——"LLM 失败 fallback"测试需要 mock 出 LLM 抛出异常的场景，但项目里没有 Dart-side HTTP mock 通道，spec § 4.3 提及但未实施。
+2. **case 7 需 LLM HTTP channel mock 工具未建**——"LLM 失败 fallback"测试需要 mock 出 LLM 抛出异常的场景，但项目里没有 Dart-side HTTP mock 通道，spec 第 4.3 节 提及但未实施。
 
-本 CHANGELOG 记录"翻转 § 8 不实现决策"的实施结果：case 1/2/3/4 通过 4 chat 并行实跑通过，case 5/6/7 保留 scaffold 状态并明确剩余工作。
+本 CHANGELOG 记录"翻转 第 8 节 不实现决策"的实施结果：case 1/2/3/4 通过 4 chat 并行实跑通过，case 5/6/7 保留 scaffold 状态并明确剩余工作。
 
 ## 根因
 
@@ -27,7 +27,7 @@ spec § 8 当时给出的"不实现"理由有两条：
 
 **LLM 注入路径已就绪**：ADR-013 在 2026-06-20 解决了"Key 不进 release 包 + 测试可注入真实 LLM"的双重需求，`--dart-define-from-file` + `tools/gen_dart_define.dart` + `LlmTestConfig.loadFromDefine()` 三件套让 case 4（无选 + summarize 模式）能调用真实 DeepSeek 完成"父对话总结 + 标题生成"双 LLM 任务。case 7 的"LLM 失败"是**反向**问题（需要 mock 失败而非注入成功），这条路径仍然空白。
 
-**3 个 helper 未提取但可工作**：`_createTestTheme` / `_createTestNode` / `_sendMessage` 原本计划提取到 `_support/test_fixtures.dart` 复用，spec § 4 列为建议项。本次实跑发现 4 chat 直接在每个 testWidgets 内复制 helper 副本仍可工作（不优雅但能跑通），提取工作作为后续清理任务。`send_button` / `stop_button` 两个 ValueKey 未补，case 4 实跑**不依赖** send_button（branch 流程在已有 LLM 回复的节点上触发，不需要先发消息），`_sendMessage` 用 `if (sendButton.evaluate().isNotEmpty)` 防御式跳过 tap，未影响 case 1-4 实跑结果。
+**3 个 helper 未提取但可工作**：`_createTestTheme` / `_createTestNode` / `_sendMessage` 原本计划提取到 `_support/test_fixtures.dart` 复用，spec 第 4 节 列为建议项。本次实跑发现 4 chat 直接在每个 testWidgets 内复制 helper 副本仍可工作（不优雅但能跑通），提取工作作为后续清理任务。`send_button` / `stop_button` 两个 ValueKey 未补，case 4 实跑**不依赖** send_button（branch 流程在已有 LLM 回复的节点上触发，不需要先发消息），`_sendMessage` 用 `if (sendButton.evaluate().isNotEmpty)` 防御式跳过 tap，未影响 case 1-4 实跑结果。
 
 ## 方案
 
@@ -82,12 +82,12 @@ lib/ui/core/shared/title_suggestion_screen.dart          # line 475: cancel_butt
 ### branch-creation.md 三处更新（commit `b20ad1f`）
 
 - 状态行（line 6）：`case 1/2/3/4 已实跑通过，case 5/6/7 待实现` → `case 1/2/3/4 已实跑通过；case 5/6 scaffold 待实跑；case 7 scaffold + 待建 LLM mock 工具`
-- § 2 测试矩阵（line 35-41）：case 1 核心 TODO 从 `✅ 已实现` 改为 `✅ 已实跑`（与 2/3/4 对齐）；case 5/6 从 `❌ 弹 sheet 后取消` / `❌ title 页取消` 改为 `❌ scaffold，待实跑`；case 7 从 `❌ mock LLM 失败` 改为 `❌ scaffold，待建 mock 工具`
-- § 10 Checklist 代码层面（line 553-563）：9 项中 5 项 `[x]`——4 个 ValueKey 项（branch_button / branch_mode_* / title_input / confirm_button / cancel_button），§ 5.1-5.4 实现项，case 1-4 跑通截图项；4 项 `[ ]`——`send_button` / `stop_button` ValueKey（带注释说明不依赖），3 helper 提取项，LLM HTTP mock 工具项，§ 5.5-5.7 实现项
+- 第 2 节 测试矩阵（line 35-41）：case 1 核心 TODO 从 `✅ 已实现` 改为 `✅ 已实跑`（与 2/3/4 对齐）；case 5/6 从 `❌ 弹 sheet 后取消` / `❌ title 页取消` 改为 `❌ scaffold，待实跑`；case 7 从 `❌ mock LLM 失败` 改为 `❌ scaffold，待建 mock 工具`
+- 第 10 节 Checklist 代码层面（line 553-563）：9 项中 5 项 `[x]`——4 个 ValueKey 项（branch_button / branch_mode_* / title_input / confirm_button / cancel_button），第 5.1 节-5.4 实现项，case 1-4 跑通截图项；4 项 `[ ]`——`send_button` / `stop_button` ValueKey（带注释说明不依赖），3 helper 提取项，LLM HTTP mock 工具项，第 5.5 节-5.7 实现项
 
 ### DECISIONS.md 新增 ADR-015（commit `edad9e9`）
 
-按 ADR-011 "纯文段 + 不抽字段"格式记录：背景/决策/理由/影响范围/实施要点 5 段。明确"翻转 spec § 8 不实现决策"为正式 ADR 条目，给后续 case 5/6/7 收尾留下可回溯的决策依据。
+按 ADR-011 "纯文段 + 不抽字段"格式记录：背景/决策/理由/影响范围/实施要点 5 段。明确"翻转 spec 第 8 节 不实现决策"为正式 ADR 条目，给后续 case 5/6/7 收尾留下可回溯的决策依据。
 
 ## 验证
 
@@ -116,7 +116,7 @@ lib/ui/core/shared/title_suggestion_screen.dart          # line 475: cancel_butt
 
 - [ADR-015](../DECISIONS.md#adr-015-分支创建集成测试-4-chat-并行推进翻转不实现-case-1-7旧决策) — 翻转不实现决策的正式记录
 - [ADR-013](../DECISIONS.md#adr-013-llm-测试-key-通过-dart-define-注入放弃-assets-路径) — case 4 依赖的 LLM 注入基础设施
-- [docs/_shared/integration-testing/branch-creation.md](../_shared/integration-testing/branch-creation.md) — 集成测试规范（已同步状态行 / § 2 / § 10）
+- [docs/_shared/integration-testing/branch-creation.md](../_shared/integration-testing/branch-creation.md) — 集成测试规范（已同步状态行 / 第 2 节 / 第 10 节）
 - [docs/_shared/integration-testing/llm-injection.md](../_shared/integration-testing/llm-injection.md) — LLM 注入详细版（case 4 走真实 LLM 路径）
 - [docs/_shared/integration-testing/helpers.md](../_shared/integration-testing/helpers.md) — `_sendMessage` 等 helper 的语义定义
 - [docs/_shared/integration-testing/theme-chat-e2e.md](../_shared/integration-testing/theme-chat-e2e.md) — theme_chat_e2e_test 配套文档（4 个 helper 借鉴）

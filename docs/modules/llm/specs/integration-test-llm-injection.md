@@ -216,7 +216,7 @@ testWidgets('...')
 |------|------|
 | `lib/ui/core/app_services.dart` | `llmConfigStoreProvider` / `appSettingsProvider` 定义处 |
 | `lib/data/stores/llm_config_store.dart` | `LlmConfigStore` 类（被继承） |
-| `lib/data/models/preset_providers.dart` | 预置 provider ID 列表（**§ 5.3 映射表的来源**） |
+| `lib/data/models/preset_providers.dart` | 预置 provider ID 列表（**第 5.3 节 映射表的来源**） |
 | `lib/data/models/llm_provider_config.dart` | `LlmProviderConfig` / `LlmProviderType` 模型 |
 | `lib/data/services/settings_store.dart` | `AppSettings` / `SettingsStore`（旧格式） |
 | `lib/ui/features/chat/chat_controller.dart:300-394` | 3 路径查找链 |

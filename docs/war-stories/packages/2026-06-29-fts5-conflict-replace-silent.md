@@ -1,7 +1,7 @@
 # FTS5 虚拟表上 `ConflictAlgorithm.replace` 静默失效
 
-**日期**：2026-06-29  
-**模块**：search / `SearchService` + `AppDatabase`  
+**日期**：2026-06-29 
+**模块**：search / `SearchService` + `AppDatabase` 
 **标签**：SQLite, FTS5, sqflite, 数据一致性, 隐蔽 bug
 
 ## 现象
@@ -33,13 +33,13 @@
 
 ```sql
 CREATE VIRTUAL TABLE search_index USING fts5(
-  entityType,
-  entityId,
-  themeId,
-  themeTitle UNINDEXED,
-  entityTitle,
-  content,
-  updatedAt UNINDEXED
+ entityType,
+ entityId,
+ themeId,
+ themeTitle UNINDEXED,
+ entityTitle,
+ content,
+ updatedAt UNINDEXED
 );
 ```
 
@@ -51,9 +51,9 @@ FTS5 虚拟表 **不支持**标准 SQLite 的 `PRIMARY KEY` / `UNIQUE` 约束。
 
 ```dart
 await db.insert(
-  'search_index',
-  {...},
-  conflictAlgorithm: ConflictAlgorithm.replace,  // ⚠️ FTS5 无效
+ 'search_index',
+ {...},
+ conflictAlgorithm: ConflictAlgorithm.replace, // ⚠️ FTS5 无效
 );
 ```
 
@@ -85,18 +85,18 @@ SELECT ... FROM search_index WHERE search_index MATCH ?
 
 ```dart
 Future<void> upsertNote({...}) async {
-  try {
-    await db.transaction((txn) async {
-      await txn.delete(
-        'search_index',
-        where: 'entityType = ? AND entityId = ?',
-        whereArgs: ['note', noteId],
-      );
-      await txn.insert('search_index', {...});
-    });
-  } catch (e, st) {
-    dev.log('[SearchService.upsertNote] FAILED noteId=$noteId: $e\n$st');
-  }
+ try {
+ await db.transaction((txn) async {
+ await txn.delete(
+ 'search_index',
+ where: 'entityType = ? AND entityId = ?',
+ whereArgs: ['note', noteId],
+ );
+ await txn.insert('search_index', {...});
+ });
+ } catch (e, st) {
+ dev.log('[SearchService.upsertNote] FAILED noteId=$noteId: $e\n$st');
+ }
 }
 ```
 
@@ -106,16 +106,16 @@ Future<void> upsertNote({...}) async {
 
 ```sql
 SELECT
-  entityType, entityId, themeId, themeTitle, entityTitle,
-  snippet, updatedAt
+ entityType, entityId, themeId, themeTitle, entityTitle,
+ snippet, updatedAt
 FROM (
-  SELECT
-    entityType, entityId, themeId, themeTitle, entityTitle,
-    snippet(search_index, 1, '<b>', '</b>', '...', 40) AS snippet,
-    updatedAt,
-    bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
-  FROM search_index
-  WHERE search_index MATCH ?
+ SELECT
+ entityType, entityId, themeId, themeTitle, entityTitle,
+ snippet(search_index, 1, '<b>', '</b>', '...', 40) AS snippet,
+ updatedAt,
+ bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
+ FROM search_index
+ WHERE search_index MATCH ?
 )
 GROUP BY entityType, entityId
 ORDER BY MIN(rank) ASC, MAX(updatedAt) DESC
@@ -144,10 +144,10 @@ LIMIT ?
 ```sql
 -- 实际落地的 search()（[search_service.dart:60-86](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/services/search_service.dart)）
 SELECT
-  entityType, entityId, themeId, themeTitle, entityTitle,
-  snippet(search_index, 5, '<b>', '</b>', '...', 40) AS snippet,
-  updatedAt,
-  bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
+ entityType, entityId, themeId, themeTitle, entityTitle,
+ snippet(search_index, 5, '<b>', '</b>', '...', 40) AS snippet,
+ updatedAt,
+ bm25(search_index, 0.0, 1.0, 0.0, 0.0, 0.5, 5.0) AS rank
 FROM search_index
 WHERE search_index MATCH ?
 ORDER BY rank ASC, updatedAt DESC
@@ -185,7 +185,7 @@ LIMIT ?
 
 ## 参考链接
 
-- [edge-cases-backlog § EC-043](../_shared/edge-cases-backlog.md)
+- [edge-cases-backlog EC-043](../_shared/edge-cases-backlog.md)
 - [CHANGELOG 2026-06-29](../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)
 - [SQLite FTS5 文档 — Conflict Resolution](https://www.sqlite.org/fts5.html#section_4_4)（FTS5 不支持 `INSERT OR REPLACE` 的 PRIMARY KEY 语义）
 - [sqflite GitHub Issue #574 — ConflictAlgorithm.replace on FTS5](https://github.com/tekartik/sqflite/issues/574)

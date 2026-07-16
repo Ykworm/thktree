@@ -96,4 +96,4 @@ flutter test integration_test/note_crud_test.dart \
 
 - 不测试笔记搜索功能
 - 不测试笔记分组排序
-- 持久化验证走数据层而非 UI 重启（见 § 4.3）
+- 持久化验证走数据层而非 UI 重启（见第 4.3 节）

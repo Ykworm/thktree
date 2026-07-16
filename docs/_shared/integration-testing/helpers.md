@@ -1,6 +1,6 @@
 # 集成测试 Helpers 工具函数清单
 
-> **适用对象**：要在集成测试里做 UI 操作 / 等待 / 断言的开发者  
+> **适用对象**：要在集成测试里做 UI 操作 / 等待 / 断言的开发者 
 > **核心问题**：测试代码应该怎么写才不会和真实 UI 时序 race？
 
 ---
@@ -26,9 +26,9 @@
 
 ```dart
 Future<void> pumpAndSettleWithTimeout(
-  WidgetTester tester, {
-  Duration timeout = const Duration(seconds: 30),
-  Duration duration = const Duration(milliseconds: 100),
+ WidgetTester tester, {
+ Duration timeout = const Duration(seconds: 30),
+ Duration duration = const Duration(milliseconds: 100),
 })
 ```
 
@@ -44,10 +44,10 @@ Future<void> pumpAndSettleWithTimeout(
 
 ```dart
 Future<void> waitForLLMResponse(
-  WidgetTester tester, {
-  required bool Function() checkStreaming,
-  Duration timeout = const Duration(seconds: 30),
-  Duration pollInterval = const Duration(milliseconds: 500),
+ WidgetTester tester, {
+ required bool Function() checkStreaming,
+ Duration timeout = const Duration(seconds: 30),
+ Duration pollInterval = const Duration(milliseconds: 500),
 })
 ```
 
@@ -64,10 +64,10 @@ Future<void> waitForLLMResponse(
 
 ```dart
 Future<void> waitForText(
-  WidgetTester tester,
-  String text, {
-  Duration timeout = const Duration(seconds: 30),
-  Duration pollInterval = const Duration(milliseconds: 500),
+ WidgetTester tester,
+ String text, {
+ Duration timeout = const Duration(seconds: 30),
+ Duration pollInterval = const Duration(milliseconds: 500),
 })
 ```
 
@@ -79,10 +79,10 @@ Future<void> waitForText(
 
 ```dart
 Future<void> waitForWidget(
-  WidgetTester tester,
-  Finder finder, {
-  Duration timeout = const Duration(seconds: 30),
-  Duration pollInterval = const Duration(milliseconds: 500),
+ WidgetTester tester,
+ Finder finder, {
+ Duration timeout = const Duration(seconds: 30),
+ Duration pollInterval = const Duration(milliseconds: 500),
 })
 ```
 
@@ -94,8 +94,8 @@ Future<void> waitForWidget(
 
 ```dart
 Future<void> waitForLoadingToComplete(
-  WidgetTester tester, {
-  Duration timeout = const Duration(seconds: 30),
+ WidgetTester tester, {
+ Duration timeout = const Duration(seconds: 30),
 })
 ```
 
@@ -111,9 +111,9 @@ Future<void> waitForLoadingToComplete(
 
 ```dart
 Future<void> safeTap(
-  WidgetTester tester,
-  Finder finder, {
-  Finder? scrollable,
+ WidgetTester tester,
+ Finder finder, {
+ Finder? scrollable,
 })
 ```
 
@@ -129,10 +129,10 @@ Future<void> safeTap(
 
 ```dart
 Future<void> enterTextAndWait(
-  WidgetTester tester,
-  Finder finder,
-  String text, {
-  Duration waitDuration = const Duration(milliseconds: 500),
+ WidgetTester tester,
+ Finder finder,
+ String text, {
+ Duration waitDuration = const Duration(milliseconds: 500),
 })
 ```
 
@@ -144,9 +144,9 @@ Future<void> enterTextAndWait(
 
 ```dart
 Future<void> longPressAndWait(
-  WidgetTester tester,
-  Finder finder, {
-  Duration waitDuration = const Duration(milliseconds: 500),
+ WidgetTester tester,
+ Finder finder, {
+ Duration waitDuration = const Duration(milliseconds: 500),
 })
 ```
 
@@ -158,10 +158,10 @@ Future<void> longPressAndWait(
 
 ```dart
 Future<void> dragFromTo(
-  WidgetTester tester,
-  Offset start,
-  Offset end, {
-  Duration duration = const Duration(milliseconds: 500),
+ WidgetTester tester,
+ Offset start,
+ Offset end, {
+ Duration duration = const Duration(milliseconds: 500),
 })
 ```
 
@@ -173,10 +173,10 @@ Future<void> dragFromTo(
 
 ```dart
 final gesture = await tester.startGesture(start);
-await gesture.moveBy(Offset(0, 10));   // 先微移触发 drag start
+await gesture.moveBy(Offset(0, 10)); // 先微移触发 drag start
 for (var i = 1; i <= 10; i++) {
-  await gesture.moveBy((end - start) * (i / 10));
-  await tester.pump(Duration(milliseconds: 50));
+ await gesture.moveBy((end - start) * (i / 10));
+ await tester.pump(Duration(milliseconds: 50));
 }
 await gesture.up();
 ```
@@ -215,8 +215,8 @@ bool containsText(String searchText)
 
 ```dart
 Future<void> createTestNode(
-  WidgetTester tester, {
-  required String title,
+ WidgetTester tester, {
+ required String title,
 })
 ```
 
@@ -230,9 +230,9 @@ Future<void> createTestNode(
 
 ```dart
 Future<void> navigateToChat(
-  WidgetTester tester, {
-  required String themeId,
-  required String nodeId,
+ WidgetTester tester, {
+ required String themeId,
+ required String nodeId,
 })
 ```
 
@@ -246,8 +246,8 @@ Future<void> navigateToChat(
 
 ```dart
 Future<void> navigateToTheme(
-  WidgetTester tester, {
-  required String themeName,
+ WidgetTester tester, {
+ required String themeName,
 })
 ```
 
@@ -257,8 +257,8 @@ Future<void> navigateToTheme(
 
 ```dart
 Future<void> sendMessage(
-  WidgetTester tester, {
-  required String message,
+ WidgetTester tester, {
+ required String message,
 })
 ```
 
@@ -294,9 +294,9 @@ Future<void> refreshNodeList(WidgetTester tester)
 
 ```dart
 List<String> getNodeTitles() {
-  // 这里需要根据实际的 UI 结构来实现
-  // 返回一个示例实现
-  return [];
+ // 这里需要根据实际的 UI 结构来实现
+ // 返回一个示例实现
+ return [];
 }
 ```
 
@@ -308,19 +308,19 @@ List<String> getNodeTitles() {
 
 ```dart
 List<String> getNodeTitles() {
-  final finder = find.byKey(const ValueKey('node_list'));
-  if (finder.evaluate().isEmpty) return [];
-  
-  final titles = <String>[];
-  for (final element in finder.evaluate()) {
-    // 遍历 _TreeRowView，提取 title Text
-    final titleFinder = find.descendant(
-      of: element,
-      matching: find.byType(Text),
-    );
-    titles.addAll(getAllTexts(titleFinder));
-  }
-  return titles;
+ final finder = find.byKey(const ValueKey('node_list'));
+ if (finder.evaluate().isEmpty) return [];
+ 
+ final titles = <String>[];
+ for (final element in finder.evaluate()) {
+ // 遍历 _TreeRowView，提取 title Text
+ final titleFinder = find.descendant(
+ of: element,
+ matching: find.byType(Text),
+ );
+ titles.addAll(getAllTexts(titleFinder));
+ }
+ return titles;
 }
 ```
 
@@ -328,9 +328,9 @@ List<String> getNodeTitles() {
 
 ```dart
 bool verifyNodeOrder(List<String> expectedOrder) {
-  // 这里需要根据实际的 UI 结构来实现
-  // 返回一个示例实现
-  return true;
+ // 这里需要根据实际的 UI 结构来实现
+ // 返回一个示例实现
+ return true;
 }
 ```
 
@@ -342,12 +342,12 @@ bool verifyNodeOrder(List<String> expectedOrder) {
 
 ```dart
 bool verifyNodeOrder(List<String> expectedOrder) {
-  final actualOrder = getNodeTitles();
-  if (actualOrder.length != expectedOrder.length) return false;
-  for (var i = 0; i < expectedOrder.length; i++) {
-    if (actualOrder[i] != expectedOrder[i]) return false;
-  }
-  return true;
+ final actualOrder = getNodeTitles();
+ if (actualOrder.length != expectedOrder.length) return false;
+ for (var i = 0; i < expectedOrder.length; i++) {
+ if (actualOrder[i] != expectedOrder[i]) return false;
+ }
+ return true;
 }
 ```
 
@@ -385,7 +385,7 @@ bool verifyNodeOrder(List<String> expectedOrder) {
 
 ### 8.1 `dragFromTo` 简化版问题
 
-当前实现可能不触发 `DragTarget` 的 `onWillAcceptWithDetails`，特别是跨层拖拽场景。详见 [node-reorder.md § 4.2](./node-reorder.md)。
+当前实现可能不触发 `DragTarget` 的 `onWillAcceptWithDetails`，特别是跨层拖拽场景。详见 [node-reorder.md 第 4.2 节](./node-reorder.md)。
 
 ### 8.2 `navigateToChat` / `navigateToTheme` 用 text 定位
 
@@ -393,7 +393,7 @@ bool verifyNodeOrder(List<String> expectedOrder) {
 
 ### 8.3 业务方法分散
 
-`createTestNode` / `_createTheme` / `_createNode` 分散在多个 test 文件，建议提到 `_support/` 统一管理。详见 [docs/_tmp/integration-test-docs-plan.md § 决策 3](../_tmp/integration-test-docs-plan.md)。
+`createTestNode` / `_createTheme` / `_createNode` 分散在多个 test 文件，建议提到 `_support/` 统一管理。详见 [docs/_tmp/integration-test-docs-plan.md 决策 3](../_tmp/integration-test-docs-plan.md)。
 
 ---
 

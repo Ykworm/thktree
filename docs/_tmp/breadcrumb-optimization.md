@@ -93,5 +93,5 @@
 
 - 需求 1.1「面包屑居中」：初判误以为代码已左对齐（只看 `Wrap.alignment` 默认值）。
   实际根因在**外层 `Column` 默认 `crossAxisAlignment.center`**，面包屑 `Container` 收缩居中。
-  已按上述 §4 修复（占满+左对齐）。navBar middle 居中属于预期行为，不在此列。
+  已按上述 第 4 节 修复（占满+左对齐）。navBar middle 居中属于预期行为，不在此列。
 - 已做 HTML 对比 demo：`demo-breadcrumb-align.html`（修复前居中收缩 vs 修复后占满左对齐，可切长/短标题）。

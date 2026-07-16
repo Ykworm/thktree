@@ -206,7 +206,7 @@ key: ValueKey('model_sheet_${provider.id}_${model.id}'),
 ### 为什么一开始没发现？
 
 1. **单独跑每个 case 都通过**——掩盖了 case 间的状态泄漏。问题只在串行实跑时显现。
-2. **spec § 7 把"helper 重复"列为阻塞点**——但没识别出"case 间状态泄漏"是更紧迫的问题。
+2. **spec 第 7 节 把"helper 重复"列为阻塞点**——但没识别出"case 间状态泄漏"是更紧迫的问题。
 3. **`flutter_secure_storage` 在 macOS 桌面测试时 Keychain 行为不一致**——开发机用 macOS Keychain（共享 App Group），CI 用 iOS Simulator Keychain（独立），导致本地复现率低。
 
 ### 排查路径

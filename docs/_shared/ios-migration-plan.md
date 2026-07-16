@@ -262,4 +262,4 @@ lib/ui/
 | PR 4 体验 | ⬜ | — | — |
 | PR 5 收尾 | ⬜ | — | — |
 
-> 每完成一个 PR，回到本表勾选 ✅ 并在 commit message 里引用 `Closes ios-migration-plan §3.X`。
+> 每完成一个 PR，回到本表勾选 ✅ 并在 commit message 里引用 `Closes ios-migration-plan 第 3 节.X`。

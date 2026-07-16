@@ -291,7 +291,7 @@ flutter test integration_test/desktop_theme_chat_e2e_test.dart \
 # 1. 创建工程外配置目录（推荐 ~/.thktree/）
 mkdir -p ~/.thktree
 
-# 2. 创建配置文件并填入真实 Key（JSON 结构见 fixtures.md § 2.1）
+# 2. 创建配置文件并填入真实 Key（JSON 结构见 fixtures.md 第 2.1 节）
 $EDITOR ~/.thktree/test_llm_config.json
 
 # 3. 跑生成器：把 pretty-print JSON 压缩为单行紧凑 JSON（不能直接喂给 --dart-define-from-file）
@@ -303,7 +303,7 @@ dart run tools/gen_dart_define.dart \
 jq . ~/.thktree/test_llm_config.json
 ```
 
-JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)）：
+JSON 格式示例（参考 [fixtures.md 第 2.1 节](./fixtures.md#21-完整示例)）：
 
 ```json
 {
@@ -342,13 +342,13 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 | `StateError: LLM test config not injected (TEST_LLM_CONFIG_JSON is empty)` | 跑测试没带 `--dart-define-from-file=...` | 先跑生成器，再用 `--dart-define-from-file=build/dart_define.json` |
 | `FormatException: Invalid JSON` | JSON 格式错或字段缺失 | 用 `jq . ~/.thktree/test_llm_config.json` 验证（注意：错误信息不会带本地文件路径，Key 是从 dart-define 读出来的） |
 | frontend_server `URI parse error` | 直接把 pretty-print JSON 喂给 `--dart-define-from-file`，含字面 `\n` 触发 URI 解析错 | 必须先跑 `tools/gen_dart_define.dart` 压缩为单行紧凑 JSON |
-| `Unknown LlmProvider: xxx` | activeProvider 用了不在 enum 里的值 | 参考 [fixtures.md § 6](./fixtures.md) |
+| `Unknown LlmProvider: xxx` | activeProvider 用了不在 enum 里的值 | 参考 [fixtures.md 第 6 节](./fixtures.md) |
 | 超时但 UI 没动 | Riverpod state 没刷新 | 加 `await tester.pump(Duration(milliseconds: 500))` |
 | macOS: 流式不开始（发送后 stop_button 不出现） | macOS Sandbox 缺 `network.client` entitlement，HTTP 出站被拦截 | 在 `macos/Runner/DebugProfile.entitlements` 加 `<key>com.apple.security.network.client</key><true/>` |
-| macOS: Keychain 写失败（`PlatformException -34018`） | macOS Sandbox 无 Keychain Sharing entitlement | 集成测试用 `_MemStore` 替代 `FlutterSecureStorage`（见 [macos-desktop-e2e.md § 4.2](./macos-desktop-e2e.md#42-内存安全存储)） |
+| macOS: Keychain 写失败（`PlatformException -34018`） | macOS Sandbox 无 Keychain Sharing entitlement | 集成测试用 `_MemStore` 替代 `FlutterSecureStorage`（见 [macos-desktop-e2e.md 第 4.2 节](./macos-desktop-e2e.md#42-内存安全存储)） |
 | macOS: 创建后文字找不到（`waitForText` 超时） | `SliverList`/`ListView.separated` 懒加载，离屏 widget 未构建 | 用 `tester.scrollUntilVisible(find.text(...), 100, scrollable: find.byType(Scrollable).first)` |
 | macOS: 发送按钮 tap/send 后无反应 | CupertinoTextField multiline 不响应 `receiveAction(send)` | 用 `tester.sendKeyEvent(LogicalKeyboardKey.enter)` |
-| macOS: 默认模型不对（显示 gpt-4o 而不是 DeepSeek/Kimi） | `SettingsController` 读 `settingsStoreProvider`，空 store 返回空 `AppSettings` → 降级到第一个 provider | 预填 `settingsStoreProvider` 的 keys（`chat_default_provider_id`/`chat_default_model_id`），见 [macos-desktop-e2e.md § 4.2](./macos-desktop-e2e.md#42-内存安全存储) |
+| macOS: 默认模型不对（显示 gpt-4o 而不是 DeepSeek/Kimi） | `SettingsController` 读 `settingsStoreProvider`，空 store 返回空 `AppSettings` → 降级到第一个 provider | 预填 `settingsStoreProvider` 的 keys（`chat_default_provider_id`/`chat_default_model_id`），见 [macos-desktop-e2e.md 第 4.2 节](./macos-desktop-e2e.md#42-内存安全存储) |
 
 ### 8.4 抓取日志
 - iOS Simulator 日志：`flutter logs`（开新终端跑）
@@ -361,13 +361,13 @@ JSON 格式示例（参考 [fixtures.md § 2.1](./fixtures.md#21-完整示例)�
 按这 8 步走：
 
 - [ ] **1. 选模块** — 确认要测的功能在哪个模块（chat / themes / llm / settings 等）
-- [ ] **2. 写场景** — 用"操作 → 期望"两列表格描述（如 [theme-chat-e2e § 2](./theme-chat-e2e.md#2-场景表)）
+- [ ] **2. 写场景** — 用"操作 → 期望"两列表格描述（如 [theme-chat-e2e 第 2 节](./theme-chat-e2e.md#2-场景表)）
 - [ ] **3. 补 ValueKey** — 列出所有 `find.byKey(ValueKey('xxx'))` 需要的 Key，检查生产 widget 是否已加；缺的补上
 - [ ] **4. 用 helpers** — 优先复用 `_support/test_helpers.dart` 的工具，避免重复
 - [ ] **5. 选 fixtures** — 涉及 LLM 调用时用 `LlmTestConfig.loadFromDefine()`（读 `--dart-define-from-file` 注入的编译期常量）
 - [ ] **6. 加文档** — 在 `_shared/integration-testing/<场景>.md` 写一份 spec（参照已有 5 个）
 - [ ] **7. 跑通** — `flutter test integration_test/<file>.dart -d "<iOS Simulator>"`
-- [ ] **8. 更新本 README 速览表** — 在 § 10 加一行
+- [ ] **8. 更新本 README 速览表** — 在 第 10 节 加一行
 
 ---
 

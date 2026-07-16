@@ -2,9 +2,9 @@
 // Step 4 · Tier 2/4 · sync-design-tokens.dart
 // code-first 单向生成器：
 //  1) 从 lib/ui/core/theme/*.dart 生成 docs/_shared/design-tokens.yaml
-//  2) 从同一个真源注入 docs/_shared/design-audit/thktree-design-spec.html 的 §9 token 对照表
+//  2) 从同一个真源注入 docs/_shared/design-audit/thktree-design-spec.html 的 第 9 节 token 对照表
 // 用法：dart run scripts/sync-design-tokens.dart
-// 改色流程：改 app_colors.dart → 跑本脚本 → yaml + HTML §9 自动同步（不漂）。
+// 改色流程：改 app_colors.dart → 跑本脚本 → yaml + HTML 第 9 节 自动同步（不漂）。
 import 'dart:io';
 
 const root = '/Users/yuweikang/dev/ykcode/ThkTree';
@@ -110,7 +110,7 @@ String emitGroup(String title, Map<String, String> map, {String indent = '  '}) 
   return buf.toString();
 }
 
-// ── HTML §9 注入 ────────────────────────────────────────────────
+// ── HTML 第 9 节 注入 ────────────────────────────────────────────────
 
 /// 0xRRGGBBAA → #RRGGBB（丢掉 alpha，预览用）
 String _cssHex(String raw) {
@@ -188,14 +188,14 @@ void injectHtmlTokenTable(String generated) {
   final start = html.indexOf(htmlMarkerStart);
   final end = html.indexOf(htmlMarkerEnd);
   if (start < 0 || end < 0) {
-    print('WARN: HTML §9 标记未找到，跳过注入');
+    print('WARN: HTML 第 9 节 标记未找到，跳过注入');
     return;
   }
   final before = html.substring(0, start + htmlMarkerStart.length);
   final after = html.substring(end);
   File(htmlPath)
       .writeAsStringSync('$before\n$generated\n  $after');
-  print('INJECTED §9 token table → $htmlPath');
+  print('INJECTED 第 9 节 token table → $htmlPath');
 }
 
 void main() {
@@ -226,7 +226,7 @@ void main() {
   print('colors: ${colors.values.expand((m) => m.keys).length} '
       'spacing: ${spacing.length} duration: ${duration.length}');
 
-  // ── HTML §9 注入（与 yaml 同源，永不漂）──
+  // ── HTML 第 9 节 注入（与 yaml 同源，永不漂）──
   final generated = _buildSemanticTable(colors['semantic']!) +
       _buildPrimDecorTable(
           '原语 / scrim / 装饰 token',

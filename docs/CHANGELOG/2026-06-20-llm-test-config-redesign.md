@@ -75,10 +75,10 @@ pubspec.yaml                                                                 # �
 .gitignore                                                                   # 删 tool/test_llm_config.json / assets/test_llm_config/ 两条规则
 integration_test/_support/llm_test_config.dart                               # loadFromAsset → loadFromDefine;旧方法标 @Deprecated
 integration_test/theme_chat_e2e_test.dart                                     # 调用点 LlmTestConfig.loadFromAsset → loadFromDefine
-docs/_shared/integration-testing/README.md                                   # § 2 / § 6 / § 7.2-7.4 / § 7.6 / § 8.3 / § 9 / § 12
-docs/_shared/integration-testing/fixtures.md                                 # § 1 / § 2 / § 4.4 / § 5 / § 6
-docs/_shared/integration-testing/theme-chat-e2e.md                           # § 4.1
-docs/modules/llm/specs/integration-test-llm-injection.md                     # § 4 / § 6 数据流
+docs/_shared/integration-testing/README.md                                   # 第 2 节 / 第 6 节 / 第 7.2 节-7.4 / 第 7.6 节 / 第 8.3 节 / 第 9 节 / 第 12 节
+docs/_shared/integration-testing/fixtures.md                                 # 第 1 节 / 第 2 节 / 第 4.4 节 / 第 5 节 / 第 6 节
+docs/_shared/integration-testing/theme-chat-e2e.md                           # 第 4.1 节
+docs/modules/llm/specs/integration-test-llm-injection.md                     # 第 4 节 / 第 6 节 数据流
 docs/DECISIONS.md                                                            # 新增 ADR-013
 ```
 
@@ -104,7 +104,7 @@ factory LlmTestConfig.loadFromDefine() {
       'LLM test config not found.\n\n'
       '集成测试需要通过 --dart-define-from-file=<path> 传入 LLM 配置。\n'
       '准备步骤:\n'
-      '  1. 在工程外任意位置创建 test_llm_config.json,参考 docs/_shared/integration-testing/fixtures.md § 2.1\n'
+      '  1. 在工程外任意位置创建 test_llm_config.json,参考 docs/_shared/integration-testing/fixtures.md 第 2.1 节\n'
       '  2. 填入对应厂商的 apiKey\n'
       '  3. 跑生成器: dart run tools/gen_dart_define.dart <input> build/dart_define.json\n'
       '  4. 跑测试: flutter test integration_test/ --dart-define-from-file=build/dart_define.json',

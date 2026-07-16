@@ -1,20 +1,20 @@
 # War Stories — 踩坑记录
 
-> 记录项目开发过程中**已解决**的技术问题。  
+> 记录项目开发过程中**已解决**的技术问题。 
 > 与 [TECH-DEBT.md](../TECH-DEBT.md) 的区别：TECH-DEBT 记"待解决"，这里记"已踩过并解决"。
 
 ## 目录结构
 
 ```
 docs/war-stories/
-├── README.md          # 本文件：使用规范 + 索引
-├── flutter/           # Flutter 框架层问题（Dart、Widget、状态管理等）
-├── ios/               # iOS 原生层问题（Swift、Xcode、桥接等）
-├── android/           # Android 原生层问题（Kotlin、Gradle等）
-├── packages/          # 第三方依赖包问题
-├── build/             # 构建、编译、CI/CD 问题
-├── performance/       # 性能优化相关
-└── ui-ux/             # UI/交互、设计实现问题
+├── README.md # 本文件：使用规范 + 索引
+├── flutter/ # Flutter 框架层问题（Dart、Widget、状态管理等）
+├── ios/ # iOS 原生层问题（Swift、Xcode、桥接等）
+├── android/ # Android 原生层问题（Kotlin、Gradle等）
+├── packages/ # 第三方依赖包问题
+├── build/ # 构建、编译、CI/CD 问题
+├── performance/ # 性能优化相关
+└── ui-ux/ # UI/交互、设计实现问题
 ```
 
 ## 文件命名规范
@@ -32,8 +32,8 @@ YYYY-MM-DD-简短问题描述.md
 ```markdown
 # 问题标题（一句话描述）
 
-**日期**：2026-06-17  
-**模块**：settings / TTS  
+**日期**：2026-06-17 
+**模块**：settings / TTS 
 **标签**：iOS, Swift, 编译错误, 桥接
 
 ## 现象
@@ -79,7 +79,7 @@ YYYY-MM-DD-简短问题描述.md
 - **AI 维护时机**：当 AI 协助排查并解决一个需要排查才能定位、且有复盘价值的技术问题时，主动询问用户是否需要登记为 war story。
 - **ctsync 候选机制**：当 `ctsync` 识别到"已解决、需要排查才能定位、且有复盘价值的技术问题"时，应先将对应 war-story 列入影响清单，待用户确认后再新增或更新文档。
 - **不写 diff 块**：具体代码改动用 git diff 查看，文档里只写关键片段和思路。
-- **FTS5 反模式警示**：⚠️ 禁止在 SQLite FTS5 虚拟表上使用 `ConflictAlgorithm.replace` 进行 upsert——FTS5 不支持主键/UNIQUE，该调用会**静默失效**（不抛错不替换只多一行），导致搜索结果累加重复。正确做法：`db.transaction` 包裹 `DELETE + INSERT`，或查询侧用 `GROUP BY entityType, entityId` 聚合去重。详见 [packages/2026-06-29-fts5-conflict-replace-silent.md](packages/2026-06-29-fts5-conflict-replace-silent.md)、[`../_shared/edge-cases-backlog.md` § EC-043](../_shared/edge-cases-backlog.md#ec-043-搜索结果重复fts5-无主键--upsert-累加--已修复2026-06-29)。
+- **FTS5 反模式警示**：⚠️ 禁止在 SQLite FTS5 虚拟表上使用 `ConflictAlgorithm.replace` 进行 upsert——FTS5 不支持主键/UNIQUE，该调用会**静默失效**（不抛错不替换只多一行），导致搜索结果累加重复。正确做法：`db.transaction` 包裹 `DELETE + INSERT`，或查询侧用 `GROUP BY entityType, entityId` 聚合去重。详见 [packages/2026-06-29-fts5-conflict-replace-silent.md](packages/2026-06-29-fts5-conflict-replace-silent.md)、[`../_shared/edge-cases-backlog.md` EC-043](../_shared/edge-cases-backlog.md#ec-043-搜索结果重复fts5-无主键--upsert-累加--已修复2026-06-29)。
 
 ## 索引（按时间倒序）
 

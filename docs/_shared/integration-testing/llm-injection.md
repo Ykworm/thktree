@@ -46,15 +46,15 @@ final app = await createTestApp(
 
 ## 本目录相关章节
 
-- [fixtures.md § 4](./fixtures.md#4-toappsettings-vs-tollmconfigstore-双注入) — 双注入原理详解
-- [fixtures.md § 5](./fixtures.md#5-inmemoryllmconfigstore-extends-llmconfigstore) — 假 Store 实现
-- [fixtures.md § 6](./fixtures.md#6-provider-id-映射表-关键避坑) — Provider ID 映射表（`claude → preset_anthropic`）
+- [fixtures.md 第 4 节](./fixtures.md#4-toappsettings-vs-tollmconfigstore-双注入) — 双注入原理详解
+- [fixtures.md 第 5 节](./fixtures.md#5-inmemoryllmconfigstore-extends-llmconfigstore) — 假 Store 实现
+- [fixtures.md 第 6 节](./fixtures.md#6-provider-id-映射表-关键避坑) — Provider ID 映射表（`claude → preset_anthropic`）
 - [helpers.md](./helpers.md) — UI 工具函数（与注入无关，但注入后跑测试必备）
 
 ## 跑测试前必读
 
 详细版必读章节：
-- [§ 1 为什么需要"注入"](../../modules/llm/specs/integration-test-llm-injection.md#1-为什么需要注入)
-- [§ 2 3 路径查找链](../../modules/llm/specs/integration-test-llm-injection.md#2-chat_controller-真实的-key-查找链3-路径)
-- [§ 4 注入点的选择](../../modules/llm/specs/integration-test-llm-injection.md#4-注入点的选择)
-- [§ 5 Provider ID 映射表](../../modules/llm/specs/integration-test-llm-injection.md#53-provider-id-映射表关键避坑)
+- [第 1 节 为什么需要"注入"](../../modules/llm/specs/integration-test-llm-injection.md#1-为什么需要注入)
+- [第 2 节 3 路径查找链](../../modules/llm/specs/integration-test-llm-injection.md#2-chat_controller-真实的-key-查找链3-路径)
+- [第 4 节 注入点的选择](../../modules/llm/specs/integration-test-llm-injection.md#4-注入点的选择)
+- [第 5 节 Provider ID 映射表](../../modules/llm/specs/integration-test-llm-injection.md#53-provider-id-映射表关键避坑)

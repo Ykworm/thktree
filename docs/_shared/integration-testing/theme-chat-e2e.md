@@ -41,7 +41,7 @@
 | 维度 | 决策 | 理由 |
 |------|------|------|
 | API 来源 | **真实 API**（不 mock） | 测真链路，能抓 SSE 解析、超时、重连等真实问题 |
-| 配置来源 | `--dart-define-from-file` 注入 `TEST_LLM_CONFIG_JSON` 编译期常量 | Key 不进 bundle，从根上消除 release 包泄露 Key 的可能（详见 [fixtures.md § 1](./fixtures.md#1-为什么用-asset-而不是-host-文件) 历史背景） |
+| 配置来源 | `--dart-define-from-file` 注入 `TEST_LLM_CONFIG_JSON` 编译期常量 | Key 不进 bundle，从根上消除 release 包泄露 Key 的可能（详见 [fixtures.md 第 1 节](./fixtures.md#1-为什么用-asset-而不是-host-文件) 历史背景） |
 | 厂商/模型 | 用 JSON 配的 `activeProvider`（默认 deepseek） | 用户可切换厂商验证多厂商兼容性 |
 | 单轮超时 | **90 秒** | 真 API 冷启动慢，普通 round 30s 内完成，留 buffer |
 | 整体超时 | **5 分钟**（`Timeout(Duration(minutes: 5))`） | 2 round + 准备 + 收尾 |
@@ -115,7 +115,7 @@ Future<Widget> createTestApp({
 | `send_button` | `chat_screen.dart` | ✅ 已存在 | 所有 chat 测试 |
 | `stop_button` | `chat_screen.dart` | ✅ 已存在 | 所有 chat 测试 |
 
-完整 ValueKey 约定见 [README.md § 5](./README.md#5-valuekey-约定-关键)。
+完整 ValueKey 约定见 [README.md 第 5 节](./README.md#5-valuekey-约定-关键)。
 
 ---
 
@@ -141,7 +141,7 @@ final app = await createTestApp(
 );
 ```
 
-**关键**：`llmConfigStore` 必须传，否则 chat_controller 路径 B 拿不到 Key。详见 [fixtures.md § 4](./fixtures.md#4-toappsettings-vs-tollmconfigstore-双注入)。
+**关键**：`llmConfigStore` 必须传，否则 chat_controller 路径 B 拿不到 Key。详见 [fixtures.md 第 4 节](./fixtures.md#4-toappsettings-vs-tollmconfigstore-双注入)。
 
 ### 6.3 时间戳后缀避免冲突（第 59-61 行）
 
@@ -152,7 +152,7 @@ final nodeTitle = 'Intg讨论_$ts';
 ```
 
 ✅ 优点：重复运行不冲突，CI 历史里能区分多次运行产生的数据  
-❌ 缺点：测试数据会累积（已知问题，详见 § 10）
+❌ 缺点：测试数据会累积（已知问题，详见第 10 节）
 
 ### 6.4 切换底部 tab（第 65-66 行）
 
@@ -293,7 +293,7 @@ expect(
 | Round 2 结束后 | `Round 2 发消息等回复` | measure 发消息 + LLM 流式 |
 | 断言完成后 | `最终断言` | measure 断言逻辑 |
 
-输出会出现在 CI 日志中，用于性能回归检测和瓶颈定位。详见 [helpers.md § 10](./helpers.md#10-_support-工具steptimer-步骤耗时统计)。
+输出会出现在 CI 日志中，用于性能回归检测和瓶颈定位。详见 [helpers.md 第 10 节](./helpers.md#10-_support-工具steptimer-步骤耗时统计)。
 
 ---
 
@@ -310,7 +310,7 @@ expect(
 | `_extractScreenError(tester)` | 扫描界面 Text 提取异常信息（`Exception` / `SocketException` 等） | ✅ 应提到 `_support/` |
 | `StepTimer`（`_support/step_timer.dart`） | 步骤级耗时统计（已独立为 `_support/` 文件） | ✅ 已在 `_support/` |
 
-**未来改进**：这些 helper 在其他测试（chat_streaming / backup_restore / branch_creation）也要用，建议提到 `_support/test_helpers.dart` 或新建 `_support/test_fixtures.dart`。详见 [helpers.md § 8.3](./helpers.md#83-业务方法分散)。
+**未来改进**：这些 helper 在其他测试（chat_streaming / backup_restore / branch_creation）也要用，建议提到 `_support/test_helpers.dart` 或新建 `_support/test_fixtures.dart`。详见 [helpers.md 第 8.3 节](./helpers.md#83-业务方法分散)。
 
 ---
 
@@ -323,7 +323,7 @@ open -a Simulator
 # 2. 创建 Key 配置文件（首次；推荐放 ~/.thktree/，不入仓）
 mkdir -p ~/.thktree
 $EDITOR ~/.thktree/test_llm_config.json
-# 填入真 Key（JSON 结构参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7）
+# 填入真 Key（JSON 结构参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md 第 7 节）
 
 # 3. 经生成器压缩为 build/dart_define.json（不能在 dart-define value 里留字面 \n）
 dart run tools/gen_dart_define.dart \
@@ -383,7 +383,7 @@ LLM 服务偶尔 5xx / 超时，测试可能 flake。
 
 ## 11. 改进建议
 
-1. **共享 helper 到 `_support/`**：让其他测试复用（详见 § 7）
+1. **共享 helper 到 `_support/`**：让其他测试复用（详见第 7 节）
 2. **tearDown 清理数据**：避免累积
 3. **retry 机制**：flake 时自动重试 1 次
 4. **参数化厂商**：用 `@Tags(['deepseek'])` / `@Tags(['openai'])` 跑多厂商矩阵

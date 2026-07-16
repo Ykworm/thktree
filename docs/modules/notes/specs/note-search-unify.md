@@ -20,7 +20,7 @@
 ### 2.1 用户已确认的方向
 
 - **结果 UI**：与 `SearchScreen` 完全一致（标题 + 主题 + 片段，三行卡片）
-- **搜索范围**：固定为 `note` + `message` 两种 entity_type（**不含主题名**，用户明确放弃主题名搜索能力，见 § 2.4）
+- **搜索范围**：固定为 `note` + `message` 两种 entity_type（**不含主题名**，用户明确放弃主题名搜索能力，见第 2.4 节）
 - **placeholder**：与 `SearchScreen` 一致（共用 `l10n.searchHint`）
 - **行为**：与 `SearchScreen` 一致（300ms 防抖、SQLite 异常弹修复索引 dialog）
 
@@ -31,8 +31,8 @@
 #### 方案 A：抽 `SearchContent` widget · 双向嵌入（推荐）
 
 - 把 `SearchScreen` 拆成两层：
-  - `_SearchScreenState`（保留 navigationBar + 容器布局）
-  - **新抽 `SearchContent` widget**（搜索框 + 结果列表 + 防抖 + 跳转逻辑）
+ - `_SearchScreenState`（保留 navigationBar + 容器布局）
+ - **新抽 `SearchContent` widget**（搜索框 + 结果列表 + 防抖 + 跳转逻辑）
 - `SearchScreen.build` 直接 `body: SearchContent(...)`
 - 笔记 tab 顶部用 `SliverToBoxAdapter` 包 `SearchContent`（替换原 `CupertinoSearchTextField`）
 - **核心收益**：搜索行为/UI/范围 100% 一致，后续改一处两边生效
@@ -73,19 +73,19 @@
 ### 3.2 测试改动
 
 - `integration_test/` 新增 `note_search_test.dart`：
-  - case 1：笔记 tab 顶部输入关键词 → 命中笔记列表 → 点击跳转 NoteDetailScreen
-  - case 2：空查询态 → 主题分组正常显示
-  - case 3：搜索无结果 → "换个角度试试"空态
-  - case 4：SQLite 索引异常 → 修复 dialog（如果集成测试可触发）
+ - case 1：笔记 tab 顶部输入关键词 → 命中笔记列表 → 点击跳转 NoteDetailScreen
+ - case 2：空查询态 → 主题分组正常显示
+ - case 3：搜索无结果 → "换个角度试试"空态
+ - case 4：SQLite 索引异常 → 修复 dialog（如果集成测试可触发）
 
 ### 3.3 文档改动（ctsync 阶段）
 
-- `docs/modules/notes/CHANGELOG.md`：删除 🟡「笔记搜索/过滤」待办；新增 § 10「笔记搜索统一为全文搜索」
-- `docs/modules/notes/visual/notes-list-design.md`：§ 1.1 ASCII 图加搜索框；§ 5 Assumptions 重写（不再做本地过滤）；§ 6 待办「主题内笔记搜索」保留（这是 `ThemeNoteListScreen` 内搜索，是另一个未做项）
-- `docs/modules/notes/README.md` § 2：新增「笔记搜索」行
-- `docs/FEATURES.md` § 2：更新「笔记功能」说明（"含笔记 tab 全文搜索"）
+- `docs/modules/notes/CHANGELOG.md`：删除 🟡「笔记搜索/过滤」待办；新增 第 10 节「笔记搜索统一为全文搜索」
+- `docs/modules/notes/visual/notes-list-design.md`：第 1.1 节 ASCII 图加搜索框；第 5 节 Assumptions 重写（不再做本地过滤）；第 6 节 待办「主题内笔记搜索」保留（这是 `ThemeNoteListScreen` 内搜索，是另一个未做项）
+- `docs/modules/notes/README.md` 第 2 节：新增「笔记搜索」行
+- `docs/FEATURES.md` 第 2 节：更新「笔记功能」说明（"含笔记 tab 全文搜索"）
 - `docs/modules/search/README.md`：补一句"搜索能力同时嵌入笔记 tab 顶部"
-- `docs/modules/notes/README.md` + `docs/FEATURES.md` § 笔记模块：**明确写"搜索范围：笔记标题/正文 + 对话标题/正文，不含主题名"**（用户放弃主题名搜索能力的对外说明）
+- `docs/modules/notes/README.md` + `docs/FEATURES.md` 笔记模块：**明确写"搜索范围：笔记标题/正文 + 对话标题/正文，不含主题名"**（用户放弃主题名搜索能力的对外说明）
 
 ### 3.4 l10n
 
@@ -96,13 +96,13 @@
 按 AGENTS.md「测试与验收策略」选择：
 
 1. **关键路径集成测试**（优先）
-   - `integration_test/note_search_test.dart` 4 个 case 全绿
-   - 覆盖：搜索命中跳转、空查询主题分组、无结果空态、行为与 SearchScreen 一致
+ - `integration_test/note_search_test.dart` 4 个 case 全绿
+ - 覆盖：搜索命中跳转、空查询主题分组、无结果空态、行为与 SearchScreen 一致
 2. **静态检查**
-   - `flutter analyze` 无新增 error/warning
+ - `flutter analyze` 无新增 error/warning
 3. **手工验证**
-   - 实跑笔记 tab，输入"xxx" → 看到命中列表 → 点开 → 切回 → 搜索态消失 → 主题分组恢复
-   - 与搜索 tab 输入相同关键词 → 结果顺序、UI 完全一致
+ - 实跑笔记 tab，输入"xxx" → 看到命中列表 → 点开 → 切回 → 搜索态消失 → 主题分组恢复
+ - 与搜索 tab 输入相同关键词 → 结果顺序、UI 完全一致
 
 ## 5. 风险与权衡
 

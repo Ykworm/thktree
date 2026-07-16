@@ -8,8 +8,8 @@
 
 所有惊喜从产品自带隐喻「知识树 · 有机生长」长出，长在既有 token / 动效规范上，**绝不另立山头**：
 
-- 颜色守 `design-system.md` §0.3「颜色有边界」——主题色只上结构，不铺背景；新增动效用中性色 + 现有 accent / NodePalette 派生色。
-- 动效守 `design-system.md` §7 + `app_durations.dart`：快速 200 / 标准 300 / 慢速 500ms；「抽枝」类用 spring（需新增 spring 曲线）。
+- 颜色守 `design-system.md` 第 0.3 节「颜色有边界」——主题色只上结构，不铺背景；新增动效用中性色 + 现有 accent / NodePalette 派生色。
+- 动效守 `design-system.md` 第 7 节 + `app_durations.dart`：快速 200 / 标准 300 / 慢速 500ms；「抽枝」类用 spring（需新增 spring 曲线）。
 - 触感复用 `HapticService`（selection / light / medium / notification），不新增触感类型。
 - **可访问性硬约束**：所有动效用 `MediaQuery.of(context).disableAnimations` 门控，关闭时退化为静态；文案走 `AppLocalizations`（i18n），对比度用现有 token。
 
@@ -108,4 +108,4 @@
 ## 8. 待确认
 
 - 是否全量铺开四个 initiative，还是先做「空态 + AI 思考」最小惊艳包验证手感？
-- 微文案语气边界：当前偏「温柔克制」，是否需要更俏皮一档（如 emoji 点缀）？注意 design-system §0 与可访问性对 emoji 的谨慎态度。
+- 微文案语气边界：当前偏「温柔克制」，是否需要更俏皮一档（如 emoji 点缀）？注意 design-system 第 0 节 与可访问性对 emoji 的谨慎态度。

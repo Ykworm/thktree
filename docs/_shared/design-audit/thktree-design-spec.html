@@ -210,10 +210,10 @@
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- §1 COLOR TOKENS -->
+<!-- 第 1 节 COLOR TOKENS -->
 <!-- ═══════════════════════════════════════════ -->
 <section class="section">
-  <h2 class="section-title"><span class="emoji">🎨</span> §1 Color Tokens — 色彩系统</h2>
+  <h2 class="section-title"><span class="emoji">🎨</span> 第 1 节 Color Tokens — 色彩系统</h2>
 
   <p style="margin-bottom: 16px; color: var(--text-secondary);">
     以下为 Light 模式值。所有语义色通过 <code>AppColors</code> getter 动态切换 dark/light。
@@ -363,10 +363,10 @@
 
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- §2 TYPOGRAPHY -->
+<!-- 第 2 节 TYPOGRAPHY -->
 <!-- ═══════════════════════════════════════════ -->
 <section class="section">
-  <h2 class="section-title"><span class="emoji">🔤</span> §2 Typography — 字体层级</h2>
+  <h2 class="section-title"><span class="emoji">🔤</span> 第 2 节 Typography — 字体层级</h2>
 
   <div class="type-scale">
     <div class="type-item">
@@ -420,10 +420,10 @@
 
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- §3 SPACING & SIZING -->
+<!-- 第 3 节 SPACING & SIZING -->
 <!-- ═══════════════════════════════════════════ -->
 <section class="section">
-  <h2 class="section-title"><span class="emoji">📐</span> §3 Spacing & Sizing — 间距与尺寸</h2>
+  <h2 class="section-title"><span class="emoji">📐</span> 第 3 节 Spacing & Sizing — 间距与尺寸</h2>
 
   <h3 class="subsection-title">3.1 Padding / Margin 实测值</h3>
   <table class="token-table">
@@ -483,10 +483,10 @@
 
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- §4 BORDER RADIUS -->
+<!-- 第 4 节 BORDER RADIUS -->
 <!-- ═══════════════════════════════════════════ -->
 <section class="section">
-  <h2 class="section-title"><span class="emoji">🔲</span> §4 Border Radius — 圆角系统</h2>
+  <h2 class="section-title"><span class="emoji">🔲</span> 第 4 节 Border Radius — 圆角系统</h2>
 
   <table class="token-table">
     <thead><tr><th>组件</th><th>圆角值</th><th>源码</th></tr></thead>
@@ -505,10 +505,10 @@
 
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- §5 COMPONENT SPECS -->
+<!-- 第 5 节 COMPONENT SPECS -->
 <!-- ═══════════════════════════════════════════ -->
 <section class="section">
-  <h2 class="section-title"><span class="emoji">🧱</span> §5 Component Specs — 组件规格</h2>
+  <h2 class="section-title"><span class="emoji">🧱</span> 第 5 节 Component Specs — 组件规格</h2>
 
   <!-- Tab Bar -->
   <div class="comp-card">
@@ -736,10 +736,10 @@
 
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- §6 DEVIATION SUMMARY -->
+<!-- 第 6 节 DEVIATION SUMMARY -->
 <!-- ═══════════════════════════════════════════ -->
 <section class="section">
-  <h2 class="section-title"><span class="emoji">⚠️</span> §6 偏差汇总 — 源码 vs 旧 token 文件 vs 文档</h2>
+  <h2 class="section-title"><span class="emoji">⚠️</span> 第 6 节 偏差汇总 — 源码 vs 旧 token 文件 vs 文档</h2>
 
   <table class="token-table">
     <thead>
@@ -782,10 +782,10 @@
 
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- §7 NOTE MODULE -->
+<!-- 第 7 节 NOTE MODULE -->
 <!-- ═══════════════════════════════════════════ -->
 <section class="section">
-  <h2 class="section-title"><span class="emoji">📝</span> §7 Note Module — 笔记模块全流程</h2>
+  <h2 class="section-title"><span class="emoji">📝</span> 第 7 节 Note Module — 笔记模块全流程</h2>
   <p style="margin-bottom: 16px; color: var(--text-secondary);">
     覆盖流程：笔记 Tab 首页 → 选择主题（Bottom Sheet） → 编辑器 → 自动生成标题 → 保存 → 主题列表 → 主题详情树。
   </p>
@@ -889,7 +889,7 @@
 </section>
 
 <section class="section">
-  <h2 class="section-title"><span class="emoji">💬</span> §8 Theme Chat Module — 主题聊天全流程</h2>
+  <h2 class="section-title"><span class="emoji">💬</span> 第 8 节 Theme Chat Module — 主题聊天全流程</h2>
   <p style="margin-bottom: 16px; color: var(--text-secondary);">
     覆盖流程：主题列表（带 back + 树图标 + ⋯ + 新建会话）→ 新建会话 dialog → 4 种 chat 屏态（空 / 文本回答 / 图片已选 / 多模态回答） → 更多 sheet（4 项） → 我的提问 / 整棵树 / 原始 Markdown / 分支 sheet。
     数据来源：<code>chat_screen.dart</code>、<code>chat_composer.dart</code>、<code>message_bubble.dart</code>、<code>chat_markdown_sheet.dart</code>、<code>chat_outline_sheet.dart</code>、<code>model_selector_panel.dart</code>、<code>user_questions.dart</code>、<code>theme_list_screen.dart</code> 等 8 个 widget 源码。
@@ -1209,7 +1209,7 @@
         <li>禁止自己拼 <code>CupertinoColors.black.withValues(alpha: 0.12)</code>，用 <code>AppColors.elevationShadow</code>（新增）</li>
         <li>禁止写 <code>Color(0x80000000)</code> 遮罩，用 <code>AppColors.scrim</code>（新增）</li>
         <li>禁止气泡写 <code>Color(0xFFEEF2FF)</code>，用 <code>AppColors.accentLight</code></li>
-        <li>禁止 bubble / sheet / image-preview / chat-composer 重复声明圆角、字号、间距，全部走 §8.17 建议 token</li>
+        <li>禁止 bubble / sheet / image-preview / chat-composer 重复声明圆角、字号、间距，全部走 第 8.17 节 建议 token</li>
         <li>禁止 <code>Duration(milliseconds: 250)</code> / <code>Duration(seconds: 2)</code> 硬编码，用 <code>AppDur</code> token</li>
         <li>禁止 sheet 高度 <code>MediaQuery.size.height * X.X</code> 内联写，用 <code>AppSp.sheetHeight*</code> 比例常量</li>
         <li>禁止 user 气泡用 <code>alignment: end</code>，user / assistant 气泡均 <code>margin-right: auto</code>（左对齐，统一视觉节奏）</li>
@@ -1226,12 +1226,12 @@
 <footer style="margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-tertiary); font-size: 13px;">
   <p><strong>ThkTree Design Spec v0.4</strong> — C 方案 Phase 3：主题 Chat 模块扩展</p>
   <p style="margin-top: 4px;">已覆盖流程：搜索 → 抽屉 → 设置 → 大模型 → 模型供应商 → 笔记模块（浏览/编辑/生成标题/详情） → 主题列表/主题详情 → 主题 chat（4 屏态 + 5 个 dialog/sheet + 我的提问/整棵树/Markdown/分支） | 数据来源：8 个 widget 源码 + prototype 像素级对照 | 生成时间：2026-07-08</p>
-  <p style="margin-top: 4px;">下一步：① 把 §8.16 偏差按修复难度分级落地回 AppColors / 新增 AppSp / AppDur；② 切换到支持 vision 的模型 / 用户提供文字描述 → 真机截帧逐像素对比 chat 屏</p>
+  <p style="margin-top: 4px;">下一步：① 把 第 8.16 节 偏差按修复难度分级落地回 AppColors / 新增 AppSp / AppDur；② 切换到支持 vision 的模型 / 用户提供文字描述 → 真机截帧逐像素对比 chat 屏</p>
 </footer>
 
 <!-- Step 4 全局 Token 对照表（2026-07-11 回修后） -->
 <section style="margin-top: 48px;">
-  <h2>§9 · 全局 Color Token 对照表（Step 4 回修后）</h2>
+  <h2>第 9 节 · 全局 Color Token 对照表（Step 4 回修后）</h2>
   <p>代码真源 <code>lib/ui/core/theme/app_colors.dart</code>（code-first）。所有 UI 颜色必须走 token，禁止裸 <code>CupertinoColors.*</code> / <code>Color(0x…)</code>。完整字典见 <code>docs/_shared/design-tokens.yaml</code>（由 <code>scripts/sync-design-tokens.dart</code> 自动生成，含 color + dimension + time）。</p>
 
   <!-- AUTOGEN_TOKEN_TABLE_START -->

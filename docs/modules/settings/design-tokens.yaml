@@ -211,7 +211,7 @@ tts:
     emptyText: "播放按钮不可见"
     ttsInitFailed: "TtsException 抛出，UI 层 try/catch + ThkAlert.show"
     incomingCall: "AVSpeechSynthesizer 自动处理（iOS 系统行为）"
-    pageSwitch: "不自动停止（per design doc §4.1）"
+    pageSwitch: "不自动停止（per design doc 第 4.1 节）"
     noChineseVoice: "TtsSettingsScreen 显示 '暂无可用语音'；Apple 端 fallback 到默认系统语音"
     streaming: "播放按钮隐藏"
     rateOutOfRange: "clamp 到 0.0~1.0 范围"
@@ -447,7 +447,7 @@ ttsEffects:
       duration: "100ms"
 
   scrollBehavior:
-    description: "v1.1 移除浮按钮（TtsBackToTopButton），改 ThkNavBar.onTitleDoubleTap 触发 animateTo(0)；v2 跟随朗读见 design doc §11.1"
+    description: "v1.1 移除浮按钮（TtsBackToTopButton），改 ThkNavBar.onTitleDoubleTap 触发 animateTo(0)；v2 跟随朗读见 design doc 第 11.1 节"
     trigger: "双击导航栏标题 '朗读'"
     backToTopDuration: 300
     backToTopCurve: "Curves.easeOut"
@@ -490,5 +490,5 @@ ttsRoadmap:
     - "粒子动效（偏离 warm-minimal 调性）"
     - "Mesh gradient 背景（同上）"
     - "触觉反馈（iPad 不支持）"
-    - "Player 页离开自动 stop（doc §4.1 明确不做）"
-    - "语速默认值持久化（doc §1.2 明确不做）"
+    - "Player 页离开自动 stop（doc 第 4.1 节 明确不做）"
+    - "语速默认值持久化（doc 第 1.2 节 明确不做）"

@@ -54,7 +54,7 @@
 
 - 新增可搜索内容类型（如标签、收藏）时：扩 `fts_row` schema + 在各模块写入处补同步索引
 - 改 FTS5 索引策略前必读 [specs/2026-06-05-搜索功能-design.md](specs/2026-06-05-搜索功能-design.md)
-- **禁止在 FTS5 虚表上用 `ConflictAlgorithm.replace`**——会静默累加（同 `(entityType, entityId)` 多行），必须用事务 `DELETE + INSERT`，详见 § 关键设计原则 2026-06-29 修复
+- **禁止在 FTS5 虚表上用 `ConflictAlgorithm.replace`**——会静默累加（同 `(entityType, entityId)` 多行），必须用事务 `DELETE + INSERT`，详见 关键设计原则 2026-06-29 修复
 - 搜索结果跳转依赖各模块 screen 的路由名，改 route 时同步更新
 - 性能监控：超过 1000 条结果时强制收窄到 top 200，避免长列表渲染卡顿
 
@@ -67,4 +67,4 @@
 - 2026-06-29：`upsertNote` / `upsertMessage` 全部修复 EC-043（FTS5 upsert 静默失效 → 搜索结果重复）— 方案 A+B：`db.transaction` 删+插（源头去重）+ `search()` 扁平查询 + `col=5`（查询侧不再 GROUP BY——FTS5 helper function 在子查询里报 `unable to use function X`）。上游 commit `9205baa`，下游 commit `cb9891f`（补强：message 端同步修复 + 方案 B 子查询重写为扁平）。详见 [CHANGELOG 2026-06-29-fts5-upsert-repeat.md](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[CHANGELOG 2026-06-29-fts5-search-rework.md](../../CHANGELOG/2026-06-29-fts5-search-rework.md)、[war-story](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)
 - 2026-07-09：修复 EC-015（FTS5 CJK 分词）— `unicode61` 将连续 CJK 视为一个 token，子串搜索失败。新增 `_tokenizeCjk()` 逐字分词 + `_cleanSnippet()` 清理 + v6 迁移触发索引重建。详见 [war-story packages/2026-07-09-fts5-cjk-tokenization.md](../../war-stories/packages/2026-07-09-fts5-cjk-tokenization.md)
 - 2026-07-09：修复 tag cloud 点击不触发搜索 — `ValueNotifier` 只在值变化时触发 listener，动态创建的 `SearchResults` widget 在 `initState` 中未处理初始值。详见 [war-story ui-ux/2026-07-09-search-tag-cloud-no-trigger.md](../../war-stories/ui-ux/2026-07-09-search-tag-cloud-no-trigger.md)
-- 2026-07-09：搜索 tab 改为「显式搜索按钮」替代 live 搜索 + 编辑即清旧结果三态。详见本文件 § 关键设计原则「显式搜索」。动机：live 搜索下慢打字每 >300ms 停顿都触发搜索并写历史，导致 `beautiful` 被拆成 `b`/`be`/`bea`… 记录；提交后编辑/删除框内文本时旧结果仍挂着。
+- 2026-07-09：搜索 tab 改为「显式搜索按钮」替代 live 搜索 + 编辑即清旧结果三态。详见本文件 关键设计原则「显式搜索」。动机：live 搜索下慢打字每 >300ms 停顿都触发搜索并写历史，导致 `beautiful` 被拆成 `b`/`be`/`bea`… 记录；提交后编辑/删除框内文本时旧结果仍挂着。

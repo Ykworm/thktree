@@ -13,6 +13,7 @@
 - 搜索：`rg` 优先于 `grep`，任何场景不得跳过
 - context-sync 只改 doc，不改代码、不 commit（详见 `context-sync` skill）
 - 设计 token（code-first）：改色先改 `lib/ui/core/theme/app_colors.dart`（真源），禁止 lib/ 内裸 `CupertinoColors.*` / `Color(0x…)` / `Color.from*`；改完跑 `dart run scripts/sync-design-tokens.dart` 同步 `docs/_shared/design-tokens.yaml`（详见 `docs/_shared/design-system.md`）
+- **禁止章节符号（Unicode U+00A7 / section sign）**：聊天回复、`docs/**`、`docs/_tmp/**`、commit/PR 说明、skill 正文 **一律不得出现该字符**。章节交叉引用写 **「第 N 节」** 或直接写标题（如 `见第 11.4 节` / `见「红线」`）。细则见 `chinese-documentation` skill；**本条常驻生效，不依赖用户是否触发该 skill**
 
 ## Doc Map（何时读哪个 doc）
 

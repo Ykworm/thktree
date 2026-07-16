@@ -33,8 +33,8 @@
 
 4. **文档同步**：
    - `design-tokens.yaml`：themeColors 和 nodePalettes 色值对齐代码
-   - `theme-list-design.md`：§2/§3 色值对齐代码
-   - `design-system.md`：§0.1/§1.7 更新
+   - `theme-list-design.md`：第 2 节/第 3 节 色值对齐代码
+   - `design-system.md`：第 0.1 节/第 1.7 节 更新
 
 **验证**：
 - `flutter build` 无报错

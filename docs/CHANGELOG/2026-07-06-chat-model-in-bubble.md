@@ -22,5 +22,5 @@
 - lib/data/stores/session_store.dart（beginAssistantMessage + rebuild）
 - lib/data/services/chat_task_service.dart（传 model 到 beginAssistantMessage）
 - lib/ui/core/shared/message_bubble.dart（UI 展示模型名）
-- docs/_shared/storage-format.md（§ 4.3 消息头格式更新 + § 4.6 示例更新）
+- docs/_shared/storage-format.md（第 4.3 节 消息头格式更新 + 第 4.6 节 示例更新）
 - docs/modules/chat/README.md（功能列表 + 历史时间线）

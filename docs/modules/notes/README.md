@@ -7,7 +7,7 @@
 > 1. **`NoteStore` 是唯一写盘入口**——任何 `Note*.txt` 的写入、读缓存、并发冲突处理都走 `lib/data/stores/note_store.dart`；不要在 widget / 其它 service 里直接走 `File`/`FileWriteQueue`。
 > 2. **不许改 `WidgetsBindingObserver`**——应用生命周期与版本号管理仅在 `NoteStore`；别在别处重新订阅 `AppLifecycleState`。
 > 3. **l10n 双语硬性**——任何用户可见文案加进 `app_en.arb` + `app_zh.arb` 并跑 `flutter gen-l10n`；少加一个语言 = CI 拦截。
-> 4. **节点刷新**走全局版本号（见 `docs/modules/notes/CHANGELOG.md` § 3），不要重新发明新机制。
+> 4. **节点刷新**走全局版本号（见 `docs/modules/notes/CHANGELOG.md` 第 3 节），不要重新发明新机制。
 
 ## 1. 职责
 
@@ -21,7 +21,7 @@
 
 ## 2. 功能列表
 
-> 完整状态见 [`../../FEATURES.md`](../../FEATURES.md) § 2.
+> 完整状态见 [`../../FEATURES.md`](../../FEATURES.md) 第 2 节.
 
 | Feature | 状态 | 最后更新 | 备注 |
 |---------|------|----------|------|
@@ -31,7 +31,7 @@
 | 网格底栏 Action Sheet | ✅ 完成 | 2026-06-17 | ThkGridBottomSheet（圆形图标 + 文字标签） |
 | 节点位置选择器 | ✅ 完成 | 2026-06-07 | node_location_picker |
 | 笔记选择器 | ✅ 完成 | 2026-06-07 | note_select_screen（主题创建对话入口） |
-| **标题必填校验** | ✅ 完成 | 2026-06-29 | NoteEditorScreen ✓ 按钮加 `trim().isEmpty` 拦截 → 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮），不调 `_saveNow` 不 pop；详见 [CHANGELOG § 11](CHANGELOG.md#11-笔记标题必填校验2026-06-29) |
+| **标题必填校验** | ✅ 完成 | 2026-06-29 | NoteEditorScreen ✓ 按钮加 `trim().isEmpty` 拦截 → 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮），不调 `_saveNow` 不 pop；详见 [CHANGELOG 第 11 节](CHANGELOG.md#11-笔记标题必填校验2026-06-29) |
 | 图片插入 | 📋 待开发 | 2026-06-17 | 编辑器工具栏插入图片 |
 | **Chat-to-Note** | ✅ 完成 | 2026-07-04 | assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote`），自动用当前主题创建笔记并跳转 `NoteEditorScreen`；主题不存在时自动创建同名主题 |
 | **LLM 生成标题** | ✅ 完成 | 2026-07-04 | `GenerateTitleScreen`：复用 `TitleSuggestionService` 生成备选标题列表，支持自定义输入 + 点选确认 |
@@ -86,7 +86,7 @@ lib/ui/features/notes/
 
 ## 6. 维护要点
 
-- **新增屏幕**：在 `lib/ui/features/notes/` 加 screen，并在本 README § 3 更新文件清单。
+- **新增屏幕**：在 `lib/ui/features/notes/` 加 screen，并在本 README 第 3 节 更新文件清单。
 - **改交互逻辑**：同步更新 `visual/<screen>-design.md`。
 - **笔记 l10n**：新文案先在 `lib/l10n/app_zh.arb` 和 `app_en.arb` 加 key，再生成代码。
 - **AI 改代码时**：AI 识别到变动后应**主动**提醒用户检核 FEATURES.md 是否需更新。

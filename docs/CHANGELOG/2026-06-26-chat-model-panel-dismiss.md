@@ -103,7 +103,7 @@ child: Stack(
 
 `context-sync` 同步至：
 
-- `docs/modules/chat/visual/README.md` § 5 ModelSelectorPanel 表格新增「关闭」行 + 新增「关闭行为约束」小节
+- `docs/modules/chat/visual/README.md` 第 5 节 ModelSelectorPanel 表格新增「关闭」行 + 新增「关闭行为约束」小节
 - `docs/modules/chat/design-tokens.yaml` `modelSelector` 字段新增 `dismiss` + `dismissImpl`
 - `docs/FEATURES.md` 最近变更列表新增 2026-06-26 记录
 - 本 CHANGELOG
@@ -117,5 +117,5 @@ child: Stack(
 ## 关联
 
 - `docs/_tmp/chat-model-panel-dismiss.md` — brainstorming 草稿（merge 后清理）
-- [`docs/modules/chat/visual/README.md`](../modules/chat/visual/README.md) § 5 — 视觉规范同步更新
+- [`docs/modules/chat/visual/README.md`](../modules/chat/visual/README.md) 第 5 节 — 视觉规范同步更新
 - [`docs/modules/chat/design-tokens.yaml`](../modules/chat/design-tokens.yaml) `modelSelector` — design token 同步更新

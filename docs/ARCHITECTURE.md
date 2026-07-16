@@ -39,9 +39,9 @@
 - [`docs/FEATURES.md`](FEATURES.md) — 所有功能状态一览（一行一个功能，跳转到 README/Visual/代码）
 
 ### 第二步：架构 DNA（2 分钟）
-- 本文件 § 1 选型类别锚点 + [`docs/DECISIONS.md`](DECISIONS.md) 完整决策（每个 ADR 一节文段，rg `## ADR-` 定位）
-- 本文件 § 4 关键依赖（与 `pubspec.yaml` 同步）
-- 本文件 § 3 代码结构 - 关键类型子段（领域实体/数据模型/服务/控制器四类）
+- 本文件 第 1 节 选型类别锚点 + [`docs/DECISIONS.md`](DECISIONS.md) 完整决策（每个 ADR 一节文段，rg `## ADR-` 定位）
+- 本文件 第 4 节 关键依赖（与 `pubspec.yaml` 同步）
+- 本文件 第 3 节 代码结构 - 关键类型子段（领域实体/数据模型/服务/控制器四类）
 
 ### 第二步半：硬性必读清单（AI 改模块前必读）
 
@@ -50,7 +50,7 @@
 | 要改这个 | 必读 | 为什么 |
 |----------|------|--------|
 | 主题/节点色/调色板 | [`docs/modules/themes/README.md`](modules/themes/README.md) + [`docs/_shared/design-system.md`](_shared/design-system.md) | 节点色与主题色完全解耦，改色不是改一个变量 |
-| 笔记读写/存储/刷新 | [`docs/modules/notes/README.md`](modules/notes/README.md) + [`docs/modules/notes/CHANGELOG.md`](modules/notes/CHANGELOG.md) § 3 | `NoteStore` 是唯一写盘入口；全局版本号机制不能动 |
+| 笔记读写/存储/刷新 | [`docs/modules/notes/README.md`](modules/notes/README.md) + [`docs/modules/notes/CHANGELOG.md`](modules/notes/CHANGELOG.md) 第 3 节 | `NoteStore` 是唯一写盘入口；全局版本号机制不能动 |
 | 对话/流式回复 | [`docs/modules/chat/README.md`](modules/chat/README.md) + [DECISIONS.md ADR-006](DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage) | SSE 事件顺序/心跳处理有约束 |
 | LLM Provider/Key | [`docs/modules/llm/README.md`](modules/llm/README.md) + [DECISIONS.md ADR-006](DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage) | API Key 必走 secure storage，不能落地明文 |
 | 全文搜索/跳转 | [`docs/modules/search/README.md`](modules/search/README.md) | 跨模块跳转靠 `routeName + args`，不能直接 import UI |

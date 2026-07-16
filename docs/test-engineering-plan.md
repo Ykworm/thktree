@@ -27,70 +27,70 @@
 ```
 integration_test/
 │
-├── _support/                              ← 全局 helpers & fixtures（三端共享）
-│   ├── test_helpers.dart                     通用工具（waitForText, pumpAndSettle 等）
-│   ├── topic_library.dart                    3×3×3 树 fixture 定义
-│   ├── topic_llm_client.dart                 mock LLM client
-│   ├── search_fixtures.dart                  搜索测试磁盘直写 fixture
-│   ├── llm_test_config.dart                  --dart-define-from-file 加载 LLM key
-│   ├── in_memory_llm_config_store.dart       内存 LLM config（免 Keychain）
-│   ├── failing_search_service.dart           搜索失败 fake service
-│   └── step_timer.dart                       步骤计时
+├── _support/ ← 全局 helpers & fixtures（三端共享）
+│ ├── test_helpers.dart 通用工具（waitForText, pumpAndSettle 等）
+│ ├── topic_library.dart 3×3×3 树 fixture 定义
+│ ├── topic_llm_client.dart mock LLM client
+│ ├── search_fixtures.dart 搜索测试磁盘直写 fixture
+│ ├── llm_test_config.dart --dart-define-from-file 加载 LLM key
+│ ├── in_memory_llm_config_store.dart 内存 LLM config（免 Keychain）
+│ ├── failing_search_service.dart 搜索失败 fake service
+│ └── step_timer.dart 步骤计时
 │
-├── common/                                ← 跨平台测例（三端 CI 都跑，不含 Platform.is*）
-│   ├── theme_chat_e2e_test.dart              主题→节点→聊天 2 round
-│   ├── branch_creation_test.dart             三种分支模式
-│   ├── node_reorder_test.dart                拖拽排序
-│   ├── merge_chat_button_test.dart           合并按钮→确认页
-│   ├── chat_streaming_test.dart              流式回复
-│   ├── chat_breadcrumb_test.dart             面包屑导航
-│   ├── chat_latex_overflow_test.dart         LaTeX 渲染回归
-│   ├── note_crud_test.dart                   笔记 CRUD
-│   ├── note_search_test.dart                 笔记全文搜索
-│   ├── note_title_required_test.dart         标题必填
-│   ├── note_to_chat_test.dart                笔记→对话
-│   ├── offline_test.dart                     离线模式
-│   ├── search_test.dart                      搜索端到端
-│   ├── search_settings_button_test.dart      搜索→设置入口
-│   ├── keyword_ranking_test.dart             关键词排行
-│   ├── lab_tab_test.dart                     Lab tab
-│   ├── backup_restore_test.dart              备份恢复
-│   ├── topic_library_tree_note_test.dart     3×3×3 树生成+校验
-│   └── llm_error_retry_test.dart             LLM 错误重试
+├── common/ ← 跨平台测例（三端 CI 都跑，不含 Platform.is*）
+│ ├── theme_chat_e2e_test.dart 主题→节点→聊天 2 round
+│ ├── branch_creation_test.dart 三种分支模式
+│ ├── node_reorder_test.dart 拖拽排序
+│ ├── merge_chat_button_test.dart 合并按钮→确认页
+│ ├── chat_streaming_test.dart 流式回复
+│ ├── chat_breadcrumb_test.dart 面包屑导航
+│ ├── chat_latex_overflow_test.dart LaTeX 渲染回归
+│ ├── note_crud_test.dart 笔记 CRUD
+│ ├── note_search_test.dart 笔记全文搜索
+│ ├── note_title_required_test.dart 标题必填
+│ ├── note_to_chat_test.dart 笔记→对话
+│ ├── offline_test.dart 离线模式
+│ ├── search_test.dart 搜索端到端
+│ ├── search_settings_button_test.dart 搜索→设置入口
+│ ├── keyword_ranking_test.dart 关键词排行
+│ ├── lab_tab_test.dart Lab tab
+│ ├── backup_restore_test.dart 备份恢复
+│ ├── topic_library_tree_note_test.dart 3×3×3 树生成+校验
+│ └── llm_error_retry_test.dart LLM 错误重试
 │
-└── platform/                              ← 平台有关，按 feature 拆
-    ├── branch/                            ← Feature: 分支创建
-    │   ├── branch_shared.dart                公共步骤：建节点、发消息、断言分支存在
-    │   ├── ios_test.dart                     iOS: 长按选文本→branch
-    │   ├── android_test.dart                 Android: 点 branch 按钮→branch（无 SelectionArea）
-    │   └── macos_test.dart                   macOS: 右键菜单→branch
-    │
-    ├── image/                             ← Feature: 图片插入
-    │   ├── image_shared.dart                 公共步骤：断言图片出现在消息中、助手回复
-    │   ├── android_test.dart                 Android: 拍照 + 相册
-    │   └── ios_test.dart                     iOS: 相机 + Photo Library
-    │
-    ├── share/                             ← Feature: 分享导出
-    │   ├── share_shared.dart                 公共步骤：断言分享 sheet 出现、图片生成
-    │   ├── android_test.dart                 Android: share 按钮→系统分享→保存
-    │   └── ios_test.dart                     iOS: share 按钮→UIActivityViewController
-    │
-    ├── recovery/                          ← Feature: 后台恢复
-    │   ├── recovery_shared.dart              公共步骤：断言中断状态、恢复后消息完整
-    │   └── ios_test.dart                     iOS: 后台任务中断→恢复
-    │
-    └── desktop/                           ← Feature: 桌面端交互（macOS 独有）
-        ├── desktop_shared.dart               公共桌面步骤：侧栏、pane、键盘快捷键
-        ├── theme_chat_test.dart              macOS: 三栏 theme→chat
-        ├── comprehensive_test.dart           macOS: 综合 E2E
-        ├── nav_helpers.dart                  导航辅助
-        ├── branch_helpers.dart               分支辅助
-        ├── chat_helpers.dart                 聊天辅助
-        ├── interaction_helpers.dart          鼠标/键盘辅助
-        ├── node_helpers.dart                 节点树辅助
-        ├── primitive_helpers.dart            平台原语替换（sheet→menu 等）
-        ├── test_fixtures.dart                桌面测试夹具
-        └── theme_helpers.dart                主题辅助
+└── platform/ ← 平台有关，按 feature 拆
+ ├── branch/ ← Feature: 分支创建
+ │ ├── branch_shared.dart 公共步骤：建节点、发消息、断言分支存在
+ │ ├── ios_test.dart iOS: 长按选文本→branch
+ │ ├── android_test.dart Android: 点 branch 按钮→branch（无 SelectionArea）
+ │ └── macos_test.dart macOS: 右键菜单→branch
+ │
+ ├── image/ ← Feature: 图片插入
+ │ ├── image_shared.dart 公共步骤：断言图片出现在消息中、助手回复
+ │ ├── android_test.dart Android: 拍照 + 相册
+ │ └── ios_test.dart iOS: 相机 + Photo Library
+ │
+ ├── share/ ← Feature: 分享导出
+ │ ├── share_shared.dart 公共步骤：断言分享 sheet 出现、图片生成
+ │ ├── android_test.dart Android: share 按钮→系统分享→保存
+ │ └── ios_test.dart iOS: share 按钮→UIActivityViewController
+ │
+ ├── recovery/ ← Feature: 后台恢复
+ │ ├── recovery_shared.dart 公共步骤：断言中断状态、恢复后消息完整
+ │ └── ios_test.dart iOS: 后台任务中断→恢复
+ │
+ └── desktop/ ← Feature: 桌面端交互（macOS 独有）
+ ├── desktop_shared.dart 公共桌面步骤：侧栏、pane、键盘快捷键
+ ├── theme_chat_test.dart macOS: 三栏 theme→chat
+ ├── comprehensive_test.dart macOS: 综合 E2E
+ ├── nav_helpers.dart 导航辅助
+ ├── branch_helpers.dart 分支辅助
+ ├── chat_helpers.dart 聊天辅助
+ ├── interaction_helpers.dart 鼠标/键盘辅助
+ ├── node_helpers.dart 节点树辅助
+ ├── primitive_helpers.dart 平台原语替换（sheet→menu 等）
+ ├── test_fixtures.dart 桌面测试夹具
+ └── theme_helpers.dart 主题辅助
 ```
 
 ### 命名规则
@@ -108,10 +108,10 @@ integration_test/
 新测试需要 Platform.is* / defaultTargetPlatform 分支吗？
 ├── 否 → common/<feature>_test.dart
 └── 是
-    ├── 已有 platform/<feature>/ 目录？
-    │   ├── 是 → platform/<feature>/<platform>_test.dart
-    │   └── 否 → 新建 platform/<feature>/，提取公共步骤到 <feature>_shared.dart
-    └── 公共步骤提取到 <feature>_shared.dart，各平台 _test.dart import 它
+ ├── 已有 platform/<feature>/ 目录？
+ │ ├── 是 → platform/<feature>/<platform>_test.dart
+ │ └── 否 → 新建 platform/<feature>/，提取公共步骤到 <feature>_shared.dart
+ └── 公共步骤提取到 <feature>_shared.dart，各平台 _test.dart import 它
 ```
 
 ---
@@ -176,15 +176,15 @@ integration_test/
 
 > 主仓当前在 `codex/ui-flatten-polish`（非 dev）。重排完成、用户实测通过后，再 `rebase origin/dev` + `--ff-only` 合并回 dev（遵循 AGENTS.md 红线）。
 
-### Phase 5：落地测试规范 skill（替代原 AGENTS.md §4 方案）
+### Phase 5：落地测试规范 skill（替代原 AGENTS.md 第 4 节 方案）
 
 > 决策（2026-07-12）：不把测试规范内联进 AGENTS.md，改为 project-level skill，做测试任务时按需调用。
 
 | 步骤 | 操作 |
 |---|---|
-| 5.1 | 新建 `.workbuddy/skills/thktree-e2e-test/SKILL.md`（承载 §2-§4 规范）✅ 已完成 |
+| 5.1 | 新建 `.workbuddy/skills/thktree-e2e-test/SKILL.md`（承载 第 2 节-第 4 节 规范）✅ 已完成 |
 | 5.2 | `AGENTS.md` 第 25 行：集成测试 → 指向 `thktree-e2e-test` skill ✅ 已完成 |
-| 5.3 | 本 Plan §4 标记"已落地为 skill"，不再写入 AGENTS.md ✅ 已完成 |
+| 5.3 | 本 Plan 第 4 节 标记"已落地为 skill"，不再写入 AGENTS.md ✅ 已完成 |
 
 详见 `.workbuddy/skills/thktree-e2e-test/SKILL.md`。
 
@@ -192,7 +192,7 @@ integration_test/
 
 ## 4. 测试规范（已落地为 `.workbuddy/skills/thktree-e2e-test` skill）
 
-> 2026-07-12 决策：原规划写入 AGENTS.md §4，改为 project-level skill 承载（避免 AGENTS.md 膨胀、违反其"保持精简"原则）。AGENTS.md 仅保留一行指针。本 § 保留作单一真源参考。
+> 2026-07-12 决策：原规划写入 AGENTS.md 第 4 节，改为 project-level skill 承载（避免 AGENTS.md 膨胀、违反其"保持精简"原则）。AGENTS.md 仅保留一行指针。本 保留作单一真源参考。
 
 ```markdown
 ## 测试规范
@@ -204,8 +204,8 @@ integration_test/ 按以下规则组织：
 - `_support/`：全局 helpers & fixtures，三端共享
 - `common/`：跨平台测例，不含任何 Platform.is* / defaultTargetPlatform 分支
 - `platform/<feature>/`：平台有关测例，按 feature 拆分
-  - `<feature>_shared.dart`：该 feature 的公共步骤（setup、断言）
-  - `<platform>_test.dart`：各平台特有逻辑
+ - `<feature>_shared.dart`：该 feature 的公共步骤（setup、断言）
+ - `<platform>_test.dart`：各平台特有逻辑
 
 ### 新增测试时
 

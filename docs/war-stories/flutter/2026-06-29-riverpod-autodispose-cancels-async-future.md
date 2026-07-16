@@ -90,7 +90,7 @@ Future<AutoTitleState> build() async {
 
 ## 相关文件
 
-- `lib/ui/features/chat/auto_title_controller.dart` — 新增 `ref.keepAlive()` + § 5 文档说明
+- `lib/ui/features/chat/auto_title_controller.dart` — 新增 `ref.keepAlive()` + 第 5 节 文档说明
 - `lib/ui/features/chat/chat_screen.dart:165-176` — chat_screen 与 tree 的 push/pop 关系
 - `lib/ui/features/chat/chat_screen.dart:480-560` — 旧 `_triggerBlankAutoTitle`（删除，迁到 Notifier）
 - `lib/ui/features/themes/theme_detail_controller.dart` — tree controller（autoDispose，按需 reload，与本 Notifier 不同的设计）
@@ -118,6 +118,6 @@ Future<AutoTitleState> build() async {
 ### 以后如何避免同类问题？
 
 1. **任何"后台任务型" Notifier**（任务跑完才结束、与 widget 生命周期无关）**必须**加 `ref.keepAlive()`——把"双标记范式"作为 chat 模块的强约束
-2. **集成测试新增"提前 pop 等后台任务跑完"模式**——参 case 9.5 / 9.6（[branch-creation.md § 5.12/5.13](../_shared/integration-testing/branch-creation.md)），必须存在
-3. **模块 README 显式提醒**——在 `lib/ui/features/chat/README.md`"AI 改模块前必读"加了 § 6：所有 AutoTitleController 相关改动必须确认 keepAlive 是否仍适用
+2. **集成测试新增"提前 pop 等后台任务跑完"模式**——参 case 9.5 / 9.6（[branch-creation.md 第 5.12 节/5.13](../_shared/integration-testing/branch-creation.md)），必须存在
+3. **模块 README 显式提醒**——在 `lib/ui/features/chat/README.md`"AI 改模块前必读"加了 第 6 节：所有 AutoTitleController 相关改动必须确认 keepAlive 是否仍适用
 4. **code review 检查清单**——任何 `AsyncNotifierProvider.autoDispose.family` 的 `build()` 没调 `ref.keepAlive()` 需评估"是不是后台任务型"，是的话必须加

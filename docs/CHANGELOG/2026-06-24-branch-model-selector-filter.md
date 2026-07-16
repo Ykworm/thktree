@@ -12,7 +12,7 @@
 
 2026-06-22 CHANGELOG（[2026-06-22](./2026-06-22-branch-creation-test.md)）记录了分支创建集成测试 case 1-4 实跑通过，留下 3 项未完成工作：case 5/6 scaffold 待实跑、case 7 需建 LLM mock 工具、3 个 helper 重复未提取。
 
-继续推进过程中，发现两个**实际触发比 spec § 8 预想更紧迫**的问题：
+继续推进过程中，发现两个**实际触发比 spec 第 8 节 预想更紧迫**的问题：
 
 1. **`_ModelSelectorSheet.build` 的 sheet filter 漏洞**：原实现 sheet 弹出时调用 `_filterAvailableModels` 过滤掉「无 apiKey 的 provider」，但 `_ModelSelectorSheet` 内部还**冗余地用 provider.apiKey 二次校验**——这两层校验在 SettingsStore 和 providers 列表不一致时会漏掉未配置的 provider，导致 sheet 选项为空但仍渲染 sheet action（用户点了 sheet action 才发现没模型）。
 2. **LLM 未配置的死路死循环**：当用户从未配置过 LLM 时，`showBranchFlow` 入口调 `_resolveModelForSummary` 会得到 null，弹"pleaseFetchModels"提示；但提示后用户必须手动跳到 LLM 设置页，否则下次再点 branch 又走死路。这是**配置未初始化的常见状态**——尤其是新装 App 的用户首次使用 branch 功能。spec 当时未识别为风险。
@@ -30,11 +30,11 @@
 final available = providers.where((p) => p.apiKey.isNotEmpty).toList();
 // 但 sheet action 渲染时仍再次判断
 for (final provider in available) {
-  // ⚠️ 这里又判断了一次 apiKey.isNotEmpty，与 SettingsStore 不一致时
-  // 可用的 provider 列表会变成空
-  if (provider.apiKey.isNotEmpty && /* 其他条件 */) {
-    // 渲染 sheet action
-  }
+ // ⚠️ 这里又判断了一次 apiKey.isNotEmpty，与 SettingsStore 不一致时
+ // 可用的 provider 列表会变成空
+ if (provider.apiKey.isNotEmpty && /* 其他条件 */) {
+ // 渲染 sheet action
+ }
 }
 ```
 
@@ -50,8 +50,8 @@ for (final provider in available) {
 // _resolveModelForSummary 返回 null 时
 final resolved = await _resolveModelForSummary(...);
 if (resolved == null) {
-  await _showPleaseFetchModelsSheet(context);  // 弹提示
-  return;  // 直接 return
+ await _showPleaseFetchModelsSheet(context); // 弹提示
+ return; // 直接 return
 }
 // 否则继续走 sheet → 用户选 → 调 LLM
 ```
@@ -75,18 +75,18 @@ if (resolved == null) {
 ```dart
 // lib/ui/core/shared/llm_setup_check.dart（commit c8176a7 新增）
 enum LlmSetupStatus {
-  ready,                          // 有可用 provider + model + apiKey
-  noProviderConfigured,           // providers 列表为空
-  noTitleModelConfigured,         // 用途 title 但缺 title 模型
-  noSummaryModelConfigured,       // 用途 summarize 但缺 summary 模型
-  noApiKeyForCurrentProvider,     // provider 存在但 apiKey 缺失
+ ready, // 有可用 provider + model + apiKey
+ noProviderConfigured, // providers 列表为空
+ noTitleModelConfigured, // 用途 title 但缺 title 模型
+ noSummaryModelConfigured, // 用途 summarize 但缺 summary 模型
+ noApiKeyForCurrentProvider, // provider 存在但 apiKey 缺失
 }
 
 LlmSetupStatus checkLlmSetup({
-  required LlmSetupUsage usage,         // .summarize / .title
-  required List<LlmProvider> providers,
-  String? currentProviderId,
-  String? currentModelId,
+ required LlmSetupUsage usage, // .summarize / .title
+ required List<LlmProvider> providers,
+ String? currentProviderId,
+ String? currentModelId,
 });
 ```
 
@@ -158,7 +158,7 @@ Xcode build 耗时 25.2s（首次冷启动），6 个 testWidgets 依次跑完�
 
 ### branch-creation.md 大改版
 
-状态行、§ 2 测试现状表、§ 3.3 解析逻辑（`_resolveModelForSummary` → `checkLlmSetup`）、§ 3.4 ValueKey 清单、§ 4.3 LLM mock 方案 A 描述、§ 5 编写路线实跑状态、§ 7 阻塞点汇总、§ 8 已知风险、§ 9 当前结果、§ 10 Checklist、§ 11 相关文档链接全部更新。详见 [branch-creation.md 大改版 diff](`git diff docs/_shared/integration-testing/branch-creation.md`)。
+状态行、第 2 节 测试现状表、第 3.3 节 解析逻辑（`_resolveModelForSummary` → `checkLlmSetup`）、第 3.4 节 ValueKey 清单、第 4.3 节 LLM mock 方案 A 描述、第 5 节 编写路线实跑状态、第 7 节 阻塞点汇总、第 8 节 已知风险、第 9 节 当前结果、第 10 节 Checklist、第 11 节 相关文档链接全部更新。详见 [branch-creation.md 大改版 diff](`git diff docs/_shared/integration-testing/branch-creation.md`)。
 
 ## 验证
 
@@ -179,14 +179,14 @@ Xcode build 耗时 25.2s（首次冷启动），6 个 testWidgets 依次跑完�
 
 ## 已知风险（留给后续决定）
 
-- **case 7 阻塞在 LLM mock 工具缺口**：`integration_test/_support/` 当前无 HTTP mock 通道，与 2026-06-22 CHANGELOG 记录的状态一致。本轮未新增 mock 工具，建议下轮单独处理（候选方案见 [2026-06-22 CHANGELOG § 已知风险](./2026-06-22-branch-creation-test.md#已知风险留给后续决定)）。
+- **case 7 阻塞在 LLM mock 工具缺口**：`integration_test/_support/` 当前无 HTTP mock 通道，与 2026-06-22 CHANGELOG 记录的状态一致。本轮未新增 mock 工具，建议下轮单独处理（候选方案见 [2026-06-22 CHANGELOG 已知风险](./2026-06-22-branch-creation-test.md#已知风险留给后续决定)）。
 - **3 个 helper 仍未提取**：`branch_creation_test.dart` 内 `_createTestTheme` / `_createTestNode` / `_sendMessage` 仍重复 4 次（每个 testWidgets 一次），未提取到 `_support/test_fixtures.dart`。case 1-6 实跑不依赖 helper 提取，但属于技术债。
 - **commit 545f594 混入代码 commit 序列的违规操作**仍记录在 2026-06-22 CHANGELOG 中，本轮未引入新的"代码/文档 commit 混用"——5 个 commit 全部是代码/l10n 改动，未修改 doc。
 - **Keychain 状态泄漏**：本轮实跑通过 commit `d937c07` + `14fdc79` 修复（ProviderScope override 残留清理 + isStreaming 时 branch_button disable 处理），但详见 [war-story 2026-06-24 Keychain 状态泄漏](../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md)——问题有排查成本、根因隐蔽、有复用价值，单独记录。
 
 ## 关联
 
-- [CHANGELOG 2026-06-22](./2026-06-22-branch-creation-test.md) — case 1-4 首跑 + 翻转 spec § 8 不实现决策
+- [CHANGELOG 2026-06-22](./2026-06-22-branch-creation-test.md) — case 1-4 首跑 + 翻转 spec 第 8 节 不实现决策
 - [docs/_shared/integration-testing/branch-creation.md](../_shared/integration-testing/branch-creation.md) — 集成测试规范（本次大改版）
 - [docs/war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md](../war-stories/flutter/2026-06-24-integration-test-keychain-state-leak.md) — Keychain 状态泄漏单独 war-story
 - [ADR-015](../DECISIONS.md#adr-015-分支创建集成测试-4-chat-并行推进翻转不实现-case-1-7旧决策) — 翻转不实现决策的正式记录

@@ -44,6 +44,6 @@
 
 ## 影响文档
 
-- `docs/FEATURES.md` — § 5 LLM 模型列表获取状态更新 + § 最近变更新增条目
-- `docs/modules/llm/README.md` — § 联网搜索支持新增豆包白名单段落
-- `docs/modules/chat/README.md` — § 图片上传 vision 模型列表补充豆包
+- `docs/FEATURES.md` — 第 5 节 LLM 模型列表获取状态更新 + 最近变更新增条目
+- `docs/modules/llm/README.md` — 联网搜索支持新增豆包白名单段落
+- `docs/modules/chat/README.md` — 图片上传 vision 模型列表补充豆包

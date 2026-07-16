@@ -99,7 +99,7 @@
 
 ### 3. 节点配色系统（`_NodePalette`）
 
-5 套双色配色方案（见 [theme-detail-design.md §1](theme-detail-design.md)），通过 `nodeId.hashCode.abs() % 5` 稳定分配：
+5 套双色配色方案（见 [theme-detail-design.md 第 1 节](theme-detail-design.md)），通过 `nodeId.hashCode.abs() % 5` 稳定分配：
 
 | Index | 圆圈 | 标题 | 副标题 | 风格 |
 |-------|------|------|--------|------|
@@ -269,5 +269,5 @@
 
 - **2026-06-07**：原 `docs/visual/conversation-tree-design-plan.md`（单点重构方案）重构为模块设计参考（README + 2 子文档）
   - 原内容：节点卡片重构方案（5 套配色 + 圆圈交互 + 拖拽/swipe 颜色 + Test Plan）
-  - 新位置：本目录 [README.md](README.md) + [theme-detail-design.md §1-4](theme-detail-design.md)
+  - 新位置：本目录 [README.md](README.md) + [theme-detail-design.md 第 1 节-4](theme-detail-design.md)
 - **2026-06-06**：`docs/visual/warm-minimal-design-plan.md`：暖色调 → 蓝靛渐变视觉重构（已实施；色彩令牌已合入 [`../../../_shared/design-system.md`](../../../_shared/design-system.md)）

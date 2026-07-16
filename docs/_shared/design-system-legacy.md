@@ -67,7 +67,7 @@ ThkTree 采用 **iOS-first Cupertino** 视觉风格，融合 **典雅黑金色�
 
 ### 1.2 节点色（`NodePalette`，`AppColors` 内公开类）
 
-节点卡片独有的扩展系统，5 套配色（圆圈 + 标题 + 副标题），典雅黑金色调，详见 [theme-detail-design.md §1](../modules/themes/visual/theme-detail-design.md)。
+节点卡片独有的扩展系统，5 套配色（圆圈 + 标题 + 副标题），典雅黑金色调，详见 [theme-detail-design.md 第 1 节](../modules/themes/visual/theme-detail-design.md)。
 
 | Index | 圆圈 | 标题 | 副标题 | 风格 |
 |-------|------|------|--------|------|

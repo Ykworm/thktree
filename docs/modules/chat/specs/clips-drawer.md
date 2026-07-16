@@ -93,7 +93,7 @@ ThkTree 现有的记录方式都比较"重"——开一轮完整对话、写一�
 
 - 磁盘存储，App 重启后还在
 - 全局作用域，不绑定 session/node/theme
-- 存储格式见 §6
+- 存储格式见第 6 节
 
 ## 6. 存储契约
 
@@ -132,7 +132,7 @@ ThkTree 现有的记录方式都比较"重"——开一轮完整对话、写一�
 
 ### 6.3 原子写
 
-遵循 `storage-format.md` §2.4 原子写规范：写入 `clips.json.tmp` 同目录临时文件后 `rename` 原子替换。
+遵循 `storage-format.md` 第 2.4 节 原子写规范：写入 `clips.json.tmp` 同目录临时文件后 `rename` 原子替换。
 
 ### 6.4 向后兼容
 
@@ -299,7 +299,7 @@ Container(  // 发送按钮
 - 顶部：标题"碎片" + 右侧"管理"文字按钮
 - 列表：`ListView.builder`，每条 item 显示截断文本
 - item 点击：插入文本到 `TextEditingController` 光标位置，sheet 保持打开
-- item 长按：弹出预览 card（§3.3）
+- item 长按：弹出预览 card（第 3.3 节）
 - 截断 fade：`ShaderMask` + `LinearGradient` 实现底部渐变
 - 空状态：居中提示"暂无碎片，长按选中文本可存入"
 
@@ -349,7 +349,7 @@ Container(  // 发送按钮
 
 ### Phase 5：验证
 12. **编译验证**：`dart analyze` 无新增 issue
-13. **集成测试**：按 §10 验收清单逐项验证
+13. **集成测试**：按 第 10 节 验收清单逐项验证
 
 ## 10. 验收方式
 

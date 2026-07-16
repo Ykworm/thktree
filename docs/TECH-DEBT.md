@@ -5,7 +5,7 @@
 
 | 项目 | 严重程度 | 说明 | 记录日期 |
 |------|----------|------|----------|
-| `appPathsProvider` 未就绪时笔记列表短暂空态 | 中 | 笔记模块 CHANGELOG § 5 已记；`_loadThemeNotes` 已改为 `await ref.read(appPathsProvider.future)`，但未完成前页面会闪一下空列表 | 2026-06-07 |
+| `appPathsProvider` 未就绪时笔记列表短暂空态 | 中 | 笔记模块 CHANGELOG 第 5 节 已记；`_loadThemeNotes` 已改为 `await ref.read(appPathsProvider.future)`，但未完成前页面会闪一下空列表 | 2026-06-07 |
 | `ShareService` + `ShareCardWidget` 存在但分享流程未闭环 | 中 | settings 模块 feature 表“分享功能”标 🔨 部分实现，缺触发入口/分享内容生成 | 2026-06-07 |
 | `docs/_tmp/` 集成测试 report 缺定期清理机制 | 低 | 收尾流程已补充 planning doc 清理（步骤 5），但 report 文件（如 `step-timer-report.md`）保留策略未定：保留多少份、何时归档或删除、是否需要索引。需制定方案避免 `_tmp` 目录无限膨胀 | 2026-06-22 |
 | `autoTitleControllerProvider` 内存常驻 | 低 | 用 `ref.keepAlive()`（ADR-018）后 Notifier 实例永不被自动 dispose。每个 chat nodeId 一次任务完成后保留一个 AutoTitleController 实例（实测 ~100B/instance）。当前估算单次会话 1-2 个实例完全可接受。后续可考虑 WeakReference + 定时清理（暂不实施，待 keepAlive 任务累计超 1000 个再 review） | 2026-06-29 |
@@ -25,7 +25,7 @@
 | 项目 | 解决方案 | 关闭日期 |
 |------|----------|----------|
 | Markdown 渲染库选型 | 已决策 `flutter_markdown → gpt_markdown`（见 [DECISIONS.md ADR-007](DECISIONS.md#adr-007-markdown-渲染库-gpt_markdown-替代-flutter_markdown)） | 2026-06-07 |
-| 笔记刷新机制不稳定 | 改为全局版本号 + tab 切换触发（见 docs/modules/notes/CHANGELOG.md § 3） | 2026-05-27 |
+| 笔记刷新机制不稳定 | 改为全局版本号 + tab 切换触发（见 docs/modules/notes/CHANGELOG.md 第 3 节） | 2026-05-27 |
 | 暖色调主题与节点色风格冲突 | 改用清新调色板（见 docs/CHANGELOG/2026-06-06-warm-minimal-redesign.md） | 2026-06-06 |
 | 递归 _TreeRowView 改拍平 | 低 | 当前用递归 Column 渲染子节点，深嵌套时 widget 树膨胀。降级方案：加 4 层深度上限。彻底方案：拍平成 List<FlatNode> + ListView.builder | 2026-06-11 |
 | _withLastMessagePreviews 串行读文件 | 低 | ThemeDetailController._load() 中逐个节点读 session.md，O(n) 次文件 IO。改为 Future.wait 并行读取或 compute isolate | 2026-06-11 |

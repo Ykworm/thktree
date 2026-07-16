@@ -54,14 +54,14 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 1. **路径相关** — 文件路径是否含本次改动的模块名（例：改动涉及 `lib/ui/notes/` → `docs/modules/notes/**` 路径相关）
 2. **内容相关** — doc 内容是否引用本次改动涉及的类名/函数名/组件名/常量名（用 rg 快扫，rg 不可用则 fallback grep）
 3. **类型相关** — 改动类型 × doc 类型的对应关系：
-   - 功能新增/删除 → `FEATURES.md` + 对应模块 README
-   - 依赖变更 → `TECH-DEBT.md` + `DECISIONS.md`
-   - 设计决策 → `DECISIONS.md`（新增 ADR）
-   - 视觉/交互 → 模块 README（含 `visual/` 子目录）+ `_shared/design-system.md` + `_shared/design.md`
-   - 架构层变更 → `ARCHITECTURE.md`
-   - 数据模型 → `_shared/storage-format.md` + 对应模块 README
-   - 主题/样式 → `modules/themes/` 相关
-   - 技术性问题修复 / 排障 / 兼容性坑 / 构建坑 → 若满足 war-story 候选条件，则纳入 `docs/war-stories/**`；并继续评估是否需要同步 `docs/CHANGELOG/**`、模块 README 或 `ARCHITECTURE.md`
+ - 功能新增/删除 → `FEATURES.md` + 对应模块 README
+ - 依赖变更 → `TECH-DEBT.md` + `DECISIONS.md`
+ - 设计决策 → `DECISIONS.md`（新增 ADR）
+ - 视觉/交互 → 模块 README（含 `visual/` 子目录）+ `_shared/design-system.md` + `_shared/design.md`
+ - 架构层变更 → `ARCHITECTURE.md`
+ - 数据模型 → `_shared/storage-format.md` + 对应模块 README
+ - 主题/样式 → `modules/themes/` 相关
+ - 技术性问题修复 / 排障 / 兼容性坑 / 构建坑 → 若满足 war-story 候选条件，则纳入 `docs/war-stories/**`；并继续评估是否需要同步 `docs/CHANGELOG/**`、模块 README 或 `ARCHITECTURE.md`
 
 **白名单兜底**：`FEATURES.md`、`TECH-DEBT.md`、`DECISIONS.md` 任何代码改动都要扫一遍。
 
@@ -100,8 +100,8 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 ```markdown
 ## 📊 影响清单（共遍历 N 个 doc，影响 M 个）
 
-- 📄 `docs/FEATURES.md` — 大改版 · § 笔记模块
-- 📄 `docs/modules/notes/README.md` — 小补 · § API 列表
+- 📄 `docs/FEATURES.md` — 大改版 · 笔记模块
+- 📄 `docs/modules/notes/README.md` — 小补 · API 列表
 - 📄 `docs/DECISIONS.md` — 新增 · ADR-013
 - 📄 `docs/ARCHITECTURE.md` — 不影响 · 未涉及架构层变更
 - 📄 `docs/_shared/design-system.md` — 待确认 · 本次改了 button 样式，是否需要更新 spacing token？
@@ -120,22 +120,22 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 ## 📄 docs/FEATURES.md
 
 **变更类型**：大改版
-**影响范围**：§ 笔记模块（§ 1.1、§ 1.3）+ § 主题模块（§ 2.3）
+**影响范围**： 笔记模块（第 1.1 节、第 1.3 节）+ 主题模块（第 2.3 节）
 **触发原因**：本次重构 NoteService，增加 password 保护 + AI 摘要两步
 
-### § 笔记模块
+### 笔记模块
 
-#### § 1.1 创建流程 — 修改
+#### 第 1.1 节 创建流程 — 修改
 
 **变更描述**：在"创建笔记"步骤后增加"AI 摘要自动写入"一步，触发条件 note.title.length > 5
 
-#### § 1.3 字段说明 — 新增
+#### 第 1.3 节 字段说明 — 新增
 
 **变更描述**：新增 `note.summary` 字段说明（AI 自动摘要，30 字以内，由 NoteService.create() 同步生成）
 
-### § 主题模块
+### 主题模块
 
-#### § 2.3 密码保护 — 小补
+#### 第 2.3 节 密码保护 — 小补
 
 **变更描述**：补充密码 fallback 路径——忘记密码可重新创建主题（数据无法恢复）
 
@@ -147,26 +147,26 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 **影响范围**：新增 war-story + 更新索引
 **触发原因**：本次会话已形成"现象 + 根因 + 解决方案"，且问题需要排查才能定位、并有复盘价值
 
-### § 现象 — 新增
+### 现象 — 新增
 
 **变更描述**：补充用户可感知的异常表现、触发条件和复现环境。
 
-### § 根因分析 — 新增
+### 根因分析 — 新增
 
 **变更描述**：说明问题为何发生，涉及哪些依赖、时序、平台差异或实现细节。
 
-### § 解决方案 — 新增
+### 解决方案 — 新增
 
 **变更描述**：记录最终采用的修复方案、放弃的错误方向，以及后续避免方式。
 ```
 
 **卡片字段说明**：
 - **变更类型**：大改版 / 小补 / 新增 / 删除
-- **影响范围**：§ 章节定位，可多个
+- **影响范围**： 章节定位，可多个
 - **触发原因**：AI 自动生成（基于 git diff + 会话上下文推断），不是用户输入
 - **变更描述**：自然语言，讲清楚改什么、为什么改
 
-**大改版横跨多章节时**：卡片内按"原章节 § X.X"再切分小节。
+**大改版横跨多章节时**：卡片内按"原章节 X.X"再切分小节。
 
 ### Step 6：用户确认
 
@@ -200,8 +200,8 @@ find docs -type f \( -name "*.md" -o -name "*.yaml" \)
 - 未提交（留给用户统一 commit）
 
 已改文件：
-- docs/FEATURES.md（§ 1.1、§ 1.3、§ 2.3）
-- docs/modules/notes/README.md（§ API 列表）
+- docs/FEATURES.md（第 1.1 节、第 1.3 节、第 2.3 节）
+- docs/modules/notes/README.md（ API 列表）
 - docs/DECISIONS.md（新增 ADR-013）
 - docs/war-stories/ui-ux/2026-06-20-xxx.md（新增 war-story）
 - docs/war-stories/README.md（更新索引）

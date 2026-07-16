@@ -230,5 +230,5 @@ class _LlmSettingsEntry extends ConsumerWidget {
 
 - [docs/_tmp/2026-06-20-llm-subpages-selection-page.md](../_tmp/2026-06-20-llm-subpages-selection-page.md) — 原始设计意图(39 行)
 - [docs/_tmp/2026-06-20-model-config-redesign.md](../_tmp/2026-06-20-model-config-redesign.md) — 同日 chat 模块的模型配置 redesign 草稿
-- [docs/FEATURES.md § 5 LLM 模块](../FEATURES.md#5-llm-模块llm) — 功能行"LLM Provider 管理"已更新为 2026-06-20
-- [docs/FEATURES.md § 6 设置模块](../FEATURES.md#6-设置模块settings) — 功能行"设置页"已更新为 2026-06-20
+- [docs/FEATURES.md 第 5 节 LLM 模块](../FEATURES.md#5-llm-模块llm) — 功能行"LLM Provider 管理"已更新为 2026-06-20
+- [docs/FEATURES.md 第 6 节 设置模块](../FEATURES.md#6-设置模块settings) — 功能行"设置页"已更新为 2026-06-20

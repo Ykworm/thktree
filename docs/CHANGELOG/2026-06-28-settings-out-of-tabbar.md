@@ -33,12 +33,12 @@
 ### 修改文件（3）+ 新增文件（1）
 
 ```
-lib/ui/core/router.dart                                     # 路由改造
-lib/ui/features/search/search_screen.dart                   # 顶栏加齿轮按钮
-docs/FEATURES.md                                            # 最近变更 + 设置模块 row 更新
-docs/CHANGELOG/2026-06-28-settings-out-of-tabbar.md        # 本文件
+lib/ui/core/router.dart # 路由改造
+lib/ui/features/search/search_screen.dart # 顶栏加齿轮按钮
+docs/FEATURES.md # 最近变更 + 设置模块 row 更新
+docs/CHANGELOG/2026-06-28-settings-out-of-tabbar.md # 本文件
 
-integration_test/search_settings_button_test.dart           # 新增集成测试（1 case）
+integration_test/search_settings_button_test.dart # 新增集成测试（1 case）
 ```
 
 ### 关键改动
@@ -49,11 +49,11 @@ integration_test/search_settings_button_test.dart           # 新增集成测试
 // 移除：StatefulShellBranch for settings（连带 _settingsNavigatorKey）
 // 改为外层 GoRoute，与 /llm-providers 同层：
 GoRoute(
-  path: '/settings',
-  parentNavigatorKey: _rootNavigatorKey,
-  pageBuilder: (context, state) => CupertinoPage(
-    child: const SettingsScreen(),
-  ),
+ path: '/settings',
+ parentNavigatorKey: _rootNavigatorKey,
+ pageBuilder: (context, state) => CupertinoPage(
+ child: const SettingsScreen(),
+ ),
 ),
 ```
 
@@ -63,9 +63,9 @@ GoRoute(
 // 原：4 个 tab（含 settings）
 // 改：3 个 tab（搜索 / 主题 / 笔记）
 final items = <({IconData icon, String label})>[
-  (icon: CupertinoIcons.search, label: l10n.searchTabLabel),
-  (icon: AppIcons.accountTree, label: l10n.themesTabLabel),
-  (icon: AppIcons.note, label: l10n.notes),
+ (icon: CupertinoIcons.search, label: l10n.searchTabLabel),
+ (icon: AppIcons.accountTree, label: l10n.themesTabLabel),
+ (icon: AppIcons.note, label: l10n.notes),
 ];
 ```
 
@@ -73,17 +73,17 @@ final items = <({IconData icon, String label})>[
 
 ```dart
 return CupertinoPageScaffold(
-  navigationBar: CupertinoNavigationBar(
-    middle: Text(l10n.searchTabLabel),
-    trailing: CupertinoButton(
-      key: const ValueKey('settings_button'),
-      padding: EdgeInsets.zero,
-      minSize: 0,
-      onPressed: () => context.push('/settings'),
-      child: SFIcon(AppIcons.settings, fontSize: 22),
-    ),
-  ),
-  child: SafeArea(child: SearchContent()),
+ navigationBar: CupertinoNavigationBar(
+ middle: Text(l10n.searchTabLabel),
+ trailing: CupertinoButton(
+ key: const ValueKey('settings_button'),
+ padding: EdgeInsets.zero,
+ minSize: 0,
+ onPressed: () => context.push('/settings'),
+ child: SFIcon(AppIcons.settings, fontSize: 22),
+ ),
+ ),
+ child: SafeArea(child: SearchContent()),
 );
 ```
 
@@ -119,7 +119,7 @@ return CupertinoPageScaffold(
 
 `context-sync` 同步至：
 
-- `docs/FEATURES.md` § 6 设置模块 row 更新「最后更新」日期 + 说明列补充入口位置；§ 最近变更列表新增 2026-06-28 记录
+- `docs/FEATURES.md` 第 6 节 设置模块 row 更新「最后更新」日期 + 说明列补充入口位置； 最近变更列表新增 2026-06-28 记录
 - 本 CHANGELOG
 
 ## 已知风险（留给后续决定）
@@ -131,4 +131,4 @@ return CupertinoPageScaffold(
 ## 关联
 
 - [`docs/_tmp/settings-out-of-tabbar.md`](../_tmp/settings-out-of-tabbar.md) — brainstorming 草稿（merge 后清理）
-- `docs/FEATURES.md` § 6 设置模块 row + § 最近变更列表 — 同步更新
+- `docs/FEATURES.md` 第 6 节 设置模块 row + 最近变更列表 — 同步更新

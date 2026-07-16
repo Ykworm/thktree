@@ -294,7 +294,7 @@ Future<void> longPressAndWait(
 
 ## 5. 编写路线（3 个 testWidgets 完整代码）
 
-> **前提**：完成 § 4.1 helper 提取 + § 4.2 readNodesInOrder + § 4.3 longPressAndWait 注释。
+> **前提**：完成 第 4.1 节 helper 提取 + 第 4.2 节 readNodesInOrder + 第 4.3 节 longPressAndWait 注释。
 
 ### 5.1 同层节点拖拽重排序
 
@@ -458,10 +458,10 @@ testWidgets('拖拽后刷新保持顺序', (tester) async {
 
 按依赖顺序：
 
-1. **🟡 `_createTheme` / `_createNode` 重复**（§ 4.1）—— `theme_chat_e2e` 和 `node_reorder` 复制粘贴，未提取到 `_support/`
+1. **🟡 `_createTheme` / `_createNode` 重复**（第 4.1 节）—— `theme_chat_e2e` 和 `node_reorder` 复制粘贴，未提取到 `_support/`
 2. **🟡 `_switchToTab` 重复** —— `theme_chat_e2e` line 163 的私有 helper，`node_reorder` 也需要
-3. **🟡 `readNodesInOrder` / `dragHandleKey` 缺失**（§ 4.2）—— node-reorder **核心依赖**，没有它就只能硬编码 nodeId
-4. **🟢 `longPressAndWait` magic number 500ms**（§ 4.3）—— 现有值刚好够 400ms delay，但应该注释
+3. **🟡 `readNodesInOrder` / `dragHandleKey` 缺失**（第 4.2 节）—— node-reorder **核心依赖**，没有它就只能硬编码 nodeId
+4. **🟢 `longPressAndWait` magic number 500ms**（第 4.3 节）—— 现有值刚好够 400ms delay，但应该注释
 5. **🟢 创建子节点的 UI 入口** —— 主题详情页没有明显"创建子节点"按钮，**只能走 chat_screen 或直接调 controller**
 
 > **与 [branch-creation.md](./branch-creation.md) 对比**：branch-creation 有 10 个 ValueKey 缺失 + 多个 helper 缺失；node-reorder 只有 3 个 helper 缺失 + 0 个 ValueKey 缺失。**node-reorder 实施成本显著更低**。
@@ -536,7 +536,7 @@ flutter test integration_test/ -d "<iOS Simulator>"
 - [ ] 把 `_createTheme` / `_createNode` / `_switchToTab` 提取到 `_support/test_fixtures.dart`
 - [ ] 在 `test_helpers.dart` 新增 `readNodesInOrder` / `dragHandleKey` helper
 - [ ] 给 `longPressAndWait` 加 400ms delay 注释（或新增 `longPressAndWaitForDrag` helper）
-- [ ] 实现 § 5.1-5.3 三个 testWidgets 实际代码
+- [ ] 实现 第 5.1 节-5.3 三个 testWidgets 实际代码
 - [ ] 跑通 + 截图验证（特别注意蓝色指示线视觉）
 
 ---

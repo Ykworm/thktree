@@ -4,7 +4,7 @@
 |------|------|
 | 文档版本 | 0.1 |
 | 更新日期 | 2026-05-27 |
-| 关联需求 | REQUIREMENTS.md § 笔记与对话联动 |
+| 关联需求 | REQUIREMENTS.md 笔记与对话联动 |
 
 ---
 
@@ -25,11 +25,11 @@
 ### 2.2 笔记存储层 (`NoteStore`)
 - 笔记以 Markdown 文件存储，包含 YAML frontmatter（id / title / createdAt / updatedAt / themeId）
 - 支持操作：
-  - `createNote(themeId, title)` — 新建笔记
-  - `listNoteMetas()` — 列出笔记元数据
-  - `readBody(noteId)` — 读取笔记正文
-  - `appendBody(noteId, text)` — 追加文本到笔记末尾
-  - `writeBody(noteId, body)` — 覆盖笔记正文（保留 frontmatter，更新 updatedAt）
+ - `createNote(themeId, title)` — 新建笔记
+ - `listNoteMetas()` — 列出笔记元数据
+ - `readBody(noteId)` — 读取笔记正文
+ - `appendBody(noteId, text)` — 追加文本到笔记末尾
+ - `writeBody(noteId, body)` — 覆盖笔记正文（保留 frontmatter，更新 updatedAt）
 - 文件路径：`{root}/themes/{themeId}/notes/{noteId}.md`
 - 实现位置：[note_store.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/stores/note_store.dart)
 
@@ -51,17 +51,17 @@
 - 支持下拉刷新
 - 列表项支持左滑删除（`Dismissible`），红色背景 + 垃圾桶图标 + 确认 dialog
 - 实现位置：
-  - [note_browse_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_browse_screen.dart)
-  - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L163-L250)
+ - [note_browse_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_browse_screen.dart)
+ - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L163-L250)
 
 ### 2.6 笔记删除
 - `NoteStore.deleteNote(noteId)`：删除 `.md` 文件，返回 1/0
 - 笔记详情页 AppBar 右侧红色垃圾桶按钮 ➜ 弹确认 dialog ➜ 删除 + `bump()` + `pop()` + Toast
 - 删除后通过 `noteListVersionProvider` 全局通知，列表页自动刷新
 - 实现位置：
-  - [note_store.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/stores/note_store.dart#L118-L126)
-  - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart)
-  - 列表 swipe：[note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L548-L651)
+ - [note_store.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/data/stores/note_store.dart#L118-L126)
+ - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart)
+ - 列表 swipe：[note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L548-L651)
 
 ---
 
@@ -139,8 +139,8 @@
 #### 7.1.2 独立模型选择
 - 标题生成和对话总结支持配置独立的模型
 - 设置页面新增两个入口：
-  - **标题生成模型** (`titleModelProviderId` + `titleModelModelId`)
-  - **对话总结模型** (`summaryModelProviderId` + `summaryModelModelId`)
+ - **标题生成模型** (`titleModelProviderId` + `titleModelModelId`)
+ - **对话总结模型** (`summaryModelProviderId` + `summaryModelModelId`)
 - 未配置时每次弹选择器；已配置则直接使用
 - 用户选择后自动保存到 `SettingsStore`
 - 实现位置：[settings_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/settings/settings_screen.dart#L231-L280)
@@ -208,16 +208,16 @@ final int contextWindow; // 0 表示未知
 ### 7.6 文件变更统计
 
 ```
- lib/data/models/llm_model_config.dart              |   4 +-
- lib/data/services/model_fetcher.dart               |   9 +-
- lib/data/services/settings_store.dart              |  49 ++
- lib/data/services/title_suggestion_service.dart    | 129 +++-
- lib/l10n/app_en.arb                                | 754 ++++++++++++-------
- lib/l10n/app_zh.arb                                | 200 ++---
- lib/ui/core/shared/title_suggestion_screen.dart    | 282 ++++++-
+ lib/data/models/llm_model_config.dart | 4 +-
+ lib/data/services/model_fetcher.dart | 9 +-
+ lib/data/services/settings_store.dart | 49 ++
+ lib/data/services/title_suggestion_service.dart | 129 +++-
+ lib/l10n/app_en.arb | 754 ++++++++++++-------
+ lib/l10n/app_zh.arb | 200 ++---
+ lib/ui/core/shared/title_suggestion_screen.dart | 282 ++++++-
  lib/ui/features/llm/llm_provider_detail_screen.dart| 136 +++-
- lib/ui/features/settings/settings_controller.dart  |  12 +
- lib/ui/features/settings/settings_screen.dart      | 231 ++++++
+ lib/ui/features/settings/settings_controller.dart | 12 +
+ lib/ui/features/settings/settings_screen.dart | 231 ++++++
  31 files changed, 2388 insertions(+), 796 deletions(-)
 ```
 
@@ -273,11 +273,11 @@ final int contextWindow; // 0 表示未知
 ## 9. 笔记详情页导航栏显示标题（2026-06-22）
 
 ### 9.1 背景
-- § 8 决策过“导航栏不显示标题”，依赖内容区 `GptMarkdown h1` 渲染
+- 第 8 节 决策过“导航栏不显示标题”，依赖内容区 `GptMarkdown h1` 渲染
 - 集成测试 `_renameNote` 出现验证点选位问题：从 `ThemeNoteListScreen` 验证依赖 `noteListVersionProvider` 异步刷新时机，测试不稳定
 
 ### 9.2 决策反转
-- 导航栏 `title` 从 `''` 改为 `_title`（与 § 1.2 设计稿原描述一致）
+- 导航栏 `title` 从 `''` 改为 `_title`（与 第 1.2 节 设计稿原描述一致）
 - 职责分离：标题的权威展示位置是 `ThkNavBar.inline`，不是内容区 h1
 - 理由：集成测试在 `NoteDetailScreen` 验证重命名后标题（nav bar），避免依赖列表页异步刷新
 
@@ -286,9 +286,9 @@ final int contextWindow; // 0 表示未知
 - `integration_test/note_crud_test.dart` — `_renameNote` 验证点从 `ThemeNoteListScreen` 前移到 `NoteDetailScreen`
 
 ### 9.4 同步更新
-- `docs/modules/notes/visual/note-detail-design.md` — § 设计决策、§ 1.1 屏幕形态、§ 1.2 导航栏规范
+- `docs/modules/notes/visual/note-detail-design.md` — 设计决策、第 1.1 节 屏幕形态、第 1.2 节 导航栏规范
 - `docs/modules/notes/design-tokens.yaml` — `NoteDetailScreen.navBar.title` 从 `''` 改为 `_title`
-- `docs/_shared/integration-testing/note-crud.md` — 场景表 § 2 步骤 3 + 新增 § 4.5 验证点选位决策
+- `docs/_shared/integration-testing/note-crud.md` — 场景表 第 2 节 步骤 3 + 新增 第 4.5 节 验证点选位决策
 
 ### 9.5 验证
 - `flutter analyze` 无新增问题
@@ -317,10 +317,10 @@ final int contextWindow; // 0 表示未知
 
 ### 10.4 测试
 - `integration_test/note_search_test.dart` 新增 4 个端到端 case：
-  - Case 1：建笔记 + 搜索 + 跳转 `NoteDetailScreen`
-  - Case 2：空查询态主题分组占位正常渲染
-  - Case 3：搜索无结果 → `searchNoResults` 文案
-  - Case 4：笔记 tab 与搜索 tab 同关键词结果数量一致（用 `xyz_consistent_check_7777`）
+ - Case 1：建笔记 + 搜索 + 跳转 `NoteDetailScreen`
+ - Case 2：空查询态主题分组占位正常渲染
+ - Case 3：搜索无结果 → `searchNoResults` 文案
+ - Case 4：笔记 tab 与搜索 tab 同关键词结果数量一致（用 `xyz_consistent_check_7777`）
 
 ### 10.5 文件变更
 - `lib/ui/features/search/search_content.dart` — 新建（SearchBox + SearchResults）
@@ -438,9 +438,9 @@ final int contextWindow; // 0 表示未知
 #### NoteStore 新增方法
 ```dart
 Future<void> moveNote({
-  required String noteId,
-  required String targetThemeId,
-  required Directory targetNotesDir,
+ required String noteId,
+ required String targetThemeId,
+ required Directory targetNotesDir,
 })
 ```
 

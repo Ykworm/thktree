@@ -162,8 +162,8 @@ class _StubSessionStore implements SessionStore {
 私有 helper（文件内）：
 
 - `_createTestEnv({required initialNodes})` — 构造 ProviderContainer + 写临时 theme 目录 + 准备 stub
-- `_StubSessionStore` — 聚焦 2 个方法的 stub（见 § 3.3）
-- `_CountingBridge` / `_NoopLlmClient` — 见 § 3.1 / § 3.2
+- `_StubSessionStore` — 聚焦 2 个方法的 stub（见第 3.3 节）
+- `_CountingBridge` / `_NoopLlmClient` — 见第 3.1 节 / 第 3.2 节
 
 ---
 
@@ -177,7 +177,7 @@ class _StubSessionStore implements SessionStore {
 
 - ❌ **本测试不依赖 `LlmTestConfig.loadFromDefine()`** —— 因为不进 chat_screen 链路，fake `AppSettings` 直接 override `appSettingsProvider` 即可
 
-⚠️ 但 Test 2/3/4 仍需 `--dart-define-from-file=build/dart_define.json` 才能通过 `IntegrationTestWidgetsFlutterBinding.ensureInitialized()` 检查（否则 LlmTestConfig 在 setup 阶段抛 StateError，参考 [README.md § 8.3](./README.md#83-常见错误)）。
+⚠️ 但 Test 2/3/4 仍需 `--dart-define-from-file=build/dart_define.json` 才能通过 `IntegrationTestWidgetsFlutterBinding.ensureInitialized()` 检查（否则 LlmTestConfig 在 setup 阶段抛 StateError，参考 [README.md 第 8.3 节](./README.md#83-常见错误)）。
 
 ---
 
@@ -197,7 +197,7 @@ Test 2 的关键行为：`service.resumeInterrupted()` 启动 loop 后立即调 
 - ✅ loop 启动语义（`isResuming == true` 期间）
 - ✅ `finishStreamingMessage` 副作用被触发（磁盘 streaming 标记被清掉）
 
-而不是验证真正的"串行逐个重发"——后者需要 mock 一个慢 LlmClient 才能验（**当前未实现**，见 § 8.2 改进建议）。
+而不是验证真正的"串行逐个重发"——后者需要 mock 一个慢 LlmClient 才能验（**当前未实现**，见第 8.2 节 改进建议）。
 
 ### 6.3 Test 3 的"中途中断"难以 mock
 
@@ -209,7 +209,7 @@ Test 3 想验证"loop 已启动但 queue 还有未执行项时 cancel"，但当�
 2. 调 `cancelResumeQueue()` 验证不抛错 + 状态正确
 3. 再次入队后立即 cancel，验证 cancel 能清空
 
-**未覆盖**：loop 在跑时 cancel 真的中断了 `_retry` 调用的场景——见 § 8.3 改进建议。
+**未覆盖**：loop 在跑时 cancel 真的中断了 `_retry` 调用的场景——见第 8.3 节 改进建议。
 
 ### 6.4 chat_screen 未参与
 
@@ -230,7 +230,7 @@ Test 3 想验证"loop 已启动但 queue 还有未执行项时 cancel"，但当�
 mkdir -p ~/.thktree
 cp docs/_tmp/2026-06-20-llm-test-config-redesign.md ~/.thktree/test_llm_config.example.md   # 参考 JSON 结构
 $EDITOR ~/.thktree/test_llm_config.json
-# 填入真 Key（参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md § 7 JSON 结构）
+# 填入真 Key（参考 docs/_tmp/2026-06-20-llm-test-config-redesign.md 第 7 节 JSON 结构）
 
 # 2. 启动 iOS Simulator
 open -a Simulator

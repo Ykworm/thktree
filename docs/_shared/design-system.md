@@ -44,7 +44,7 @@
 ## 审计证据
 
 - `docs/_shared/design-audit/overview.md`：Step 4 回修前后对照，lib/ 裸色偏差 **92 → 0**。
-- `docs/_shared/design-audit/thktree-design-spec.html` §9：全局 Color Token 对照表。
+- `docs/_shared/design-audit/thktree-design-spec.html` 第 9 节：全局 Color Token 对照表。
 
 ## 历史
 
