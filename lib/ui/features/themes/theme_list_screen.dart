@@ -27,70 +27,73 @@ class ThemeListScreen extends ConsumerWidget {
     final themesAsync = ref.watch(themeListControllerProvider);
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
-      child: CustomScrollView(
-        slivers: [
-          ThkNavBar.large(
-            title: l10n.themesTabLabel,
-            trailing: CupertinoButton(
-              key: const ValueKey('add_theme_button'),
-              padding: EdgeInsets.zero,
-              onPressed: () async {
-                final title = await _promptTitle(context);
-                if (title == null) return;
-                if (!context.mounted) return;
-                await ref
-                    .read(themeListControllerProvider.notifier)
-                    .createTheme(title: title);
-              },
-              child: Icon(AppIcons.add),
+      // P3：主题列表页级静光（非树节点行、非 Chat）
+      child: ThkPageAtmosphere(
+        child: CustomScrollView(
+          slivers: [
+            ThkNavBar.large(
+              title: l10n.themesTabLabel,
+              trailing: CupertinoButton(
+                key: const ValueKey('add_theme_button'),
+                padding: EdgeInsets.zero,
+                onPressed: () async {
+                  final title = await _promptTitle(context);
+                  if (title == null) return;
+                  if (!context.mounted) return;
+                  await ref
+                      .read(themeListControllerProvider.notifier)
+                      .createTheme(title: title);
+                },
+                child: Icon(AppIcons.add),
+              ),
             ),
-          ),
-          CupertinoSliverRefreshControl(
-            onRefresh: () async {
-              await ref.read(themeListControllerProvider.notifier).reindex();
-            },
-          ),
-          themesAsync.when(
-            data: (themes) {
-              if (themes.isEmpty) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(AppIcons.branch,
-                            size: 40, color: AppColors.textTertiary),
-                        SizedBox(height: 12),
-                        Text(l10n.noThemesYet,
-                            style: TextStyle(color: AppColors.textSecondary)),
-                      ],
+            CupertinoSliverRefreshControl(
+              onRefresh: () async {
+                await ref.read(themeListControllerProvider.notifier).reindex();
+              },
+            ),
+            themesAsync.when(
+              data: (themes) {
+                if (themes.isEmpty) {
+                  return SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(AppIcons.branch,
+                              size: 40, color: AppColors.textTertiary),
+                          SizedBox(height: 12),
+                          Text(l10n.noThemesYet,
+                              style: TextStyle(color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                final bottomPad = MediaQuery.paddingOf(context).bottom;
+                return SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSp.screenPadding,
+                    0,
+                    AppSp.screenPadding,
+                    bottomPad > 0 ? bottomPad : 16,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate(
+                      _buildThemeRows(themes, l10n, ref, context),
                     ),
                   ),
                 );
-              }
-              final bottomPad = MediaQuery.paddingOf(context).bottom;
-              return SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSp.screenPadding,
-                  0,
-                  AppSp.screenPadding,
-                  bottomPad > 0 ? bottomPad : 16,
-                ),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate(
-                    _buildThemeRows(themes, l10n, ref, context),
-                  ),
-                ),
-              );
-            },
-            loading: () => SliverFillRemaining(
-              child: Center(child: CupertinoActivityIndicator()),
+              },
+              loading: () => SliverFillRemaining(
+                child: Center(child: CupertinoActivityIndicator()),
+              ),
+              error: (e, st) => SliverFillRemaining(
+                child: Center(child: Text(e.toString())),
+              ),
             ),
-            error: (e, st) => SliverFillRemaining(
-              child: Center(child: Text(e.toString())),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

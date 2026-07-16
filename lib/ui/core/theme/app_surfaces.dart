@@ -89,3 +89,24 @@ class AppGlass {
   /// tab 内容区高度（不含 home indicator）
   static const tabBarContentHeight = 6.0 + 49.0 + 2.0;
 }
+
+/// L0 页级氛围光 token（P3）。仅主题列表 / 搜索等静页；Chat/笔记/设置默认不用。
+///
+/// 静态 soft radial，非 Aurora 动画 mesh。改 [enabled] 可整段关掉。
+class AppAtmosphere {
+  AppAtmosphere._();
+
+  /// 总开关（无设置页项；需要时可 false）
+  static bool enabled = true;
+
+  /// 右上 blue soft ≈5%
+  static Color get blueGlow =>
+      AppColors.accent.withValues(alpha: 0.05);
+
+  /// 左下 sage soft ≈5%
+  static Color get sageGlow =>
+      AppColors.paletteSage.withValues(alpha: 0.05);
+
+  /// 光斑直径（相对屏略大，边缘自然淡出）
+  static const blobSize = 300.0;
+}

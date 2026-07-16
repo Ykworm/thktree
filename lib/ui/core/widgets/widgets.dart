@@ -11,4 +11,5 @@ export 'markdown_toolbar.dart';
 export 'swipeable_row.dart';
 export 'thk_grid_bottom_sheet.dart';
 export 'thk_glass_bar.dart';
+export 'thk_page_atmosphere.dart';
 export 'llm_error_card.dart' show LlmErrorCard;
