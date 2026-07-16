@@ -33,22 +33,29 @@ Future<void> showModelSelectorSheet({
           viewInsets: raw.viewInsets,
         ),
         child: Builder(
-          builder: (inner) => ColoredBox(
-            // 半透明遮罩：与白卡面板区分；仍挡住 chat 误认「留白」
-            color: AppColors.scrim.withValues(alpha: 0.35),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.viewInsetsOf(inner).bottom,
-                ),
-                child: ModelSelectorPanel(
-                  currentProviderId: currentProviderId,
-                  currentModelId: currentModelId,
-                  onModelSelected: (providerId, modelId) {
-                    Navigator.of(ctx).pop();
-                    onModelSelected(providerId, modelId);
-                  },
+          builder: (inner) => GestureDetector(
+            // 点遮罩关闭；面板本体再拦一层，避免点列表也 pop
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(ctx).pop(),
+            child: ColoredBox(
+              color: AppColors.scrim.withValues(alpha: 0.35),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.viewInsetsOf(inner).bottom,
+                  ),
+                  child: GestureDetector(
+                    onTap: () {}, // 吞掉面板内点击，不冒泡到遮罩
+                    child: ModelSelectorPanel(
+                      currentProviderId: currentProviderId,
+                      currentModelId: currentModelId,
+                      onModelSelected: (providerId, modelId) {
+                        Navigator.of(ctx).pop();
+                        onModelSelected(providerId, modelId);
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
