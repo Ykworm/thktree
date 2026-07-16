@@ -106,6 +106,8 @@ lib/
 
 底部 tab bar 共 4 项：搜索 / 主题 / 笔记 / Lab。Settings 从 tab 移至搜索页顶栏右上角齿轮按钮（`context.push('/settings')`），作为外层 `GoRoute` 与 `/llm-providers` 同层。
 
+**键盘弹起时隐藏底栏（iOS `_MainShell` / Android `AndroidNavigationShell`）**：`viewInsets.bottom > 0` 时不渲染 tab，避免 shell `Column` 占位导致 Chat 等子页 `resizeToAvoidBottomInset` 在键盘上方多出 tab 高度空白。勿在页面层再 hack 覆盖 `viewInsets` 来「补偿」tab（见 [CHANGELOG/2026-07-16](CHANGELOG/2026-07-16-ios-chat-keyboard-gap.md)）。
+
 ### 模块职责（精简版，详细见 `docs/modules/<name>/README.md`）
 
 | 模块 | 代码路径 | 文档路径 | 职责 |

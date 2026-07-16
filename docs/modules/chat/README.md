@@ -90,6 +90,7 @@
 ## 维护要点
 
 - 改 chat_screen 布局前必读 [notes 模块 README](../notes/README.md)，两者 UI 风格共用 Large Title + slivers
+- **键盘与底栏空隙（2026-07-16）**：iOS `_MainShell` / Android `AndroidNavigationShell` 在键盘弹起时**隐藏底部 tab**，让 shell 内页面用真实 `viewInsets` 贴键盘。**禁止**在 `ChatScreen` 里用 `View.viewInsets` 覆盖恢复完整键盘高度——Chat 在 shell `Expanded` 内时会与 tab 占位叠加，在联网搜索等工具行下方挤出 tab 高空白。详见 [CHANGELOG/2026-07-16](../../CHANGELOG/2026-07-16-ios-chat-keyboard-gap.md)。
 - 新增 LLM provider 时，模型选择 panel 会自动出现（无需改 chat 代码），但要在 llm 模块注册 provider
 - 流式断网/超时处理：参考 `integration_test/chat_streaming_test.dart` 的边界用例
 - 注意 `autoTriggerReply` 启动参数与 notes 模块的"从笔记续聊"按钮联动
