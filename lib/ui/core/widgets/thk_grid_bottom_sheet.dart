@@ -67,54 +67,60 @@ class _SheetContent extends StatelessWidget {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final bottomSafeGap = bottomInset > 0 ? 8.0 : 4.0;
     const sheetRadius = BorderRadius.vertical(top: Radius.circular(16));
+    // 半透明磨砂：barrier 后的页面内容在 sheet 下方，可被 blur 磨到
     return ThkGlassBar(
       borderRadius: sheetRadius,
-      border: Border.all(color: AppColors.border, width: 0.5),
+      border: Border(
+        top: BorderSide(color: AppColors.border, width: 0.5),
+        left: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
+        right: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
+      ),
       child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 主操作区
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: _ActionGrid(actions: actions),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 主操作区
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: _ActionGrid(actions: actions),
+          ),
+          // destructive 操作区
+          if (destructiveActions != null &&
+              destructiveActions!.isNotEmpty) ...[
+            Container(
+              height: 6,
+              color: AppColors.surfaceMuted.withValues(alpha: 0.5),
             ),
-            // destructive 操作区
-            if (destructiveActions != null && destructiveActions!.isNotEmpty) ...[
-              Container(
-                height: 6,
-                color: AppColors.surfaceMuted,
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 6, 16, showCancel ? 4 : 0),
-                child: _ActionGrid(actions: destructiveActions!),
-              ),
-            ],
-            // 分隔线 + 取消按钮
-            if (showCancel) ...[
-              Container(
-                height: 0.5,
-                color: AppColors.border,
-              ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  height: 56,
-                  alignment: Alignment.center,
-                  child: Text(
-                    cancelLabel,
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: AppColors.textPrimary,
-                    ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 6, 16, showCancel ? 4 : 0),
+              child: _ActionGrid(actions: destructiveActions!),
+            ),
+          ],
+          // 分隔线 + 取消按钮
+          if (showCancel) ...[
+            Container(
+              height: 0.5,
+              color: AppColors.border,
+            ),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: 56,
+                alignment: Alignment.center,
+                child: Text(
+                  cancelLabel,
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
-            ],
-            // 底部缩小的安全距离（替代默认 SafeArea 的全量 bottomInset）
-            SizedBox(height: bottomSafeGap),
+            ),
           ],
-        ),
+          // 底部缩小的安全距离（替代默认 SafeArea 的全量 bottomInset）
+          SizedBox(height: bottomSafeGap),
+        ],
+      ),
     );
   }
 }

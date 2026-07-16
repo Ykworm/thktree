@@ -36,7 +36,9 @@ void main() {
     expect(AppGlass.fill.toARGB32() & 0x00FFFFFF, 0x00FFFFFF);
     expect(AppGlass.fillOpaque.a, 1.0);
     expect(AppGlass.fillOpaque.toARGB32(), 0xFFF3EFE8);
-    expect(AppGlass.blurSigma, 14.0);
+    expect(AppGlass.blurSigma, 20.0);
     expect(AppGlass.chromeFill, anyOf(AppGlass.fill, AppGlass.fillOpaque));
+    // 顶栏必须不透明，避免 body 上顶挡面包屑
+    expect(AppGlass.navBarBackground.a, 1.0);
   });
 }

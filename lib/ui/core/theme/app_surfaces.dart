@@ -58,28 +58,34 @@ class AppSurfaces {
       );
 }
 
-/// L3 壳层玻璃 token（nav / tab / sheet）。勿污染 [AppColors.surface]。
+/// L3 壳层玻璃 token（tab / sheet 等）。勿污染 [AppColors.surface]。
+///
+/// 注意：底部 tab 必须叠在内容 **上方**（Stack），Column 并排无法磨到内容。
+/// 顶栏 [navBarBackground] 保持不透明，避免 body 钻进半透 nav 把面包屑等顶内容挡住。
 class AppGlass {
   AppGlass._();
 
-  /// 暖白半透 ~65%（iOS blur 路径 fill）
-  static const fill = Color(0xA6FFFFFF);
+  /// 暖白半透 ~55%（blur 路径；再高会像实心白块）
+  static const fill = Color(0x8CFFFFFF);
 
-  /// Android / 降级：不透明 paper-warm，避免低 alpha 脏边
+  /// Android / 降级：不透明 paper-warm
   static const fillOpaque = Color(0xFFF3EFE8);
 
-  /// 磨砂强度（仅 iOS 等 blur 路径；列表 cell 禁止使用）
-  static const blurSigma = 14.0;
+  /// 磨砂强度（仅 blur 路径；列表 cell 禁止使用）
+  static const blurSigma = 20.0;
 
-  /// 是否启用 BackdropFilter（Android 默认关，走不透明纸）
+  /// 是否启用 BackdropFilter（Android 默认关）
   static bool get useBlur {
     if (Platform.isAndroid) return false;
     return true;
   }
 
-  /// 当前平台壳层填充色
+  /// 当前平台壳层填充色（tab / sheet）
   static Color get chromeFill => useBlur ? fill : fillOpaque;
 
-  /// Cupertino 导航栏背景：半透时由系统/Flutter 做磨砂
-  static Color get navBarBackground => chromeFill;
+  /// 顶栏：不透明 surface，避免半透 nav 导致 body 上顶、面包屑被挡
+  static Color get navBarBackground => AppColors.surface;
+
+  /// tab 内容区高度（不含 home indicator）
+  static const tabBarContentHeight = 6.0 + 49.0 + 2.0;
 }

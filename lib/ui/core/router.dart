@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/widgets/thk_glass_bar.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/platform/android/android_navigation_shell.dart';
@@ -257,16 +258,37 @@ class _MainShell extends ConsumerWidget {
     }
     final l10n = AppLocalizations.of(context)!;
     final mq = MediaQuery.of(context);
-    // 键盘弹出时隐藏底部 tab：Column 不会自动让出空间，保留 tab bar 会让
-    // 子页面（如 ChatScreen）在键盘上方多出 tab 高度空白（与 Android 壳一致）。
+    // 键盘弹出时隐藏底部 tab（与 Android 壳一致）。
     final keyboardOpen = mq.viewInsets.bottom > 0;
+    // Tab 必须叠在内容上方，BackdropFilter 才能磨到页面内容；
+    // Column「内容 + tab」并排时 tab 背后只有 scaffold 实色，看起来像不透明圆角条。
+    final tabOverlayHeight =
+        AppGlass.tabBarContentHeight + mq.padding.bottom;
+    final contentMq = keyboardOpen
+        ? mq
+        : mq.copyWith(
+            padding: mq.padding.copyWith(
+              bottom: mq.padding.bottom + AppGlass.tabBarContentHeight,
+            ),
+          );
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       resizeToAvoidBottomInset: false,
-      child: Column(
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Expanded(child: navigationShell),
-          if (!keyboardOpen) _buildTabBar(context, l10n),
+          MediaQuery(
+            data: contentMq,
+            child: navigationShell,
+          ),
+          if (!keyboardOpen)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: tabOverlayHeight,
+              child: _buildTabBar(context, l10n),
+            ),
         ],
       ),
     );
