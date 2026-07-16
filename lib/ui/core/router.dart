@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -256,31 +255,17 @@ class _MainShell extends ConsumerWidget {
       return AndroidNavigationShell(navigationShell: navigationShell);
     }
     final l10n = AppLocalizations.of(context)!;
+    final mq = MediaQuery.of(context);
+    // 键盘弹出时隐藏底部 tab：Column 不会自动让出空间，保留 tab bar 会让
+    // 子页面（如 ChatScreen）在键盘上方多出 tab 高度空白（与 Android 壳一致）。
+    final keyboardOpen = mq.viewInsets.bottom > 0;
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       resizeToAvoidBottomInset: false,
       child: Column(
         children: [
-          Expanded(
-            child: Builder(
-              builder: (context) {
-                final mq = MediaQuery.of(context);
-                const tabBarContentHeight = 6 + 49 + 2;
-                final tabBarHeight = mq.padding.bottom + tabBarContentHeight;
-                final adjustedBottom = max<double>(
-                  0,
-                  mq.viewInsets.bottom - tabBarHeight,
-                );
-                return MediaQuery(
-                  data: mq.copyWith(
-                    viewInsets: mq.viewInsets.copyWith(bottom: adjustedBottom),
-                  ),
-                  child: navigationShell,
-                );
-              },
-            ),
-          ),
-          _buildTabBar(context, l10n),
+          Expanded(child: navigationShell),
+          if (!keyboardOpen) _buildTabBar(context, l10n),
         ],
       ),
     );
