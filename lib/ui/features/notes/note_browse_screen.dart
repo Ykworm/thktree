@@ -184,8 +184,9 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
         ),
       );
     }
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPad > 0 ? bottomPad + 8 : 24),
       sliver: SliverToBoxAdapter(
         child: DecoratedBox(
           decoration: AppSurfaces.contentCard(),

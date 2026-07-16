@@ -68,9 +68,14 @@ class ThemeListScreen extends ConsumerWidget {
                   ),
                 );
               }
+              final bottomPad = MediaQuery.paddingOf(context).bottom;
               return SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSp.screenPadding),
+                padding: EdgeInsets.fromLTRB(
+                  AppSp.screenPadding,
+                  0,
+                  AppSp.screenPadding,
+                  bottomPad > 0 ? bottomPad : 16,
+                ),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate(
                     _buildThemeRows(themes, l10n, ref, context),

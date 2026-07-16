@@ -510,7 +510,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
       ),
-      child: Stack(
+      // bottom:true 吃到 shell 为叠 tab 注入的 padding.bottom，避免输入区/气泡被底栏盖住。
+      // top:false：顶栏由 CupertinoPageScaffold 自己处理。
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: Stack(
         children: [
           Column(
             children: [
@@ -732,6 +737,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
         ],
+      ),
       ),
     );
   }
