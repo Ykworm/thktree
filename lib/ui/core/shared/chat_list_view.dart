@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
-import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_durations.dart';
 
 typedef MessageBuilder = Widget Function(BuildContext context, SessionMessage message);
@@ -13,6 +12,8 @@ class ChatListView extends StatefulWidget {
     required this.messages,
     required this.messageBuilder,
     this.onScrollPositionChanged,
+    /// 额外底部留白（浮层 composer 高度），列表仍铺满以便磨砂透出气泡
+    this.bottomContentInset = 0,
   });
 
   final List<SessionMessage> messages;
@@ -20,6 +21,9 @@ class ChatListView extends StatefulWidget {
 
   /// 当滚动位置变化时回调，参数 `isNearBottom` 表示是否接近底部。
   final ValueChanged<bool>? onScrollPositionChanged;
+
+  /// 滚到底时最后一条消息上方的留白（不裁剪列表绘制区域）
+  final double bottomContentInset;
 
   @override
   ChatListViewState createState() => ChatListViewState();
@@ -197,21 +201,24 @@ class ChatListViewState extends State<ChatListView> {
         }
         return false;
       },
-      child: Container(
-        color: AppColors.pageBg,
-        child: ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(12),
-          itemCount: widget.messages.length,
-          itemBuilder: (context, index) {
-            final msg = widget.messages[index];
-            final key = _itemKeys.putIfAbsent(msg.msgId, () => GlobalKey());
-            return KeyedSubtree(
-              key: key,
-              child: widget.messageBuilder(context, msg),
-            );
-          },
+      // 不铺实心 pageBg：否则叠在下方的 composer 磨砂只能糊到纯色，看起来「完全不透明」
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: EdgeInsets.fromLTRB(
+          12,
+          12,
+          12,
+          12 + widget.bottomContentInset,
         ),
+        itemCount: widget.messages.length,
+        itemBuilder: (context, index) {
+          final msg = widget.messages[index];
+          final key = _itemKeys.putIfAbsent(msg.msgId, () => GlobalKey());
+          return KeyedSubtree(
+            key: key,
+            child: widget.messageBuilder(context, msg),
+          );
+        },
       ),
     );
   }

@@ -530,39 +530,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Expanded(
               child: Stack(
                 children: [
-                  // 消息列表铺满，底部留白给浮层 composer
+                  // 列表铺满（含 composer 下方区域），才能被磨砂；
+                  // 用 ListView bottomContentInset 保证滚到底时内容不被挡住。
                   Positioned.fill(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 118),
-                      child: Listener(
-                        onPointerDown: (_) {
-                          FocusScope.of(context).unfocus();
-                        },
-                        child: messagesAsync.when(
-                          data: (messages) => SelectionArea(
-                            contextMenuBuilder:
-                                (context, editableTextState) =>
-                                    buildClipsContextMenu(
-                              context,
-                              editableTextState,
-                            ),
-                            onSelectionChanged: (value) {
-                              final text = value?.plainText;
-                              if (text != null && text.trim().isNotEmpty) {
-                                ref
-                                    .read(currentSelectionProvider.notifier)
-                                    .state = text;
+                    child: Listener(
+                      onPointerDown: (_) {
+                        FocusScope.of(context).unfocus();
+                      },
+                      child: messagesAsync.when(
+                        data: (messages) => SelectionArea(
+                          contextMenuBuilder: (context, editableTextState) =>
+                              buildClipsContextMenu(
+                            context,
+                            editableTextState,
+                          ),
+                          onSelectionChanged: (value) {
+                            final text = value?.plainText;
+                            if (text != null && text.trim().isNotEmpty) {
+                              ref.read(currentSelectionProvider.notifier).state =
+                                  text;
+                            }
+                          },
+                          child: ChatListView(
+                            key: _chatListKey,
+                            messages: messages,
+                            bottomContentInset: 120,
+                            onScrollPositionChanged: (nearBottom) {
+                              if (_isNearBottom != nearBottom) {
+                                setState(() => _isNearBottom = nearBottom);
                               }
                             },
-                            child: ChatListView(
-                              key: _chatListKey,
-                              messages: messages,
-                              onScrollPositionChanged: (nearBottom) {
-                                if (_isNearBottom != nearBottom) {
-                                  setState(() => _isNearBottom = nearBottom);
-                                }
-                              },
-                              messageBuilder: (context, message) {
+                            messageBuilder: (context, message) {
                                 final isLastAssistant =
                                     message.role == SessionRole.assistant &&
                                     message.status !=
@@ -621,16 +619,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               },
                             ),
                           ),
-                          error: (e, st) =>
-                              Center(child: Text(e.toString())),
-                          loading: () => const Center(
-                            child: CupertinoActivityIndicator(),
-                          ),
+                        ),
+                        error: (e, st) => Center(child: Text(e.toString())),
+                        loading: () => const Center(
+                          child: CupertinoActivityIndicator(),
                         ),
                       ),
                     ),
                   ),
-                  // 底部浮层：磨砂输入区叠在消息上
+                  // 底部浮层：磨砂输入区叠在消息上（背后必须仍有气泡像素）
                   Positioned(
                     left: 0,
                     right: 0,

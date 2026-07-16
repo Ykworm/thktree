@@ -555,34 +555,38 @@ class _ComposerGlassShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final useBlur = AppGlass.useBlur;
-    final fill = useBlur
-        ? AppColors.surface.withValues(alpha: 0.42)
-        : AppColors.surface.withValues(alpha: 0.88);
-
-    Widget body = DecoratedBox(
+    // 更透的 fill + 强 blur；背后必须是消息列表像素（见 chat_screen Stack）
+    const fill = Color(0x66FFFFFF); // ~40% 白
+    final body = DecoratedBox(
       decoration: BoxDecoration(
         color: fill,
         borderRadius: borderRadius,
         border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.55),
+          color: AppColors.border.withValues(alpha: 0.45),
           width: AppSp.dividerThickness,
         ),
       ),
       child: child,
     );
 
-    if (!useBlur) {
-      return ClipRRect(borderRadius: borderRadius, child: body);
+    if (!AppGlass.useBlur) {
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppColors.surface.withValues(alpha: 0.9),
+            borderRadius: borderRadius,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: child,
+        ),
+      );
     }
 
     return ClipRRect(
       borderRadius: borderRadius,
       child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: AppGlass.blurSigma,
-          sigmaY: AppGlass.blurSigma,
-        ),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: body,
       ),
     );
