@@ -12,7 +12,8 @@ ThkTree 已有视觉宪法（`design-system.md`），但缺"文字宪法"。本�
 **单一真相源原则**
 
 - 品牌决策：本文 + `design-system.md` 为准。
-- 运行时代码：以 `lib/ui/core/theme/app_colors.dart` 为唯一真相源（`design-tokens.yaml` 为其文档镜像）。
+- 运行时代码：以 `lib/ui/core/theme/app_colors.dart` 为唯一真相源（`design-tokens.yaml` 为其文档镜像）；壳层玻璃 / 氛围光见 `app_surfaces.dart`。
+- App 内视觉气质（2026-07-17）：**Warm Paper Glass · 安静书房**——纸底、白卡、克制壳层玻璃、极淡静光；见 [design-system.md](_shared/design-system.md)。
 - 任何渠道新增文案 / 视觉，先回看这两份文档。
 
 ---

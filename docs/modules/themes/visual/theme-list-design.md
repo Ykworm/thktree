@@ -6,7 +6,7 @@
 
 `ThemeListScreen` 是主题 Tab 的入口屏幕，展示用户所有主题（按 `updatedAt DESC` 排序，置顶优先）。每个主题是一条 `ThkListTile`，左侧 folder 图标跟随主题色（典雅黑金色调）。右上角 `+` 按钮新建主题。支持下拉刷新和长按操作（重命名/置顶/删除）。
 
-**核心设计语言**：与全局 [design-system.md](../../../_shared/design-system.md) 对齐——`surface` 白色背景、`accent`（indigo）通用交互色、每个主题分配一个典雅黑金色调颜色（图标跟随）。
+**核心设计语言**：与全局 [design-system.md](../../../_shared/design-system.md) **Warm Paper Glass** 对齐——`pageBg` 暖纸画布、白卡 `surface` + hair/轻影、雾蓝 `accent`、五色 tile 徽章；页级静光 `ThkPageAtmosphere`（蓝自 large title 释放，左下 sage 托底）。**不是**冷 slate + 鲜蓝工具风。
 
 ---
 

@@ -22,7 +22,7 @@
 - 消息复制：长按复制单条消息
 - **空白分支自动 title 持久化**（2026-06-29）：空白分支（A 模式）chat 流式结束后由 `AutoTitleController`（`lib/ui/features/chat/auto_title_controller.dart`，按 `nodeId` family）自动 LLM 生成 title 并写入 DB + refresh tree；`ref.keepAlive()` 保活，user 提前 pop 也能后台跑完（详见 [ADR-018](../../DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式)）
 - iOS 后台中断恢复：App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队（仅 iOS，详见 [ADR-015](../../DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界)）
-- 联网搜索开关（`ChatComposer`）：输入框下方统一底边栏中的联网搜索按钮，与深度思考、图片按钮并列
+- 联网搜索开关（`ChatComposer`）：落在**独立工具毛玻璃 pill** 内（与深度思考并列），禁止裸字叠气泡
   - 参数：`webSearchEnabled`（bool，当前开关状态）、`webSearchSupported`（bool，当前模型是否支持）、`onWebSearchToggle`（VoidCallback?，null 时不显示按钮）
   - 图标：地球图标，开启时蓝色、关闭时灰色；不支持时灰色不可点击，tooltip 提示"当前模型不支持联网搜索"
 - 深度思考开关（`ChatComposer`，2026-07-06）：与联网搜索 chip 完全镜像的模式，紧挨在联网搜索右侧。两种形态互斥显示：
@@ -31,10 +31,10 @@
   - 不支持 toggle 的模型（gpt-4o / claude-3 / claude-3.5 / mimo / gemini / custom）chip 不显示——既不浪费横向空间也不误导用户以为"关掉了"实际根本没开。
   - 协议层：OpenAI 兼容路径 `deepThinking && !hasImage` 时按 provider 走不同 `thinking` 字段形态（豆包 `{type: 'enabled'}` / MiniMax `true` 布尔 / KIMI `{type: 'enabled'}`）；关闭时 KIMI 显式下发 `{type: 'disabled'}`；Claude / Anthropic 路径（DeepSeek）走 `ClaudeClient`，开启注入 `{type: 'enabled'}`、关闭显式注入 `{type: 'disabled'}`。**思考与图片互斥**：含图片的请求自动关 thinking（图片优先），避免 MiniMax-M3 / KIMI 思考+图片同请求 4xx。stream 解析端 `_extractClaudeDelta` 显式判断 `delta.type` 分支：`thinking_delta` 读 `delta.thinking` 进 `reasoning`、`text_delta` 读 `delta.text`、`content_block_start` 同步处理 `type=thinking` block（见 [ADR-021](DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) 与 [ADR-022](DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。
   - 状态：per-session in-memory、**不持久化**——关闭聊天页或切换模型自动重置为 false。
-- 图片上传（`ChatComposer`，2026-07-05）：输入框底部图片按钮，支持的模型显示蓝色图标+文字，不支持变灰不可点击
+- 图片上传（`ChatComposer`，2026-07-05；2026-07-17 布局）：**`+` 在输入 pill 内侧最左**（prefix），支持的模型可点；不支持 / 流式中弱化
   - 参数：`onImagePick`（VoidCallback?，null 时不显示）、`imageSupported`（bool，模型是否支持 vision）、`selectedImageData`/`selectedImageMimeType`（已选图片）
   - 点击弹出 CupertinoActionSheet：拍照（`ImageSource.camera`）/ 从相册选择（`ImageSource.gallery`）
-  - 选中后输入框上方显示 80x80 缩略图预览条（`_ImagePreview`），支持移除
+  - 选中后输入 pill **上方**独立预览玻璃条（`_ImagePreview`），支持移除
   - 发送时 `imageData`/`imageMimeType` 随消息传入 `ChatController.sendUserMessage` → `ChatTaskService.startTask` → `_buildMessages` 构建多模态 content（按 client 类型生成对应协议格式：OpenAI `image_url` / Anthropic `image` / 豆包 Responses `input_image`）
   - 空文本兜底：只发图片不写文字时，`sendUserMessage` 自动填充默认提示 `'描述这张图片'`；`buildMultimodalContent` 也做同样兜底，避免豆包等模型因空 `input_text` 返回 400
   - 模型 vision 能力自动检测：`ModelCapability.vision` + `model_capabilities.dart` 推断（gpt-4o / claude-3 / gemini / kimi-k2.5 / kimi-k2.6 / minimax-m3 / mimo-v2.5 / doubao-seed-2-1-pro / doubao-seed-2-1-turbo 等）；UI 与发送侧均有 `inferCapabilities` fallback，**DeepSeek V4 公开 API 不支持视觉**，不在 vision 列表内
@@ -57,7 +57,8 @@
 | `lib/data/services/chat_task_service.dart` | 服务层调度器：串行重发 queue + generation token + bridge.begin/end 包裹 + resumeInterrupted / cancelResumeQueue 入口 | 新增 |
 | `lib/data/services/background_task_bridge.dart` | iOS `beginBackgroundTask` MethodChannel 客户端（`begin()` / `end(taskId)`），可注入 | 新增 |
 | `ios/Runner/BackgroundTaskHandler.swift` | Swift MethodChannel handler + `UIApplication.beginBackgroundTask` 调用 + `expirationHandler` 释放 | 新增 |
-| `lib/ui/core/shared/chat_composer.dart` | 底部输入框（文本输入 + 发送/停止 + 联网搜索开关 + 深度思考开关 + 图片按钮 + 图片预览） | - |
+| `lib/ui/core/shared/chat_composer.dart` | 双条毛玻璃底栏：输入 pill（+ / 文本）+ 右侧圆钮（碎片/发送）+ 工具 pill（联网/深度思考） | - |
+| `lib/ui/core/shared/chat_list_view.dart` | 消息列表；不铺实心 pageBg；`bottomContentInset` 给浮层 composer 留白 | - |
 | `lib/ui/core/shared/message_bubble.dart` | 消息气泡（user + assistant，GptMarkdown 渲染 + LaTeX 注入 + 每张表格独立工具栏：复制/全屏按钮） | 388 |
 | `lib/ui/features/chat/widgets/chat_markdown_sheet.dart` | 查看原始 Markdown 底部 sheet（展示 session.md 内容 + 复制按钮） | 135 |
 | `lib/ui/core/shared/markdown_builders.dart` | GptMarkdown 自定义构建器（含 `buildLatex`——`FittedBox(scaleDown)` 包裹 `Math.tex`） | 61 |
@@ -91,6 +92,7 @@
 
 - 改 chat_screen 布局前必读 [notes 模块 README](../notes/README.md)，两者 UI 风格共用 Large Title + slivers
 - **键盘与底栏空隙（2026-07-16）**：iOS `_MainShell` / Android `AndroidNavigationShell` 在键盘弹起时**隐藏底部 tab**，让 shell 内页面用真实 `viewInsets` 贴键盘。**禁止**在 `ChatScreen` 里用 `View.viewInsets` 覆盖恢复完整键盘高度——Chat 在 shell `Expanded` 内时会与 tab 占位叠加，在联网搜索等工具行下方挤出 tab 高空白。详见 [CHANGELOG/2026-07-16](../../CHANGELOG/2026-07-16-ios-chat-keyboard-gap.md)。
+- **Warm Paper 毛玻璃输入（2026-07-17）**：`ChatScreen` 用 **Stack** 铺满 `ChatListView` + 底部浮层 `ChatComposer`；列表不铺不透明 `pageBg`，才能 `BackdropFilter` 磨到气泡。composer = **输入 pill**（更透）+ 右侧独立圆钮 + **工具 pill**（芯片落在玻璃上）。顶栏保持不透明 `AppGlass.navBarBackground`。详见 [CHANGELOG/2026-07-17](../../CHANGELOG/2026-07-17-warm-paper-glass.md) 与 [design-system](../../_shared/design-system.md)。
 - 新增 LLM provider 时，模型选择 panel 会自动出现（无需改 chat 代码），但要在 llm 模块注册 provider
 - 流式断网/超时处理：参考 `integration_test/chat_streaming_test.dart` 的边界用例
 - 注意 `autoTriggerReply` 启动参数与 notes 模块的"从笔记续聊"按钮联动
@@ -110,3 +112,4 @@
 - 2026-07-08（补丁）：Seed-2.0-pro 模型 ID 修正——白名单 `doubao-seed-2-0-pro` → `doubao-seed-2-0-pro-260215`（ARK API 要求带日期后缀，旧 ID 调用失败）；`isModelWebSearchUnsupported` 改为仅屏蔽无日期后缀的旧模型（有后缀的 `260215` 版本支持联网）；新模型走 Responses API（`DoubaoResponsesClient`）而非 legacy Chat Completions。
 - 2026-07-09：聊天页祖先链面包屑——消息列表顶部加 `主题 / 主题名 / 祖先 / 当前` 面包屑，沿 `parentId` 回溯（[spec](specs/chat-breadcrumb-nav.md)）。修 4 个运行时崩溃：①initState 同步写 provider（`addPostFrameCallback` 延迟）②dispose finalize 期改 provider（`Future.microtask` 延迟 + 闭包守卫）③go_router 路由误用 `popUntil` 摘空栈（改 `GoRouter.go(path)` 声明式回跳）④面包屑 `go()` 不传 extra 导致 `widget.title` 回退成 `$id/$id` 暴露内部 ULID（当前节点优先用 `current!.title`，去掉 `/` 误检）。集成测试 `chat_breadcrumb_test.dart` 逐段点击验证。`+1: All tests passed!`。详见 [war-story](../../war-stories/flutter/2026-07-09-chat-breadcrumb-nav-crashes.md) + [CHANGELOG](../../CHANGELOG/2026-07-09-chat-breadcrumb-nav.md)。
 - 2026-07-09：选区文本在「创建分支」预览残留修复——选中文字→复制 / 放入抽屉后，点「更多 → 分支」仍预览旧文本。`currentSelectionProvider` 故意保留上次选区（支持"选中 → 分享为图片"），但消费选区后未清除导致残留。新增选区工具栏「分支」按钮（读 `branchFromSelectionProvider`，chat_screen 挂载时注册 `_branchFromSelection`，从活跃选区即时分支）；复制 / 放入抽屉 / 分支消费即清 `currentSelectionProvider`；「更多 → 分支」改传 `selectedText: null`。`branchFromSelectionProvider` 的注册 / 清空复用面包屑崩溃的 `addPostFrameCallback` / `Future.microtask` 延迟修法（initState / dispose 同步写 provider 会触发 Riverpod 构建期断言）。详见 [war-story](../../war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md)。
+- 2026-07-17：Warm Paper Glass 壳层 + 双条毛玻璃 composer（P2）——见 [CHANGELOG/2026-07-17-warm-paper-glass.md](../../CHANGELOG/2026-07-17-warm-paper-glass.md)。

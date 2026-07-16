@@ -6,6 +6,7 @@
 > 3. **BM25 排序不手写**——交给 `notes_fts MATCH ? ORDER BY bm25(...)`；UI 别加 score 字段。
 > 4. **防抖 300ms（仅 live 搜索上下文）**——`SearchResults.debounceDelay` 默认 300ms，与设计系统动效绑定，**笔记 tab 的 live 搜索别改这个值**；搜索 tab 走「显式提交」，`SearchContent` 传 `Duration.zero` 关掉防抖（改这个 0 不影响笔记 tab）。
 > 5. **FTS5 虚拟表禁用 `ConflictAlgorithm.replace`**——FTS5 不支持主键/UNIQUE，`ConflictAlgorithm.replace` 会**静默失效**（不抛错不替换只多一行）。upsert 必须用 `db.transaction` 包裹 `DELETE + INSERT`。⚠️ FTS5 helper function（`snippet`/`bm25`）不能在 GROUP BY 子查询里调用（iOS SQLite 报 `unable to use function X`），查询侧也不能用 GROUP BY 兜底——改成扁平查询 + 正确 `col=5`（content 列）。详见 EC-043、[war-story packages/2026-06-29-fts5-conflict-replace-silent.md](../packages/2026-06-29-fts5-conflict-replace-silent.md)。
+> 6. **氛围光（2026-07-17）**：`SearchScreen` 包 `ThkPageAtmosphere`（页级静光，蓝自 title bar 释放）；**不要**给结果行加 blur。见 [design-system](../../_shared/design-system.md)。
 
 ## 职责
 
@@ -26,7 +27,7 @@
 
 | 文件 | 角色 | 行数 |
 |------|------|------|
-| `lib/ui/features/search/search_screen.dart` | 搜索 tab（包裹 `SearchContent`） | - |
+| `lib/ui/features/search/search_screen.dart` | 搜索 tab（`ThkPageAtmosphere` + `SearchContent`） | - |
 | `lib/ui/features/search/search_content.dart` | `SearchContent` 组件：顶部 `SearchBox` + 下方 `SearchResults`（被搜索 tab 与笔记 tab 复用） | - |
 | `lib/data/search/search_service.dart` | 搜索服务（封装 FTS5 查询） | - |
 
@@ -67,4 +68,5 @@
 - 2026-06-29：`upsertNote` / `upsertMessage` 全部修复 EC-043（FTS5 upsert 静默失效 → 搜索结果重复）— 方案 A+B：`db.transaction` 删+插（源头去重）+ `search()` 扁平查询 + `col=5`（查询侧不再 GROUP BY——FTS5 helper function 在子查询里报 `unable to use function X`）。上游 commit `9205baa`，下游 commit `cb9891f`（补强：message 端同步修复 + 方案 B 子查询重写为扁平）。详见 [CHANGELOG 2026-06-29-fts5-upsert-repeat.md](../../CHANGELOG/2026-06-29-fts5-upsert-repeat.md)、[CHANGELOG 2026-06-29-fts5-search-rework.md](../../CHANGELOG/2026-06-29-fts5-search-rework.md)、[war-story](../../war-stories/packages/2026-06-29-fts5-conflict-replace-silent.md)
 - 2026-07-09：修复 EC-015（FTS5 CJK 分词）— `unicode61` 将连续 CJK 视为一个 token，子串搜索失败。新增 `_tokenizeCjk()` 逐字分词 + `_cleanSnippet()` 清理 + v6 迁移触发索引重建。详见 [war-story packages/2026-07-09-fts5-cjk-tokenization.md](../../war-stories/packages/2026-07-09-fts5-cjk-tokenization.md)
 - 2026-07-09：修复 tag cloud 点击不触发搜索 — `ValueNotifier` 只在值变化时触发 listener，动态创建的 `SearchResults` widget 在 `initState` 中未处理初始值。详见 [war-story ui-ux/2026-07-09-search-tag-cloud-no-trigger.md](../../war-stories/ui-ux/2026-07-09-search-tag-cloud-no-trigger.md)
-- 2026-07-09：搜索 tab 改为「显式搜索按钮」替代 live 搜索 + 编辑即清旧结果三态。详见本文件 关键设计原则「显式搜索」。动机：live 搜索下慢打字每 >300ms 停顿都触发搜索并写历史，导致 `beautiful` 被拆成 `b`/`be`/`bea`… 记录；提交后编辑/删除框内文本时旧结果仍挂着。
+- 2026-07-09：搜索 tab 改为「显式搜索按钮」替代 live 搜索 + 编辑即清旧结果三态。详见本文件关键设计原则「显式搜索」。动机：live 搜索下慢打字每 >300ms 停顿都触发搜索并写历史，导致 `beautiful` 被拆成 `b`/`be`/`bea`… 记录；提交后编辑/删除框内文本时旧结果仍挂着。
+- 2026-07-17：Warm Paper 页级静光（`ThkPageAtmosphere`）挂在 `SearchScreen`。见 [CHANGELOG/2026-07-17-warm-paper-glass.md](../../CHANGELOG/2026-07-17-warm-paper-glass.md)。

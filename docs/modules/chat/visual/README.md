@@ -33,10 +33,12 @@
 │  │  └──────────────────────────────────────────┘   │ │
 │  └─────────────────────────────────────────────────┘ │
 │                                                      │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │ ChatComposer（输入框）                           │ │
-│  │ [消息输入...                    ] [发送↑] │ │
-│  └─────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────┐ ○ ○  │  输入 pill + 圆钮 │
+│  │ [+] 消息…                     │ 碎片 发送 │
+│  └──────────────────────────────┘      │
+│  ┌────────────────────────────────────┐│  工具 pill（玻璃底）│
+│  │ 联网搜索 │ 深度思考                 ││
+│  └────────────────────────────────────┘│
 └─────────────────────────────────────────────────────┘
                     │
                     │ 点击 ModelSelectorPanel
@@ -57,17 +59,31 @@
 ## 1. ChatScreen 布局
 
 ```dart
+// 2026-07-17：Stack 叠层——列表铺满，composer 浮层磨消息像素
 CupertinoPageScaffold(
   backgroundColor: AppColors.pageBg,
-  navigationBar: ThkNavBar.inline(...),
-  child: Column(
-    children: [
-      Expanded(child: ChatListView(...)),  // 消息列表
-      ChatComposer(...),                    // 底部输入框
-    ],
+  navigationBar: ThkNavBar.inline(...), // 顶栏不透明 surface
+  child: SafeArea(
+    top: false,
+    bottom: true, // 避让叠层 glass tab
+    child: Column(
+      children: [
+        // 可选面包屑（不透明条）
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(child: ChatListView(bottomContentInset: …)),
+              Positioned(left: 0, right: 0, bottom: 0, child: ChatComposer(…)),
+            ],
+          ),
+        ),
+      ],
+    ),
   ),
 )
 ```
+
+**Composer 视觉（Warm Paper P2）：** 输入 pill 更透毛玻璃；工具行独立 pill；碎片/发送为右侧圆钮。工具标签禁止裸叠气泡。详见 [design-system](../../../_shared/design-system.md)。
 
 ### NavBar
 

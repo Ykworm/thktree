@@ -49,7 +49,7 @@
 
 | 要改这个 | 必读 | 为什么 |
 |----------|------|--------|
-| 主题/节点色/调色板 | [`docs/modules/themes/README.md`](modules/themes/README.md) + [`docs/_shared/design-system.md`](_shared/design-system.md) | 节点色与主题色完全解耦，改色不是改一个变量 |
+| 主题/节点色/调色板 / 壳层玻璃 / 氛围光 | [`docs/modules/themes/README.md`](modules/themes/README.md) + [`docs/_shared/design-system.md`](_shared/design-system.md) + `lib/ui/core/theme/app_surfaces.dart` | 节点色与主题色解耦；Warm Paper 四层（纸/卡/玻/光）勿混；blur 禁列表 cell |
 | 笔记读写/存储/刷新 | [`docs/modules/notes/README.md`](modules/notes/README.md) + [`docs/modules/notes/CHANGELOG.md`](modules/notes/CHANGELOG.md) 第 3 节 | `NoteStore` 是唯一写盘入口；全局版本号机制不能动 |
 | 对话/流式回复 | [`docs/modules/chat/README.md`](modules/chat/README.md) + [DECISIONS.md ADR-006](DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage) | SSE 事件顺序/心跳处理有约束 |
 | LLM Provider/Key | [`docs/modules/llm/README.md`](modules/llm/README.md) + [DECISIONS.md ADR-006](DECISIONS.md#adr-006-llm-调用-sse-流式--api-key-走-flutter_secure_storage) | API Key 必走 secure storage，不能落地明文 |
@@ -60,7 +60,7 @@
 
 ### 第三步：按需钻入
 - **想了解某个模块的功能/代码/视觉** → `docs/modules/<name>/README.md`
-- **遇到设计/视觉问题**（颜色/字体/组件用法）→ [`docs/_shared/design-system.md`](_shared/design-system.md)
+- **遇到设计/视觉问题**（颜色/字体/组件用法 / Warm Paper 玻璃与氛围光）→ [`docs/_shared/design-system.md`](_shared/design-system.md) + [CHANGELOG/2026-07-17-warm-paper-glass.md](CHANGELOG/2026-07-17-warm-paper-glass.md)
 - **遇到存储/i18n/分支流程等横向问题** → `docs/_shared/`
 - **遇到某个功能的设计/迁移历史** → `docs/CHANGELOG/YYYY-MM-DD-简述.md`
 - **遇到技术债** → `docs/TECH-DEBT.md`

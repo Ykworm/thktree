@@ -4,10 +4,11 @@
 > 维护者：人类 + AI 共同维护。AI 改代码时同步更新 visual/ 文档。
 
 > ⚠️ **AI 改模块前必读**
-> 1. **节点色与主题色完全解耦**——节点色走 `lib/ui/core/theme/node_colors.dart`，主题调色板走 `lib/ui/core/theme/app_colors.dart`；改色不是改一个变量。
-> 2. **设计文档是 source of truth**——颜色/字号/间距改前先看 [`docs/_shared/design-system.md`](../../_shared/design-system.md)，不要从代码反推规范。
+> 1. **节点色与主题色完全解耦**——节点色走 `AppColors.nodePalettes` / `paletteForNode`（及既有 node 分配），主题调色板走 `AppColors.themeTileColorFor` / `colorForTheme`；改色不是改一个变量。
+> 2. **设计文档是 source of truth**——颜色/字号/间距改前先看 [`docs/_shared/design-system.md`](../../_shared/design-system.md)（Warm Paper Glass），不要从代码反推规范。
 > 3. **树视图操作**（拖拽/分支/删除/重命名）的手势逻辑是 `ThemeDetailController` 唯一的，请勿在 widget 里加状态。
 > 4. visual/ 下的截图 + 设计 spec 与代码一同更新，AI 改完代码也要检查 visual 是否需要同步。
+> 5. **氛围光（2026-07-17）**：仅 `ThemeListScreen` 包 `ThkPageAtmosphere`；**树节点行禁止 blur**。蓝光从 large title 一带释放，见 design-system。
 
 ## 1. 职责
 
@@ -59,6 +60,12 @@ lib/ui/features/themes/
 | 合并 & 创建新 Chat | [specs/merge-chat.md](specs/merge-chat.md) | 多选合并流程 + 跨 tree 范围规则（Theme ≠ Tree） |
 
 ## 5. 关键设计原则
+
+### 5.0 Warm Paper 列表（2026-07-17）
+
+- **ThemeListScreen**：纸底 `pageBg` + 白卡行（`AppSurfaces.contentCard`）+ 页级 `ThkPageAtmosphere`（静光，可关）。
+- **ThemeDetailScreen / 树**：行 + 当前节点 left bar / 极浅抬卡；**不做**每行毛玻璃、不做满页 bento。
+- 完整四层约定见 [design-system](../../_shared/design-system.md) 与 [CHANGELOG/2026-07-17](../../CHANGELOG/2026-07-17-warm-paper-glass.md)。
 
 ### 5.1 节点色 vs 主题色（**解耦**）
 
