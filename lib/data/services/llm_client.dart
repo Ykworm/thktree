@@ -264,14 +264,24 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
       name: 'llm_client',
     );
 
+    final isXai = providerName.toLowerCase().contains('xai') ||
+        providerName.toLowerCase().contains('grok');
+
     // 联网搜索可能触发多轮 tool_calls，最多循环 3 次
+    // （xAI 用 search_parameters 服务端搜索，不走 tools 多轮）
     const maxToolRounds = 3;
     for (var round = 0; round < maxToolRounds; round++) {
       final body = <String, Object?>{
         'model': model,
         'stream': true,
         'messages': currentMessages,
-        if (webSearch) 'tools': _buildWebSearchTools(),
+        // xAI：原生 search_parameters（服务端搜）；其它 OpenAI 兼容：function tools
+        if (webSearch && !isXai) 'tools': _buildWebSearchTools(),
+        if (isXai)
+          'search_parameters': <String, Object?>{
+            'mode': webSearch ? 'on' : 'off',
+            if (webSearch) 'return_citations': true,
+          },
       };
 
       // 检测本次请求是否含图片（多模态）
@@ -293,6 +303,8 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
       // - KIMI k2.5/k2.6: `thinking: {type: "enabled"/"disabled"}`（对象格式，
       //   与 DeepSeek Anthropic 兼容路径同构；注意 KIMI 默认也是 enabled！
       //   关时必须显式 disabled，否则开关「关不掉」——跟 DeepSeek 同款 bug）
+      // - xAI Grok-4.3: `reasoning_effort` = none|low|medium|high（文档标明
+      //   仅 4.3 支持；其它 Grok 可能忽略。响应 reasoning_content 已解析）
       // - 豆包（火山方舟）：服务端默认开启，无法关闭，不发参数；
       // - Claude/Anthropic 官方：走 ClaudeClient 不进这里。
       // 上游 chat_controller 已用 `inferCapabilities()` 二次校验 deepThinking
@@ -307,6 +319,8 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
         } else if (providerName.toLowerCase().contains('kimi') ||
             providerName.toLowerCase().contains('moonshot')) {
           body['thinking'] = {'type': 'enabled'};
+        } else if (isXai) {
+          body['reasoning_effort'] = 'high';
         }
       } else if (!webSearch && !hasImage &&
           (providerName.toLowerCase().contains('kimi') ||
@@ -319,6 +333,12 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
         final caps = inferCapabilities(model);
         if (caps.contains(ModelCapability.deepThinking)) {
           body['thinking'] = {'type': 'disabled'};
+        }
+      } else if (isXai && !hasImage) {
+        // xAI：关深度思考时对支持 effort 的模型显式 none（未知模型忽略）
+        final caps = inferCapabilities(model);
+        if (caps.contains(ModelCapability.deepThinking)) {
+          body['reasoning_effort'] = 'none';
         }
       }
 

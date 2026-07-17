@@ -44,6 +44,12 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   // 响应通过 reasoning_content 流式回传）
   'minimax-m3': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
 
+  // xAI Grok（api.x.ai OpenAI 兼容；reasoning 经 reasoning_content 回传；
+  // grok-4.3 支持 reasoning_effort none/low/medium/high；图片输入见官方 Image）
+  'grok-4.5': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
+  'grok-4.3': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
+  'grok-4': {ModelCapability.text, ModelCapability.vision, ModelCapability.deepThinking},
+
   // MIMO (Xiaomi) 多模态模型
   'mimo-v2.5': {ModelCapability.text, ModelCapability.vision},
   'mimo-v2-omni': {ModelCapability.text, ModelCapability.vision},

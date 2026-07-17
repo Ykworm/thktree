@@ -73,5 +73,14 @@ List<LlmProviderConfig> createPresetProviders() {
       defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
       isOpenAiCompatible: true,
     ),
+    LlmProviderConfig(
+      id: 'preset_xai',
+      type: LlmProviderType.xai,
+      name: 'xAI Grok',
+      // OpenAI 兼容 Chat Completions；控制台 API Key：console.x.ai
+      baseUrl: 'https://api.x.ai/v1',
+      defaultBaseUrl: 'https://api.x.ai/v1',
+      isOpenAiCompatible: true,
+    ),
   ];
 }

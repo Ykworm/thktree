@@ -69,6 +69,23 @@ const List<Map<String, dynamic>> _minimaxWhitelist = [
   },
 ];
 
+/// xAI Grok 白名单模型
+///
+/// /models 会返回大量 alias 与 Imagine/Voice 模型；只保留常用 chat 旗舰。
+/// 文档：https://docs.x.ai/docs/models
+const List<Map<String, dynamic>> _xaiWhitelist = [
+  {
+    'id': 'grok-4.5',
+    'name': 'Grok 4.5',
+    'contextWindow': 500000,
+  },
+  {
+    'id': 'grok-4.3',
+    'name': 'Grok 4.3',
+    'contextWindow': 1000000,
+  },
+];
+
 /// DeepSeek 白名单模型
 ///
 /// DeepSeek Anthropic 兼容 API 不提供 `/models` 列表端点，
@@ -132,8 +149,10 @@ class ModelFetcher {
         return _fetchKimiModels();
       case LlmProviderType.minimax:
         return _fetchMinimaxModels();
+      case LlmProviderType.xai:
+        return _fetchXaiModels();
       default:
-        // OpenAI 兼容（openai, kimi, minimax, mimo, custom）
+        // OpenAI 兼容（openai, mimo, custom 等）
         return _fetchOpenAiCompatibleModels(baseUrl, apiKey);
     }
   }
@@ -218,6 +237,21 @@ class ModelFetcher {
   /// MiniMax 使用白名单模型列表（只保留 M3）。
   List<LlmModelConfig> _fetchMinimaxModels() {
     return _minimaxWhitelist.map((m) {
+      final id = m['id'] as String;
+      return LlmModelConfig(
+        id: id,
+        name: m['name'] as String,
+        contextWindow: m['contextWindow'] as int,
+        capabilities: inferCapabilities(id),
+      );
+    }).toList();
+  }
+
+  // ─── xAI Grok（白名单）──────────────────────────────────────────
+
+  /// xAI 使用白名单模型列表（只保留 Grok 4.5 / 4.3 chat）。
+  List<LlmModelConfig> _fetchXaiModels() {
+    return _xaiWhitelist.map((m) {
       final id = m['id'] as String;
       return LlmModelConfig(
         id: id,
