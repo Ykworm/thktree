@@ -57,7 +57,11 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
   dev.log('[appDatabaseProvider] database opened');
 
   // Startup sync: reconcile disk vs DB (lightweight, runs once)
-  dev.log('[appDatabaseProvider] starting theme syncFromDisk');
+  // 注意：这是「自动修复数据」的主题/节点对齐，不是搜索 FTS 的 rebuildAll。
+  dev.log(
+    '[appDatabaseProvider] starting theme syncFromDisk '
+    'rootDir=${paths.rootDir.path} themesDir=${paths.themesDir.path}',
+  );
   final themeStore = ThemeStore(paths: paths, db: db.db);
   await themeStore.syncFromDisk();
   dev.log('[appDatabaseProvider] theme syncFromDisk completed');
@@ -66,10 +70,16 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
   final themes = await themeStore.listThemes();
   dev.log('[appDatabaseProvider] found ${themes.length} themes after sync');
 
+  var nodesSynced = 0;
   for (final theme in themes) {
     final themePath = p.join(paths.themesDir.path, theme.themeId);
     dev.log('[appDatabaseProvider] syncing nodes for theme: ${theme.themeId}');
     await nodeStore.syncFromDisk(themePath: themePath);
+    final count = (await nodeStore.listNodes(themeId: theme.themeId)).length;
+    nodesSynced += count;
+    dev.log(
+      '[appDatabaseProvider] theme ${theme.themeId} nodesInDb=$count',
+    );
   }
 
   // 确保"未分类"主题始终存在
@@ -78,7 +88,11 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
     await themeStore.createTheme(title: '未分类');
   }
 
-  dev.log('[appDatabaseProvider] completed');
+  dev.log(
+    '[appDatabaseProvider] completed startup_sync_diag '
+    'themes=${themes.length} nodesTotal=$nodesSynced '
+    'rootDir=${paths.rootDir.path}',
+  );
   return db;
 });
 
@@ -177,72 +191,242 @@ final sessionStoreProvider = FutureProvider<SessionStore>((ref) async {
   unawaited(logger.info('session_store.got_nodeStore'));
   return SessionStore(
     getSessionPathForNode: (nodeId) async {
-      dev.log('[getSessionPathForNode] start, nodeId=$nodeId');
-      unawaited(logger.info('get_session_path.start', attrs: {'nodeId': nodeId}));
-      
+      // 诊断用：日志 tag 搜 get_session_path / session_path_diag
+      // 用于区分 DB 幽灵节点 / session.md 丢失 / 路径漂移 / 数据目录错位。
+      final themesDirPath = paths.themesDir.path;
+      final rootDirPath = paths.rootDir.path;
+      dev.log(
+        '[getSessionPathForNode] start nodeId=$nodeId '
+        'rootDir=$rootDirPath themesDir=$themesDirPath',
+      );
+      unawaited(logger.info('get_session_path.start', attrs: {
+        'nodeId': nodeId,
+        'rootDir': rootDirPath,
+        'themesDir': themesDirPath,
+      }));
+
+      String? dbSessionPath;
+      String? dbNodePath;
+      String? dbThemeId;
+      var dbRowFound = false;
+      var dbSessionExists = false;
+      var dbNodeDirExists = false;
+
       try {
         final row = await nodeStore.getNodeRow(nodeId: nodeId);
-        final sessionPath = row['sessionPath']! as String;
-        final exists = await File(sessionPath).exists();
-        dev.log('[getSessionPathForNode] DB hit, nodeId=$nodeId, sessionPath=$sessionPath, exists=$exists');
-        unawaited(logger.info('get_session_path.db_hit', attrs: {'nodeId': nodeId, 'sessionPath': sessionPath, 'exists': exists}));
-        if (exists) {
+        dbRowFound = true;
+        dbSessionPath = row['sessionPath'] as String?;
+        dbNodePath = row['nodePath'] as String?;
+        dbThemeId = row['themeId'] as String?;
+        final sessionPath = dbSessionPath!;
+        dbSessionExists = await File(sessionPath).exists();
+        if (dbNodePath != null) {
+          dbNodeDirExists = await Directory(dbNodePath).exists();
+        }
+        // 相对路径原始值（inflate 前）便于对照磁盘 / 根目录迁移
+        final rawRows = await nodeStore.db.query(
+          'nodes',
+          columns: ['sessionPath', 'nodePath', 'themeId'],
+          where: 'nodeId = ?',
+          whereArgs: [nodeId],
+          limit: 1,
+        );
+        final rawSession =
+            rawRows.isEmpty ? null : rawRows.single['sessionPath'] as String?;
+        final rawNode =
+            rawRows.isEmpty ? null : rawRows.single['nodePath'] as String?;
+
+        dev.log(
+          '[getSessionPathForNode] DB hit nodeId=$nodeId themeId=$dbThemeId '
+          'sessionAbs=$sessionPath exists=$dbSessionExists '
+          'nodeDir=$dbNodePath nodeDirExists=$dbNodeDirExists '
+          'rawSession=$rawSession rawNode=$rawNode',
+        );
+        unawaited(logger.info('get_session_path.db_hit', attrs: {
+          'nodeId': nodeId,
+          'themeId': dbThemeId,
+          'sessionPath': sessionPath,
+          'sessionExists': dbSessionExists,
+          'nodePath': dbNodePath,
+          'nodeDirExists': dbNodeDirExists,
+          'rawSessionPath': rawSession,
+          'rawNodePath': rawNode,
+        }));
+        if (dbSessionExists) {
           return sessionPath;
         }
-        dev.log('[getSessionPathForNode] stale DB path, falling back to filesystem, nodeId=$nodeId');
-        unawaited(logger.info('get_session_path.stale_db', attrs: {'nodeId': nodeId}));
-      } catch (e) {
-        dev.log('[getSessionPathForNode] DB miss, falling back to filesystem, nodeId=$nodeId, error=$e');
-        unawaited(
-          logger.info('get_session_path.db_miss', attrs: {'nodeId': nodeId, 'error': e.toString()}),
+        // 进一步：node 目录在、只有 session.md 丢了？
+        if (dbNodeDirExists && dbNodePath != null) {
+          final metaPath = p.join(dbNodePath, 'node.meta.json');
+          final metaExists = await File(metaPath).exists();
+          final sessionAtNode = p.join(dbNodePath, 'session.md');
+          final sessionAtNodeExists = await File(sessionAtNode).exists();
+          dev.log(
+            '[getSessionPathForNode] stale session but nodeDir ok: '
+            'metaExists=$metaExists sessionAtNode=$sessionAtNode '
+            'sessionAtNodeExists=$sessionAtNodeExists '
+            'hint=meta_only_missing_session → reindex 不够，需补 session.md',
+          );
+          unawaited(logger.info('get_session_path.meta_only_at_db_path', attrs: {
+            'nodeId': nodeId,
+            'nodePath': dbNodePath,
+            'metaExists': metaExists,
+            'sessionAtNodeExists': sessionAtNodeExists,
+          }));
+        }
+        dev.log(
+          '[getSessionPathForNode] stale DB path, falling back to filesystem, '
+          'nodeId=$nodeId',
         );
+        unawaited(logger.info('get_session_path.stale_db', attrs: {
+          'nodeId': nodeId,
+          'sessionPath': sessionPath,
+          'nodePath': dbNodePath,
+        }));
+      } catch (e) {
+        dev.log(
+          '[getSessionPathForNode] DB miss, falling back to filesystem, '
+          'nodeId=$nodeId error=$e',
+        );
+        unawaited(logger.info('get_session_path.db_miss', attrs: {
+          'nodeId': nodeId,
+          'error': e.toString(),
+        }));
       }
 
-      // If still not found, try recursive scan (as a last resort)
       final themesDir = paths.themesDir;
-      dev.log('[getSessionPathForNode] last resort: recursive scan themesDir=${themesDir.path}');
+      dev.log(
+        '[getSessionPathForNode] last resort recursive scan '
+        'themesDir=${themesDir.path} themesDirExists=${await themesDir.exists()}',
+      );
       if (!await themesDir.exists()) {
+        unawaited(logger.info('get_session_path.themes_dir_missing', attrs: {
+          'themesDir': themesDir.path,
+        }));
         throw StateError('Themes dir not found: ${themesDir.path}');
       }
-      
-      Future<String?> recursiveFindSession(Directory dir) async {
+
+      // 扫描统计：帮助判断 reindex 是否有用
+      var dirsVisited = 0;
+      var fullMatches = 0; // meta 匹配 + session.md 存在
+      var metaOnlyMatches = 0; // meta 匹配但无 session.md
+      var sessionWithoutMeta = 0; // 有 session.md 但无/不匹配 meta
+      String? metaOnlyDir;
+      String? fullMatchPath;
+
+      Future<void> recursiveScan(Directory dir) async {
         final entities = await dir.list(followLinks: false).toList();
         for (final entity in entities) {
-          if (entity is Directory) {
-            final possibleSessionPath = p.join(entity.path, 'session.md');
-            if (await File(possibleSessionPath).exists()) {
-              // Check if this directory has a node.meta.json with matching nodeId
-              final metaPath = p.join(entity.path, 'node.meta.json');
-              if (await File(metaPath).exists()) {
-                try {
-                  final metaText = await File(metaPath).readAsString();
-                  final metaJson = jsonDecode(metaText) as Map<String, Object?>;
-                  if (metaJson['nodeId'] == nodeId) {
-                    return possibleSessionPath;
-                  }
-                } catch (_) {}
-              }
-            }
-            // Recurse into subdirectories
-            final found = await recursiveFindSession(entity);
-            if (found != null) {
-              return found;
+          if (entity is! Directory) continue;
+          dirsVisited++;
+          final possibleSessionPath = p.join(entity.path, 'session.md');
+          final metaPath = p.join(entity.path, 'node.meta.json');
+          final sessionExists = await File(possibleSessionPath).exists();
+          final metaExists = await File(metaPath).exists();
+
+          var metaMatches = false;
+          if (metaExists) {
+            try {
+              final metaText = await File(metaPath).readAsString();
+              final metaJson = jsonDecode(metaText) as Map<String, Object?>;
+              metaMatches = metaJson['nodeId'] == nodeId;
+            } catch (e) {
+              dev.log(
+                '[getSessionPathForNode] meta parse fail dir=${entity.path} e=$e',
+              );
             }
           }
+
+          if (metaMatches && sessionExists) {
+            fullMatches++;
+            fullMatchPath ??= possibleSessionPath;
+          } else if (metaMatches && !sessionExists) {
+            metaOnlyMatches++;
+            metaOnlyDir ??= entity.path;
+            dev.log(
+              '[getSessionPathForNode] META_ONLY match (no session.md) '
+              'dir=${entity.path}',
+            );
+          } else if (sessionExists && !metaMatches) {
+            sessionWithoutMeta++;
+          }
+
+          await recursiveScan(entity);
         }
-        return null;
       }
-      
-      final found = await recursiveFindSession(themesDir);
-      if (found != null) {
-        dev.log('[getSessionPathForNode] recursive hit, nodeId=$nodeId, sessionPath=$found');
-        unawaited(logger.info('get_session_path.recursive_hit', attrs: {'nodeId': nodeId, 'sessionPath': found}));
-        unawaited(nodeStore.updateNodeSessionPath(nodeId: nodeId, sessionPath: found));
-        return found;
+
+      await recursiveScan(themesDir);
+
+      final resolvedFull = fullMatchPath;
+      if (resolvedFull != null) {
+        dev.log(
+          '[getSessionPathForNode] recursive FULL hit nodeId=$nodeId '
+          'sessionPath=$resolvedFull '
+          'dirsVisited=$dirsVisited full=$fullMatches metaOnly=$metaOnlyMatches',
+        );
+        unawaited(logger.info('get_session_path.recursive_hit', attrs: {
+          'nodeId': nodeId,
+          'sessionPath': resolvedFull,
+          'dirsVisited': dirsVisited,
+          'fullMatches': fullMatches,
+          'metaOnlyMatches': metaOnlyMatches,
+        }));
+        unawaited(
+          nodeStore.updateNodeSessionPath(
+            nodeId: nodeId,
+            sessionPath: resolvedFull,
+          ),
+        );
+        return resolvedFull;
       }
-      dev.log('[getSessionPathForNode] NOT FOUND anywhere, nodeId=$nodeId');
-      unawaited(logger.info('get_session_path.not_found', attrs: {'nodeId': nodeId}));
-      throw StateError('Session path not found for nodeId=$nodeId');
+
+      // 最终诊断：reindex / 搜索修复能否救
+      final diagnosis = <String, Object?>{
+        'nodeId': nodeId,
+        'dbRowFound': dbRowFound,
+        'dbSessionExists': dbSessionExists,
+        'dbNodeDirExists': dbNodeDirExists,
+        'dbSessionPath': dbSessionPath,
+        'dbNodePath': dbNodePath,
+        'dbThemeId': dbThemeId,
+        'dirsVisited': dirsVisited,
+        'fullMatches': fullMatches,
+        'metaOnlyMatches': metaOnlyMatches,
+        'sessionWithoutMeta': sessionWithoutMeta,
+        'metaOnlyDir': metaOnlyDir,
+        'themesDir': themesDir.path,
+      };
+
+      String fixHint;
+      if (metaOnlyMatches > 0 || (dbNodeDirExists && !dbSessionExists)) {
+        // 磁盘有节点目录/meta，缺 session.md：reindex 只写路径不造文件 → 不够
+        fixHint =
+            'meta_exists_session_missing: startup sync/reindex 不够；'
+            '需补空 session.md 或从备份恢复。搜索「立即修复」只重建 FTS，无效。';
+      } else if (!dbRowFound && fullMatches == 0 && metaOnlyMatches == 0) {
+        fixHint =
+            'ghost_or_wrong_datadir: DB/磁盘均无此 node；'
+            '可能树缓存脏数据或 rootDir 不一致。reindex 会删 DB 幽灵行。';
+      } else if (dbRowFound && !dbNodeDirExists && fullMatches == 0) {
+        fixHint =
+            'db_orphan_no_disk: DB 有行磁盘无目录；'
+            '启动 syncFromDisk 本应删孤儿——若仍出现说明 list 未走 sync 或另一数据目录。';
+      } else {
+        fixHint =
+            'unknown: 把 session_path_diag 整段日志发回分析。'
+            '搜索 rebuildAll 不能修 session 路径。';
+      }
+      diagnosis['fixHint'] = fixHint;
+
+      dev.log(
+        '[getSessionPathForNode] NOT FOUND session_path_diag=$diagnosis',
+      );
+      unawaited(logger.info('get_session_path.not_found', attrs: diagnosis));
+      unawaited(logger.info('session_path_diag', attrs: diagnosis));
+      throw StateError(
+        'Session path not found for nodeId=$nodeId '
+        '(see logs: session_path_diag; $fixHint)',
+      );
     },
   );
 });
