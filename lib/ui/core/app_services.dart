@@ -255,24 +255,33 @@ final sessionStoreProvider = FutureProvider<SessionStore>((ref) async {
         if (dbSessionExists) {
           return sessionPath;
         }
-        // 进一步：node 目录在、只有 session.md 丢了？
+        // node 目录在、session.md 丢了 → 按 meta 自动补最小空会话（自愈）
         if (dbNodeDirExists && dbNodePath != null) {
           final metaPath = p.join(dbNodePath, 'node.meta.json');
           final metaExists = await File(metaPath).exists();
-          final sessionAtNode = p.join(dbNodePath, 'session.md');
-          final sessionAtNodeExists = await File(sessionAtNode).exists();
           dev.log(
             '[getSessionPathForNode] stale session but nodeDir ok: '
-            'metaExists=$metaExists sessionAtNode=$sessionAtNode '
-            'sessionAtNodeExists=$sessionAtNodeExists '
-            'hint=meta_only_missing_session → reindex 不够，需补 session.md',
+            'metaExists=$metaExists nodePath=$dbNodePath → try auto-heal',
           );
           unawaited(logger.info('get_session_path.meta_only_at_db_path', attrs: {
             'nodeId': nodeId,
             'nodePath': dbNodePath,
             'metaExists': metaExists,
-            'sessionAtNodeExists': sessionAtNodeExists,
           }));
+          if (metaExists) {
+            final healed = await nodeStore.ensureSessionMarkdownIfMissing(
+              nodeId: nodeId,
+              nodeDir: dbNodePath,
+            );
+            if (healed != null) {
+              unawaited(logger.info('get_session_path.auto_healed', attrs: {
+                'nodeId': nodeId,
+                'sessionPath': healed,
+                'source': 'db_node_path',
+              }));
+              return healed;
+            }
+          }
         }
         dev.log(
           '[getSessionPathForNode] stale DB path, falling back to filesystem, '
@@ -380,7 +389,25 @@ final sessionStoreProvider = FutureProvider<SessionStore>((ref) async {
         return resolvedFull;
       }
 
-      // 最终诊断：reindex / 搜索修复能否救
+      // 递归只找到 meta、没有 session → 自动补空 session.md
+      final healDir = metaOnlyDir;
+      if (healDir != null) {
+        final healed = await nodeStore.ensureSessionMarkdownIfMissing(
+          nodeId: nodeId,
+          nodeDir: healDir,
+        );
+        if (healed != null) {
+          unawaited(logger.info('get_session_path.auto_healed', attrs: {
+            'nodeId': nodeId,
+            'sessionPath': healed,
+            'source': 'recursive_meta_only',
+            'dirsVisited': dirsVisited,
+          }));
+          return healed;
+        }
+      }
+
+      // 最终诊断（自愈失败才到这里）
       final diagnosis = <String, Object?>{
         'nodeId': nodeId,
         'dbRowFound': dbRowFound,
@@ -399,22 +426,20 @@ final sessionStoreProvider = FutureProvider<SessionStore>((ref) async {
 
       String fixHint;
       if (metaOnlyMatches > 0 || (dbNodeDirExists && !dbSessionExists)) {
-        // 磁盘有节点目录/meta，缺 session.md：reindex 只写路径不造文件 → 不够
         fixHint =
-            'meta_exists_session_missing: startup sync/reindex 不够；'
-            '需补空 session.md 或从备份恢复。搜索「立即修复」只重建 FTS，无效。';
+            'meta_exists_session_missing_heal_failed: 已尝试按 meta 补 session.md 失败；'
+            '检查 node.meta.json 是否损坏。';
       } else if (!dbRowFound && fullMatches == 0 && metaOnlyMatches == 0) {
         fixHint =
             'ghost_or_wrong_datadir: DB/磁盘均无此 node；'
-            '可能树缓存脏数据或 rootDir 不一致。reindex 会删 DB 幽灵行。';
+            '可能树缓存脏数据或 rootDir 不一致。';
       } else if (dbRowFound && !dbNodeDirExists && fullMatches == 0) {
         fixHint =
             'db_orphan_no_disk: DB 有行磁盘无目录；'
-            '启动 syncFromDisk 本应删孤儿——若仍出现说明 list 未走 sync 或另一数据目录。';
+            '启动 syncFromDisk 本应删孤儿。';
       } else {
         fixHint =
-            'unknown: 把 session_path_diag 整段日志发回分析。'
-            '搜索 rebuildAll 不能修 session 路径。';
+            'unknown: 把 session_path_diag 整段日志发回分析。';
       }
       diagnosis['fixHint'] = fixHint;
 

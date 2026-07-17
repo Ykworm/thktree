@@ -377,6 +377,62 @@ class NodeStore {
     );
   }
 
+  /// 自愈：节点目录有匹配的 `node.meta.json` 但缺少 `session.md` 时，
+  /// 写入最小空会话并回写 DB 路径。
+  ///
+  /// 返回新建/已有 session 的绝对路径；无法自愈时返回 null。
+  /// 注意：历史消息无法从 meta 恢复，只能重新开始对话。
+  Future<String?> ensureSessionMarkdownIfMissing({
+    required String nodeId,
+    required String nodeDir,
+  }) async {
+    final dir = Directory(nodeDir);
+    if (!await dir.exists()) return null;
+
+    final sessionPath = p.join(nodeDir, 'session.md');
+    if (await File(sessionPath).exists()) {
+      return sessionPath;
+    }
+
+    final metaPath = p.join(nodeDir, 'node.meta.json');
+    if (!await File(metaPath).exists()) return null;
+
+    late final NodeMetaV1 meta;
+    try {
+      meta = await readNodeMeta(metaPath);
+    } catch (e, st) {
+      dev.log(
+        '[NodeStore.ensureSessionMarkdownIfMissing] meta parse fail '
+        'nodeId=$nodeId dir=$nodeDir e=$e\n$st',
+      );
+      return null;
+    }
+    if (meta.nodeId != nodeId) {
+      dev.log(
+        '[NodeStore.ensureSessionMarkdownIfMissing] meta nodeId mismatch '
+        'want=$nodeId got=${meta.nodeId} dir=$nodeDir',
+      );
+      return null;
+    }
+
+    final content = buildInitialSessionMarkdownFromMeta(meta);
+    await _atomicWriteString(sessionPath, content);
+    // DB 可能尚无此行（极少见）；update 0 行也无妨，路径解析已可用
+    try {
+      await updateNodeSessionPath(nodeId: nodeId, sessionPath: sessionPath);
+    } catch (e) {
+      dev.log(
+        '[NodeStore.ensureSessionMarkdownIfMissing] DB path update skip '
+        'nodeId=$nodeId e=$e',
+      );
+    }
+    dev.log(
+      '[NodeStore.ensureSessionMarkdownIfMissing] HEALED empty session.md '
+      'nodeId=$nodeId path=$sessionPath',
+    );
+    return sessionPath;
+  }
+
   /// Update sortOrder for a node (used by drag-to-reorder).
   Future<void> reorderNode({
     required String nodeId,
@@ -639,7 +695,13 @@ class _NodeDiskRecord {
   final NodeMetaV1 meta;
 }
 
-String _initialSessionMarkdown(NodeMetaV1 meta, {String? systemPrompt}) {
+/// 从 [NodeMetaV1] 生成最小空 `session.md`（仅 frontmatter，无消息）。
+///
+/// 用于新建节点，以及「meta 在、session.md 丢失」时的自动自愈。
+String buildInitialSessionMarkdownFromMeta(
+  NodeMetaV1 meta, {
+  String? systemPrompt,
+}) {
   final parentIdText = meta.parentId == null ? 'null' : '"${meta.parentId}"';
   final sb = StringBuffer()
     ..writeln('---')
@@ -661,6 +723,10 @@ String _initialSessionMarkdown(NodeMetaV1 meta, {String? systemPrompt}) {
   sb.writeln();
   return sb.toString();
 }
+
+/// 兼容旧私有名；新建路径继续用 [buildInitialSessionMarkdownFromMeta]。
+String _initialSessionMarkdown(NodeMetaV1 meta, {String? systemPrompt}) =>
+    buildInitialSessionMarkdownFromMeta(meta, systemPrompt: systemPrompt);
 
 Future<NodeMetaV1> readNodeMeta(String metaPath) async {
   final text = await File(metaPath).readAsString();
