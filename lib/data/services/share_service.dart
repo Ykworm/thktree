@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
@@ -23,13 +24,20 @@ class ShareContentTooLargeException implements Exception {
 
 /// 分享问答对为图片
 ///
-/// 流程：构建 ShareCardWidget → 近透明 overlay 布局 → toImage → 写临时文件 → 系统分享
+/// 流程：构建 ShareCardWidget → 近透明 overlay 布局 → 高清截图
+/// （超 GPU 纹理上限时纵向分片 + 软件拼接）→ 写临时文件 → 系统分享
 class ShareService {
-  /// GPU 纹理边长上限（多数设备 4096；略保守避免半边被裁 / toImage 抛错）。
+  /// 单次 GPU 栅格化边长上限（多数设备 4096；分片时每片不超此值）。
   static const double _maxTextureEdge = 4096;
 
-  /// 允许的最小 pixelRatio：极长整聊会降到此值（约可撑 ~2 万逻辑像素高）。
-  static const double _minPixelRatio = 0.2;
+  /// 最终输出长边上限（分片拼接后的物理像素），防 OOM。
+  static const int _maxOutputLongEdge = 24576;
+
+  /// 清晰度下限：长文宁可分片，也不再压到 0.2 这种糊字档。
+  static const double _minPixelRatio = 1.5;
+
+  /// 分享图 pixelRatio 上限（再高收益有限、文件暴涨）。
+  static const double _maxPixelRatio = 3.0;
 
   /// 将一组消息生成图片并调起系统分享面板。
   ///
@@ -53,7 +61,13 @@ class ShareService {
     // 注意：
     // - Opacity(0) 会跳过绘制，toImage 会失败 → 必须用极低但不为 0 的 opacity
     // - 负坐标屏外在部分机型上会被裁 → 放在 (0,0) 用几乎透明叠层
-    // - 宽度用 OverflowBox 钉死，避免约束不稳导致右半空白/裁切
+    // - Overlay/_Theater 对 Positioned(仅 left/top) 子树给的是无界约束；
+    //   OverflowBox 自身会吃满父约束，无界时变成 Infinity×Infinity 直接 assert。
+    //   因此先用有限 SizedBox 兜住外层，再用 OverflowBox 放宽高度，
+    //   让整聊长卡按内容长高（可超屏），宽度钉死避免右半空白/裁切。
+    // - RepaintBoundary 在 Opacity 内侧：toImage 取 boundary 自身 layer，
+    //   不受祖先 0.02 透明度影响，导出图仍是不透明的。
+    final slotHeight = mq.size.height.clamp(1.0, double.infinity);
     final entry = OverlayEntry(
       builder: (_) => Positioned(
         left: 0,
@@ -65,17 +79,21 @@ class ShareService {
               data: mq,
               child: Directionality(
                 textDirection: textDirection,
-                child: OverflowBox(
-                  alignment: Alignment.topLeft,
-                  minWidth: cardWidth,
-                  maxWidth: cardWidth,
-                  minHeight: 0,
-                  maxHeight: double.infinity,
-                  child: RepaintBoundary(
-                    key: boundary,
-                    child: scw.ShareCardWidget(
-                      messages: messages,
-                      cardWidth: cardWidth,
+                child: SizedBox(
+                  width: cardWidth,
+                  height: slotHeight,
+                  child: OverflowBox(
+                    alignment: Alignment.topLeft,
+                    minWidth: cardWidth,
+                    maxWidth: cardWidth,
+                    minHeight: 0,
+                    maxHeight: double.infinity,
+                    child: RepaintBoundary(
+                      key: boundary,
+                      child: scw.ShareCardWidget(
+                        messages: messages,
+                        cardWidth: cardWidth,
+                      ),
                     ),
                   ),
                 ),
@@ -102,32 +120,19 @@ class ShareService {
         throw StateError('ShareService: invalid share card size $size');
       }
 
-      // 按纹理上限压 pixelRatio。长图必须允许 pr < 1（旧代码强制 pr≥1，
-      // 导致 toImage 失败，上层却一律提示「内容过多」）。
-      var pr = devicePr;
-      pr = math.min(pr, _maxTextureEdge / size.width);
-      pr = math.min(pr, _maxTextureEdge / size.height);
-      if (pr < _minPixelRatio) {
-        // 仍装不下：真正「内容过多」
-        throw ShareContentTooLargeException(
-          'share card too tall: ${size.width.toStringAsFixed(0)}×'
-          '${size.height.toStringAsFixed(0)}',
-        );
-      }
+      final pr = _resolvePixelRatio(
+        logicalSize: size,
+        devicePr: devicePr,
+      );
 
       debugPrint(
         '[ShareService] capture size=${size.width.toStringAsFixed(0)}×'
         '${size.height.toStringAsFixed(0)} pr=${pr.toStringAsFixed(2)} '
-        'msgs=${messages.length}',
+        'msgs=${messages.length} '
+        'out≈${(size.width * pr).round()}×${(size.height * pr).round()}',
       );
 
-      final ui.Image image = await renderObject.toImage(pixelRatio: pr);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      if (byteData == null) {
-        throw StateError('ShareService: Failed to encode image');
-      }
-      final pngBytes = byteData.buffer.asUint8List();
+      final pngBytes = await _rasterizeToPng(renderObject, pixelRatio: pr);
 
       final tempDirPath = (await getTemporaryDirectory()).path;
       final file = File(
@@ -142,6 +147,105 @@ class ShareService {
     } finally {
       entry.remove();
     }
+  }
+
+  /// 解析截图像素比：优先设备 DPR（封顶 [_maxPixelRatio]），
+  /// 仅因「最终输出长边 / 宽度纹理」压低，**不再**为总高度压到 0.2。
+  /// 超高内容走分片，而不是糊成一团。
+  static double _resolvePixelRatio({
+    required Size logicalSize,
+    required double devicePr,
+  }) {
+    var pr = math.min(devicePr, _maxPixelRatio);
+    // 宽度必须单次进 GPU
+    pr = math.min(pr, _maxTextureEdge / logicalSize.width);
+    // 最终拼接图长边安全上限（内存）
+    final longEdge = math.max(logicalSize.width, logicalSize.height);
+    pr = math.min(pr, _maxOutputLongEdge / longEdge);
+
+    if (pr < _minPixelRatio) {
+      throw ShareContentTooLargeException(
+        'share card too tall for sharp capture: '
+        '${logicalSize.width.toStringAsFixed(0)}×'
+        '${logicalSize.height.toStringAsFixed(0)}',
+      );
+    }
+    return pr;
+  }
+
+  /// 高清栅格化：单张塞得进纹理则一次 [toImage]；
+  /// 否则按纵向切片 [OffsetLayer.toImage]，再用 package:image 软件拼 PNG。
+  static Future<Uint8List> _rasterizeToPng(
+    RenderRepaintBoundary boundary, {
+    required double pixelRatio,
+  }) async {
+    final size = boundary.size;
+    final physicalW = (size.width * pixelRatio).ceil();
+    final physicalH = (size.height * pixelRatio).ceil();
+
+    // 单次可完整捕获
+    if (physicalW <= _maxTextureEdge && physicalH <= _maxTextureEdge) {
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      try {
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (byteData == null) {
+          throw StateError('ShareService: Failed to encode image');
+        }
+        return byteData.buffer.asUint8List();
+      } finally {
+        image.dispose();
+      }
+    }
+
+    // RenderObject.layer 为 protected；分片截图只能经 OffsetLayer.toImage(rect)。
+    // ignore: invalid_use_of_protected_member
+    final rawLayer = boundary.layer;
+    if (rawLayer is! OffsetLayer) {
+      throw StateError('ShareService: OffsetLayer missing for tiled capture');
+    }
+    final layer = rawLayer;
+
+    // 每片物理高度 ≤ 纹理上限；按物理像素推进，减少缝隙。
+    final maxTilePhyH = _maxTextureEdge.floor();
+    final full = img.Image(width: physicalW, height: physicalH);
+    var phyY = 0;
+    var tileIndex = 0;
+
+    while (phyY < physicalH) {
+      final tilePhyH = math.min(maxTilePhyH, physicalH - phyY);
+      final logicalY = phyY / pixelRatio;
+      final logicalH = tilePhyH / pixelRatio;
+      final rect = Rect.fromLTWH(0, logicalY, size.width, logicalH);
+
+      final tileUi = await layer.toImage(rect, pixelRatio: pixelRatio);
+      try {
+        final raw = await tileUi.toByteData(format: ui.ImageByteFormat.rawRgba);
+        if (raw == null) {
+          throw StateError('ShareService: tile $tileIndex raw bytes null');
+        }
+        final tile = img.Image.fromBytes(
+          width: tileUi.width,
+          height: tileUi.height,
+          bytes: raw.buffer,
+          bytesOffset: raw.offsetInBytes,
+          numChannels: 4,
+          order: img.ChannelOrder.rgba,
+        );
+        img.compositeImage(full, tile, dstY: phyY);
+        phyY += tileUi.height;
+      } finally {
+        tileUi.dispose();
+      }
+      tileIndex++;
+    }
+
+    debugPrint(
+      '[ShareService] tiled capture tiles=$tileIndex '
+      'out=${physicalW}x$physicalH',
+    );
+
+    final png = img.encodePng(full);
+    return Uint8List.fromList(png);
   }
 
   static Future<void> _waitForPaint() async {
