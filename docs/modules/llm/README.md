@@ -76,7 +76,7 @@ enum WebSearchSupport {
 }
 ```
 
-- **`visibleProviderTypes`**：设置页面只显示 KIMI、MiniMax、MIMO、DeepSeek 四个提供商（OpenAI / Anthropic / Gemini / 自定义暂不发布）
+- **`visibleProviderTypes`**：设置页显示 KIMI、MiniMax、MIMO、DeepSeek、豆包、**xAI Grok**（OpenAI / Anthropic / Gemini / 自定义暂不发布）
 - **`webSearchSupportMap`**：硬编码各提供商联网支持状态（新模型接入时更新此映射）。**MiniMax 为 `unsupported`**（2026-07-17 止血：官方联网需 Anthropic Messages 服务端工具 `web_search_20250305`，当前 OpenAI 兼容路径未实现，避免 UI 误导）
 - **`isModelWebSearchUnsupported(modelId)`**：模型级联网判断——豆包 `doubao-seed-2-0-pro` 无日期后缀返回 `true`（legacy Chat Completions 不支持联网），有后缀（如 `-260215`）返回 `false`（走 Responses API 支持联网）
 
@@ -87,6 +87,7 @@ enum WebSearchSupport {
 | MIMO | ✅ | Chat Completions API + `web_search` 工具声明 |
 | DeepSeek | ✅ | Anthropic 兼容 Messages API + `web_search_20260209` 工具（**全量**走 Anthropic 协议，不仅 web search） |
 | 豆包 | ✅（模型级） | Responses API 内置 `web_search`（仅 250615+ 版本模型）；`isModelWebSearchUnsupported` 屏蔽无后缀旧模型 |
+| xAI Grok | ✅ | OpenAI 兼容 `https://api.x.ai/v1`；联网用 `search_parameters.mode` on/off（非 function tools）；深度思考 `reasoning_effort`；白名单 `grok-4.5` / `grok-4.3` |
 
 ## 深度思考支持（per-session toggle，2026-07-06）
 
@@ -149,6 +150,7 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 - 2026-06-24：统一 LLM 错误处理与重试（LlmError + LlmErrorCard + 4 场景接入 + 5 个集成测试）
 - 2026-07：联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）
 - 2026-07-17：MiniMax 联网止血——`webSearchSupportMap[minimax]` 改为 `unsupported`（UI 与发送侧不再启用假 function `web_search`）；真实现仍欠 Anthropic 服务端工具路径
+- 2026-07-17：接入 **xAI Grok**（`LlmProviderType.xai` / `preset_xai`，API Key，OpenAI 兼容）；白名单 Grok 4.5/4.3；vision + deepThinking；联网 `search_parameters`
 - 2026-07-05：豆包模型白名单（`_fetchDoubaoModels` + `_doubaoWhitelist`，只返回 3 个 Seed 系列模型，不再走 /models API）+ Seed 模型 vision 能力精确映射
 - 2026-07-06：DeepSeek 全量切到 Anthropic 兼容协议（ADR-020），preset baseUrl 改为 `/anthropic/v1`，老用户自动迁移
 - 2026-07-06：Per-session 深度思考开关上线——`LlmClient.streamChatCompletion` 新增 `deepThinking` 参数；OpenAI 兼容路径按 provider 分支（豆包 `{type: 'enabled'}` / MiniMax-M3 `true`）/ Claude 路径注入 `{type: 'enabled'}`；`ModelCapability` 加 `deepThinking` + `alwaysThinking` 双 cap 区分（详见 [ADR-021](../../DECISIONS.md#adr-021-claudeclient-流式响应补全-thinking_delta-解析) + [ADR-022](../../DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)）。`doubao-seed-2-0-lite-250528` 从豆包 whitelist 移除（方舟端不可达，留着会引导到死路径）

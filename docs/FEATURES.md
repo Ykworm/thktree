@@ -53,7 +53,9 @@
 | 标题自动建议 | chat | ✅ 完成 | 2026-06-29 | [README](modules/chat/README.md) | — | `lib/data/services/title_suggestion_service.dart` + `lib/ui/core/shared/title_suggestion_screen.dart` + `lib/ui/features/chat/auto_title_controller.dart`（2026-06-29 新增） | 分支创建时触发，支持选中文本/对话总结/笔记多种来源；**2026-06-29 新增** 空白分支 chat 流式结束后由 `AutoTitleController` 自动 LLM 补 title 并写入 DB（3 层守卫 + `ref.keepAlive()`保活，详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式)；三层防御拦截 LLM 未配置死路（`lib/ui/core/shared/llm_setup_check.dart`）：L1-A（`showBranchFlow` 入口）→ L1-B（`TitleSuggestionScreen.initState`）→ L2（sheet filter 空时弹窗引导） + `pleaseConfigureTitleModel` / `pleaseConfigureSummaryModel` 跳转默认模型配置页 |
 | 空白分支自动 title 持久化 | chat | ✅ 完成 | 2026-06-29 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/auto_title_controller.dart` | 空白分支（A 模式）chat 流式结束后自动调 LLM 生成 title 并写入 DB + refresh tree；与 widget 生命周期解耦（`ref.keepAlive()`），提前 back 回 tree 也能后台完成；详见 [ADR-018](DECISIONS.md#adr-018-Notifier-后台任务保活autoDispose--build-内-refkeepalive-双标记范式) + [war-story](war-stories/flutter/2026-06-29-riverpod-autodispose-cancels-async-future.md) + [CHANGELOG](CHANGELOG/2026-06-29-auto-title-persistence.md) |
 | iOS 后台中断恢复 | chat | ✅ 完成（iOS only） | 2026-06-22 | [README](modules/chat/README.md) | — | `lib/data/services/chat_task_service.dart` 等 | App 切后台时 `beginBackgroundTask` 续命 30s；切回扫描磁盘 `<!-- streaming -->` 标记触发自动重发，串行排队；详见 [ADR-015](DECISIONS.md#adr-015-ios-llm-流式中断恢复策略--disk-first--自动重发--30s-边界) |
-| 联网搜索 | chat | ✅ 完成 | 2026-07-17 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_composer.dart` 等 | 聊天输入框底部联网搜索开关（地球图标），KIMI/MIMO/DeepSeek/豆包（模型级）支持；**MiniMax UI 已标不支持**（2026-07-17 止血），详见下方说明 |
+| 联网搜索 | chat | ✅ 完成 | 2026-07-17 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_composer.dart` 等 | 聊天输入框底部联网搜索开关（地球图标），KIMI/MIMO/DeepSeek/豆包（模型级）/ **xAI Grok** 支持；**MiniMax UI 已标不支持**（2026-07-17 止血），详见下方说明 |
+| xAI Grok 提供商 | llm | ✅ 完成 | 2026-07-17 | [README](modules/llm/README.md) | — | `preset_providers.dart` + `model_fetcher.dart` + `llm_client.dart` | `LlmProviderType.xai` / `preset_xai`，`https://api.x.ai/v1` OpenAI 兼容 API Key；白名单 grok-4.5/4.3；vision + deepThinking；联网 `search_parameters` |
+| session.md 缺失自愈 | chat | ✅ 完成 | 2026-07-17 | [README](modules/chat/README.md) | — | `node_store.dart` + `app_services.dart` | 有 `node.meta.json`、无 `session.md` 时（如导出跳过 streaming）自动补最小空会话；历史消息无法恢复 |
 | 图片上传 | chat | ✅ 完成 | 2026-07-05 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/chat_composer.dart` + `lib/ui/features/chat/chat_screen.dart` + `lib/ui/features/chat/chat_controller.dart` | 聊天输入框底部图片按钮，支持拍照/相册选择，image_picker 集成；vision 模型自动检测；只发图片不写文字时自动填充默认提示；豆包 Responses API 使用 `input_image` 格式（区别于 OpenAI `image_url`） |
 | 消息时间戳 | chat | ✅ 完成 | 2026-07-04 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/message_bubble.dart` | assistant 消息气泡上方显示人类可读时间（今天 HH:mm / 昨天 / 月日 / 跨年） |
 | 查看原始 Markdown | chat | ✅ 完成 | 2026-07-05 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/widgets/chat_markdown_sheet.dart` + `lib/data/stores/session_store.dart` | 更多菜单入口，底部 sheet 展示 session.md 原始内容 + 复制 |
@@ -68,13 +70,14 @@
 
 ### 联网搜索
 
-KIMI、MIMO、DeepSeek、豆包（模型级）支持原生联网搜索。**MiniMax 在 `webSearchSupportMap` 中为 `unsupported`**（2026-07-17 止血：官方需 Anthropic Messages 服务端工具 `web_search_20250305`，当前客户端未接，避免 UI 假支持）。聊天输入框底部联网搜索开关（地球图标）：支持的提供商默认开启、可手动关闭；不支持的提供商按钮变灰不可点击。
+KIMI、MIMO、DeepSeek、豆包（模型级）、**xAI Grok** 支持原生联网搜索。**MiniMax 在 `webSearchSupportMap` 中为 `unsupported`**（2026-07-17 止血：官方需 Anthropic Messages 服务端工具 `web_search_20250305`，当前客户端未接，避免 UI 假支持）。聊天输入框底部联网搜索开关（地球图标）：支持的提供商默认开启、可手动关闭；不支持的提供商按钮变灰不可点击。
 
 各提供商实现方式：
 - KIMI：`builtin_function.$web_search` 工具（自动禁用 thinking）
 - MIMO：`web_search` function 工具
 - DeepSeek：Anthropic 兼容接口 `web_search_20260209` 工具（**全量走 Anthropic 协议**，不仅 web search）
 - 豆包：Responses API 内置 `web_search`（旧无日期后缀 Seed-2.0-pro 由 `isModelWebSearchUnsupported` 屏蔽）
+- xAI Grok：Chat Completions `search_parameters.mode` on/off（服务端搜索，非 function tools）
 - MiniMax：UI / 发送侧不启用；真实现见 TECH-DEBT「MiniMax 真实联网」
 
 用户偏好持久化在 FlutterSecureStorage（key: `web_search_enabled_{providerType}`）。
@@ -140,6 +143,7 @@ KIMI、MIMO、DeepSeek、豆包（模型级）支持原生联网搜索。**MiniM
 
 > 倒序排列，最新在上。
 
+- **2026-07-17** — xAI Grok 提供商 + session.md 自愈：(1) `LlmProviderType.xai` / `preset_xai`（`api.x.ai/v1` API Key）；白名单 grok-4.5/4.3；联网 `search_parameters`、思考 `reasoning_effort`；(2) 有 `node.meta.json`、无 `session.md` 时 `ensureSessionMarkdownIfMissing` 自动补最小空会话（日志 `get_session_path.auto_healed`）；历史消息不可恢复。见 [llm README](modules/llm/README.md) / [chat README](modules/chat/README.md)。
 - **2026-07-17** — MiniMax 联网止血：`webSearchSupportMap[minimax]` → `unsupported`；UI 与发送侧不再启用假 function `web_search`。真实现仍欠 Anthropic 服务端工具 `web_search_20250305`（见 [TECH-DEBT](TECH-DEBT.md) / [llm README](modules/llm/README.md)）。
 - **2026-07-17** — 树页节点标题搜索：`ThemeDetailScreen` 顶部 `CupertinoSearchTextField`，按 `NodeEntity.title` 本地 substring 过滤（`visibleNodeIdsForTitleQuery`）；命中保留祖先；搜索态强制展开、禁用拖拽；l10n `treeTitleSearchHint` / `treeTitleSearchNoResults`；`test/tree_title_filter_test.dart`。与全局 Search tab（FTS）无关。
 - **2026-07-08** — FEATURES.md 对齐扫描：补充 10 个代码已实现但文档未记录的功能（Doc Split 模块、用户输入总结、思维碰撞、对话目录、聊天内搜索、用户问题列表、Context Usage Bar、备份与恢复、关于页面）；修正分享功能状态（"部分实现"→"完成"）；新增 doc_split、about 两个模块节。
