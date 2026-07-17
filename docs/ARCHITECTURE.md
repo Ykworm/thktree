@@ -108,7 +108,11 @@ lib/
 
 **键盘弹起时隐藏底栏（iOS `_MainShell` / Android `AndroidNavigationShell`）**：`viewInsets.bottom > 0` 时不渲染 tab，避免 shell `Column` 占位导致 Chat 等子页 `resizeToAvoidBottomInset` 在键盘上方多出 tab 高度空白。勿在页面层再 hack 覆盖 `viewInsets` 来「补偿」tab（见 [CHANGELOG/2026-07-16](CHANGELOG/2026-07-16-ios-chat-keyboard-gap.md)）。
 
-### 模块职责（精简版，详细见 `docs/modules/<name>/README.md`）
+### 模块职责（精简版）
+
+> **登记表真源：** [`docs/modules/README.md`](modules/README.md)（id | 路径 | 职责）。增删模块必须先改登记表；ctsync 只认登记表 id。
+
+### 模块职责表（锚点，详见登记表与各 README）
 
 | 模块 | 代码路径 | 文档路径 | 职责 |
 |------|----------|----------|------|
