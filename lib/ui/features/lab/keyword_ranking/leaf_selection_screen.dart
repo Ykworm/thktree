@@ -189,8 +189,23 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                   controller.reset();
                   // 刷新排行榜列表
                   ref.invalidate(keywordRankingFileProvider);
-                  if (context.mounted) {
-                    // 回到排行榜（弹出 leaf + theme 两层）
+                  if (!context.mounted) return;
+                  // 尽量 pop 回排行榜，保留「排行榜 → Lab」返回栈；
+                  // 若栈已断再 go。
+                  final router = GoRouter.of(context);
+                  while (router.canPop()) {
+                    final path = GoRouterState.of(context).uri.path;
+                    if (path == '/lab/keyword-ranking') break;
+                    router.pop();
+                    if (!context.mounted) return;
+                    if (GoRouterState.of(context).uri.path ==
+                        '/lab/keyword-ranking') {
+                      return;
+                    }
+                  }
+                  if (context.mounted &&
+                      GoRouterState.of(context).uri.path !=
+                          '/lab/keyword-ranking') {
                     context.go('/lab/keyword-ranking');
                   }
                 },

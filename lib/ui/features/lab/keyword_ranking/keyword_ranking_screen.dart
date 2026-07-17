@@ -6,6 +6,7 @@ import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_list_view.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -50,6 +51,20 @@ class KeywordRankingScreen extends ConsumerWidget {
         slivers: [
           ThkNavBar.large(
             title: l10n.keywordRankingTitle,
+            previousPageTitle: l10n.labTabLabel,
+            // go_router / 分析完成 go() 后栈可能只剩本页，必须显式返回 Lab
+            leading: CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/lab');
+                }
+              },
+              child: const Icon(AppIcons.back),
+            ),
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () =>
