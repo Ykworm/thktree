@@ -4,7 +4,7 @@
 
 ## Summary
 
-`ThemeDetailScreen` 是主题 Tab 的"内容容器"——把主题下所有节点渲染成树形对话网络。核心 UI 是 `_TreeRowView` 节点卡片：56px 固定行高 + 12pt 圆圈 + 缩进表达层级 + SwipeableRow 包裹 + 最右侧拖拽手柄。每个节点通过 `_NodePalette`（5 套配色，圆圈 + 标题 + 副标题各不同色）形成视觉区分。支持长按重命名、swipe 左滑删除（带子树确认）、swipe 右滑创建分支、拖拽手柄重排（同父级）。
+`ThemeDetailScreen` 是主题 Tab 的"内容容器"——把主题下所有节点渲染成树形对话网络。核心 UI 是 `_TreeRowView` 节点卡片：56px 固定行高 + 12pt 圆圈 + 缩进表达层级 + SwipeableRow 包裹 + 最右侧拖拽手柄。每个节点通过 `_NodePalette`（5 套配色，圆圈 + 标题 + 副标题各不同色）形成视觉区分。支持长按重命名、swipe 左滑删除（带子树确认）、swipe 右滑创建分支、拖拽手柄重排（同父级）。列表顶部有**节点标题搜索**（本地 title 过滤，非全局 FTS）。
 
 **核心设计语言**：与 [design-system.md](../../../_shared/design-system.md) 对齐——`surface` 白色背景、`accent`（indigo）通用交互色。节点卡片的 `_NodePalette` 是本屏独有的扩展系统，5 套预设与节点 `nodeId` 稳定绑定。
 
@@ -23,6 +23,7 @@
 | 折叠状态 | 不持久化，存 `_collapsedIds: Set<String>` | 每次进入全部展开 |
 | Swipe 行为 | 左滑删除 / 右滑分支 | 与节点卡片共用 `SwipeableRow` |
 | 删除确认 | 子树提示 + 同标题节点二次确认 | 防止误删 |
+| 标题搜索 | 顶部常驻 `CupertinoSearchTextField` | 只匹配 `NodeEntity.title`；命中 ∪ 祖先；见第 7.1 节 |
 
 ---
 
@@ -252,12 +253,27 @@ ThkNavBar.inline(
   leading: CupertinoButton(/* 返回 */),
   trailing: Row(
     children: [
-      CupertinoButton(/* ↻ 刷新 */),
+      CupertinoButton(/* ⋯ overflow */),
       CupertinoButton(/* + 新建根节点 */),
     ],
   ),
 )
 ```
+
+### 7.1 节点标题搜索（body 顶部）
+
+有节点时，NavBar 下方常驻搜索框（`key: tree_title_search`）：
+
+| 项 | 行为 |
+|----|------|
+| 匹配 | `title.toLowerCase().contains(query)`，**不**搜消息 / lastMessagePreview |
+| 展示 | 滤树：只渲染 `visibleNodeIds`（命中 + 祖先）；保持缩进层级 |
+| 算法 | `visibleNodeIdsForTitleQuery`（`tree_title_filter.dart`）；空 query → `null`（不过滤） |
+| 搜索态 | 强制展开（忽略 `_collapsedIds`）；`reorderEnabled=false`（无拖拽手柄 / DragTarget） |
+| 仍可用 | 点进 chat、长按重命名、swipe 删除/分支 |
+| 无命中 | `l10n.treeTitleSearchNoResults`（「无匹配标题」） |
+| 占位 | `l10n.treeTitleSearchHint`（「搜索节点标题」） |
+| 非目标 | 全局 Search tab、FTS、`FullTreeScreen`、`searchPrefill` 深链（本次未接） |
 
 ---
 
@@ -265,11 +281,8 @@ ThkNavBar.inline(
 
 ### 8.1 树空状态
 
-```dart
-roots.isEmpty
-  ? Center(child: Text(l10n.emptyTree))
-  : SafeArea(child: Center(child: ConstrainedBox(constraints: maxWidth: 800, child: ListView.separated(...))))
-```
+- 主题下无任何根节点：`l10n.emptyTree`（不展示搜索框）
+- 有节点但标题搜索无命中：搜索框保留 + `l10n.treeTitleSearchNoResults`
 
 ### 8.2 错误 / Loading
 

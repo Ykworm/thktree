@@ -30,6 +30,7 @@
 | 祖先上下文总结 | themes | 🔨 部分实现 | — | [README](modules/themes/README.md) | — | `lib/data/services/` | context-summary.md 写入存在，注入对话未完成 |
 | 主题详情 overflow menu | themes | ✅ 完成 | 2026-07-04 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/theme_detail_screen.dart` | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
 | 合并 & 创建新 Chat | themes | ✅ 完成 | 2026-07-09 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/merge_chat_confirm_screen.dart` 等 | 选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree 范围（chat 页入口限当前树，tree 页入口可跨树），详见 [spec](modules/themes/specs/merge-chat.md) |
+| 树页节点标题搜索 | themes | ✅ 完成 | 2026-07-17 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `theme_detail_screen.dart` + `tree_title_filter.dart` | 仅当前主题树、只匹配节点 title；命中 + 祖先路径；非 FTS |
 
 ## 2. 笔记模块（notes）
 
@@ -137,6 +138,7 @@ KIMI、MIMO、DeepSeek 三个提供商支持原生联网搜索（MiniMax 待实�
 
 > 倒序排列，最新在上。
 
+- **2026-07-17** — 树页节点标题搜索：`ThemeDetailScreen` 顶部 `CupertinoSearchTextField`，按 `NodeEntity.title` 本地 substring 过滤（`visibleNodeIdsForTitleQuery`）；命中保留祖先；搜索态强制展开、禁用拖拽；l10n `treeTitleSearchHint` / `treeTitleSearchNoResults`；`test/tree_title_filter_test.dart`。与全局 Search tab（FTS）无关。
 - **2026-07-08** — FEATURES.md 对齐扫描：补充 10 个代码已实现但文档未记录的功能（Doc Split 模块、用户输入总结、思维碰撞、对话目录、聊天内搜索、用户问题列表、Context Usage Bar、备份与恢复、关于页面）；修正分享功能状态（"部分实现"→"完成"）；新增 doc_split、about 两个模块节。
 - **2026-07-08** — Seed-2.0-pro 模型 ID 修正：白名单 `doubao-seed-2-0-pro` → `doubao-seed-2-0-pro-260215`（ARK API 要求带日期后缀）；`isModelWebSearchUnsupported` 改为仅屏蔽无后缀旧模型；`webSearchSupportMap` 豆包改 `supported`。详见 [CHANGELOG](CHANGELOG/2026-07-08-model-capabilities-and-thinking-fixes.md)
 - **2026-07-02** — Keyword Ranking 修复汇总 + Chat 表格工具栏：(1) `KeywordGlobalFile.fromJson` 兼容 keywords 为 Map 或 List；(2) keyword analysis provider fallback 遍历所有已配置 key 的提供商；(3) keyword detail 路由修复（补 `/tree` + URL 编码 + 跳转 chat 而非 theme detail）；(4) fresh leaf 禁用选择（UI 灰掉 + 全选/分析跳过）；(5) Chat 表格工具栏：每张 table 顶部独立复制/全屏按钮（`_TableWithActions`，通过 `tableBuilder` 回调包裹）。详见 [CHANGELOG](CHANGELOG/2026-07-02-keyword-ranking-fixes.md)

@@ -31,18 +31,20 @@
 | 祖先上下文总结 | 🔨 部分实现 | — | context-summary.md 写入存在 |
 | 主题详情 overflow menu | ✅ 完成 | 2026-07-04 | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
 | 合并 & 创建新 Chat | ✅ 完成 | 2026-07-09 | 选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree 范围（chat 页入口限当前树，tree 页入口可跨树），详见 [spec](specs/merge-chat.md) |
+| 树页节点标题搜索 | ✅ 完成 | 2026-07-17 | `ThemeDetailScreen` 顶部按 `NodeEntity.title` 本地过滤；命中 + 祖先路径；搜索态禁拖拽、强制展开；纯函数 `tree_title_filter.dart` |
 
 ## 3. 代码文件
 
 ```
 lib/ui/features/themes/
-├── theme_list_screen.dart          # 149 行：主题列表
-├── theme_list_controller.dart      # 28 行：AsyncNotifier<List<Theme>>
-├── theme_detail_screen.dart        # 905 行：树视图（最大文件）+ tree page 合并&创建入口
-├── theme_detail_controller.dart    # 148 行：AsyncNotifier.family<ThemeDetailState, String>
-├── full_tree_screen.dart           # 582 行：整树全展开视图 + 多选合并模式
-├── merge_chat_confirm_screen.dart  # 590 行：合并&创建 Step 2（标题 + 挂载位置）
-└── merge_chat_tree_scope.dart      # 50 行：子树计算纯函数（currentTreeRootIdOf / subTreeNodes / directChildren）
+├── theme_list_screen.dart          # 主题列表
+├── theme_list_controller.dart      # AsyncNotifier<List<Theme>>
+├── theme_detail_screen.dart        # 树视图 + 标题搜索 + tree page 合并&创建入口
+├── theme_detail_controller.dart    # AsyncNotifier.family<ThemeDetailState, String>
+├── tree_title_filter.dart          # 标题过滤纯函数（命中 ∪ 祖先）
+├── full_tree_screen.dart           # 整树全展开视图 + 多选合并模式
+├── merge_chat_confirm_screen.dart  # 合并&创建 Step 2（标题 + 挂载位置）
+└── merge_chat_tree_scope.dart      # 子树计算纯函数（currentTreeRootIdOf / subTreeNodes / directChildren）
 ```
 
 依赖：
@@ -81,6 +83,7 @@ lib/ui/features/themes/
 - **折叠状态**：`_collapsedIds` 仅存 State，**不持久化**。
 - **跨父级拖拽**：`onWillAcceptWithDetails` 拒绝（仅同级重排）。
 - **删除二次确认**：同标题节点时弹 checkbox 二次确认。
+- **标题搜索**：列表顶部 `CupertinoSearchTextField`；只匹配 `title`（不搜消息/副标题）；命中节点保留祖先路径；有 query 时强制展开、禁用拖拽重排（swipe / 点进 chat / 长按重命名仍可用）。**不是**全局 FTS。
 
 ### 5.3 缩略预览
 
@@ -96,6 +99,7 @@ lib/ui/features/themes/
 
 ## 7. 相关历史
 
+- **2026-07-17** — 树页节点标题搜索：`ThemeDetailScreen` 顶部按 title 本地过滤 + `tree_title_filter.dart` + `test/tree_title_filter_test.dart`
 - **2026-07-04** — ThemeDetailScreen NavBar 刷新按钮改为 overflow menu（`⋯` + CupertinoActionSheet：刷新 / 折叠全部 / 展开全部）
 - **2026-07-09** — 合并 & 创建新 Chat：选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree（chat 页入口限当前树，tree 页入口可跨树）；新增 `merge_chat_tree_scope.dart` 纯函数 + `test/merge_chat_tree_scope_test.dart`（6 case）固定约束
 - **2026-06-07** — 节点卡片重构：从 chevron 改为圆圈 toggle，5 套配色，行高 56px
