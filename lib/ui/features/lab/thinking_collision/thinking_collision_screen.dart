@@ -10,8 +10,8 @@ import 'package:thk_tree/ui/features/lab/thinking_collision/thinking_collision_c
 
 /// 思维碰撞页面。
 ///
-/// - 碰撞对列表（带 LLM 生成的一句话摘要）
-/// - 点击碰撞对 → 创建 chat node → 跳转对话页
+/// - 碰撞对列表（仅本地配对，不调 LLM）
+/// - 点击碰撞对 → 创建 chat node → 跳转对话页（LLM 在对话页触发）
 class ThinkingCollisionScreen extends ConsumerStatefulWidget {
   const ThinkingCollisionScreen({super.key});
 
@@ -230,7 +230,7 @@ class _CollisionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // 摘要
+            // 摘要（如有）
             if (pair.summary != null)
               Text(
                 pair.summary!,
@@ -241,20 +241,6 @@ class _CollisionCard extends StatelessWidget {
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-              )
-            else
-              Row(
-                children: [
-                  const CupertinoActivityIndicator(radius: 6),
-                  const SizedBox(width: 6),
-                  Text(
-                    '思考中…',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ],
               ),
           ],
         ),

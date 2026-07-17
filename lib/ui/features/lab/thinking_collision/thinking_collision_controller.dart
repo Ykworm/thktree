@@ -2,10 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:thk_tree/data/models/llm_model_config.dart';
-import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
-import 'package:thk_tree/data/services/llm_client.dart';
 import 'package:thk_tree/data/stores/theme_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
@@ -72,7 +69,7 @@ class ThinkingCollisionController extends Notifier<ThinkingCollisionState> {
     return const ThinkingCollisionState();
   }
 
-  /// 加载关键词、生成碰撞对、批量生成摘要。
+  /// 加载关键词、生成碰撞对（纯本地，不调 LLM）。
   Future<void> loadPairs() async {
     state = state.copyWith(loading: true, error: null);
 
@@ -125,83 +122,8 @@ class ThinkingCollisionController extends Notifier<ThinkingCollisionState> {
       }
 
       state = state.copyWith(loading: false, pairs: pairs);
-
-      // 异步为每个碰撞对生成摘要
-      _generateSummaries(pairs);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
-    }
-  }
-
-  /// 批量生成摘要（后台，逐个更新 UI）。
-  Future<void> _generateSummaries(List<CollisionPair> pairs) async {
-    LlmProviderConfig? provider;
-    String? apiKey;
-    LlmModelConfig? selectedModel;
-
-    try {
-      final llmConfig = ref.read(llmConfigStoreProvider);
-      final providers = await llmConfig.loadAll();
-      for (final p in providers) {
-        final key = await llmConfig.readApiKey(p.id);
-        if (key.isEmpty || p.models.isEmpty) continue;
-        LlmModelConfig? model;
-        if (p.selectedModelId != null) {
-          model = p.models.where((m) => m.id == p.selectedModelId).firstOrNull;
-        }
-        model ??= p.models.first;
-        provider = p;
-        apiKey = key;
-        selectedModel = model;
-        break;
-      }
-    } catch (_) {
-      return; // LLM 未配置，跳过摘要
-    }
-
-    if (provider == null || apiKey == null || selectedModel == null) return;
-
-    final client = LlmClient.forConfig(provider, model: selectedModel.id);
-
-    for (final pair in pairs) {
-      try {
-        final messages = <Map<String, Object?>>[
-          {'role': 'system', 'content': _kSummaryPrompt},
-          {
-            'role': 'user',
-            'content': '「${pair.keywordA}」和「${pair.keywordB}」',
-          },
-        ];
-
-        final buffer = StringBuffer();
-        final stream = client.streamChatCompletion(
-          apiKey: apiKey,
-          model: selectedModel.id,
-          messages: messages,
-        );
-        await for (final delta in stream) {
-          buffer.write(delta.content);
-        }
-
-        var summary = buffer.toString().trim();
-        summary = summary
-            .replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '')
-            .replaceAll(RegExp(r'<think>[\s\S]*$', caseSensitive: false), '')
-            .trim();
-
-        if (summary.isNotEmpty) {
-          // 逐个更新
-          final updated = state.pairs.map((p) {
-            if (p.keywordA == pair.keywordA && p.keywordB == pair.keywordB) {
-              return p.copyWith(summary: summary);
-            }
-            return p;
-          }).toList();
-          state = state.copyWith(pairs: updated);
-        }
-      } catch (_) {
-        // 单个摘要失败不影响其他
-      }
     }
   }
 
@@ -220,7 +142,7 @@ class ThinkingCollisionController extends Notifier<ThinkingCollisionState> {
     );
   }
 
-  /// 重新随机排列并重新生成摘要。
+  /// 重新随机排列碰撞对。
   void shuffle() {
     final rng = Random();
     final shuffled = List.of(state.pairs)..shuffle(rng);
@@ -269,10 +191,6 @@ class ThinkingCollisionController extends Notifier<ThinkingCollisionState> {
     }
   }
 
-  static const _kSummaryPrompt = '''
-你是思维连接助手。给定两个关键词，用一句话（不超过30字）概括它们之间可能的联系。
-直接输出这句话，不要加引号、标题或多余文字。
-如果找不到明显联系，就指出它们各自属于什么领域。''';
 }
 
 final thinkingCollisionControllerProvider =
