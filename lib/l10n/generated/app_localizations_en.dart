@@ -141,6 +141,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyTree => 'Plant the first seed — tap + to start';
 
   @override
+  String get treeTitleSearchHint => 'Search node titles';
+
+  @override
+  String get treeTitleSearchNoResults => 'No matching titles';
+
+  @override
   String get collapseAll => 'Collapse All';
 
   @override

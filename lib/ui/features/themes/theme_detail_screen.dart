@@ -16,6 +16,7 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
     show localizedThemeTitle;
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
+import 'package:thk_tree/ui/features/themes/tree_title_filter.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
@@ -46,6 +47,14 @@ class ThemeDetailScreen extends ConsumerStatefulWidget {
 
 class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   final Set<String> _collapsedIds = {};
+  final TextEditingController _titleSearchController = TextEditingController();
+  String _titleQuery = '';
+
+  @override
+  void dispose() {
+    _titleSearchController.dispose();
+    super.dispose();
+  }
 
   void _showOverflowMenu() {
     final l10n = AppLocalizations.of(context)!;
@@ -197,10 +206,24 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         ref.watch(themeDetailControllerProvider(widget.themeId));
     return detailAsync.when(
       data: (data) {
-        final roots = data.nodes
+        final allRoots = data.nodes
             .where((n) => n.parentId == null)
             .toList(growable: false);
-        roots.sort(_compareNodes);
+        allRoots.sort(_compareNodes);
+
+        final visibleIds =
+            visibleNodeIdsForTitleQuery(data.nodes, _titleQuery);
+        final searchActive = visibleIds != null;
+        // Search forces expand along visible path (ignore user collapse).
+        final effectiveCollapsed =
+            searchActive ? const <String>{} : _collapsedIds;
+
+        final roots = searchActive
+            ? allRoots
+                .where((n) => visibleIds.contains(n.nodeId))
+                .toList(growable: false)
+            : allRoots;
+
         return CupertinoPageScaffold(
           backgroundColor: AppColors.pageBg,
           navigationBar: ThkNavBar.inline(
@@ -249,7 +272,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               ],
             ),
           ),
-          child: roots.isEmpty
+          child: allRoots.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -273,39 +296,93 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 800),
-                      child: ListView(
-                        key: const ValueKey('node_list'),
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSp.screenPadding,
-                          12,
-                          AppSp.screenPadding,
-                          80,
-                        ),
+                      child: Column(
                         children: [
-                          DecoratedBox(
-                            decoration:
-                                AppSurfaces.contentCard(radius: 14),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: Column(
-                                children: [
-                                  for (final root in roots)
-                                    _TreeRowView(
-                                      themeId: widget.themeId,
-                                      node: root,
-                                      allNodes: data.nodes,
-                                      depth: 0,
-                                      collapsedIds: _collapsedIds,
-                                      onToggleCollapse: (id) =>
-                                          setState(() {
-                                        if (!_collapsedIds.remove(id)) {
-                                          _collapsedIds.add(id);
-                                        }
-                                      }),
-                                    ),
-                                ],
-                              ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSp.screenPadding,
+                              12,
+                              AppSp.screenPadding,
+                              8,
                             ),
+                            child: CupertinoSearchTextField(
+                              key: const ValueKey('tree_title_search'),
+                              controller: _titleSearchController,
+                              placeholder: l10n.treeTitleSearchHint,
+                              onChanged: (value) =>
+                                  setState(() => _titleQuery = value),
+                            ),
+                          ),
+                          Expanded(
+                            child: roots.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          AppIcons.search,
+                                          size: 40,
+                                          color: AppColors.textTertiary,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          l10n.treeTitleSearchNoResults,
+                                          style: AppTheme.body.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : ListView(
+                                    key: const ValueKey('node_list'),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      AppSp.screenPadding,
+                                      4,
+                                      AppSp.screenPadding,
+                                      80,
+                                    ),
+                                    children: [
+                                      DecoratedBox(
+                                        decoration: AppSurfaces.contentCard(
+                                          radius: 14,
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          child: Column(
+                                            children: [
+                                              for (final root in roots)
+                                                _TreeRowView(
+                                                  themeId: widget.themeId,
+                                                  node: root,
+                                                  allNodes: data.nodes,
+                                                  depth: 0,
+                                                  collapsedIds:
+                                                      effectiveCollapsed,
+                                                  visibleNodeIds:
+                                                      visibleIds,
+                                                  reorderEnabled:
+                                                      !searchActive,
+                                                  onToggleCollapse: (id) {
+                                                    if (searchActive) {
+                                                      return;
+                                                    }
+                                                    setState(() {
+                                                      if (!_collapsedIds
+                                                          .remove(id)) {
+                                                        _collapsedIds
+                                                            .add(id);
+                                                      }
+                                                    });
+                                                  },
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ],
                       ),
@@ -385,6 +462,8 @@ class _TreeRowView extends ConsumerWidget {
     required this.depth,
     required this.collapsedIds,
     required this.onToggleCollapse,
+    this.visibleNodeIds,
+    this.reorderEnabled = true,
   });
 
   final String themeId;
@@ -394,11 +473,19 @@ class _TreeRowView extends ConsumerWidget {
   final Set<String> collapsedIds;
   final ValueChanged<String> onToggleCollapse;
 
+  /// When non-null, only nodes in this set are shown (title search filter).
+  final Set<String>? visibleNodeIds;
+
+  /// When false (title search active), drag reorder is disabled.
+  final bool reorderEnabled;
+
   static const _kIndent = AppSp.treeIndent;
 
   List<NodeEntity> _children() {
     final list = allNodes
         .where((n) => n.parentId == node.nodeId)
+        .where((n) =>
+            visibleNodeIds == null || visibleNodeIds!.contains(n.nodeId))
         .toList(growable: false);
     list.sort(_compareNodes);
     return list;
@@ -494,93 +581,108 @@ class _TreeRowView extends ConsumerWidget {
       ),
     );
 
-    final tile = DragTarget<NodeEntity>(
-      onWillAcceptWithDetails: (details) =>
-          details.data.parentId == node.parentId &&
-          details.data.nodeId != node.nodeId,
-      onAcceptWithDetails: (details) async {
-        debugPrint('[REORDER] onAccept fired: ${details.data.title} -> target=${node.title}');
-        try {
-          await _handleReorder(
-            ref,
-            draggedNode: details.data,
-            targetNode: node,
-            allNodes: allNodes,
-          );
-          debugPrint('[REORDER] calling refreshNodesOnly...');
-          await ref
-              .read(themeDetailControllerProvider(themeId).notifier)
-              .refreshNodesOnly();
-          debugPrint('[REORDER] refreshNodesOnly done');
-        } catch (e, st) {
-          debugPrint('[REORDER] onAccept ERROR: $e');
-          debugPrint('[REORDER] onAccept STACK: $st');
-        }
-      },
-      builder: (context, candidateData, rejectedData) {
-        final isHovering = candidateData.isNotEmpty;
-        // Is this node the last sibling? If so, show bottom blue line.
-        final siblings = allNodes
-            .where((n) => n.parentId == node.parentId)
-            .toList()
-          ..sort(_compareNodes);
-        final isLastChild = siblings.isNotEmpty &&
-            siblings.last.nodeId == node.nodeId;
-        final indicatorSide = isLastChild
-            ? const Border(
-                bottom: BorderSide(
-                  color: AppColors.accent,
-                  width: 2.5,
-                ),
-              )
-            : const Border(
-                top: BorderSide(
-                  color: AppColors.accent,
-                  width: 2.5,
-                ),
-              );
-        return Container(
-          decoration: isHovering
-              ? BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.10),
-                  border: indicatorSide,
-                )
-              : null,
-          child: Row(
-            children: [
-              Expanded(
-                child: SwipeableRow(
-                  onSwipeLeft: () => _handleDelete(context, ref, l10n, node: node, themeId: themeId, allNodes: allNodes),
-                  onSwipeRight: atMaxDepth
-                      ? null
-                      : () => _onCreateBranchFromMenu(context, ref, node: node),
-                  leftActionLabel: l10n.swipeDelete,
-                  leftActionIcon: AppIcons.delete,
-                  leftActionColor: AppColors.destructive,
-                  rightActionLabel: l10n.swipeBranch,
-                  rightActionIcon: AppIcons.callSplit,
-                  rightActionColor: AppColors.accent,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => context.push(
-                      '/themes/$themeId/nodes/${node.nodeId}',
-                      extra: node.title,
-                    ),
-                    onLongPress: () => _showRenameDialog(context, ref, node, themeId, allNodes),
-                    child: tileContent,
-                  ),
-                ),
-              ),
-              // Drag handle — outside swipe zone; visible for same-level reorder
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: _DragHandle(node: node),
-              ),
-            ],
-          ),
-        );
-      },
+    final swipeChild = SwipeableRow(
+      onSwipeLeft: () => _handleDelete(
+        context,
+        ref,
+        l10n,
+        node: node,
+        themeId: themeId,
+        allNodes: allNodes,
+      ),
+      onSwipeRight: atMaxDepth
+          ? null
+          : () => _onCreateBranchFromMenu(context, ref, node: node),
+      leftActionLabel: l10n.swipeDelete,
+      leftActionIcon: AppIcons.delete,
+      leftActionColor: AppColors.destructive,
+      rightActionLabel: l10n.swipeBranch,
+      rightActionIcon: AppIcons.callSplit,
+      rightActionColor: AppColors.accent,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => context.push(
+          '/themes/$themeId/nodes/${node.nodeId}',
+          extra: node.title,
+        ),
+        onLongPress: () =>
+            _showRenameDialog(context, ref, node, themeId, allNodes),
+        child: tileContent,
+      ),
     );
+
+    final Widget tile;
+    if (!reorderEnabled) {
+      // Title search: keep swipe / open / rename; hide drag reorder.
+      tile = swipeChild;
+    } else {
+      tile = DragTarget<NodeEntity>(
+        onWillAcceptWithDetails: (details) =>
+            details.data.parentId == node.parentId &&
+            details.data.nodeId != node.nodeId,
+        onAcceptWithDetails: (details) async {
+          debugPrint(
+              '[REORDER] onAccept fired: ${details.data.title} -> target=${node.title}');
+          try {
+            await _handleReorder(
+              ref,
+              draggedNode: details.data,
+              targetNode: node,
+              allNodes: allNodes,
+            );
+            debugPrint('[REORDER] calling refreshNodesOnly...');
+            await ref
+                .read(themeDetailControllerProvider(themeId).notifier)
+                .refreshNodesOnly();
+            debugPrint('[REORDER] refreshNodesOnly done');
+          } catch (e, st) {
+            debugPrint('[REORDER] onAccept ERROR: $e');
+            debugPrint('[REORDER] onAccept STACK: $st');
+          }
+        },
+        builder: (context, candidateData, rejectedData) {
+          final isHovering = candidateData.isNotEmpty;
+          // Is this node the last sibling? If so, show bottom blue line.
+          final siblings = allNodes
+              .where((n) => n.parentId == node.parentId)
+              .toList()
+            ..sort(_compareNodes);
+          final isLastChild = siblings.isNotEmpty &&
+              siblings.last.nodeId == node.nodeId;
+          final indicatorSide = isLastChild
+              ? const Border(
+                  bottom: BorderSide(
+                    color: AppColors.accent,
+                    width: 2.5,
+                  ),
+                )
+              : const Border(
+                  top: BorderSide(
+                    color: AppColors.accent,
+                    width: 2.5,
+                  ),
+                );
+          return Container(
+            decoration: isHovering
+                ? BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.10),
+                    border: indicatorSide,
+                  )
+                : null,
+            child: Row(
+              children: [
+                Expanded(child: swipeChild),
+                // Drag handle — outside swipe zone; same-level reorder
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: _DragHandle(node: node),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
 
     // ── Children (only when expanded) ──
     if (!hasChildren || isCollapsed) {
@@ -596,6 +698,8 @@ class _TreeRowView extends ConsumerWidget {
           allNodes: allNodes,
           depth: depth + 1,
           collapsedIds: collapsedIds,
+          visibleNodeIds: visibleNodeIds,
+          reorderEnabled: reorderEnabled,
           onToggleCollapse: onToggleCollapse,
         ),
       );

@@ -344,6 +344,18 @@ abstract class AppLocalizations {
   /// **'Plant the first seed — tap + to start'**
   String get emptyTree;
 
+  /// Placeholder for tree page title-only search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search node titles'**
+  String get treeTitleSearchHint;
+
+  /// Empty state when tree title search has no matches
+  ///
+  /// In en, this message translates to:
+  /// **'No matching titles'**
+  String get treeTitleSearchNoResults;
+
   /// Menu item to collapse all tree nodes
   ///
   /// In en, this message translates to:

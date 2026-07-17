@@ -140,6 +140,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emptyTree => '种下第一颗种子，点击 + 开始对话';
 
   @override
+  String get treeTitleSearchHint => '搜索节点标题';
+
+  @override
+  String get treeTitleSearchNoResults => '无匹配标题';
+
+  @override
   String get collapseAll => '全部折叠';
 
   @override

@@ -175,6 +175,14 @@
   "@emptyTree": {
     "description": "Empty state for tree screen"
   },
+  "treeTitleSearchHint": "Search node titles",
+  "@treeTitleSearchHint": {
+    "description": "Placeholder for tree page title-only search field"
+  },
+  "treeTitleSearchNoResults": "No matching titles",
+  "@treeTitleSearchNoResults": {
+    "description": "Empty state when tree title search has no matches"
+  },
   "collapseAll": "Collapse All",
   "@collapseAll": {
     "description": "Menu item to collapse all tree nodes"
