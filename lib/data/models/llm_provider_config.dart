@@ -57,9 +57,14 @@ const Set<LlmProviderType> visibleProviderTypes = {
 /// 各提供商的联网搜索支持状态
 ///
 /// 新模型接入时更新此映射（APP update 更新）。
+///
+/// MiniMax：官方联网是 Anthropic Messages 的服务端工具
+/// `web_search_20250305`（见 platform.minimaxi.com Server Tools），
+/// 当前客户端仍走 OpenAI 兼容 Chat Completions + 假 function `web_search`，
+/// 无真实搜索执行。暂标 unsupported，避免 UI 误导；真实现前勿改回 supported。
 const Map<LlmProviderType, WebSearchSupport> webSearchSupportMap = {
   LlmProviderType.kimi: WebSearchSupport.supported,
-  LlmProviderType.minimax: WebSearchSupport.supported,
+  LlmProviderType.minimax: WebSearchSupport.unsupported,
   LlmProviderType.mimo: WebSearchSupport.supported,
   LlmProviderType.deepseek: WebSearchSupport.supported,
   LlmProviderType.doubao: WebSearchSupport.supported,
