@@ -13,6 +13,7 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/auto_title_controller.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
@@ -492,22 +493,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           },
           child: const Icon(AppIcons.back),
         ),
-        trailing: CupertinoButton(
-          key: const ValueKey('more_button'),
-          padding: EdgeInsets.zero,
-          minimumSize: Size.zero,
-          onPressed: isStreaming
-              ? null
-              : () {
-                  // 收起输入法再弹出菜单（overlay 走 rootOverlay 不抢焦点，需手动收）
-                  FocusScope.of(context).unfocus();
-                  _showMoreActions(context);
-                },
-          child: Icon(
-            AppIcons.more,
-            size: 24,
-            color: isStreaming ? AppColors.textTertiary : AppColors.accent,
-          ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Doc Split：主路径必须一眼可见，禁止只藏在「更多」里。
+            if (widget.isDocSplit)
+              CupertinoButton(
+                key: const ValueKey('submit_tree_button'),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                onPressed: isStreaming
+                    ? null
+                    : () {
+                        FocusScope.of(context).unfocus();
+                        unawaited(_onSubmitDocSplit());
+                      },
+                child: Text(
+                  l10n.submitTreeStructure,
+                  style: AppTheme.body.copyWith(
+                    color: isStreaming
+                        ? AppColors.textTertiary
+                        : AppColors.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            CupertinoButton(
+              key: const ValueKey('more_button'),
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              onPressed: isStreaming
+                  ? null
+                  : () {
+                      // 收起输入法再弹出菜单（overlay 走 rootOverlay 不抢焦点，需手动收）
+                      FocusScope.of(context).unfocus();
+                      _showMoreActions(context);
+                    },
+              child: Icon(
+                AppIcons.more,
+                size: 24,
+                color: isStreaming ? AppColors.textTertiary : AppColors.accent,
+              ),
+            ),
+          ],
         ),
       ),
       // bottom:true 避让叠层 tab；composer 叠在消息列表上才能磨到气泡（真玻璃）。
@@ -635,6 +663,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Doc Split 主 CTA：放在输入区上方，避免只藏在「更多」
+                        if (widget.isDocSplit)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: ThkButton.filled(
+                                label: l10n.submitTreeStructure,
+                                disabled: isStreaming,
+                                onPressed: isStreaming
+                                    ? null
+                                    : () {
+                                        FocusScope.of(context).unfocus();
+                                        unawaited(_onSubmitDocSplit());
+                                      },
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
                         messagesAsync.maybeWhen(
                           data: (messages) {
                             final contextWindow = _resolveContextWindow(
