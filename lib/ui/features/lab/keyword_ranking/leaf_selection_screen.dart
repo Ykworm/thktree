@@ -7,20 +7,21 @@ import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_analysis_controller.dart';
+import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_ranking_screen.dart'
+    show keywordRankingFileProvider;
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 /// 关键词分析 — Leaf 选择屏（Task 8c）。
 ///
-/// 展示所有 theme 的 chat leaf，支持多选 + 全选/取消全选。
+/// 展示指定 / 全部 theme 的 chat leaf，支持多选 + 全选/取消全选。
 /// 选中后点击「开始分析」触发 Prompt A + B 分析流程。
 ///
-/// 设计原则（§ 5.6）：
-/// - Theme 列表：展示 theme 名称，不可直接选择
-/// - 每个 leaf：checkbox + 状态徽章（pending/fresh/stale）
-/// - 顶部导航栏：返回 + 「开始分析」按钮
-/// - 支持全选/取消全选
+/// 进度条放在 **顶部**（nav 下方），避免被底 tab 玻璃遮住。
 class LeafSelectionScreen extends ConsumerStatefulWidget {
-  const LeafSelectionScreen({super.key});
+  const LeafSelectionScreen({super.key, this.themeId});
+
+  /// 从主题选择页传入；为空则展示全部 theme。
+  final String? themeId;
 
   @override
   ConsumerState<LeafSelectionScreen> createState() =>
@@ -41,7 +42,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
   Future<void> _loadThemes() async {
     try {
       final controller = ref.read(keywordAnalysisControllerProvider.notifier);
-      await controller.loadThemesAndLeaves();
+      await controller.loadThemesAndLeaves(themeId: widget.themeId);
     } catch (e) {
       if (mounted) {
         setState(() => _loadError = e.toString());
@@ -53,39 +54,53 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
     }
   }
 
+  bool _isAnalyzing(AsyncValue<AnalysisProgress> analysisState) {
+    return analysisState.maybeWhen(
+      data: (p) =>
+          p.phase == AnalysisPhase.extracting ||
+          p.phase == AnalysisPhase.aggregating,
+      orElse: () => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(brightnessProvider);
     final l10n = AppLocalizations.of(context)!;
     final controller = ref.read(keywordAnalysisControllerProvider.notifier);
     final analysisState = ref.watch(keywordAnalysisControllerProvider);
+    final analyzing = _isAnalyzing(analysisState);
+    final canStart =
+        controller.selectedLeafIds.isNotEmpty && !analyzing;
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       navigationBar: CupertinoNavigationBar(
-        previousPageTitle: l10n.keywordRankingTitle,
+        previousPageTitle: l10n.keywordRankingSelectThemes,
         middle: Text(l10n.keywordRankingSelectLeaves),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: controller.selectedLeafIds.isEmpty
-              ? null
-              : () => _startAnalysis(context),
+          onPressed: canStart ? () => _startAnalysis(context) : null,
           child: Text(
-            l10n.keywordRankingStartAnalysis,
+            analyzing
+                ? l10n.keywordRankingAnalyzing
+                : l10n.keywordRankingStartAnalysis,
             style: TextStyle(
               fontSize: 17,
-              color: controller.selectedLeafIds.isEmpty
-                  ? AppColors.textTertiary
-                  : null,
+              color: canStart ? AppColors.accent : AppColors.textTertiary,
+              fontWeight: canStart ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
         ),
       ),
-      child: _isLoading
-          ? const Center(child: CupertinoActivityIndicator())
-          : _loadError != null
-              ? _buildError(l10n)
-              : _buildContent(context, l10n, controller, analysisState),
+      child: SafeArea(
+        top: false,
+        child: _isLoading
+            ? const Center(child: CupertinoActivityIndicator())
+            : _loadError != null
+                ? _buildError(l10n)
+                : _buildContent(context, l10n, controller, analysisState),
+      ),
     );
   }
 
@@ -162,8 +177,55 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
       );
     }
 
+    final analyzing = _isAnalyzing(analysisState);
+    final canStart =
+        controller.selectedLeafIds.isNotEmpty && !analyzing;
+
     return Column(
       children: [
+        // ── 进度 / 完成 / 错误：贴在顶栏下，不会被底 tab 挡住 ──
+        analysisState.when(
+          data: (progress) {
+            if (progress.phase == AnalysisPhase.extracting ||
+                progress.phase == AnalysisPhase.aggregating) {
+              return _ProgressBanner(
+                progress: progress,
+                onCancel: () {
+                  controller.cancel();
+                  controller.reset();
+                },
+              );
+            }
+            if (progress.phase == AnalysisPhase.done) {
+              return _DoneBanner(
+                onDismiss: () {
+                  controller.reset();
+                  // 刷新排行榜列表
+                  ref.invalidate(keywordRankingFileProvider);
+                  if (context.mounted) {
+                    // 回到排行榜（弹出 leaf + theme 两层）
+                    context.go('/lab/keyword-ranking');
+                  }
+                },
+              );
+            }
+            if (progress.phase == AnalysisPhase.error) {
+              return _ErrorBanner(
+                error: progress.error ?? '',
+                onRetry: () => _startAnalysis(context),
+                onDismiss: controller.reset,
+              );
+            }
+            return const SizedBox.shrink();
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (e, _) => _ErrorBanner(
+            error: e.toString(),
+            onRetry: () => _startAnalysis(context),
+            onDismiss: controller.reset,
+          ),
+        ),
+
         // 使用说明
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 8),
@@ -219,41 +281,42 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                           ),
                         ),
                         // 全选/取消全选按钮
-                        CupertinoButton(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: Size.zero,
-                          onPressed: () {
-                            setState(() {
-                              final selectable = theme.leaves
-                                  .where((l) => l.status != LeafStatus.fresh)
-                                  .toList();
-                              final allSelected = selectable.every(
-                                  (l) =>
-                                      controller.selectedLeafIds
-                                          .contains(l.nodeId));
-                              if (allSelected) {
-                                controller
-                                    .deselectAllForTheme(theme.themeId);
-                              } else {
-                                controller
-                                    .selectAllForTheme(theme.themeId);
-                              }
-                            });
-                          },
-                          child: Text(
-                            theme.leaves
+                        if (!analyzing)
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            onPressed: () {
+                              setState(() {
+                                final selectable = theme.leaves
                                     .where((l) => l.status != LeafStatus.fresh)
-                                    .every((l) =>
+                                    .toList();
+                                final allSelected = selectable.every(
+                                    (l) =>
                                         controller.selectedLeafIds
-                                            .contains(l.nodeId))
-                                ? l10n.keywordRankingDeselectAll
-                                : l10n.keywordRankingSelectAll,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.accent,
+                                            .contains(l.nodeId));
+                                if (allSelected) {
+                                  controller
+                                      .deselectAllForTheme(theme.themeId);
+                                } else {
+                                  controller
+                                      .selectAllForTheme(theme.themeId);
+                                }
+                              });
+                            },
+                            child: Text(
+                              theme.leaves
+                                      .where((l) => l.status != LeafStatus.fresh)
+                                      .every((l) =>
+                                          controller.selectedLeafIds
+                                              .contains(l.nodeId))
+                                  ? l10n.keywordRankingDeselectAll
+                                  : l10n.keywordRankingSelectAll,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.accent,
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -267,62 +330,36 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                         leaf: leaf,
                         isSelected: controller.selectedLeafIds
                             .contains(leaf.nodeId),
-                        onToggle: () {
-                          setState(() {
-                            controller.toggleLeaf(leaf.nodeId);
-                          });
-                        },
+                        onToggle: analyzing
+                            ? () {}
+                            : () {
+                                setState(() {
+                                  controller.toggleLeaf(leaf.nodeId);
+                                });
+                              },
                       ),
                   ]),
                 ),
               ],
-              // 底部留白
               const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
+                child: SizedBox(height: 24),
               ),
             ],
           ),
         ),
 
-        // 分析进度/状态栏
-        analysisState.when(
-          data: (progress) {
-            if (progress.phase == AnalysisPhase.extracting ||
-                progress.phase == AnalysisPhase.aggregating) {
-              return _ProgressBanner(
-                progress: progress,
-                onCancel: () {
-                  controller.cancel();
-                  controller.reset();
-                },
-              );
-            }
-            if (progress.phase == AnalysisPhase.done) {
-              return _DoneBanner(
-                onDismiss: () {
-                  controller.reset();
-                  if (context.mounted) {
-                    context.pop();
-                  }
-                },
-              );
-            }
-            if (progress.phase == AnalysisPhase.error) {
-              return _ErrorBanner(
-                error: progress.error ?? '',
-                onRetry: () => _startAnalysis(context),
-                onDismiss: controller.reset,
-              );
-            }
-            return const SizedBox.shrink();
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (e, _) => _ErrorBanner(
-            error: e.toString(),
-            onRetry: () => _startAnalysis(context),
-            onDismiss: controller.reset,
+        // 底部主 CTA：开始分析（比右上角文案更显眼）
+        if (!analyzing)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: CupertinoButton.filled(
+                onPressed: canStart ? () => _startAnalysis(context) : null,
+                child: Text(l10n.keywordRankingStartAnalysis),
+              ),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -330,6 +367,8 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
   Future<void> _startAnalysis(BuildContext context) async {
     final controller = ref.read(keywordAnalysisControllerProvider.notifier);
     final l10n = AppLocalizations.of(context)!;
+
+    if (controller.selectedLeafIds.isEmpty) return;
 
     // 二次确认
     final confirmed = await showCupertinoDialog<bool>(
@@ -357,6 +396,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
     );
 
     if (confirmed == true && context.mounted) {
+      // 先立刻进入 extracting，让顶部进度条马上出现
       await controller.startAnalysis();
     }
   }

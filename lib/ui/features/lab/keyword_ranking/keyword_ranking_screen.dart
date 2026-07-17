@@ -17,7 +17,8 @@ import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 ///
 /// 单独的 provider 让调用方用标准的 `ref.watch(...).when(...)` 处理三态，
 /// 也方便 analyze / cleanup 等操作完成后调用 `ref.invalidate` 触发刷新。
-final _keywordRankingFileProvider = FutureProvider<KeywordGlobalFile>((ref) async {
+/// 全局关键词排行数据（分析完成后可 [Ref.invalidate] 刷新）。
+final keywordRankingFileProvider = FutureProvider<KeywordGlobalFile>((ref) async {
   final storage = await ref.watch(keywordGlobalStorageProvider.future);
   return storage.loadOrInit();
 });
@@ -41,7 +42,7 @@ class KeywordRankingScreen extends ConsumerWidget {
     ref.watch(brightnessProvider);
 
     final l10n = AppLocalizations.of(context)!;
-    final asyncFile = ref.watch(_keywordRankingFileProvider);
+    final asyncFile = ref.watch(keywordRankingFileProvider);
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
@@ -61,9 +62,9 @@ class KeywordRankingScreen extends ConsumerWidget {
           ),
           CupertinoSliverRefreshControl(
             onRefresh: () async {
-              ref.invalidate(_keywordRankingFileProvider);
+              ref.invalidate(keywordRankingFileProvider);
               // 等待新一轮刷新完成，避免下拉指示器立即消失。
-              await ref.read(_keywordRankingFileProvider.future);
+              await ref.read(keywordRankingFileProvider.future);
             },
           ),
           asyncFile.when(

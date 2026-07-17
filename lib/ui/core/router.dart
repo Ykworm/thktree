@@ -180,7 +180,9 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/lab/keyword-ranking/select-leaves',
               pageBuilder: (context, state) => CupertinoPage(
-                child: const LeafSelectionScreen(),
+                child: LeafSelectionScreen(
+                  themeId: state.uri.queryParameters['themeId'],
+                ),
               ),
             ),
             GoRoute(

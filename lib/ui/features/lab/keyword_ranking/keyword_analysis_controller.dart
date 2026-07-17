@@ -94,14 +94,20 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
   /// 取消令牌，支持用户取消分析。
   CancelToken? _cancelToken;
 
-  /// 加载所有 theme 的 leaf + 分析状态。
-  Future<void> loadThemesAndLeaves() async {
+  /// 加载 theme 的 leaf + 分析状态。
+  ///
+  /// [themeId] 非空时只加载该主题（主题选择 → 对话选择流程）；
+  /// 为空时加载全部（兼容旧入口）。
+  Future<void> loadThemesAndLeaves({String? themeId}) async {
     // 等待所有依赖的 provider 就绪
     final themeStore = await ref.read(themeStoreProvider.future);
     final nodeStore = await ref.read(nodeStoreProvider.future);
     final appPaths = await ref.read(appPathsProvider.future);
 
-    final themes = await themeStore.listThemes();
+    var themes = await themeStore.listThemes();
+    if (themeId != null && themeId.isNotEmpty) {
+      themes = themes.where((t) => t.themeId == themeId).toList();
+    }
     final result = <ThemeLeafInfo>[];
 
     for (final theme in themes) {
@@ -137,6 +143,9 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
     }
 
     themeLeaves = result;
+    // 换主题 / 重进时清掉上一次选择，避免空点「开始分析」或错选
+    selectedLeafIds.clear();
+    state = const AsyncValue.data(AnalysisProgress(phase: AnalysisPhase.idle));
   }
 
   /// 切换 leaf 选中状态。

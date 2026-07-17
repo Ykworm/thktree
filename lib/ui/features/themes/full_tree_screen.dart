@@ -14,8 +14,9 @@ import 'package:thk_tree/domain/node.dart';
 /// Full-screen tree view that shows all nodes fully expanded.
 ///
 /// - Browse mode (default): tap any node to navigate to its chat page.
-/// - Multi-select mode: only when [initialMultiSelect] is true (from tree
-///   overflow「合并 & 创建」). No top-right「完成」— exit via back.
+/// - Multi-select: via trailing「多选 / 合并」，或 [initialMultiSelect]
+///   （树页 overflow「合并 & 创建」）。无右上「完成」——浏览态多选用返回退出多选；
+///   专态入口用返回离开本页。
 class FullTreeScreen extends ConsumerStatefulWidget {
   const FullTreeScreen({
     super.key,
@@ -38,7 +39,7 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
 
   static const _maxSelection = 3;
 
-  late final bool _multiSelectMode;
+  bool _multiSelectMode = false;
   bool _hintExpanded = true;
   final List<String> _selectedNodeIds = [];
 
@@ -66,6 +67,20 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
         alignment: 0.3,
       );
     }
+  }
+
+  void _enterMultiSelect() {
+    setState(() {
+      _multiSelectMode = true;
+      _hintExpanded = true;
+    });
+  }
+
+  void _exitMultiSelect() {
+    setState(() {
+      _multiSelectMode = false;
+      _selectedNodeIds.clear();
+    });
   }
 
   void _toggleSelect(String nodeId, List<NodeEntity> allNodes) {
@@ -127,6 +142,11 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
   }
 
   void _onBack() {
+    // 浏览态进入的多选：返回先退出多选，不离开整树页
+    if (_multiSelectMode && !widget.initialMultiSelect) {
+      _exitMultiSelect();
+      return;
+    }
     if (widget.currentNodeId != null) {
       // 从 chat 页进入：go() 不会走回退，必须显式 go 回聊天页
       context.go(
@@ -209,6 +229,26 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
                 ? treeRoots.first.title
                 : data.themeTitle);
 
+        // 浏览态：trailing 提供「多选」进入合并；多选态不显示「完成」
+        // （返回退出多选 / 离开页面）。initialMultiSelect 专态无 trailing。
+        final Widget? trailing = widget.initialMultiSelect
+            ? null
+            : (_multiSelectMode
+                ? null
+                : CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    onPressed: _enterMultiSelect,
+                    child: Text(
+                      // 短文案进多选；底栏才是「合并 & 创建新 Chat」主 CTA
+                      l10n.multiSelect,
+                      style: AppTheme.body.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ));
+
         return CupertinoPageScaffold(
           backgroundColor: AppColors.pageBg,
           navigationBar: ThkNavBar.inline(
@@ -219,7 +259,7 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
               onPressed: _onBack,
               child: const Icon(AppIcons.back),
             ),
-            // Option A: no trailing multi-select / 完成.
+            trailing: trailing,
           ),
           child: SafeArea(
             child: Column(
