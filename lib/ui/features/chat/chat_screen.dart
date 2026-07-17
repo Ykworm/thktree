@@ -1375,10 +1375,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         sharePositionOrigin: origin,
       );
     } catch (e, stackTrace) {
-      print('分享整个聊天失败: $e');
-      print('堆栈: $stackTrace');
+      debugPrint('分享整个聊天失败: $e');
+      debugPrint('堆栈: $stackTrace');
       if (!mounted) return;
-      ThkAlert.show(context: context, message: '内容过多，无法保存为图片');
+      // 以前任何异常都提示「内容过多」，把布局/截图/系统分享失败都误报了。
+      final message = e is ShareContentTooLargeException
+          ? '内容过多，无法保存为单张图片，请改用「分享当前对话」或缩短会话'
+          : '分享失败：$e';
+      ThkAlert.show(context: context, message: message);
     }
   }
 

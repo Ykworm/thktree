@@ -429,7 +429,10 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
       );
     } catch (e) {
       if (!mounted) return;
-      ThkAlert.show(context: context, message: 'Share failed: $e');
+      final message = e is ShareContentTooLargeException
+          ? '内容过多，无法保存为单张图片'
+          : '分享失败：$e';
+      ThkAlert.show(context: context, message: message);
     } finally {
       if (mounted) setState(() => _sharing = false);
     }

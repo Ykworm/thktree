@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -12,12 +13,23 @@ import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/ui/core/shared/share_card_widget.dart'
     deferred as scw;
 
+/// 分享内容过高/过大，无法落成单张图片。
+class ShareContentTooLargeException implements Exception {
+  ShareContentTooLargeException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 /// 分享问答对为图片
 ///
-/// 流程：构建 ShareCardWidget → 透明 overlay 布局 → toImage → 写临时文件 → 系统分享
+/// 流程：构建 ShareCardWidget → 近透明 overlay 布局 → toImage → 写临时文件 → 系统分享
 class ShareService {
-  /// GPU 纹理边长上限（多数 iOS/Android 为 4096；保守取值避免半边被裁）。
+  /// GPU 纹理边长上限（多数设备 4096；略保守避免半边被裁 / toImage 抛错）。
   static const double _maxTextureEdge = 4096;
+
+  /// 允许的最小 pixelRatio：极长整聊会降到此值（约可撑 ~2 万逻辑像素高）。
+  static const double _minPixelRatio = 0.2;
 
   /// 将一组消息生成图片并调起系统分享面板。
   ///
@@ -29,8 +41,8 @@ class ShareService {
     Rect? sharePositionOrigin,
   }) async {
     final mq = MediaQuery.of(context);
-    final pixelRatio = mq.devicePixelRatio;
-    // 卡片逻辑宽：不超过屏宽，避免布局溢出后右侧被裁；也不小于 320 保证可读。
+    final devicePr = mq.devicePixelRatio;
+    // 卡片逻辑宽：不超过屏宽，避免横向溢出；不小于 320 保证可读。
     final cardWidth = mq.size.width.clamp(320.0, 420.0);
     final textDirection = Directionality.of(context);
     final overlay = Overlay.of(context, rootOverlay: true);
@@ -38,14 +50,16 @@ class ShareService {
     await scw.loadLibrary();
     final boundary = GlobalKey();
 
-    // 不用 left:-10000 屏外坐标：部分机型/系统对屏外层 toImage 会裁切。
-    // 改为 opacity:0 叠在左上角布局，宽度用 OverflowBox 钉死。
+    // 注意：
+    // - Opacity(0) 会跳过绘制，toImage 会失败 → 必须用极低但不为 0 的 opacity
+    // - 负坐标屏外在部分机型上会被裁 → 放在 (0,0) 用几乎透明叠层
+    // - 宽度用 OverflowBox 钉死，避免约束不稳导致右半空白/裁切
     final entry = OverlayEntry(
       builder: (_) => Positioned(
         left: 0,
         top: 0,
         child: Opacity(
-          opacity: 0,
+          opacity: 0.02,
           child: IgnorePointer(
             child: MediaQuery(
               data: mq,
@@ -74,32 +88,44 @@ class ShareService {
     overlay.insert(entry);
 
     try {
-      // 等布局 + markdown / 图片完成（多帧更稳）
       await _waitForPaint();
-      await Future<void>.delayed(const Duration(milliseconds: 120));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
       await _waitForPaint();
 
       final renderObject = boundary.currentContext?.findRenderObject();
       if (renderObject is! RenderRepaintBoundary) {
-        throw Exception('ShareService: RenderRepaintBoundary not found');
+        throw StateError('ShareService: RenderRepaintBoundary not found');
       }
 
-      // 按纹理上限压 pixelRatio，避免超高整聊图被 GPU 裁半
       final size = renderObject.size;
       if (size.width <= 0 || size.height <= 0) {
-        throw Exception('ShareService: invalid share card size $size');
+        throw StateError('ShareService: invalid share card size $size');
       }
-      var pr = pixelRatio;
-      final maxByW = _maxTextureEdge / size.width;
-      final maxByH = _maxTextureEdge / size.height;
-      pr = math.min(pr, math.min(maxByW, maxByH));
-      if (pr < 1.0) pr = 1.0;
+
+      // 按纹理上限压 pixelRatio。长图必须允许 pr < 1（旧代码强制 pr≥1，
+      // 导致 toImage 失败，上层却一律提示「内容过多」）。
+      var pr = devicePr;
+      pr = math.min(pr, _maxTextureEdge / size.width);
+      pr = math.min(pr, _maxTextureEdge / size.height);
+      if (pr < _minPixelRatio) {
+        // 仍装不下：真正「内容过多」
+        throw ShareContentTooLargeException(
+          'share card too tall: ${size.width.toStringAsFixed(0)}×'
+          '${size.height.toStringAsFixed(0)}',
+        );
+      }
+
+      debugPrint(
+        '[ShareService] capture size=${size.width.toStringAsFixed(0)}×'
+        '${size.height.toStringAsFixed(0)} pr=${pr.toStringAsFixed(2)} '
+        'msgs=${messages.length}',
+      );
 
       final ui.Image image = await renderObject.toImage(pixelRatio: pr);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
       if (byteData == null) {
-        throw Exception('ShareService: Failed to encode image');
+        throw StateError('ShareService: Failed to encode image');
       }
       final pngBytes = byteData.buffer.asUint8List();
 
@@ -109,9 +135,8 @@ class ShareService {
       );
       await file.writeAsBytes(pngBytes);
 
-      final xFile = XFile(file.path);
       await Share.shareXFiles(
-        [xFile],
+        [XFile(file.path)],
         sharePositionOrigin: sharePositionOrigin,
       );
     } finally {
