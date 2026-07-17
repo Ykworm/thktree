@@ -9,7 +9,7 @@
 | `ShareService` + `ShareCardWidget` 存在但分享流程未闭环 | 中 | settings 模块 feature 表“分享功能”标 🔨 部分实现，缺触发入口/分享内容生成 | 2026-06-07 |
 | `docs/_tmp/` 集成测试 report 缺定期清理机制 | 低 | 收尾流程已补充 planning doc 清理（步骤 5），但 report 文件（如 `step-timer-report.md`）保留策略未定：保留多少份、何时归档或删除、是否需要索引。需制定方案避免 `_tmp` 目录无限膨胀 | 2026-06-22 |
 | `autoTitleControllerProvider` 内存常驻 | 低 | 用 `ref.keepAlive()`（ADR-018）后 Notifier 实例永不被自动 dispose。每个 chat nodeId 一次任务完成后保留一个 AutoTitleController 实例（实测 ~100B/instance）。当前估算单次会话 1-2 个实例完全可接受。后续可考虑 WeakReference + 定时清理（暂不实施，待 keepAlive 任务累计超 1000 个再 review） | 2026-06-29 |
-| MiniMax 联网搜索未实现 | 中 | MiniMax 联网搜索需走 Assistants API（创建 Assistant → Thread → Run），与当前 `LlmClient` 接口（基于 Chat Completions API）架构差异较大。当前 MiniMax 在 `webSearchSupportMap` 中标为“支持”，但实际未实现 tool_calls 流程——用户开启联网开关后 MiniMax 请求不会携带搜索工具定义，返回结果无网页引用。需评估三个方案：方案 A 为 MiniMax 单独实现 Assistants API 客户端（工程量大，需新建 `MiniMaxAssistantClient`，引入 Assistant/Thread/Run 三阶段生命周期管理）；方案 B 调研 MiniMax Chat Completions API 是否也支持 `web_search` 类似能力（若有则可复用 `LlmClient` 现有架构，代价最小）；方案 C 暂时将 MiniMax 从 `webSearchSupportMap` 中移除，避免 UI 显示“支持”但实际无效的误导。建议优先尝试方案 B | 2026-07-04 |
+| MiniMax 真实联网未实现 | 中 | UI 误导已止血（`webSearchSupportMap[minimax]=unsupported`，2026-07-17）。真实现：官方 Server Tools 要求 **Anthropic Messages**（`/anthropic/v1/messages`）+ `{"type":"web_search_20250305","name":"web_search"}` 服务端工具（一次请求内服务端搜完）。可仿 DeepSeek 路径在联网时切 `ClaudeClient`；OpenAI 兼容假 function `web_search` 不可用。M3 多轮 client tool 另须完整回传 thinking/`<think>`。 | 2026-07-04 |
 | release 模式本地日志未禁用 | 低 | AppLogger._append 在 release 模式仍写本地文件，长期累积占存储。已修复：release 模式跳过本地文件写入 + 启动时清理 3 天前日志 + Settings 页 release 模式隐藏日志入口 | 2026-07-07 |
 
 ---
@@ -37,4 +37,5 @@
 | 标题自动建议触发时机已集成 | AutoTitleController + TitleSuggestionScreen + 三层 LLM 配置守卫，空白分支自动 title 已实现 | 2026-07-07 |
 | LLM 模型列表刷新 UI | Preset 模式固定厂商，无需手动刷新列表；LlmProviderDetailScreen 的 fetchModels 按钮满足首次配置需求 | 2026-07-07 |
 | release 模式本地日志堆积 | release 模式跳过本地文件写入 + 启动时清理 3 天前日志 + Settings 页 release 模式隐藏日志入口 | 2026-07-07 |
+| MiniMax 联网 UI 误导 | `webSearchSupportMap[minimax]` 改为 `unsupported`（方案 C 止血）；真实联网仍见上方开放债 | 2026-07-17 |
 
