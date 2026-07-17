@@ -400,11 +400,10 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         origin = offset & renderBox.size;
       }
 
-      // 如果用户选中了文本，只对选中文本生成图片
-      final selected = ref.read(currentSelectionProvider);
-      final answer = (selected != null && selected.trim().isNotEmpty)
-          ? selected
-          : widget.message.body;
+      // 「分享当前对话」= 本气泡配对的 Q&A，禁止用 currentSelectionProvider。
+      // 选区 provider 会故意保留上次选中文本；若用户先选了别的气泡再点本条分享，
+      // 会把别的对话正文塞进图片（同 chat 内串台）。
+      final answer = widget.message.body;
 
       final shareMessages = <ShareMessage>[];
       final hasUser = (widget.userQuestion != null &&

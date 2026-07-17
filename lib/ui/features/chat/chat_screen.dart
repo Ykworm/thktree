@@ -604,7 +604,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 String? userQuestion;
                                 Uint8List? userQuestionImage;
                                 if (message.role == SessionRole.assistant) {
-                                  final idx = messages.indexOf(message);
+                                  // 用 msgId 定位，避免 value/identity 导致 indexOf 指错条
+                                  final idx = messages.indexWhere(
+                                    (m) => m.msgId == message.msgId,
+                                  );
                                   if (idx > 0) {
                                     for (var i = idx - 1; i >= 0; i--) {
                                       if (messages[i].role ==

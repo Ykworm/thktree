@@ -14,100 +14,111 @@ class ShareCardWidget extends StatelessWidget {
   const ShareCardWidget({
     super.key,
     required this.messages,
+    this.cardWidth,
   });
 
   /// 按时间顺序排列的待分享消息（每条可携带本地图片字节）
   final List<ShareMessage> messages;
 
-  static const double _minCardWidth = 400;
-  static const double _maxCardWidth = 600;
+  /// 卡片固定逻辑宽。由 [ShareService] 按屏宽传入，避免屏外布局宽度不稳裁掉右半。
+  final double? cardWidth;
+
+  static const double _fallbackWidth = 360;
   static const double _padding = 20;
   static const double _radius = 16;
 
   @override
   Widget build(BuildContext context) {
-    // 基于屏幕宽度动态计算卡片宽度，避免内容被挤压
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth.clamp(_minCardWidth, _maxCardWidth);
+    final width = cardWidth ??
+        MediaQuery.sizeOf(context).width.clamp(320.0, 420.0);
+    // 兜底：极端 MediaQuery 时仍有宽度
+    final w = width.isFinite && width > 0 ? width : _fallbackWidth;
 
     final blocks = <Widget>[];
     for (var i = 0; i < messages.length; i++) {
-      blocks.add(_buildMessageBlock(context, messages[i]));
+      blocks.add(_buildMessageBlock(context, messages[i], w - _padding * 2));
       if (i < messages.length - 1) blocks.add(const SizedBox(height: 16));
     }
 
-    return Container(
-      width: cardWidth,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(_radius),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.elevationShadow,
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(_padding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── 品牌标识 ──
-            Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'ThkTree',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-
-            // ── 消息列表 ──
-            const SizedBox(height: 16),
-            ...blocks,
-
-            // ── 底部分隔线 ──
-            const SizedBox(height: 20),
-            Container(
-              height: AppSp.dividerThickness,
-              color: AppColors.border,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Shared from ThkTree',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textTertiary,
-              ),
+    return SizedBox(
+      width: w,
+      child: Container(
+        width: w,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(_radius),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.elevationShadow,
+              blurRadius: 20,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(_padding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── 品牌标识 ──
+              Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'ThkTree',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+
+              // ── 消息列表 ──
+              const SizedBox(height: 16),
+              ...blocks,
+
+              // ── 底部分隔线 ──
+              const SizedBox(height: 20),
+              Container(
+                height: AppSp.dividerThickness,
+                color: AppColors.border,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Shared from ThkTree',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildMessageBlock(BuildContext context, ShareMessage m) {
+  Widget _buildMessageBlock(
+    BuildContext context,
+    ShareMessage m,
+    double contentWidth,
+  ) {
     if (m.role == SessionRole.user) {
       final hasText = m.text.trim().isNotEmpty;
       return Container(
-        width: double.infinity,
+        width: contentWidth,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.surfaceMuted,
@@ -122,7 +133,7 @@ class ShareCardWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: Image.memory(
                   m.image!,
-                  width: double.infinity,
+                  width: contentWidth - 24,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -131,6 +142,7 @@ class ShareCardWidget extends StatelessWidget {
             if (hasText)
               Text(
                 m.text,
+                softWrap: true,
                 style: TextStyle(
                   fontSize: 15,
                   height: 1.5,
@@ -143,24 +155,25 @@ class ShareCardWidget extends StatelessWidget {
     }
 
     // ── 助手消息 ──
-    // 复用与聊天界面一致的 builder（markdown_builders.dart）：
-    // 否则 gpt_markdown 默认 CodeField 会用 Theme.onInverseSurface（亮色下为深色块），
-    // 导致分享图里代码块/表格变成不可见的暗色矩形。
-    return GptMarkdown(
-      m.text,
-      style: TextStyle(
-        fontSize: 15,
-        height: 1.6,
-        color: AppColors.textPrimary,
+    // 钉死宽度，避免 markdown 表格/代码块横向撑破卡片导致截图右半空白或被裁。
+    return SizedBox(
+      width: contentWidth,
+      child: GptMarkdown(
+        m.text,
+        style: TextStyle(
+          fontSize: 15,
+          height: 1.6,
+          color: AppColors.textPrimary,
+        ),
+        codeBuilder: buildCodeBlock,
+        tableBuilder: (ctx, rows, style, cfg) => MarkdownTableView(
+          tableRows: rows,
+          textStyle: style,
+        ),
+        latexBuilder: buildLatex,
+        useDollarSignsForLatex: true,
+        onLinkTap: (url, _) => openMarkdownLink(context, url),
       ),
-      codeBuilder: buildCodeBlock,
-      tableBuilder: (ctx, rows, style, cfg) => MarkdownTableView(
-        tableRows: rows,
-        textStyle: style,
-      ),
-      latexBuilder: buildLatex,
-      useDollarSignsForLatex: true,
-      onLinkTap: (url, _) => openMarkdownLink(context, url),
     );
   }
 }
