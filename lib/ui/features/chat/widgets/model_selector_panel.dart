@@ -150,11 +150,11 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
               border: Border(
                 top: BorderSide(color: AppColors.border, width: 0.5),
               ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x1A1F2933),
+                  color: AppColors.elevationShadow,
                   blurRadius: 24,
-                  offset: Offset(0, -4),
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),

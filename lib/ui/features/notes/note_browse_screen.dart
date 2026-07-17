@@ -7,8 +7,10 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
-import 'package:thk_tree/ui/features/settings/settings_controller.dart' show brightnessProvider;
+import 'package:thk_tree/ui/features/settings/settings_controller.dart'
+    show brightnessProvider;
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/node_location_picker.dart';
@@ -107,38 +109,41 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       resizeToAvoidBottomInset: false,
-      child: CustomScrollView(
-        slivers: [
-          ThkNavBar.large(
-            title: l10n.notes,
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => _createNoteInUncategorized(context, ref),
-              key: const ValueKey('add_note_button'),
-              child: Icon(AppIcons.add),
+      child: ThkPageAtmosphere(
+        titleContentHeight: 96,
+        child: CustomScrollView(
+          slivers: [
+            ThkNavBar.large(
+              title: l10n.notes,
+              trailing: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _createNoteInUncategorized(context, ref),
+                key: const ValueKey('add_note_button'),
+                child: Icon(AppIcons.add),
+              ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: SearchBox(queryNotifier: _queryNotifier),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: SearchBox(queryNotifier: _queryNotifier),
+              ),
             ),
-          ),
-          ValueListenableBuilder<String>(
-            valueListenable: _queryNotifier,
-            builder: (context, query, _) {
-              if (query.trim().isEmpty) {
-                return _buildGroupedBody(l10n);
-              }
-              return SliverToBoxAdapter(
-                child: SearchResults(
-                  queryNotifier: _queryNotifier,
-                  scrollable: false,
-                ),
-              );
-            },
-          ),
-        ],
+            ValueListenableBuilder<String>(
+              valueListenable: _queryNotifier,
+              builder: (context, query, _) {
+                if (query.trim().isEmpty) {
+                  return _buildGroupedBody(l10n);
+                }
+                return SliverToBoxAdapter(
+                  child: SearchResults(
+                    queryNotifier: _queryNotifier,
+                    scrollable: false,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -186,42 +191,84 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
     }
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     return SliverPadding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPad > 0 ? bottomPad + 8 : 24),
-      sliver: SliverToBoxAdapter(
-        child: DecoratedBox(
-          decoration: AppSurfaces.contentCard(),
-          child: Column(
-            children: [
-              for (var index = 0; index < allThemes.length; index++) ...[
-                ThkListTile(
-                  key: ValueKey(allThemes[index].themeId),
-                  title: localizedThemeTitle(l10n, allThemes[index].title),
-                  subtitle: l10n.noteCount(allThemes[index].noteCount),
-                  leading: Icon(AppIcons.folder),
-                  themeId: allThemes[index].themeId,
-                  onTap: () {
-                    final tn = allThemes[index];
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (_) => ThemeNoteListScreen(
-                          themeId: tn.themeId,
-                          notesDir: '${tn.themePath}/notes',
+      padding: EdgeInsets.fromLTRB(
+        AppSp.screenPadding,
+        0,
+        AppSp.screenPadding,
+        bottomPad > 0 ? bottomPad + 8 : 24,
+      ),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final tn = allThemes[index];
+            final tileColor = AppColors.themeTileColorFor(tn.themeId);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                key: ValueKey(tn.themeId),
+                onTap: () {
+                  Navigator.of(context).push(
+                    CupertinoPageRoute(
+                      builder: (_) => ThemeNoteListScreen(
+                        themeId: tn.themeId,
+                        notesDir: '${tn.themePath}/notes',
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  decoration: AppSurfaces.contentCard(radius: 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: tileColor.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          AppIcons.folder,
+                          color: tileColor,
+                          size: 22,
                         ),
                       ),
-                    );
-                  },
-                ),
-                if (index < allThemes.length - 1)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 56),
-                    child: Container(
-                      height: 0.5,
-                      color: AppColors.border,
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              localizedThemeTitle(l10n, tn.title),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ).copyWith(color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              l10n.noteCount(tn.noteCount),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        CupertinoIcons.chevron_right,
+                        color: AppColors.textTertiary,
+                        size: 16,
+                      ),
+                    ],
                   ),
-              ],
-            ],
-          ),
+                ),
+              ),
+            );
+          },
+          childCount: allThemes.length,
         ),
       ),
     );

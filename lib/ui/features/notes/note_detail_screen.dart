@@ -1,6 +1,7 @@
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart' show formatRelativeTime;
 import 'dart:async';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -668,7 +669,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
 
     return ThkLargeTitlePage(
       title: l10n.notes,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.pageBg,
       trailing: CupertinoButton(
         padding: EdgeInsets.zero,
         onPressed: () => _createNote(context, ref),
@@ -755,81 +756,90 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
       ];
     }
     return [
-      Column(
-        children: [
-          for (int i = 0; i < metas.length; i++) ...[
-            SwipeableRow(
-              key: ValueKey(metas[i].noteId),
-              onSwipeLeft: () async {
-                final l10n = AppLocalizations.of(context)!;
-                final confirmed = await showCupertinoDialog<bool>(
-                  context: context,
-                  builder: (ctx) {
-                    return CupertinoAlertDialog(
-                      title: Text(l10n.deleteNote),
-                      content: Text(
-                          l10n.deleteNoteConfirmTitle(metas[i].title)),
-                      actions: [
-                        CupertinoDialogAction(
-                          onPressed: () =>
-                              Navigator.of(ctx).pop(false),
-                          child: Text(l10n.cancel),
-                        ),
-                        CupertinoDialogAction(
-                          isDestructiveAction: true,
-                          onPressed: () =>
-                              Navigator.of(ctx).pop(true),
-                          child: Text(l10n.delete),
-                        ),
-                      ],
-                    );
-                  },
-                );
-                if (confirmed != true) return;
-                try {
-                  await _store.deleteNote(noteId: metas[i].noteId);
-                  ref
-                      .read(noteListVersionProvider.notifier)
-                      .bump();
-                } catch (e) {
-                  if (!mounted) return;
-                  ThkAlert.show(
-                    context: context,
-                    message: '${l10n.deleteFailed}: $e',
-                    defaultAction: l10n.ok,
-                  );
-                }
-              },
-              leftActionLabel: l10n.swipeDelete,
-              leftActionIcon: AppIcons.delete,
-              leftActionColor: AppColors.destructive,
-              child: ThkListTile(
-                title: metas[i].title,
-                subtitle: metas[i].preview != null
-                    ? metas[i].preview!
-                    : formatRelativeTime(l10n, metas[i].updatedAt),
-                onTap: () {
-                  Navigator.of(context).push(
-                    CupertinoPageRoute(
-                      builder: (_) => NoteDetailScreen(
-                        notesDir: widget.notesDir,
-                        noteId: metas[i].noteId,
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: DecoratedBox(
+          decoration: AppSurfaces.contentCard(radius: 14),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Column(
+              children: [
+                for (int i = 0; i < metas.length; i++) ...[
+                  SwipeableRow(
+                    key: ValueKey(metas[i].noteId),
+                    onSwipeLeft: () async {
+                      final l10n = AppLocalizations.of(context)!;
+                      final confirmed = await showCupertinoDialog<bool>(
+                        context: context,
+                        builder: (ctx) {
+                          return CupertinoAlertDialog(
+                            title: Text(l10n.deleteNote),
+                            content: Text(
+                                l10n.deleteNoteConfirmTitle(metas[i].title)),
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(ctx).pop(false),
+                                child: Text(l10n.cancel),
+                              ),
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () =>
+                                    Navigator.of(ctx).pop(true),
+                                child: Text(l10n.delete),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      if (confirmed != true) return;
+                      try {
+                        await _store.deleteNote(noteId: metas[i].noteId);
+                        ref
+                            .read(noteListVersionProvider.notifier)
+                            .bump();
+                      } catch (e) {
+                        if (!mounted) return;
+                        ThkAlert.show(
+                          context: context,
+                          message: '${l10n.deleteFailed}: $e',
+                          defaultAction: l10n.ok,
+                        );
+                      }
+                    },
+                    leftActionLabel: l10n.swipeDelete,
+                    leftActionIcon: AppIcons.delete,
+                    leftActionColor: AppColors.destructive,
+                    child: ThkListTile(
+                      title: metas[i].title,
+                      subtitle: metas[i].preview != null
+                          ? metas[i].preview!
+                          : formatRelativeTime(l10n, metas[i].updatedAt),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            builder: (_) => NoteDetailScreen(
+                              notesDir: widget.notesDir,
+                              noteId: metas[i].noteId,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (i < metas.length - 1)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 16),
+                      child: Container(
+                        height: 0.5,
+                        color: AppColors.border,
                       ),
                     ),
-                  );
-                },
-              ),
+                ],
+              ],
             ),
-            if (i < metas.length - 1)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(start: 56),
-                child: Container(
-                  height: 0.5,
-                  color: AppColors.border,
-                ),
-              ),
-          ],
-        ],
+          ),
+        ),
       ),
     ];
   }

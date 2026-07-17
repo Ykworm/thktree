@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
@@ -248,33 +250,64 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             ),
           ),
           child: roots.isEmpty
-              ? Center(child: Text(l10n.emptyTree))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        AppIcons.branch,
+                        size: 40,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.emptyTree,
+                        style: AppTheme.body.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               : SafeArea(
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 800),
-                      child: ListView.separated(
+                      child: ListView(
                         key: const ValueKey('node_list'),
-                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
-                        itemCount: roots.length,
-                        separatorBuilder: (_, _) => Container(
-                          height: 0.5,
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          color: AppColors.border,
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSp.screenPadding,
+                          12,
+                          AppSp.screenPadding,
+                          80,
                         ),
-                        itemBuilder: (context, i) => _TreeRowView(
-                          themeId: widget.themeId,
-                          node: roots[i],
-                          allNodes: data.nodes,
-                          depth: 0,
-                          collapsedIds: _collapsedIds,
-                          onToggleCollapse: (id) =>
-                              setState(() {
-                                if (!_collapsedIds.remove(id)) {
-                                  _collapsedIds.add(id);
-                                }
-                              }),
-                        ),
+                        children: [
+                          DecoratedBox(
+                            decoration:
+                                AppSurfaces.contentCard(radius: 14),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: Column(
+                                children: [
+                                  for (final root in roots)
+                                    _TreeRowView(
+                                      themeId: widget.themeId,
+                                      node: root,
+                                      allNodes: data.nodes,
+                                      depth: 0,
+                                      collapsedIds: _collapsedIds,
+                                      onToggleCollapse: (id) =>
+                                          setState(() {
+                                        if (!_collapsedIds.remove(id)) {
+                                          _collapsedIds.add(id);
+                                        }
+                                      }),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -361,7 +394,7 @@ class _TreeRowView extends ConsumerWidget {
   final Set<String> collapsedIds;
   final ValueChanged<String> onToggleCollapse;
 
-  static const _kIndent = 28.0;
+  static const _kIndent = AppSp.treeIndent;
 
   List<NodeEntity> _children() {
     final list = allNodes
@@ -388,10 +421,11 @@ class _TreeRowView extends ConsumerWidget {
     final palette = AppColors.paletteForNode(node.nodeId);
     // ── Source type label ──
     final sourceLabel = _sourceTypeLabel(l10n, node.sourceType);
+    final isRoot = depth == 0;
 
     // ── Node tile ──
     final tileContent = SizedBox(
-      height: 56,
+      height: AppSp.treeRowHeight,
       child: Padding(
         padding: EdgeInsets.only(left: depth * _kIndent),
         child: Row(
@@ -402,20 +436,20 @@ class _TreeRowView extends ConsumerWidget {
               onTap: hasChildren ? () => onToggleCollapse(node.nodeId) : null,
               behavior: HitTestBehavior.opaque,
               child: SizedBox(
-                width: 44,
-                height: 44,
+                width: AppSp.touchTarget,
+                height: AppSp.touchTarget,
                 child: Center(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOut,
-                    width: 12,
-                    height: 12,
+                    width: 14,
+                    height: 14,
                     decoration: BoxDecoration(
                       color: hasChildren
                           ? (isCollapsed
                               ? palette.circle
-                              : palette.circle.withValues(alpha: 0.15))
-                          : palette.circle.withValues(alpha: 0.15),
+                              : palette.circle.withValues(alpha: 0.18))
+                          : palette.circle.withValues(alpha: 0.18),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: palette.circle,
@@ -426,7 +460,6 @@ class _TreeRowView extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 0),
             // Title + source label
             Expanded(
               child: Column(
@@ -435,20 +468,27 @@ class _TreeRowView extends ConsumerWidget {
                 children: [
                   Text(
                     node.title,
-                    style: AppTheme.body.copyWith(color: AppColors.textPrimary),
+                    style: AppTheme.body.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight:
+                          isRoot ? FontWeight.w600 : FontWeight.w400,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    sourceLabel ?? '',
-                    style: AppTheme.caption1.copyWith(color: palette.subtitle),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  if (sourceLabel != null)
+                    Text(
+                      sourceLabel,
+                      style: AppTheme.caption1.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
           ],
         ),
       ),
@@ -502,7 +542,7 @@ class _TreeRowView extends ConsumerWidget {
         return Container(
           decoration: isHovering
               ? BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.08),
+                  color: AppColors.accent.withValues(alpha: 0.10),
                   border: indicatorSide,
                 )
               : null,
@@ -531,9 +571,9 @@ class _TreeRowView extends ConsumerWidget {
                   ),
                 ),
               ),
-              // Drag handle — outside swipe zone
+              // Drag handle — outside swipe zone; visible for same-level reorder
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.only(right: 4),
                 child: _DragHandle(node: node),
               ),
             ],
@@ -614,7 +654,8 @@ class _DragHandleState extends State<_DragHandle>
       child: LongPressDraggable<NodeEntity>(
         key: ValueKey('drag_handle_${widget.node.nodeId}'),
         data: widget.node,
-        delay: const Duration(milliseconds: 400),
+        // Shorter delay so same-level reorder feels responsive.
+        delay: const Duration(milliseconds: 180),
         onDragStarted: () => HapticFeedback.mediumImpact(),
         onDragEnd: (_) => _scaleCtrl.reverse(),
         onDraggableCanceled: (_, _) => _scaleCtrl.reverse(),
@@ -624,34 +665,40 @@ class _DragHandleState extends State<_DragHandle>
             constraints: const BoxConstraints(maxWidth: 280),
             child: Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black
-                        .withValues(alpha: 0.2),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                horizontal: 14,
+                vertical: 10,
+              ),
+              decoration: AppSurfaces.contentCard(radius: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    CupertinoIcons.line_horizontal_3,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      widget.node.title,
+                      style: AppTheme.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
-              ),
-              child: Text(
-                widget.node.title,
-                style: AppTheme.body,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
         ),
         childWhenDragging: Opacity(
-          opacity: 0.15,
+          opacity: 0.25,
           child: Icon(
             CupertinoIcons.line_horizontal_3,
-            size: 24,
-            color: AppColors.textTertiary,
+            size: 22,
+            color: AppColors.textSecondary,
           ),
         ),
         child: AnimatedBuilder(
@@ -661,13 +708,13 @@ class _DragHandleState extends State<_DragHandle>
             child: child,
           ),
           child: SizedBox(
-            width: 52,
-            height: 52,
+            width: AppSp.dragHandle,
+            height: AppSp.dragHandle,
             child: Center(
               child: Icon(
                 CupertinoIcons.line_horizontal_3,
-                size: 24,
-                color: AppColors.textTertiary.withValues(alpha: 0.4),
+                size: 22,
+                color: AppColors.textSecondary,
               ),
             ),
           ),

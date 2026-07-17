@@ -5,6 +5,8 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
@@ -185,7 +187,7 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
         : ref.watch(themeDetailControllerProvider(widget.themeId));
 
     return CupertinoPageScaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: l10n.mergeChatConfirmTitle,
         leading: CupertinoButton(
@@ -243,13 +245,19 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
 
     return Column(
       children: [
-        // Title input.
+        // Title input card.
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CupertinoTextField(
+          padding: const EdgeInsets.fromLTRB(
+            AppSp.screenPadding,
+            16,
+            AppSp.screenPadding,
+            8,
+          ),
+          child: DecoratedBox(
+            decoration: AppSurfaces.contentCard(radius: 14),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: CupertinoTextField(
                 controller: _titleController,
                 focusNode: _titleFocusNode,
                 autofocus: true,
@@ -267,15 +275,15 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
                   borderRadius: BorderRadius.circular(10),
                   border: _titleFocusNode.hasFocus
                       ? Border.all(color: AppColors.accent, width: 1.0)
-                      : null,
+                      : Border.all(color: AppColors.border, width: 0.5),
                 ),
               ),
-            ],
+            ),
           ),
         ),
-        // Mount location section.
+        // Mount location section label.
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -287,50 +295,65 @@ class _MergeChatConfirmScreenState extends ConsumerState<MergeChatConfirmScreen>
             ),
           ),
         ),
-        // Tree selector.
+        // Tree selector in white card.
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.only(top: 4, bottom: 64),
+            padding: const EdgeInsets.fromLTRB(
+              AppSp.screenPadding,
+              0,
+              AppSp.screenPadding,
+              24,
+            ),
             children: [
-              // Cross-tree selector (only when entry allows spanning trees).
               if (widget.crossTree) _buildThemeSelector(l10n),
-              // Root option. For the chat-page entry this mounts at the top of
-              // the current tree (under its root), keeping the merged chat
-              // inside that tree; for the tree-page entry it creates a new
-              // top-level chat in the selected theme.
-              _LocationOption(
-                title: l10n.rootNode,
-                depth: 0,
-                isSelected: rootIsSelected,
-                onTap: () => setState(() => _selectedParentId =
-                    widget.crossTree ? null : currentTreeRootId),
-                isRoot: true,
+              DecoratedBox(
+                decoration: AppSurfaces.contentCard(radius: 14),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Column(
+                    children: [
+                      _LocationOption(
+                        title: l10n.rootNode,
+                        depth: 0,
+                        isSelected: rootIsSelected,
+                        onTap: () => setState(() => _selectedParentId =
+                            widget.crossTree ? null : currentTreeRootId),
+                        isRoot: true,
+                      ),
+                      ..._buildTreeRows(treeRowRoots, treeRowNodes, l10n),
+                    ],
+                  ),
+                ),
               ),
-              // Tree nodes.
-              ..._buildTreeRows(treeRowRoots, treeRowNodes, l10n),
             ],
           ),
         ),
-        // Submit button.
+        // Submit bar.
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border(
               top: BorderSide(color: AppColors.border, width: 0.5),
             ),
+            boxShadow: AppSurfaces.cardShadowSm,
           ),
           child: SizedBox(
             width: double.infinity,
-            child: CupertinoButton.filled(
-              onPressed:
-                  (_titleController.text.trim().isNotEmpty && !_isSubmitting)
-                      ? _submit
-                      : null,
-              child: _isSubmitting
-                  ? const CupertinoActivityIndicator(color: AppColors.white)
-                  : Text(l10n.done),
-            ),
+            child: _isSubmitting
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CupertinoActivityIndicator()),
+                  )
+                : ThkButton.filled(
+                    label: l10n.done,
+                    onPressed: _titleController.text.trim().isNotEmpty
+                        ? _submit
+                        : null,
+                    disabled: _titleController.text.trim().isEmpty,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
           ),
         ),
       ],

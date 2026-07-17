@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
@@ -12,7 +14,8 @@ import 'package:thk_tree/domain/node.dart';
 /// Full-screen tree view that shows all nodes fully expanded.
 ///
 /// - Browse mode (default): tap any node to navigate to its chat page.
-/// - Multi-select mode: tap chat nodes to select up to [_maxSelection] for merging.
+/// - Multi-select mode: only when [initialMultiSelect] is true (from tree
+///   overflow「合并 & 创建」). No top-right「完成」— exit via back.
 class FullTreeScreen extends ConsumerStatefulWidget {
   const FullTreeScreen({
     super.key,
@@ -35,7 +38,7 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
 
   static const _maxSelection = 3;
 
-  bool _multiSelectMode = false;
+  late final bool _multiSelectMode;
   bool _hintExpanded = true;
   final List<String> _selectedNodeIds = [];
 
@@ -63,13 +66,6 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
         alignment: 0.3,
       );
     }
-  }
-
-  void _toggleMultiSelectMode() {
-    setState(() {
-      _multiSelectMode = !_multiSelectMode;
-      if (!_multiSelectMode) _selectedNodeIds.clear();
-    });
   }
 
   void _toggleSelect(String nodeId, List<NodeEntity> allNodes) {
@@ -130,6 +126,17 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
     );
   }
 
+  void _onBack() {
+    if (widget.currentNodeId != null) {
+      // 从 chat 页进入：go() 不会走回退，必须显式 go 回聊天页
+      context.go(
+        '/themes/${widget.themeId}/nodes/${widget.currentNodeId}',
+      );
+    } else {
+      context.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -164,143 +171,183 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
 
         if (treeRoots.isEmpty) {
           return CupertinoPageScaffold(
-            backgroundColor: AppColors.surface,
-            navigationBar: ThkNavBar.inline(title: data.themeTitle),
-            child: Center(child: Text(l10n.emptyTree)),
+            backgroundColor: AppColors.pageBg,
+            navigationBar: ThkNavBar.inline(
+              title: data.themeTitle,
+              leading: CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                onPressed: _onBack,
+                child: const Icon(AppIcons.back),
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(AppIcons.branch,
+                      size: 40, color: AppColors.textTertiary),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.emptyTree,
+                    style: AppTheme.body
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
           );
         }
 
-        // Nav bar title: single root → its title; multiple roots → theme title.
-        final navTitle =
-            treeRoots.length == 1 ? treeRoots.first.title : data.themeTitle;
-
-        // Navigation bar trailing: toggle multi-select / browse mode.
-        final trailing = CupertinoButton(
-          padding: EdgeInsets.zero,
-          minimumSize: Size.zero,
-          onPressed: _toggleMultiSelectMode,
-          child: Text(
-            _multiSelectMode ? l10n.done : l10n.multiSelect,
-            style: AppTheme.body.copyWith(color: AppColors.accent),
-          ),
-        );
+        // Nav bar title: multi-select → theme/merge context; else single root
+        // title or theme title.
+        final navTitle = _multiSelectMode
+            ? (treeRoots.length == 1
+                ? treeRoots.first.title
+                : data.themeTitle)
+            : (treeRoots.length == 1
+                ? treeRoots.first.title
+                : data.themeTitle);
 
         return CupertinoPageScaffold(
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppColors.pageBg,
           navigationBar: ThkNavBar.inline(
             title: navTitle,
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
-              onPressed: () {
-                if (widget.currentNodeId != null) {
-                  // 从 chat 页进入：go() 不会走回退，必须显式 go 回聊天页
-                  context.go(
-                    '/themes/${widget.themeId}/nodes/${widget.currentNodeId}',
-                  );
-                } else {
-                  context.pop();
-                }
-              },
+              onPressed: _onBack,
               child: const Icon(AppIcons.back),
             ),
-            trailing: trailing,
+            // Option A: no trailing multi-select / 完成.
           ),
           child: SafeArea(
             child: Column(
               children: [
-                // Expandable teaching hint bar (multi-select mode only).
                 if (_multiSelectMode)
-                  _MultiSelectHintBar(
-                    maxSelection: _maxSelection,
-                    selectedCount: _selectedNodeIds.length,
-                    isExpanded: _hintExpanded,
-                    onToggleExpand: () =>
-                        setState(() => _hintExpanded = !_hintExpanded),
-                  ),
-                // Tree list.
-                Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: treeRoots.length,
-                    itemBuilder: (context, index) {
-                      final root = treeRoots[index];
-                      return _FullTreeNodeRow(
-                        key: root.nodeId == widget.currentNodeId
-                            ? _highlightKey
-                            : null,
-                        themeId: widget.themeId,
-                        node: root,
-                        allNodes: data.nodes,
-                        depth: 0,
-                        currentNodeId: widget.currentNodeId,
-                        isMultiSelectMode: _multiSelectMode,
-                        selectedNodeIds: _selectedNodeIds,
-                        onToggleSelect: (nodeId) =>
-                            _toggleSelect(nodeId, data.nodes),
-                      );
-                    },
-                  ),
-                ),
-                // Bottom action bar (multi-select mode only).
-                if (_multiSelectMode)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSp.screenPadding,
+                      8,
+                      AppSp.screenPadding,
+                      0,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      border: Border(
-                        top: BorderSide(
-                          color: AppColors.border,
-                          width: 0.5,
+                    child: _MultiSelectHintBar(
+                      maxSelection: _maxSelection,
+                      selectedCount: _selectedNodeIds.length,
+                      isExpanded: _hintExpanded,
+                      onToggleExpand: () =>
+                          setState(() => _hintExpanded = !_hintExpanded),
+                    ),
+                  ),
+                Expanded(
+                  child: ListView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSp.screenPadding,
+                      12,
+                      AppSp.screenPadding,
+                      24,
+                    ),
+                    children: [
+                      DecoratedBox(
+                        decoration: AppSurfaces.contentCard(radius: 14),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Column(
+                            children: [
+                              for (final root in treeRoots)
+                                _FullTreeNodeRow(
+                                  themeId: widget.themeId,
+                                  node: root,
+                                  allNodes: data.nodes,
+                                  depth: 0,
+                                  currentNodeId: widget.currentNodeId,
+                                  highlightKey: _highlightKey,
+                                  isMultiSelectMode: _multiSelectMode,
+                                  selectedNodeIds: _selectedNodeIds,
+                                  onToggleSelect: (nodeId) =>
+                                      _toggleSelect(nodeId, data.nodes),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.selectedCount(
-                              _selectedNodeIds.length,
-                              _maxSelection,
-                            ),
-                            style: AppTheme.body.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        CupertinoButton(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          onPressed: _selectedNodeIds.isEmpty
-                              ? null
-                              : () => _onMergeAndCreate(data.nodes),
-                          child: Text(
-                            l10n.mergeAndCreate,
-                            style: AppTheme.body.copyWith(
-                              color: _selectedNodeIds.isEmpty
-                                  ? AppColors.textSecondary
-                                  : AppColors.accent,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
+                ),
+                if (_multiSelectMode) _MergeBottomBar(
+                  selectedCount: _selectedNodeIds.length,
+                  maxSelection: _maxSelection,
+                  enabled: _selectedNodeIds.isNotEmpty,
+                  onMerge: () => _onMergeAndCreate(data.nodes),
+                ),
               ],
             ),
           ),
         );
       },
       error: (e, st) => CupertinoPageScaffold(
+        backgroundColor: AppColors.pageBg,
         navigationBar: ThkNavBar.inline(title: ''),
         child: Center(child: Text(e.toString())),
       ),
       loading: () => CupertinoPageScaffold(
+        backgroundColor: AppColors.pageBg,
         navigationBar: ThkNavBar.inline(title: ''),
         child: const Center(child: CupertinoActivityIndicator()),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom bar — multi-select merge CTA
+// ---------------------------------------------------------------------------
+
+class _MergeBottomBar extends StatelessWidget {
+  const _MergeBottomBar({
+    required this.selectedCount,
+    required this.maxSelection,
+    required this.enabled,
+    required this.onMerge,
+  });
+
+  final int selectedCount;
+  final int maxSelection;
+  final bool enabled;
+  final VoidCallback onMerge;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.border, width: 0.5),
+        ),
+        boxShadow: AppSurfaces.cardShadowSm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.selectedCount(selectedCount, maxSelection),
+              style: AppTheme.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ThkButton.filled(
+            label: l10n.mergeAndCreate,
+            onPressed: enabled ? onMerge : null,
+            disabled: !enabled,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ],
       ),
     );
   }
@@ -312,12 +359,12 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
 
 class _FullTreeNodeRow extends StatelessWidget {
   const _FullTreeNodeRow({
-    super.key,
     required this.themeId,
     required this.node,
     required this.allNodes,
     required this.depth,
     required this.currentNodeId,
+    required this.highlightKey,
     this.isMultiSelectMode = false,
     this.selectedNodeIds = const [],
     this.onToggleSelect,
@@ -328,12 +375,13 @@ class _FullTreeNodeRow extends StatelessWidget {
   final List<NodeEntity> allNodes;
   final int depth;
   final String? currentNodeId;
+  final GlobalKey highlightKey;
 
   final bool isMultiSelectMode;
   final List<String> selectedNodeIds;
   final ValueChanged<String>? onToggleSelect;
 
-  static const _kIndent = 28.0;
+  static const _kIndent = AppSp.treeIndent;
 
   List<NodeEntity> _children() {
     final list = allNodes
@@ -349,6 +397,7 @@ class _FullTreeNodeRow extends StatelessWidget {
     final hasChildren = children.isNotEmpty;
     final isCurrent = node.nodeId == currentNodeId;
     final palette = AppColors.paletteForNode(node.nodeId);
+    final isRoot = depth == 0;
 
     final l10n = AppLocalizations.of(context)!;
     final sourceLabel = _sourceTypeLabel(l10n, node.sourceType);
@@ -359,6 +408,7 @@ class _FullTreeNodeRow extends StatelessWidget {
     final isSelected = selectedNodeIds.contains(node.nodeId);
 
     final tile = GestureDetector(
+      key: isCurrent ? highlightKey : null,
       behavior: HitTestBehavior.opaque,
       onTap: isMultiSelectMode
           ? (isSelectable ? () => onToggleSelect?.call(node.nodeId) : null)
@@ -367,32 +417,36 @@ class _FullTreeNodeRow extends StatelessWidget {
                 extra: node.title,
               ),
       child: Container(
+        height: AppSp.treeRowHeight,
         color: isCurrent
             ? AppColors.accent.withValues(alpha: 0.08)
-            : null,
+            : (isSelected
+                ? AppColors.accent.withValues(alpha: 0.06)
+                : null),
         child: Row(
           children: [
             if (isCurrent)
-              Container(width: 3, height: 44, color: AppColors.accent)
+              Container(width: 3, height: AppSp.treeRowHeight, color: AppColors.accent)
             else
               const SizedBox(width: 3),
             Padding(
               padding: EdgeInsets.only(left: depth * _kIndent),
               child: SizedBox(
-                width: 44,
-                height: 44,
+                width: AppSp.touchTarget,
+                height: AppSp.touchTarget,
                 child: Center(
                   child: isMultiSelectMode
                       ? _buildSelectionIndicator(isSelected, isSelectable)
                       : Container(
-                          width: 12,
-                          height: 12,
+                          width: 14,
+                          height: 14,
                           decoration: BoxDecoration(
                             color: hasChildren
                                 ? palette.circle
-                                : palette.circle.withValues(alpha: 0.15),
+                                : palette.circle.withValues(alpha: 0.18),
                             shape: BoxShape.circle,
-                            border: Border.all(color: palette.circle, width: 2),
+                            border:
+                                Border.all(color: palette.circle, width: 2),
                           ),
                         ),
                 ),
@@ -409,6 +463,9 @@ class _FullTreeNodeRow extends StatelessWidget {
                       color: isCurrent
                           ? AppColors.accent
                           : AppColors.textPrimary,
+                      fontWeight: isRoot || isCurrent
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -416,14 +473,16 @@ class _FullTreeNodeRow extends StatelessWidget {
                   if (sourceLabel != null)
                     Text(
                       sourceLabel,
-                      style: AppTheme.caption1.copyWith(color: palette.subtitle),
+                      style: AppTheme.caption1.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
           ],
         ),
       ),
@@ -443,6 +502,7 @@ class _FullTreeNodeRow extends StatelessWidget {
             allNodes: allNodes,
             depth: depth + 1,
             currentNodeId: currentNodeId,
+            highlightKey: highlightKey,
             isMultiSelectMode: isMultiSelectMode,
             selectedNodeIds: selectedNodeIds,
             onToggleSelect: onToggleSelect,
@@ -453,15 +513,16 @@ class _FullTreeNodeRow extends StatelessWidget {
 
   Widget _buildSelectionIndicator(bool isSelected, bool isSelectable) {
     if (!isSelectable) {
-      // Non-chat nodes: show a dim circle (not selectable).
       return Icon(
         CupertinoIcons.circle,
         size: 22,
-        color: AppColors.textSecondary.withValues(alpha: 0.3),
+        color: AppColors.textTertiary.withValues(alpha: 0.45),
       );
     }
     return Icon(
-      isSelected ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.circle,
+      isSelected
+          ? CupertinoIcons.checkmark_circle_fill
+          : CupertinoIcons.circle,
       size: 22,
       color: isSelected ? AppColors.accent : AppColors.textSecondary,
     );
@@ -485,7 +546,7 @@ String? _sourceTypeLabel(AppLocalizations l10n, String? sourceType) {
 }
 
 // ---------------------------------------------------------------------------
-// _MultiSelectHintBar — expandable teaching hint for multi-select merge
+// _MultiSelectHintBar — inset card teaching hint for multi-select merge
 // ---------------------------------------------------------------------------
 
 class _MultiSelectHintBar extends StatelessWidget {
@@ -504,7 +565,6 @@ class _MultiSelectHintBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final accentSoft = AppColors.accent.withValues(alpha: 0.06);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -513,36 +573,56 @@ class _MultiSelectHintBar extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: accentSoft,
-        child: Column(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border, width: 0.5),
+          boxShadow: AppSurfaces.cardShadowSm,
+        ),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row: hint text + count + chevron.
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${l10n.mergeChatHint(maxSelection)} · ${l10n.selectedCount(selectedCount, maxSelection)}',
-                    style: AppTheme.caption1.copyWith(
-                      color: AppColors.accent,
-                    ),
-                  ),
-                ),
-                Icon(
-                  isExpanded
-                      ? CupertinoIcons.chevron_up
-                      : CupertinoIcons.chevron_down,
-                  size: 14,
-                  color: AppColors.accent,
-                ),
-              ],
+            Container(
+              width: 3,
+              height: isExpanded ? 72 : 18,
+              margin: const EdgeInsets.only(right: 12, top: 2),
+              decoration: BoxDecoration(
+                color: AppColors.plum,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            // Expanded body: teaching steps.
-            if (isExpanded) ...[
-              const SizedBox(height: 8),
-              ..._buildGuideSteps(l10n),
-            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${l10n.mergeChatHint(maxSelection)} · ${l10n.selectedCount(selectedCount, maxSelection)}',
+                          style: AppTheme.caption1.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        isExpanded
+                            ? CupertinoIcons.chevron_up
+                            : CupertinoIcons.chevron_down,
+                        size: 14,
+                        color: AppColors.textTertiary,
+                      ),
+                    ],
+                  ),
+                  if (isExpanded) ...[
+                    const SizedBox(height: 8),
+                    ..._buildGuideSteps(l10n),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -568,7 +648,7 @@ class _MultiSelectHintBar extends StatelessWidget {
                 width: 4,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.6),
+                  color: AppColors.plum.withValues(alpha: 0.7),
                   shape: BoxShape.circle,
                 ),
               ),

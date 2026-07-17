@@ -583,10 +583,10 @@ class _ComposerGlassShell extends StatelessWidget {
   final Widget child;
   final BorderRadius borderRadius;
 
-  /// ~22% 暖白；靠 blur 保可读，避免「实心白块」
-  static const _fill = Color(0x38F8F4ED);
-  static const _blur = 36.0;
-  static const _stroke = Color(0x59FFFFFF);
+  /// ~22% 暖白；靠 blur 保可读，避免「实心白块」（token 见 AppGlass）
+  static const _fill = AppGlass.composerFill;
+  static const _blur = AppGlass.composerBlurSigma;
+  static const _stroke = AppGlass.composerStroke;
 
   @override
   Widget build(BuildContext context) {

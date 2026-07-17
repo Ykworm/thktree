@@ -4,14 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_durations.dart';
 
-/// Lab tab 占位屏幕 + 子功能入口列表。
+/// Lab tab — experimental cosmos (not Warm Paper study).
 ///
-/// 当前（Task 7）只暴露已上线的「关键词排行榜」入口：
-///   - 点击卡片 → push 到 `/lab/keyword-ranking`
-///
-/// 其他 Lab 子功能（AI 摘要交互卡 / 多节点对比 / 思维碰撞原型 / AI 写节点 /
-/// AI 节点标签建议）后续单独迭代，本屏保留兜底视觉（lab_bg_with_title 装饰图）。
+/// Hard constraint: keep top [lab_bg_with_title] hero. Body stays on [labBg]
+/// with neon-accent cards so Lab feels different from 主题 / 笔记 / 搜索.
 class LabPlaceholderScreen extends ConsumerWidget {
   const LabPlaceholderScreen({super.key});
 
@@ -25,29 +23,50 @@ class LabPlaceholderScreen extends ConsumerWidget {
         statusBarBrightness: Brightness.dark,
       ),
       child: CupertinoPageScaffold(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.labBg,
         child: Column(
           children: [
-            // 顶部背景图（覆盖灵动岛区域）
+            // 顶部背景图（覆盖灵动岛区域）— 必须保留
             Image.asset(
               'assets/background/lab_bg_with_title.png',
               width: double.infinity,
               fit: BoxFit.fitWidth,
             ),
-            // 安全区域内的内容（使用 Expanded 来约束高度）
             Expanded(
               child: SafeArea(
                 top: false,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  padding:
+                      const EdgeInsets.fromLTRB(20, 8, 20, 28),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 功能块卡片
+                      Text(
+                        'EXPERIMENT',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                          color: AppColors.labAccentBlue
+                              .withValues(alpha: 0.85),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        l10n.labTabLabel,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.white,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
                       _FeatureCard(
                         icon: CupertinoIcons.doc_text_search,
                         title: l10n.keywordRankingTitle,
                         description: l10n.keywordRankingSubtitle,
-                        color: AppColors.labAccentBlue, // 蓝色系
+                        accent: AppColors.labAccentBlue,
                         onTap: () {
                           context.push('/lab/keyword-ranking');
                         },
@@ -57,7 +76,7 @@ class LabPlaceholderScreen extends ConsumerWidget {
                         icon: CupertinoIcons.doc_plaintext,
                         title: l10n.userInputSummaryTitle,
                         description: l10n.userInputSummarySubtitle,
-                        color: AppColors.labAccentOrange, // 橙色系
+                        accent: AppColors.labAccentOrange,
                         onTap: () {
                           context.push('/lab/user-input-summary');
                         },
@@ -67,7 +86,7 @@ class LabPlaceholderScreen extends ConsumerWidget {
                         icon: CupertinoIcons.bolt_horizontal,
                         title: l10n.thinkingCollisionTitle,
                         description: l10n.thinkingCollisionSubtitle,
-                        color: AppColors.labAccentPurple, // 紫色系
+                        accent: AppColors.labAccentPurple,
                         onTap: () {
                           context.push('/lab/thinking-collision');
                         },
@@ -84,77 +103,128 @@ class LabPlaceholderScreen extends ConsumerWidget {
   }
 }
 
-/// 功能块卡片组件
-class _FeatureCard extends StatelessWidget {
+/// Neon-edge experiment card on dark lab canvas.
+class _FeatureCard extends StatefulWidget {
   const _FeatureCard({
     required this.icon,
     required this.title,
     required this.description,
     required this.onTap,
-    this.color = AppColors.accent,
+    required this.accent,
   });
 
   final IconData icon;
   final String title;
   final String description;
   final VoidCallback onTap;
-  final Color color;
+  final Color accent;
+
+  @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
+    final accent = widget.accent;
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.98 : 1.0,
+        duration: AppDur.copyFeedback,
+        curve: AppDur.copyFeedbackCurve,
+        child: AnimatedOpacity(
+          opacity: _pressed ? 0.92 : 1.0,
+          duration: AppDur.copyFeedback,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.45),
+                width: 1,
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.12),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 48,
+                  margin: const EdgeInsets.only(right: 14),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.5),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.35),
+                      width: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
+                  child: Icon(
+                    widget.icon,
+                    color: accent,
+                    size: 22,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.description,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: AppColors.white.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  color: AppColors.white.withValues(alpha: 0.35),
+                  size: 16,
+                ),
+              ],
             ),
-            Icon(
-              CupertinoIcons.chevron_right,
-              color: AppColors.textTertiary,
-              size: 18,
-            ),
-          ],
+          ),
         ),
       ),
     );

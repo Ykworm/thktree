@@ -71,6 +71,15 @@ class AppGlass {
   /// Android / 降级：不透明 paper-warm
   static const fillOpaque = Color(0xFFF3EFE8);
 
+  /// Composer 双条毛玻璃 fill（~22% 暖白，靠 blur 保可读）
+  static const composerFill = Color(0x38F8F4ED);
+
+  /// Composer 玻璃描边
+  static const composerStroke = Color(0x59FFFFFF);
+
+  /// Composer blur 强度（可高于 chrome）
+  static const composerBlurSigma = 36.0;
+
   /// 磨砂强度（仅 blur 路径；列表 cell 禁止使用）
   static const blurSigma = 20.0;
 
