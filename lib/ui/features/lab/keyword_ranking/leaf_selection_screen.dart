@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_durations.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
+import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_analysis_controller.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_ranking_screen.dart'
     show keywordRankingFileProvider;
@@ -69,29 +72,13 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
     final l10n = AppLocalizations.of(context)!;
     final controller = ref.read(keywordAnalysisControllerProvider.notifier);
     final analysisState = ref.watch(keywordAnalysisControllerProvider);
-    final analyzing = _isAnalyzing(analysisState);
-    final canStart =
-        controller.selectedLeafIds.isNotEmpty && !analyzing;
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
+      // 主 CTA 在底部实心按钮；右上不再放「开始分析」
       navigationBar: CupertinoNavigationBar(
         previousPageTitle: l10n.keywordRankingSelectThemes,
         middle: Text(l10n.keywordRankingSelectLeaves),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: canStart ? () => _startAnalysis(context) : null,
-          child: Text(
-            analyzing
-                ? l10n.keywordRankingAnalyzing
-                : l10n.keywordRankingStartAnalysis,
-            style: TextStyle(
-              fontSize: 17,
-              color: canStart ? AppColors.accent : AppColors.textTertiary,
-              fontWeight: canStart ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ),
       ),
       child: SafeArea(
         top: false,
@@ -348,15 +335,23 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
           ),
         ),
 
-        // 底部主 CTA：开始分析（比右上角文案更显眼）
+        // 底部实心主 CTA（非磨砂；accent 填充）
         if (!analyzing)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            padding: const EdgeInsets.fromLTRB(
+              AppSp.screenPadding,
+              8,
+              AppSp.screenPadding,
+              12,
+            ),
             child: SizedBox(
               width: double.infinity,
-              child: CupertinoButton.filled(
+              child: ThkButton.filled(
+                label: l10n.keywordRankingStartAnalysis,
                 onPressed: canStart ? () => _startAnalysis(context) : null,
-                child: Text(l10n.keywordRankingStartAnalysis),
+                disabled: !canStart,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
           ),
@@ -495,7 +490,7 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-/// 分析进度横幅。
+/// 分析进度卡：高对比 accent 底 + 粗进度条 + 入场滑入。
 class _ProgressBanner extends StatelessWidget {
   const _ProgressBanner({
     required this.progress,
@@ -508,114 +503,225 @@ class _ProgressBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isExtracting = progress.phase == AnalysisPhase.extracting;
+    final pct = (progress.progress.clamp(0.0, 1.0) * 100).round();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 12),
-      color: AppColors.surface,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: reduceMotion ? 1 : 0, end: 1),
+      duration: AppDur.modal,
+      curve: AppDur.modalCurve,
+      builder: (context, t, child) {
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * -12),
+            child: child,
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          decoration: BoxDecoration(
+            color: AppColors.accentLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.accent.withValues(alpha: 0.35),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.12),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CupertinoActivityIndicator(radius: 10),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  progress.phase == AnalysisPhase.extracting
-                      ? '${l10n.keywordRankingAnalyzing} '
-                        '${progress.completedLeaves}/${progress.totalLeaves}'
-                      : l10n.keywordRankingAnalyzing,
+              Row(
+                children: [
+                  const CupertinoActivityIndicator(
+                    radius: 11,
+                    color: AppColors.accent,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isExtracting
+                          ? '${l10n.keywordRankingAnalyzing} '
+                              '${progress.completedLeaves}/${progress.totalLeaves}'
+                          : l10n.keywordRankingAnalyzing,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accentDeep,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$pct%',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  CupertinoButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: Size.zero,
+                    onPressed: onCancel,
+                    child: Text(
+                      l10n.cancel,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.destructive,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (progress.currentLeafTitle != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  progress.currentLeafTitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     color: AppColors.textSecondary,
                   ),
                 ),
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                onPressed: onCancel,
-                child: Text(
-                  l10n.cancel,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.destructive,
-                  ),
+              ],
+              const SizedBox(height: 12),
+              // 粗进度条：Tween 平滑跟进 completedLeaves
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: progress.progress.clamp(0.0, 1.0)),
+                  duration: AppDur.listScroll,
+                  curve: AppDur.listScrollCurve,
+                  builder: (context, value, _) {
+                    return material.LinearProgressIndicator(
+                      value: value,
+                      backgroundColor:
+                          AppColors.accent.withValues(alpha: 0.15),
+                      valueColor: const material.AlwaysStoppedAnimation<Color>(
+                        AppColors.accent,
+                      ),
+                      minHeight: 10,
+                    );
+                  },
                 ),
               ),
             ],
           ),
-          if (progress.currentLeafTitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              progress.currentLeafTitle!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textTertiary,
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: material.LinearProgressIndicator(
-              value: progress.progress,
-              backgroundColor: AppColors.border,
-              valueColor: material.AlwaysStoppedAnimation<Color>(AppColors.accent),
-              minHeight: 4,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// 分析完成横幅。
-class _DoneBanner extends StatelessWidget {
+/// 分析完成卡：success 色块 + 勾选弹入 + 实心主按钮，很难被忽略。
+class _DoneBanner extends StatefulWidget {
   const _DoneBanner({required this.onDismiss});
 
   final VoidCallback onDismiss;
 
   @override
+  State<_DoneBanner> createState() => _DoneBannerState();
+}
+
+class _DoneBannerState extends State<_DoneBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    final reduce = WidgetsBinding
+            .instance.platformDispatcher.accessibilityFeatures.reduceMotion;
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: reduce ? Duration.zero : AppDur.modal,
+    );
+    _scale = CurvedAnimation(
+      parent: _ctrl,
+      curve: Curves.elasticOut,
+    );
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 12),
-      color: AppColors.surface,
-      child: Row(
-        children: [
-          Icon(
-            CupertinoIcons.checkmark_circle_fill,
-            size: 20,
-            color: AppColors.accent,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.success.withValues(alpha: 0.45),
+            width: 1.5,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.success.withValues(alpha: 0.14),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            ScaleTransition(
+              scale: _scale,
+              child: Icon(
+                CupertinoIcons.checkmark_seal_fill,
+                size: 44,
+                color: AppColors.success,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
               l10n.keywordRankingAnalysisDone,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-          ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            minimumSize: Size.zero,
-            onPressed: onDismiss,
-            child: Text(
-              'OK',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.accent,
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ThkButton.filled(
+                label: l10n.ok,
+                onPressed: widget.onDismiss,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -637,64 +743,67 @@ class _ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 12),
-      color: AppColors.destructive.withValues(alpha: 0.1),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(
-                CupertinoIcons.exclamationmark_triangle_fill,
-                size: 18,
-                color: AppColors.destructive,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.keywordRankingAnalysisFailed(error),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.destructive,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        decoration: BoxDecoration(
+          color: AppColors.destructive.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.destructive.withValues(alpha: 0.35),
+            width: 1.5,
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                minimumSize: Size.zero,
-                onPressed: onDismiss,
-                child: Text(
-                  l10n.cancel,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  CupertinoIcons.exclamationmark_triangle_fill,
+                  size: 22,
+                  color: AppColors.destructive,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.keywordRankingAnalysisFailed(error),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.destructive,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                minimumSize: Size.zero,
-                onPressed: onRetry,
-                child: Text(
-                  l10n.retry,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.accent,
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ThkButton.plain(
+                    label: l10n.cancel,
+                    onPressed: onDismiss,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ThkButton.filled(
+                    label: l10n.retry,
+                    onPressed: onRetry,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
