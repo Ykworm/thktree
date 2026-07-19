@@ -1434,4 +1434,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String wikiExportFailed(String error) {
     return 'Failed to export wiki: $error';
   }
+
+  @override
+  String get wikiPreviousChapter => 'Previous';
+
+  @override
+  String get wikiNextChapter => 'Next';
 }

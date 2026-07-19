@@ -1036,5 +1036,13 @@
         "type": "String"
       }
     }
+  },
+  "wikiPreviousChapter": "上一章",
+  "@wikiPreviousChapter": {
+    "description": "Wiki 章节阅读页上一章按钮"
+  },
+  "wikiNextChapter": "下一章",
+  "@wikiNextChapter": {
+    "description": "Wiki 章节阅读页下一章按钮"
   }
 }

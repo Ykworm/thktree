@@ -1922,5 +1922,13 @@
         "type": "String"
       }
     }
+  },
+  "wikiPreviousChapter": "Previous",
+  "@wikiPreviousChapter": {
+    "description": "Wiki chapter view previous chapter button"
+  },
+  "wikiNextChapter": "Next",
+  "@wikiNextChapter": {
+    "description": "Wiki chapter view next chapter button"
   }
 }

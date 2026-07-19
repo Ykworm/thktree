@@ -2594,6 +2594,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to export wiki: {error}'**
   String wikiExportFailed(String error);
+
+  /// Wiki chapter view previous chapter button
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get wikiPreviousChapter;
+
+  /// Wiki chapter view next chapter button
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get wikiNextChapter;
 }
 
 class _AppLocalizationsDelegate

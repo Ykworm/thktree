@@ -1374,4 +1374,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String wikiExportFailed(String error) {
     return '导出 Wiki 失败：$error';
   }
+
+  @override
+  String get wikiPreviousChapter => '上一章';
+
+  @override
+  String get wikiNextChapter => '下一章';
 }

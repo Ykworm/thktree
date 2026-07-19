@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:thk_tree/data/models/wiki_node.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/wiki_export_service.dart';
+import 'package:thk_tree/data/services/wiki_store.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/link_launcher.dart';
@@ -17,9 +18,11 @@ import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/features/wiki/wiki_reader_controller.dart';
-import 'package:thk_tree/ui/features/wiki/wiki_toc_view.dart';
 
-/// Wiki 阅读视图（嵌入 ThemeDetailScreen 的 Wiki tab，不带独立 NavBar）。
+/// Wiki 目录页（嵌入 ThemeDetailScreen 的 Wiki tab）。
+///
+/// 首次进入显示 catalog：书籍封面 + 层级目录 + 操作按钮。
+/// 点击目录项进入章节阅读页。
 class WikiReaderView extends ConsumerStatefulWidget {
   const WikiReaderView({
     super.key,
@@ -35,57 +38,14 @@ class WikiReaderView extends ConsumerStatefulWidget {
 }
 
 class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
-  final ScrollController _scrollController = ScrollController();
-  final Map<String, GlobalKey> _sectionKeys = {};
-  double _readingProgress = 0.0;
-  String? _currentNodeId;
+  String? _chapterNodeId;
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
+  void _openChapter(String nodeId) {
+    setState(() => _chapterNodeId = nodeId);
   }
 
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final max = _scrollController.position.maxScrollExtent;
-    final current = _scrollController.offset;
-    setState(() {
-      _readingProgress = max > 0 ? (current / max).clamp(0.0, 1.0) : 0.0;
-    });
-    _updateCurrentSection();
-  }
-
-  void _updateCurrentSection() {
-    if (_sectionKeys.isEmpty) return;
-    final viewportTop = _scrollController.offset;
-    String? current;
-    for (final entry in _sectionKeys.entries) {
-      final context = entry.value.currentContext;
-      if (context == null) continue;
-      final box = context.findRenderObject() as RenderBox?;
-      if (box == null) continue;
-      final position = box.localToGlobal(Offset.zero);
-      if (position.dy < viewportTop + 200) {
-        current = entry.key;
-      } else {
-        break;
-      }
-    }
-    if (current != _currentNodeId) {
-      setState(() => _currentNodeId = current);
-    }
-  }
-
-  GlobalKey _keyFor(String nodeId) {
-    return _sectionKeys.putIfAbsent(nodeId, GlobalKey.new);
+  void _backToCatalog() {
+    setState(() => _chapterNodeId = null);
   }
 
   Future<void> _generateWiki(String rootNodeId) async {
@@ -118,6 +78,9 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
     await ref
         .read(wikiReaderControllerProvider(widget.themeId).notifier)
         .deleteWiki(rootNodeId);
+    if (mounted) {
+      setState(() => _chapterNodeId = null);
+    }
   }
 
   Future<void> _exportWiki(String rootNodeId) async {
@@ -156,33 +119,6 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
     }
   }
 
-  void _showToc(List<WikiNode> nodes) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) => WikiTocView(
-        nodes: nodes,
-        currentNodeId: _currentNodeId,
-        onNodeTap: (nodeId) {
-          Navigator.of(context).pop();
-          _scrollToNode(nodeId);
-        },
-      ),
-    );
-  }
-
-  void _scrollToNode(String nodeId) {
-    final key = _sectionKeys[nodeId];
-    if (key == null) return;
-    final context = key.currentContext;
-    if (context == null) return;
-    Scrollable.ensureVisible(
-      context,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      alignment: 0.1,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -202,9 +138,30 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
           return const Center(child: CupertinoActivityIndicator());
         }
 
+        // 章节阅读页
+        if (_chapterNodeId != null && selected.hasWiki && selected.document != null) {
+          final doc = selected.document!;
+          final flatNodes = doc.flatten();
+          final currentIndex = flatNodes.indexWhere((n) => n.nodeId == _chapterNodeId);
+          if (currentIndex >= 0) {
+            return _WikiChapterView(
+              node: flatNodes[currentIndex],
+              hasPrevious: currentIndex > 0,
+              hasNext: currentIndex < flatNodes.length - 1,
+              onPrevious: currentIndex > 0
+                  ? () => _openChapter(flatNodes[currentIndex - 1].nodeId)
+                  : null,
+              onNext: currentIndex < flatNodes.length - 1
+                  ? () => _openChapter(flatNodes[currentIndex + 1].nodeId)
+                  : null,
+              onBack: _backToCatalog,
+            );
+          }
+        }
+
+        // 目录页
         return Column(
           children: [
-            // Tree selector（多个 tree 时显示）
             if (state.trees.length > 1)
               _TreeSelector(
                 trees: state.trees,
@@ -213,11 +170,18 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
                   ref
                       .read(wikiReaderControllerProvider(widget.themeId).notifier)
                       .selectTree(rootNodeId);
+                  setState(() => _chapterNodeId = null);
                 },
               ),
             Expanded(
               child: selected.hasWiki && selected.document != null
-                  ? _buildWikiContent(selected)
+                  ? _WikiCatalogView(
+                      document: selected.document!,
+                      meta: selected.meta,
+                      onOpenChapter: _openChapter,
+                      onExport: () => _exportWiki(selected.rootNode.nodeId),
+                      onDelete: () => _deleteWiki(selected.rootNode.nodeId),
+                    )
                   : _EmptyWikiView(
                       themeTitle: selected.rootNode.title,
                       onGenerate: () => _generateWiki(selected.rootNode.nodeId),
@@ -232,174 +196,6 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
           '${l10n.wikiLoadFailed}: $e',
           style: TextStyle(color: AppColors.destructive),
         ),
-      ),
-    );
-  }
-
-  Widget _buildWikiContent(TreeWikiInfo treeInfo) {
-    final doc = treeInfo.document!;
-    final flatNodes = doc.flatten();
-    if (flatNodes.isEmpty) {
-      return _EmptyWikiView(
-        themeTitle: treeInfo.rootNode.title,
-        onGenerate: () => _generateWiki(treeInfo.rootNode.nodeId),
-      );
-    }
-
-    return Stack(
-      children: [
-        // 进度条
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 2,
-            color: AppColors.textTertiary.withValues(alpha: 0.1),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: _readingProgress,
-              child: Container(color: AppColors.accent),
-            ),
-          ),
-        ),
-        // 内容
-        CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                AppSp.screenPadding,
-                20,
-                AppSp.screenPadding,
-                32 + MediaQuery.of(context).padding.bottom,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == 0) {
-                      return _buildCover(doc, treeInfo.meta?.generatedAt);
-                    }
-                    final node = flatNodes[index - 1];
-                    return _WikiSection(
-                      key: _keyFor(node.nodeId),
-                      node: node,
-                    );
-                  },
-                  childCount: flatNodes.length + 1,
-                ),
-              ),
-            ),
-          ],
-        ),
-        // TOC 按钮
-        Positioned(
-          right: 16,
-          bottom: 24,
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => _exportWiki(treeInfo.rootNode.nodeId),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.textTertiary.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      AppIcons.share,
-                      color: AppColors.textSecondary,
-                      size: 18,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => _deleteWiki(treeInfo.rootNode.nodeId),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.textTertiary.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      AppIcons.delete,
-                      color: AppColors.textSecondary,
-                      size: 18,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => _showToc(flatNodes),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      AppIcons.listBullet,
-                      color: AppColors.surface,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCover(WikiDocument doc, String? generatedAt) {
-    final l10n = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            doc.themeTitle,
-            style: AppTheme.largeTitle.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (generatedAt != null)
-            Text(
-              l10n.wikiGeneratedAt(generatedAt),
-              style: AppTheme.caption1.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
-          const SizedBox(height: 8),
-          Container(
-            width: 48,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -452,6 +248,389 @@ class _TreeSelector extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Wiki 目录页（书籍封面 + 层级目录）。
+class _WikiCatalogView extends StatelessWidget {
+  const _WikiCatalogView({
+    required this.document,
+    required this.meta,
+    required this.onOpenChapter,
+    required this.onExport,
+    required this.onDelete,
+  });
+
+  final WikiDocument document;
+  final WikiMeta? meta;
+  final ValueChanged<String> onOpenChapter;
+  final VoidCallback onExport;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final flatNodes = document.flatten();
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            AppSp.screenPadding,
+            24,
+            AppSp.screenPadding,
+            32 + MediaQuery.of(context).padding.bottom,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              // 封面
+              Text(
+                document.themeTitle,
+                style: AppTheme.largeTitle.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (meta != null)
+                Text(
+                  l10n.wikiGeneratedAt(meta!.generatedAt),
+                  style: AppTheme.caption1.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              const SizedBox(height: 16),
+              // 操作按钮
+              Row(
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: onExport,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.textTertiary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            AppIcons.share,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.wikiExportAction,
+                            style: AppTheme.body.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: onDelete,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.destructive.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            AppIcons.delete,
+                            size: 16,
+                            color: AppColors.destructive,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.delete,
+                            style: AppTheme.body.copyWith(
+                              color: AppColors.destructive,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // 目录标题
+              Text(
+                l10n.wikiTocTitle,
+                style: AppTheme.title1.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ]),
+          ),
+        ),
+        // 目录列表
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            AppSp.screenPadding,
+            0,
+            AppSp.screenPadding,
+            32 + MediaQuery.of(context).padding.bottom,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final node = flatNodes[index];
+                return _CatalogItem(
+                  node: node,
+                  onTap: () => onOpenChapter(node.nodeId),
+                );
+              },
+              childCount: flatNodes.length,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CatalogItem extends StatelessWidget {
+  const _CatalogItem({
+    required this.node,
+    required this.onTap,
+  });
+
+  final WikiNode node;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: AppColors.textTertiary.withValues(alpha: 0.1),
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(width: (node.depth - 1) * 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    node.title,
+                    style: AppTheme.body.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight:
+                          node.depth <= 2 ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: node.depth == 1 ? 17 : 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${node.messages.length} 条消息',
+                    style: AppTheme.caption1.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              AppIcons.chevronRight,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 章节阅读页。
+class _WikiChapterView extends StatelessWidget {
+  const _WikiChapterView({
+    required this.node,
+    required this.hasPrevious,
+    required this.hasNext,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onBack,
+  });
+
+  final WikiNode node;
+  final bool hasPrevious;
+  final bool hasNext;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      children: [
+        // 顶部导航
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Row(
+              children: [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: onBack,
+                  child: Icon(
+                    AppIcons.back,
+                    color: AppColors.textPrimary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    node.title,
+                    style: AppTheme.headline.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // 内容
+        Expanded(
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSp.screenPadding,
+                  16,
+                  AppSp.screenPadding,
+                  24,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Text(
+                      node.title,
+                      style: AppTheme.title1.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    for (final message in node.messages)
+                      _WikiMessageView(message: message),
+                  ]),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // 底部上一章/下一章
+        SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSp.screenPadding,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.textTertiary.withValues(alpha: 0.1),
+                  width: 0.5,
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: hasPrevious ? onPrevious : null,
+                  child: Row(
+                    children: [
+                      Icon(
+                        AppIcons.chevronLeft,
+                        size: 16,
+                        color: hasPrevious
+                            ? AppColors.accent
+                            : AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        l10n.wikiPreviousChapter,
+                        style: AppTheme.body.copyWith(
+                          color: hasPrevious
+                              ? AppColors.accent
+                              : AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: hasNext ? onNext : null,
+                  child: Row(
+                    children: [
+                      Text(
+                        l10n.wikiNextChapter,
+                        style: AppTheme.body.copyWith(
+                          color: hasNext
+                              ? AppColors.accent
+                              : AppColors.textTertiary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        AppIcons.chevronRight,
+                        size: 16,
+                        color: hasNext
+                            ? AppColors.accent
+                            : AppColors.textTertiary,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -513,63 +692,6 @@ class _EmptyWikiView extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _WikiSection extends StatelessWidget {
-  const _WikiSection({
-    super.key,
-    required this.node,
-  });
-
-  final WikiNode node;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 28, bottom: 12),
-          child: Text(
-            node.title,
-            style: _headingStyle(),
-          ),
-        ),
-        for (final message in node.messages)
-          _WikiMessageView(message: message),
-      ],
-    );
-  }
-
-  TextStyle _headingStyle() {
-    final baseStyle = AppTheme.title1;
-    switch (node.headingLevel) {
-      case 1:
-        return baseStyle.copyWith(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
-        );
-      case 2:
-        return baseStyle.copyWith(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        );
-      case 3:
-        return baseStyle.copyWith(
-          fontSize: 19,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        );
-      default:
-        return baseStyle.copyWith(
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
-        );
-    }
   }
 }
 
