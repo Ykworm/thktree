@@ -23,7 +23,7 @@ import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/doc_split/doc_split_input_screen.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
-import 'package:thk_tree/ui/features/wiki/wiki_reader_controller.dart';
+
 import 'package:thk_tree/ui/features/wiki/wiki_reader_view.dart';
 
 // ---------------------------------------------------------------------------
@@ -92,20 +92,6 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               );
             },
             child: Text(l10n.mergeAndCreate),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() => _selectedTab = _DetailTab.wiki);
-              final controller = ref.read(
-                wikiReaderControllerProvider(widget.themeId).notifier,
-              );
-              final state = ref.read(wikiReaderControllerProvider(widget.themeId)).value;
-              if (state != null && state.trees.isNotEmpty) {
-                controller.generateWiki(state.trees.first.rootNode.nodeId);
-              }
-            },
-            child: Text(l10n.wikiGenerateAction),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
@@ -322,9 +308,21 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             key: const ValueKey('doc_split_button'),
             padding: EdgeInsets.zero,
             onPressed: _onImportDocSplit,
-            child: const Icon(AppIcons.docSplit),
+            child: Icon(
+              AppIcons.docSplit,
+              color: AppColors.textSecondary,
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
+          Expanded(
+            child: CupertinoSearchTextField(
+              key: const ValueKey('tree_title_search'),
+              controller: _titleSearchController,
+              placeholder: l10n.treeTitleSearchHint,
+              onChanged: (value) => setState(() => _titleQuery = value),
+            ),
+          ),
+          const SizedBox(width: 8),
           CupertinoButton(
             key: const ValueKey('add_node_button'),
             padding: EdgeInsets.zero,
@@ -335,7 +333,10 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   .read(themeDetailControllerProvider(widget.themeId).notifier)
                   .createRootChatNode(title: title);
             },
-            child: Icon(AppIcons.add),
+            child: Icon(
+              AppIcons.add,
+              color: AppColors.accent,
+            ),
           ),
         ],
       ),
@@ -377,21 +378,6 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
           child: Column(
             children: [
               treeToolbar,
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSp.screenPadding,
-                  0,
-                  AppSp.screenPadding,
-                  8,
-                ),
-                child: CupertinoSearchTextField(
-                  key: const ValueKey('tree_title_search'),
-                  controller: _titleSearchController,
-                  placeholder: l10n.treeTitleSearchHint,
-                  onChanged: (value) =>
-                      setState(() => _titleQuery = value),
-                ),
-              ),
               Expanded(
                 child: roots.isEmpty
                     ? Center(
