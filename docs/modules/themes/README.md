@@ -32,7 +32,7 @@
 | 主题详情 overflow menu | ✅ 完成 | 2026-07-04 | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
 | 合并 & 创建新 Chat | ✅ 完成 | 2026-07-09 | 选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree 范围（chat 页入口限当前树，tree 页入口可跨树），详见 [spec](specs/merge-chat.md) |
 | 树页节点标题搜索 | ✅ 完成 | 2026-07-17 | `ThemeDetailScreen` 顶部按 `NodeEntity.title` 本地过滤；命中 + 祖先路径；搜索态禁拖拽、强制展开；纯函数 `tree_title_filter.dart` |
-| Tree/Wiki 双 tab | ✅ 完成 | 2026-07-19 | `ThemeDetailScreen` 导航栏 middle 放 Tree/Wiki segmented 切换；tree tab 顶部一行整合 doc split / 搜索 / add node；overflow menu 只保留树级全局操作；Wiki tab 由 wiki 模块提供阅读器 |
+| Tree/Wiki 双 tab | ✅ 完成 | 2026-07-19 | `ThemeDetailScreen` 导航栏 middle 放 Tree/Wiki segmented 切换；tree tab 顶部一行整合 doc split / 搜索 / add node；overflow menu 按 tab 感知：tree tab 提供刷新 / 展开折叠 / 合并创建，wiki tab 提供生成 / 重新生成 / 导出 / 删除；Wiki tab 由 wiki 模块提供阅读器 |
 
 ## 3. 代码文件
 
