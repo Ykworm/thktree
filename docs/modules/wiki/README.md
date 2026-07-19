@@ -19,15 +19,16 @@
 
 ## 2. 存储格式
 
-生成后的 wiki 快照目录结构：
+Wiki 以 **单个 tree**（root node 及其子孙）为单位生成。一个 theme 下可存在多个 wiki 快照：
 
 ```text
 themes/{themeId}/
   wiki/
-    wiki.meta.json      # 快照元数据（生成时间、源 tree updatedAt、版本）
-    index.md            # 封面 + 目录
-    {nodeId}.md         # 每个节点一个文件
-    assets/             # 图片等附件
+    {rootNodeId}/
+      wiki.meta.json    # 快照元数据
+      index.md          # 封面 + 目录
+      {nodeId}.md       # 每个节点一个文件
+      assets/           # 图片等附件
 ```
 
 `wiki.meta.json` 示例：
@@ -36,6 +37,8 @@ themes/{themeId}/
 {
   "schema": "wiki_meta/v1",
   "themeId": "thm_...",
+  "themeTitle": "My Theme",
+  "rootNodeId": "nd_...",
   "generatedAt": "2026-07-19T12:00:00.000Z",
   "sourceUpdatedAt": "2026-07-19T11:30:00.000Z",
   "nodeCount": 12
@@ -46,8 +49,9 @@ themes/{themeId}/
 
 | Feature | 状态 | 最后更新 | 备注 |
 |---------|------|----------|------|
-| Wiki 快照生成 | ✅ 完成 | 2026-07-19 | WikiStore.generateWiki() |
+| Per-tree Wiki 快照生成 | ✅ 完成 | 2026-07-19 | 以 root node 为单位生成 `wiki/{rootNodeId}/` |
 | Wiki 阅读器 | ✅ 完成 | 2026-07-19 | ThemeDetailScreen Wiki tab |
+| Tree 选择器 | ✅ 完成 | 2026-07-19 | 多 tree 时顶部横向切换 |
 | 层级 TOC | ✅ 完成 | 2026-07-19 | 底部 sheet，当前位置高亮 |
 | 阅读进度 | ✅ 完成 | 2026-07-19 | 顶部细进度条 |
 | 导出 zip | ✅ 完成 | 2026-07-19 | WikiExportService |

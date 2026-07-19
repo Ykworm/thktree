@@ -141,7 +141,7 @@ KIMI、MIMO、DeepSeek、豆包（模型级）、**xAI Grok** 支持原生联网
 
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
-| Tree 转 Wiki 快照 | wiki | ✅ 完成 | 2026-07-19 | [README](modules/wiki/README.md) | — | `lib/data/services/wiki_store.dart` + `lib/data/services/wiki_service.dart` + `lib/ui/features/wiki/` | ThemeDetailScreen 新增 Tree/Wiki 双 tab；生成独立 `themes/{themeId}/wiki/` 快照；App 内电子书阅读（连续长文 + 层级 TOC + 阅读进度） |
+| Tree 转 Wiki 快照 | wiki | ✅ 完成 | 2026-07-19 | [README](modules/wiki/README.md) | — | `lib/data/services/wiki_store.dart` + `lib/data/services/wiki_service.dart` + `lib/ui/features/wiki/` | ThemeDetailScreen 新增 Tree/Wiki 双 tab；以单个 tree（root node）为单位生成 `wiki/{rootNodeId}/` 快照；App 内电子书阅读（连续长文 + 层级 TOC + 阅读进度 + tree 选择器） |
 | Wiki 导出 zip | wiki | ✅ 完成 | 2026-07-19 | [README](modules/wiki/README.md) | — | `lib/data/services/wiki_export_service.dart` | 将 wiki 快照打包为 zip 并通过系统分享面板导出 |
 
 ---
