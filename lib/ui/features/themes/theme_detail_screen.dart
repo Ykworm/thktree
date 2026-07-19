@@ -23,8 +23,11 @@ import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/doc_split/doc_split_input_screen.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
-
+import 'package:thk_tree/data/services/wiki_export_service.dart';
+import 'package:thk_tree/ui/features/wiki/wiki_reader_controller.dart';
 import 'package:thk_tree/ui/features/wiki/wiki_reader_view.dart';
+import 'package:path/path.dart' as p;
+import 'package:share_plus/share_plus.dart';
 
 // ---------------------------------------------------------------------------
 // ThemeDetailScreen
@@ -62,38 +65,90 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
 
   void _showOverflowMenu() {
     final l10n = AppLocalizations.of(context)!;
+    final actions = <Widget>[];
+
+    if (_selectedTab == _DetailTab.tree) {
+      actions.addAll([
+        CupertinoActionSheetAction(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ref
+                .read(themeDetailControllerProvider(widget.themeId).notifier)
+                .refresh();
+          },
+          child: Text(l10n.refresh),
+        ),
+        CupertinoActionSheetAction(
+          onPressed: () {
+            Navigator.of(context).pop();
+            _collapsedIds.isEmpty ? _collapseAll() : _expandAll();
+          },
+          child: Text(
+            _collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll,
+          ),
+        ),
+        CupertinoActionSheetAction(
+          onPressed: () {
+            Navigator.of(context).pop();
+            context.push(
+              '/themes/${widget.themeId}/full-tree?multiSelect=true',
+            );
+          },
+          child: Text(l10n.mergeAndCreate),
+        ),
+      ]);
+    } else {
+      final wikiState = ref.read(wikiReaderControllerProvider(widget.themeId)).value;
+      final selected = wikiState?.selectedTree;
+      if (selected != null) {
+        final rootNodeId = selected.rootNode.nodeId;
+        if (selected.hasWiki) {
+          actions.addAll([
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ref
+                    .read(wikiReaderControllerProvider(widget.themeId).notifier)
+                    .generateWiki(rootNodeId);
+              },
+              child: Text(l10n.wikiRegenerateAction),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _exportWiki(rootNodeId);
+              },
+              child: Text(l10n.wikiExportAction),
+            ),
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                Navigator.of(context).pop();
+                _confirmDeleteWiki(rootNodeId);
+              },
+              child: Text(l10n.delete),
+            ),
+          ]);
+        } else {
+          actions.add(
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ref
+                    .read(wikiReaderControllerProvider(widget.themeId).notifier)
+                    .generateWiki(rootNodeId);
+              },
+              child: Text(l10n.wikiGenerateAction),
+            ),
+          );
+        }
+      }
+    }
+
     showCupertinoModalPopup(
       context: context,
       builder: (context) => CupertinoActionSheet(
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ref
-                  .read(themeDetailControllerProvider(widget.themeId).notifier)
-                  .refresh();
-            },
-            child: Text(l10n.refresh),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _collapsedIds.isEmpty ? _collapseAll() : _expandAll();
-            },
-            child: Text(
-              _collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll,
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.push(
-                '/themes/${widget.themeId}/full-tree?multiSelect=true',
-              );
-            },
-            child: Text(l10n.mergeAndCreate),
-          ),
-        ],
+        actions: actions,
         cancelButton: CupertinoActionSheetAction(
           isDestructiveAction: true,
           onPressed: () => Navigator.of(context).pop(),
@@ -101,6 +156,72 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportWiki(String rootNodeId) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final paths = await ref.read(appPathsProvider.future);
+      final wikiDir = Directory(p.join(
+        paths.themesDir.path,
+        widget.themeId,
+        'wiki',
+        rootNodeId,
+      ));
+      final themeTitle = ref
+          .read(themeDetailControllerProvider(widget.themeId))
+          .value
+          ?.themeTitle ?? '';
+      final zipFile = await const WikiExportService().exportWiki(
+        wikiDir: wikiDir,
+        themeTitle: themeTitle,
+      );
+      await Share.shareXFiles(
+        [XFile(zipFile.path)],
+        sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      showCupertinoDialog<void>(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          content: Text(l10n.wikiExportFailed(e.toString())),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.ok),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteWiki(String rootNodeId) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(l10n.wikiDeleteTitle),
+        content: Text(l10n.wikiDeleteConfirm),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref
+        .read(wikiReaderControllerProvider(widget.themeId).notifier)
+        .deleteWiki(rootNodeId);
   }
 
   void _collapseAll() {
