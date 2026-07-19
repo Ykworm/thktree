@@ -2606,6 +2606,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next'**
   String get wikiNextChapter;
+
+  /// Wiki tree selector bottom sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Select Tree'**
+  String get wikiSelectTree;
 }
 
 class _AppLocalizationsDelegate

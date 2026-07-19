@@ -1380,4 +1380,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wikiNextChapter => '下一章';
+
+  @override
+  String get wikiSelectTree => '选择 Tree';
 }

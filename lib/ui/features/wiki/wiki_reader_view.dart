@@ -212,41 +212,167 @@ class _TreeSelector extends StatelessWidget {
   final String selectedRootNodeId;
   final ValueChanged<String> onSelect;
 
+  void _showTreePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 12),
+                child: Container(
+                  width: 36,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.textTertiary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2.5),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text(
+                  l10n.wikiSelectTree,
+                  style: AppTheme.headline.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.fromLTRB(
+                    AppSp.screenPadding,
+                    0,
+                    AppSp.screenPadding,
+                    16,
+                  ),
+                  itemCount: trees.length,
+                  itemBuilder: (context, index) {
+                    final tree = trees[index];
+                    final selected = tree.rootNode.nodeId == selectedRootNodeId;
+                    return CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        onSelect(tree.rootNode.nodeId);
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 4,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tree.rootNode.title,
+                                    style: AppTheme.body.copyWith(
+                                      color: selected
+                                          ? AppColors.accent
+                                          : AppColors.textPrimary,
+                                      fontWeight: selected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (tree.hasWiki)
+                                    Text(
+                                      l10n.wikiGeneratedAt(
+                                          tree.meta?.generatedAt ?? ''),
+                                      style: AppTheme.caption1.copyWith(
+                                        color: AppColors.textTertiary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (selected)
+                              Icon(
+                                AppIcons.check,
+                                size: 18,
+                                color: AppColors.accent,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: AppSp.screenPadding),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: trees.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final tree = trees[index];
-          final selected = tree.rootNode.nodeId == selectedRootNodeId;
-          return CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () => onSelect(tree.rootNode.nodeId),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.accent
-                    : AppColors.textTertiary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
+    final selectedTree = trees.firstWhere(
+      (t) => t.rootNode.nodeId == selectedRootNodeId,
+      orElse: () => trees.first,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSp.screenPadding,
+        8,
+        AppSp.screenPadding,
+        8,
+      ),
+      child: CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: () => _showTreePicker(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.textTertiary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                AppIcons.branch,
+                size: 18,
+                color: AppColors.textSecondary,
               ),
-              child: Text(
-                tree.rootNode.title,
-                style: AppTheme.body.copyWith(
-                  color: selected ? AppColors.surface : AppColors.textPrimary,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selectedTree.rootNode.title,
+                  style: AppTheme.body.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          );
-        },
+              Icon(
+                AppIcons.chevronDown,
+                size: 14,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -268,6 +394,102 @@ class _WikiCatalogView extends StatelessWidget {
   final VoidCallback onExport;
   final VoidCallback onDelete;
 
+  Widget _buildCover(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          document.themeTitle,
+          style: AppTheme.largeTitle.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (meta != null)
+          Text(
+            l10n.wikiGeneratedAt(meta!.generatedAt),
+            style: AppTheme.caption1.copyWith(
+              color: AppColors.textTertiary,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActions(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: onExport,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    AppIcons.share,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    l10n.wikiExportAction,
+                    style: AppTheme.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: onDelete,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.destructive.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    AppIcons.delete,
+                    size: 16,
+                    color: AppColors.destructive,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    l10n.delete,
+                    style: AppTheme.body.copyWith(
+                      color: AppColors.destructive,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -283,123 +505,33 @@ class _WikiCatalogView extends StatelessWidget {
             32 + MediaQuery.of(context).padding.bottom,
           ),
           sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              // 封面
-              Text(
-                document.themeTitle,
-                style: AppTheme.largeTitle.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (meta != null)
-                Text(
-                  l10n.wikiGeneratedAt(meta!.generatedAt),
-                  style: AppTheme.caption1.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              const SizedBox(height: 16),
-              // 操作按钮
-              Row(
-                children: [
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: onExport,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.textTertiary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            AppIcons.share,
-                            size: 16,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            l10n.wikiExportAction,
-                            style: AppTheme.body.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: onDelete,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.destructive.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            AppIcons.delete,
-                            size: 16,
-                            color: AppColors.destructive,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            l10n.delete,
-                            style: AppTheme.body.copyWith(
-                              color: AppColors.destructive,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // 目录标题
-              Text(
-                l10n.wikiTocTitle,
-                style: AppTheme.title1.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ]),
-          ),
-        ),
-        // 目录列表
-        SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            AppSp.screenPadding,
-            0,
-            AppSp.screenPadding,
-            32 + MediaQuery.of(context).padding.bottom,
-          ),
-          sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                final node = flatNodes[index];
+                if (index == 0) {
+                  return _buildCover(l10n);
+                }
+                if (index == 1) {
+                  return _buildActions(l10n);
+                }
+                if (index == 2) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 24, bottom: 12),
+                    child: Text(
+                      l10n.wikiTocTitle,
+                      style: AppTheme.title1.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }
+                final node = flatNodes[index - 3];
                 return _CatalogItem(
                   node: node,
                   onTap: () => onOpenChapter(node.nodeId),
                 );
               },
-              childCount: flatNodes.length,
+              childCount: flatNodes.length + 3,
             ),
           ),
         ),

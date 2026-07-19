@@ -1440,4 +1440,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wikiNextChapter => 'Next';
+
+  @override
+  String get wikiSelectTree => 'Select Tree';
 }

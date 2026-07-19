@@ -1930,5 +1930,9 @@
   "wikiNextChapter": "Next",
   "@wikiNextChapter": {
     "description": "Wiki chapter view next chapter button"
+  },
+  "wikiSelectTree": "Select Tree",
+  "@wikiSelectTree": {
+    "description": "Wiki tree selector bottom sheet title"
   }
 }

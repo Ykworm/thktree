@@ -1044,5 +1044,9 @@
   "wikiNextChapter": "下一章",
   "@wikiNextChapter": {
     "description": "Wiki 章节阅读页下一章按钮"
+  },
+  "wikiSelectTree": "选择 Tree",
+  "@wikiSelectTree": {
+    "description": "Wiki tree 选择器底部 sheet 标题"
   }
 }
