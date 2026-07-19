@@ -1851,5 +1851,76 @@
   "mergeSelectGuideTapMerge": "Tap \"Merge & Create New Chat\" at the bottom when done",
   "@mergeSelectGuideTapMerge": {
     "description": "Multi-select merge guide: tap bottom button after selecting"
+  },
+  "wikiTabLabel": "Wiki",
+  "@wikiTabLabel": {
+    "description": "ThemeDetailScreen Wiki tab label"
+  },
+  "treeTabLabel": "Tree",
+  "@treeTabLabel": {
+    "description": "ThemeDetailScreen Tree tab label"
+  },
+  "wikiEmptyTitle": "No Wiki Yet",
+  "@wikiEmptyTitle": {
+    "description": "Wiki tab empty state title"
+  },
+  "wikiEmptySubtitle": "Turn conversations in \"{title}\" into a readable ebook",
+  "@wikiEmptySubtitle": {
+    "description": "Wiki tab empty state subtitle",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "wikiGenerateButton": "Generate Wiki",
+  "@wikiGenerateButton": {
+    "description": "Wiki tab empty state primary button"
+  },
+  "wikiGenerateAction": "Generate Wiki",
+  "@wikiGenerateAction": {
+    "description": "Tree tab overflow menu generate wiki action"
+  },
+  "wikiRegenerateAction": "Regenerate Wiki",
+  "@wikiRegenerateAction": {
+    "description": "Wiki tab regenerate action"
+  },
+  "wikiTocTitle": "Contents",
+  "@wikiTocTitle": {
+    "description": "Wiki table of contents sheet title"
+  },
+  "wikiLoadFailed": "Failed to load wiki",
+  "@wikiLoadFailed": {
+    "description": "Wiki content load error message"
+  },
+  "wikiDeleteTitle": "Delete Wiki",
+  "@wikiDeleteTitle": {
+    "description": "Delete wiki confirmation dialog title"
+  },
+  "wikiDeleteConfirm": "This will delete the generated wiki snapshot for this theme. Tree data is not affected.",
+  "@wikiDeleteConfirm": {
+    "description": "Delete wiki confirmation dialog content"
+  },
+  "wikiGeneratedAt": "Generated at {time}",
+  "@wikiGeneratedAt": {
+    "description": "Wiki cover generated time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wikiExportAction": "Export Wiki",
+  "@wikiExportAction": {
+    "description": "Wiki export zip button"
+  },
+  "wikiExportFailed": "Failed to export wiki: {error}",
+  "@wikiExportFailed": {
+    "description": "Wiki export error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

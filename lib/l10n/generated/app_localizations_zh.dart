@@ -1326,4 +1326,52 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mergeSelectGuideTapMerge => '选好后点击底部「合并 & 创建新 Chat」';
+
+  @override
+  String get wikiTabLabel => 'Wiki';
+
+  @override
+  String get treeTabLabel => 'Tree';
+
+  @override
+  String get wikiEmptyTitle => '还没有 Wiki';
+
+  @override
+  String wikiEmptySubtitle(String title) {
+    return '把「$title」的对话整理成一本可阅读的电子书';
+  }
+
+  @override
+  String get wikiGenerateButton => '生成 Wiki';
+
+  @override
+  String get wikiGenerateAction => '生成 Wiki';
+
+  @override
+  String get wikiRegenerateAction => '重新生成 Wiki';
+
+  @override
+  String get wikiTocTitle => '目录';
+
+  @override
+  String get wikiLoadFailed => '加载 Wiki 失败';
+
+  @override
+  String get wikiDeleteTitle => '删除 Wiki';
+
+  @override
+  String get wikiDeleteConfirm => '将删除当前 theme 已生成的 Wiki 快照，tree 数据不受影响。';
+
+  @override
+  String wikiGeneratedAt(String time) {
+    return '生成于 $time';
+  }
+
+  @override
+  String get wikiExportAction => '导出 Wiki';
+
+  @override
+  String wikiExportFailed(String error) {
+    return '导出 Wiki 失败：$error';
+  }
 }

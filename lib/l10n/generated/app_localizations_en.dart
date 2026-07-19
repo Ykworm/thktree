@@ -1385,4 +1385,53 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get mergeSelectGuideTapMerge =>
       'Tap \"Merge & Create New Chat\" at the bottom when done';
+
+  @override
+  String get wikiTabLabel => 'Wiki';
+
+  @override
+  String get treeTabLabel => 'Tree';
+
+  @override
+  String get wikiEmptyTitle => 'No Wiki Yet';
+
+  @override
+  String wikiEmptySubtitle(String title) {
+    return 'Turn conversations in \"$title\" into a readable ebook';
+  }
+
+  @override
+  String get wikiGenerateButton => 'Generate Wiki';
+
+  @override
+  String get wikiGenerateAction => 'Generate Wiki';
+
+  @override
+  String get wikiRegenerateAction => 'Regenerate Wiki';
+
+  @override
+  String get wikiTocTitle => 'Contents';
+
+  @override
+  String get wikiLoadFailed => 'Failed to load wiki';
+
+  @override
+  String get wikiDeleteTitle => 'Delete Wiki';
+
+  @override
+  String get wikiDeleteConfirm =>
+      'This will delete the generated wiki snapshot for this theme. Tree data is not affected.';
+
+  @override
+  String wikiGeneratedAt(String time) {
+    return 'Generated at $time';
+  }
+
+  @override
+  String get wikiExportAction => 'Export Wiki';
+
+  @override
+  String wikiExportFailed(String error) {
+    return 'Failed to export wiki: $error';
+  }
 }

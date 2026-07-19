@@ -965,5 +965,76 @@
   "mergeSelectGuideTapMerge": "选好后点击底部「合并 & 创建新 Chat」",
   "@mergeSelectGuideTapMerge": {
     "description": "多选合并教学提示：选完后点底部按钮"
+  },
+  "wikiTabLabel": "Wiki",
+  "@wikiTabLabel": {
+    "description": "ThemeDetailScreen Wiki tab 标签"
+  },
+  "treeTabLabel": "Tree",
+  "@treeTabLabel": {
+    "description": "ThemeDetailScreen Tree tab 标签"
+  },
+  "wikiEmptyTitle": "还没有 Wiki",
+  "@wikiEmptyTitle": {
+    "description": "Wiki tab 空态标题"
+  },
+  "wikiEmptySubtitle": "把「{title}」的对话整理成一本可阅读的电子书",
+  "@wikiEmptySubtitle": {
+    "description": "Wiki tab 空态副标题",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "wikiGenerateButton": "生成 Wiki",
+  "@wikiGenerateButton": {
+    "description": "Wiki tab 空态主按钮"
+  },
+  "wikiGenerateAction": "生成 Wiki",
+  "@wikiGenerateAction": {
+    "description": "Tree tab overflow menu 生成 Wiki 入口"
+  },
+  "wikiRegenerateAction": "重新生成 Wiki",
+  "@wikiRegenerateAction": {
+    "description": "Wiki tab 重新生成入口"
+  },
+  "wikiTocTitle": "目录",
+  "@wikiTocTitle": {
+    "description": "Wiki 目录底部 sheet 标题"
+  },
+  "wikiLoadFailed": "加载 Wiki 失败",
+  "@wikiLoadFailed": {
+    "description": "Wiki 内容加载失败提示"
+  },
+  "wikiDeleteTitle": "删除 Wiki",
+  "@wikiDeleteTitle": {
+    "description": "删除 Wiki 确认弹窗标题"
+  },
+  "wikiDeleteConfirm": "将删除当前 theme 已生成的 Wiki 快照，tree 数据不受影响。",
+  "@wikiDeleteConfirm": {
+    "description": "删除 Wiki 确认弹窗内容"
+  },
+  "wikiGeneratedAt": "生成于 {time}",
+  "@wikiGeneratedAt": {
+    "description": "Wiki 封面显示生成时间",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wikiExportAction": "导出 Wiki",
+  "@wikiExportAction": {
+    "description": "Wiki 导出 zip 按钮"
+  },
+  "wikiExportFailed": "导出 Wiki 失败：{error}",
+  "@wikiExportFailed": {
+    "description": "Wiki 导出失败提示",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

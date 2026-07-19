@@ -2510,6 +2510,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap \"Merge & Create New Chat\" at the bottom when done'**
   String get mergeSelectGuideTapMerge;
+
+  /// ThemeDetailScreen Wiki tab label
+  ///
+  /// In en, this message translates to:
+  /// **'Wiki'**
+  String get wikiTabLabel;
+
+  /// ThemeDetailScreen Tree tab label
+  ///
+  /// In en, this message translates to:
+  /// **'Tree'**
+  String get treeTabLabel;
+
+  /// Wiki tab empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'No Wiki Yet'**
+  String get wikiEmptyTitle;
+
+  /// Wiki tab empty state subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Turn conversations in \"{title}\" into a readable ebook'**
+  String wikiEmptySubtitle(String title);
+
+  /// Wiki tab empty state primary button
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Wiki'**
+  String get wikiGenerateButton;
+
+  /// Tree tab overflow menu generate wiki action
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Wiki'**
+  String get wikiGenerateAction;
+
+  /// Wiki tab regenerate action
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate Wiki'**
+  String get wikiRegenerateAction;
+
+  /// Wiki table of contents sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Contents'**
+  String get wikiTocTitle;
+
+  /// Wiki content load error message
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load wiki'**
+  String get wikiLoadFailed;
+
+  /// Delete wiki confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Wiki'**
+  String get wikiDeleteTitle;
+
+  /// Delete wiki confirmation dialog content
+  ///
+  /// In en, this message translates to:
+  /// **'This will delete the generated wiki snapshot for this theme. Tree data is not affected.'**
+  String get wikiDeleteConfirm;
+
+  /// Wiki cover generated time
+  ///
+  /// In en, this message translates to:
+  /// **'Generated at {time}'**
+  String wikiGeneratedAt(String time);
+
+  /// Wiki export zip button
+  ///
+  /// In en, this message translates to:
+  /// **'Export Wiki'**
+  String get wikiExportAction;
+
+  /// Wiki export error message
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export wiki: {error}'**
+  String wikiExportFailed(String error);
 }
 
 class _AppLocalizationsDelegate

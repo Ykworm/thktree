@@ -109,6 +109,12 @@ class AppIcons {
   /// Document (view logs)
   static const IconData document = SFIcons.sf_document;
 
+  /// Book / wiki / ebook
+  static const IconData book = SFIcons.sf_book;
+
+  /// List / table of contents
+  static const IconData listBullet = SFIcons.sf_list_bullet;
+
   /// Moon fill (dark mode on)
   static const IconData moonFill = SFIcons.sf_moon_fill;
 

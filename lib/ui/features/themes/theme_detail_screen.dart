@@ -24,10 +24,14 @@ import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
 import 'package:thk_tree/ui/features/doc_split/doc_split_input_screen.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
+import 'package:thk_tree/ui/features/wiki/wiki_reader_controller.dart';
+import 'package:thk_tree/ui/features/wiki/wiki_reader_view.dart';
 
 // ---------------------------------------------------------------------------
 // ThemeDetailScreen
 // ---------------------------------------------------------------------------
+
+enum _DetailTab { tree, wiki }
 
 class ThemeDetailScreen extends ConsumerStatefulWidget {
   const ThemeDetailScreen({
@@ -49,6 +53,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   final Set<String> _collapsedIds = {};
   final TextEditingController _titleSearchController = TextEditingController();
   String _titleQuery = '';
+  _DetailTab _selectedTab = _DetailTab.tree;
 
   @override
   void dispose() {
@@ -88,6 +93,16 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               );
             },
             child: Text(l10n.mergeAndCreate),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() => _selectedTab = _DetailTab.wiki);
+              ref
+                  .read(wikiReaderControllerProvider(widget.themeId).notifier)
+                  .generateWiki();
+            },
+            child: Text(l10n.wikiGenerateAction),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
@@ -206,24 +221,6 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         ref.watch(themeDetailControllerProvider(widget.themeId));
     return detailAsync.when(
       data: (data) {
-        final allRoots = data.nodes
-            .where((n) => n.parentId == null)
-            .toList(growable: false);
-        allRoots.sort(_compareNodes);
-
-        final visibleIds =
-            visibleNodeIdsForTitleQuery(data.nodes, _titleQuery);
-        final searchActive = visibleIds != null;
-        // Search forces expand along visible path (ignore user collapse).
-        final effectiveCollapsed =
-            searchActive ? const <String>{} : _collapsedIds;
-
-        final roots = searchActive
-            ? allRoots
-                .where((n) => visibleIds.contains(n.nodeId))
-                .toList(growable: false)
-            : allRoots;
-
         return CupertinoPageScaffold(
           backgroundColor: AppColors.pageBg,
           navigationBar: ThkNavBar.inline(
@@ -244,151 +241,49 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CupertinoButton(
-                  key: const ValueKey('doc_split_button'),
-                  padding: EdgeInsets.zero,
-                  onPressed: _onImportDocSplit,
-                  child: const Icon(AppIcons.docSplit),
-                ),
+                if (_selectedTab == _DetailTab.tree)
+                  CupertinoButton(
+                    key: const ValueKey('doc_split_button'),
+                    padding: EdgeInsets.zero,
+                    onPressed: _onImportDocSplit,
+                    child: const Icon(AppIcons.docSplit),
+                  ),
                 CupertinoButton(
                   key: const ValueKey('overflow_menu_button'),
                   padding: EdgeInsets.zero,
                   onPressed: _showOverflowMenu,
                   child: const Icon(AppIcons.more),
                 ),
-                CupertinoButton(
-                  key: const ValueKey('add_node_button'),
-                  padding: EdgeInsets.zero,
-                  onPressed: () async {
-                    final title = await _promptRootTitle(context);
-                    if (title == null) return;
-                    await ref
-                        .read(themeDetailControllerProvider(widget.themeId)
-                            .notifier)
-                        .createRootChatNode(title: title);
-                  },
-                  child: Icon(AppIcons.add),
-                ),
+                if (_selectedTab == _DetailTab.tree)
+                  CupertinoButton(
+                    key: const ValueKey('add_node_button'),
+                    padding: EdgeInsets.zero,
+                    onPressed: () async {
+                      final title = await _promptRootTitle(context);
+                      if (title == null) return;
+                      await ref
+                          .read(themeDetailControllerProvider(widget.themeId)
+                              .notifier)
+                          .createRootChatNode(title: title);
+                    },
+                    child: Icon(AppIcons.add),
+                  ),
               ],
             ),
           ),
-          child: allRoots.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        AppIcons.branch,
-                        size: 40,
-                        color: AppColors.textTertiary,
+          child: Column(
+            children: [
+              _buildTabSwitcher(l10n),
+              Expanded(
+                child: _selectedTab == _DetailTab.tree
+                    ? _buildTreeTab(data)
+                    : WikiReaderView(
+                        themeId: widget.themeId,
+                        themeTitle: data.themeTitle,
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.emptyTree,
-                        style: AppTheme.body.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : SafeArea(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSp.screenPadding,
-                              12,
-                              AppSp.screenPadding,
-                              8,
-                            ),
-                            child: CupertinoSearchTextField(
-                              key: const ValueKey('tree_title_search'),
-                              controller: _titleSearchController,
-                              placeholder: l10n.treeTitleSearchHint,
-                              onChanged: (value) =>
-                                  setState(() => _titleQuery = value),
-                            ),
-                          ),
-                          Expanded(
-                            child: roots.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          AppIcons.search,
-                                          size: 40,
-                                          color: AppColors.textTertiary,
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          l10n.treeTitleSearchNoResults,
-                                          style: AppTheme.body.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : ListView(
-                                    key: const ValueKey('node_list'),
-                                    padding: const EdgeInsets.fromLTRB(
-                                      AppSp.screenPadding,
-                                      4,
-                                      AppSp.screenPadding,
-                                      80,
-                                    ),
-                                    children: [
-                                      DecoratedBox(
-                                        decoration: AppSurfaces.contentCard(
-                                          radius: 14,
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                          child: Column(
-                                            children: [
-                                              for (final root in roots)
-                                                _TreeRowView(
-                                                  themeId: widget.themeId,
-                                                  node: root,
-                                                  allNodes: data.nodes,
-                                                  depth: 0,
-                                                  collapsedIds:
-                                                      effectiveCollapsed,
-                                                  visibleNodeIds:
-                                                      visibleIds,
-                                                  reorderEnabled:
-                                                      !searchActive,
-                                                  onToggleCollapse: (id) {
-                                                    if (searchActive) {
-                                                      return;
-                                                    }
-                                                    setState(() {
-                                                      if (!_collapsedIds
-                                                          .remove(id)) {
-                                                        _collapsedIds
-                                                            .add(id);
-                                                      }
-                                                    });
-                                                  },
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              ),
+            ],
+          ),
         );
       },
       error: (e, st) => CupertinoPageScaffold(
@@ -398,6 +293,226 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
       loading: () => CupertinoPageScaffold(
         navigationBar: ThkNavBar.inline(title: ''),
         child: const Center(child: CupertinoActivityIndicator()),
+      ),
+    );
+  }
+
+  Widget _buildTabSwitcher(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSp.screenPadding,
+        8,
+        AppSp.screenPadding,
+        8,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.textTertiary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _TabButton(
+                label: l10n.treeTabLabel,
+                selected: _selectedTab == _DetailTab.tree,
+                onTap: () => setState(() => _selectedTab = _DetailTab.tree),
+              ),
+            ),
+            Expanded(
+              child: _TabButton(
+                label: l10n.wikiTabLabel,
+                selected: _selectedTab == _DetailTab.wiki,
+                onTap: () => setState(() => _selectedTab = _DetailTab.wiki),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTreeTab(ThemeDetailState data) {
+    final l10n = AppLocalizations.of(context)!;
+    final allRoots = data.nodes
+        .where((n) => n.parentId == null)
+        .toList(growable: false);
+    allRoots.sort(_compareNodes);
+
+    final visibleIds = visibleNodeIdsForTitleQuery(data.nodes, _titleQuery);
+    final searchActive = visibleIds != null;
+    final effectiveCollapsed =
+        searchActive ? const <String>{} : _collapsedIds;
+
+    final roots = searchActive
+        ? allRoots
+            .where((n) => visibleIds.contains(n.nodeId))
+            .toList(growable: false)
+        : allRoots;
+
+    if (allRoots.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.branch,
+              size: 40,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.emptyTree,
+              style: AppTheme.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSp.screenPadding,
+                  4,
+                  AppSp.screenPadding,
+                  8,
+                ),
+                child: CupertinoSearchTextField(
+                  key: const ValueKey('tree_title_search'),
+                  controller: _titleSearchController,
+                  placeholder: l10n.treeTitleSearchHint,
+                  onChanged: (value) =>
+                      setState(() => _titleQuery = value),
+                ),
+              ),
+              Expanded(
+                child: roots.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              AppIcons.search,
+                              size: 40,
+                              color: AppColors.textTertiary,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              l10n.treeTitleSearchNoResults,
+                              style: AppTheme.body.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView(
+                        key: const ValueKey('node_list'),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSp.screenPadding,
+                          4,
+                          AppSp.screenPadding,
+                          80,
+                        ),
+                        children: [
+                          DecoratedBox(
+                            decoration: AppSurfaces.contentCard(
+                              radius: 14,
+                            ),
+                            child: ClipRRect(
+                              borderRadius:
+                                  BorderRadius.circular(14),
+                              child: Column(
+                                children: [
+                                  for (final root in roots)
+                                    _TreeRowView(
+                                      themeId: widget.themeId,
+                                      node: root,
+                                      allNodes: data.nodes,
+                                      depth: 0,
+                                      collapsedIds:
+                                          effectiveCollapsed,
+                                      visibleNodeIds:
+                                          visibleIds,
+                                      reorderEnabled:
+                                          !searchActive,
+                                      onToggleCollapse: (id) {
+                                        if (searchActive) {
+                                          return;
+                                        }
+                                        setState(() {
+                                          if (!_collapsedIds
+                                              .remove(id)) {
+                                            _collapsedIds
+                                                .add(id);
+                                          }
+                                        });
+                                      },
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  const _TabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.surface : null,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.textTertiary.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: AppTheme.body.copyWith(
+            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }
