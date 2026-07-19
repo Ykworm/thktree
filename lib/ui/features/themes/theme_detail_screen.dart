@@ -98,9 +98,13 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               setState(() => _selectedTab = _DetailTab.wiki);
-              ref
-                  .read(wikiReaderControllerProvider(widget.themeId).notifier)
-                  .generateWiki();
+              final controller = ref.read(
+                wikiReaderControllerProvider(widget.themeId).notifier,
+              );
+              final state = ref.read(wikiReaderControllerProvider(widget.themeId)).value;
+              if (state != null && state.trees.isNotEmpty) {
+                controller.generateWiki(state.trees.first.rootNode.nodeId);
+              }
             },
             child: Text(l10n.wikiGenerateAction),
           ),
@@ -305,29 +309,23 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         AppSp.screenPadding,
         8,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.textTertiary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _TabButton(
-                label: l10n.treeTabLabel,
-                selected: _selectedTab == _DetailTab.tree,
-                onTap: () => setState(() => _selectedTab = _DetailTab.tree),
-              ),
-            ),
-            Expanded(
-              child: _TabButton(
-                label: l10n.wikiTabLabel,
-                selected: _selectedTab == _DetailTab.wiki,
-                onTap: () => setState(() => _selectedTab = _DetailTab.wiki),
-              ),
-            ),
-          ],
-        ),
+      child: CupertinoSlidingSegmentedControl<_DetailTab>(
+        groupValue: _selectedTab,
+        onValueChanged: (value) {
+          if (value != null) {
+            setState(() => _selectedTab = value);
+          }
+        },
+        children: {
+          _DetailTab.tree: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(l10n.treeTabLabel),
+          ),
+          _DetailTab.wiki: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(l10n.wikiTabLabel),
+          ),
+        },
       ),
     );
   }
@@ -465,52 +463,6 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                       ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TabButton extends StatelessWidget {
-  const _TabButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.all(4),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.surface : null,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.textTertiary.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: AppTheme.body.copyWith(
-            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),

@@ -10,8 +10,9 @@ import 'package:thk_tree/domain/node.dart';
 
 /// Wiki 快照存储。
 ///
-/// 负责把 theme tree 生成到 `themes/{themeId}/wiki/` 目录，
-/// 以及从该目录读取快照供 App 内阅读器使用。
+/// 负责把 theme 下的单个 tree（root node 及其子孙）生成到
+/// `themes/{themeId}/wiki/{rootNodeId}/` 目录，以及从该目录读取快照
+/// 供 App 内阅读器使用。
 ///
 /// 真相源边界：tree/session.md 是真相源；wiki/ 是派生只读产物。
 class WikiStore {
@@ -19,20 +20,45 @@ class WikiStore {
 
   final Directory themeDir;
 
-  Directory get wikiDir => Directory(p.join(themeDir.path, 'wiki'));
-  File get _metaFile => File(p.join(wikiDir.path, 'wiki.meta.json'));
-  File get _indexFile => File(p.join(wikiDir.path, 'index.md'));
+  Directory get _wikiRootDir => Directory(p.join(themeDir.path, 'wiki'));
 
-  /// 检查当前 theme 是否已生成 wiki 快照。
-  Future<bool> hasWiki() async {
-    return await _metaFile.exists() && await _indexFile.exists();
+  Directory _wikiDirFor(String rootNodeId) =>
+      Directory(p.join(_wikiRootDir.path, rootNodeId));
+
+  File _metaFileFor(String rootNodeId) =>
+      File(p.join(_wikiDirFor(rootNodeId).path, 'wiki.meta.json'));
+
+  File _indexFileFor(String rootNodeId) =>
+      File(p.join(_wikiDirFor(rootNodeId).path, 'index.md'));
+
+  /// 列出当前 theme 下所有已生成 wiki 的 rootNodeId。
+  Future<List<String>> listWikiRootNodeIds() async {
+    if (!await _wikiRootDir.exists()) return const [];
+    final entities = await _wikiRootDir.list(followLinks: false).toList();
+    final result = <String>[];
+    for (final entity in entities) {
+      if (entity is! Directory) continue;
+      final meta = File(p.join(entity.path, 'wiki.meta.json'));
+      final index = File(p.join(entity.path, 'index.md'));
+      if (await meta.exists() && await index.exists()) {
+        result.add(p.basename(entity.path));
+      }
+    }
+    return result;
   }
 
-  /// 读取 wiki 快照元数据。
-  Future<WikiMeta?> readMeta() async {
-    if (!await _metaFile.exists()) return null;
+  /// 检查指定 tree 是否已生成 wiki 快照。
+  Future<bool> hasWiki(String rootNodeId) async {
+    return await _metaFileFor(rootNodeId).exists() &&
+        await _indexFileFor(rootNodeId).exists();
+  }
+
+  /// 读取指定 tree 的 wiki 快照元数据。
+  Future<WikiMeta?> readMeta(String rootNodeId) async {
+    final metaFile = _metaFileFor(rootNodeId);
+    if (!await metaFile.exists()) return null;
     try {
-      final text = await _metaFile.readAsString();
+      final text = await metaFile.readAsString();
       final json = jsonDecode(text) as Map<String, Object?>;
       return WikiMeta.fromJson(json);
     } catch (e) {
@@ -41,12 +67,13 @@ class WikiStore {
     }
   }
 
-  /// 从磁盘读取 wiki 快照，重建 [WikiDocument]。
-  Future<WikiDocument?> readWiki() async {
-    if (!await hasWiki()) return null;
-    final meta = await readMeta();
+  /// 从磁盘读取指定 tree 的 wiki 快照，重建 [WikiDocument]。
+  Future<WikiDocument?> readWiki(String rootNodeId) async {
+    if (!await hasWiki(rootNodeId)) return null;
+    final meta = await readMeta(rootNodeId);
     if (meta == null) return null;
 
+    final wikiDir = _wikiDirFor(rootNodeId);
     final entities = await wikiDir.list(followLinks: false).toList();
     final nodeFiles = entities
         .whereType<File>()
@@ -108,13 +135,15 @@ class WikiStore {
     );
   }
 
-  /// 从 tree 生成 wiki 快照。
+  /// 从单个 tree 生成 wiki 快照。
   ///
+  /// [rootNodeId] 指定要转换的 tree 的根节点。
   /// [themeId] / [themeTitle] 用于元数据。
-  /// [nodes] 为当前 tree 的全部节点。
+  /// [nodes] 为该 root node 及其全部子孙节点。
   /// [readSession] 用于读取每个节点的 session.md。
   /// [resolveImagePath] 把 session 中的相对图片路径解析为绝对路径。
   Future<WikiDocument> generateWiki({
+    required String rootNodeId,
     required String themeId,
     required String themeTitle,
     required List<NodeEntity> nodes,
@@ -122,12 +151,15 @@ class WikiStore {
     required Future<String?> Function(String nodeId, String imagePath)? resolveImagePath,
   }) async {
     final wikiService = const WikiService();
-    final doc = await wikiService.buildWikiDocument(
+    final doc = await wikiService.buildWikiDocumentForTree(
+      rootNodeId: rootNodeId,
       themeId: themeId,
       themeTitle: themeTitle,
       nodes: nodes,
       readSession: readSession,
     );
+
+    final wikiDir = _wikiDirFor(rootNodeId);
 
     // 清空旧 wiki
     if (await wikiDir.exists()) {
@@ -196,6 +228,7 @@ class WikiStore {
       ..writeln('schema: wiki_index/v1')
       ..writeln('themeId: "$themeId"')
       ..writeln('themeTitle: "${_escapeYaml(themeTitle)}"')
+      ..writeln('rootNodeId: "$rootNodeId"')
       ..writeln('generatedAt: "$now"')
       ..writeln('---')
       ..writeln()
@@ -212,24 +245,26 @@ class WikiStore {
     }
     writeToc(doc.root, 0);
 
-    await _indexFile.writeAsString(indexBuffer.toString());
+    await _indexFileFor(rootNodeId).writeAsString(indexBuffer.toString());
 
     // 3. 写 meta
     final meta = WikiMeta(
       schema: 'wiki_meta/v1',
       themeId: themeId,
       themeTitle: themeTitle,
+      rootNodeId: rootNodeId,
       generatedAt: now,
       sourceUpdatedAt: _latestNodeUpdatedAt(nodes),
       nodeCount: flatNodes.length,
     );
-    await _metaFile.writeAsString(jsonEncode(meta.toJson()));
+    await _metaFileFor(rootNodeId).writeAsString(jsonEncode(meta.toJson()));
 
     return doc;
   }
 
-  /// 删除 wiki 快照。
-  Future<void> deleteWiki() async {
+  /// 删除指定 tree 的 wiki 快照。
+  Future<void> deleteWiki(String rootNodeId) async {
+    final wikiDir = _wikiDirFor(rootNodeId);
     if (await wikiDir.exists()) {
       await wikiDir.delete(recursive: true);
     }
@@ -347,6 +382,7 @@ class WikiMeta {
     required this.schema,
     required this.themeId,
     required this.themeTitle,
+    required this.rootNodeId,
     required this.generatedAt,
     required this.sourceUpdatedAt,
     required this.nodeCount,
@@ -355,6 +391,7 @@ class WikiMeta {
   final String schema;
   final String themeId;
   final String themeTitle;
+  final String rootNodeId;
   final String generatedAt;
   final String sourceUpdatedAt;
   final int nodeCount;
@@ -363,6 +400,7 @@ class WikiMeta {
         'schema': schema,
         'themeId': themeId,
         'themeTitle': themeTitle,
+        'rootNodeId': rootNodeId,
         'generatedAt': generatedAt,
         'sourceUpdatedAt': sourceUpdatedAt,
         'nodeCount': nodeCount,
@@ -373,6 +411,7 @@ class WikiMeta {
       schema: json['schema']! as String,
       themeId: json['themeId']! as String,
       themeTitle: json['themeTitle']! as String,
+      rootNodeId: json['rootNodeId']! as String,
       generatedAt: json['generatedAt']! as String,
       sourceUpdatedAt: json['sourceUpdatedAt']! as String,
       nodeCount: (json['nodeCount'] as num).toInt(),

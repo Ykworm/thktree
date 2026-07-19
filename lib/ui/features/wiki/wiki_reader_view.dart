@@ -64,8 +64,6 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
   }
 
   void _updateCurrentSection() {
-    // 简化实现：根据滚动位置估算当前 section。
-    // 更精确的做法需要测量每个 section 的高度，首版先用近似。
     if (_sectionKeys.isEmpty) return;
     final viewportTop = _scrollController.offset;
     String? current;
@@ -75,7 +73,6 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
       final box = context.findRenderObject() as RenderBox?;
       if (box == null) continue;
       final position = box.localToGlobal(Offset.zero);
-      // 大致判断：如果 section 顶部在视口上半部分，认为它是当前 section
       if (position.dy < viewportTop + 200) {
         current = entry.key;
       } else {
@@ -91,11 +88,13 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
     return _sectionKeys.putIfAbsent(nodeId, GlobalKey.new);
   }
 
-  Future<void> _generateWiki() async {
-    await ref.read(wikiReaderControllerProvider(widget.themeId).notifier).generateWiki();
+  Future<void> _generateWiki(String rootNodeId) async {
+    await ref
+        .read(wikiReaderControllerProvider(widget.themeId).notifier)
+        .generateWiki(rootNodeId);
   }
 
-  Future<void> _deleteWiki() async {
+  Future<void> _deleteWiki(String rootNodeId) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
@@ -116,14 +115,21 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
       ),
     );
     if (confirmed != true) return;
-    await ref.read(wikiReaderControllerProvider(widget.themeId).notifier).deleteWiki();
+    await ref
+        .read(wikiReaderControllerProvider(widget.themeId).notifier)
+        .deleteWiki(rootNodeId);
   }
 
-  Future<void> _exportWiki() async {
+  Future<void> _exportWiki(String rootNodeId) async {
     final l10n = AppLocalizations.of(context)!;
     try {
       final paths = await ref.read(appPathsProvider.future);
-      final wikiDir = Directory(p.join(paths.themesDir.path, widget.themeId, 'wiki'));
+      final wikiDir = Directory(p.join(
+        paths.themesDir.path,
+        widget.themeId,
+        'wiki',
+        rootNodeId,
+      ));
       final zipFile = await const WikiExportService().exportWiki(
         wikiDir: wikiDir,
         themeTitle: widget.themeTitle,
@@ -184,137 +190,38 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
 
     return wikiAsync.when(
       data: (state) {
-        if (!state.hasWiki || state.document == null) {
+        if (state.trees.isEmpty) {
           return _EmptyWikiView(
             themeTitle: widget.themeTitle,
-            onGenerate: _generateWiki,
+            onGenerate: null,
           );
         }
 
-        final doc = state.document!;
-        final flatNodes = doc.flatten();
-        if (flatNodes.isEmpty) {
-          return _EmptyWikiView(
-            themeTitle: widget.themeTitle,
-            onGenerate: _generateWiki,
-          );
+        final selected = state.selectedTree;
+        if (selected == null) {
+          return const Center(child: CupertinoActivityIndicator());
         }
 
-        return Stack(
+        return Column(
           children: [
-            // 进度条
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 2,
-                color: AppColors.textTertiary.withValues(alpha: 0.1),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: _readingProgress,
-                  child: Container(color: AppColors.accent),
-                ),
+            // Tree selector（多个 tree 时显示）
+            if (state.trees.length > 1)
+              _TreeSelector(
+                trees: state.trees,
+                selectedRootNodeId: state.selectedRootNodeId!,
+                onSelect: (rootNodeId) {
+                  ref
+                      .read(wikiReaderControllerProvider(widget.themeId).notifier)
+                      .selectTree(rootNodeId);
+                },
               ),
-            ),
-            // 内容
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSp.screenPadding,
-                    20,
-                    AppSp.screenPadding,
-                    32 + MediaQuery.of(context).padding.bottom,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index == 0) {
-                          return _buildCover(doc, state.meta?.generatedAt);
-                        }
-                        final node = flatNodes[index - 1];
-                        return _WikiSection(
-                          key: _keyFor(node.nodeId),
-                          node: node,
-                        );
-                      },
-                      childCount: flatNodes.length + 1,
+            Expanded(
+              child: selected.hasWiki && selected.document != null
+                  ? _buildWikiContent(selected)
+                  : _EmptyWikiView(
+                      themeTitle: selected.rootNode.title,
+                      onGenerate: () => _generateWiki(selected.rootNode.nodeId),
                     ),
-                  ),
-                ),
-              ],
-            ),
-            // TOC 按钮
-            Positioned(
-              right: 16,
-              bottom: 24 + MediaQuery.of(context).padding.bottom,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: _exportWiki,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.textTertiary.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        AppIcons.share,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: _deleteWiki,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.textTertiary.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        AppIcons.delete,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => _showToc(flatNodes),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.accent.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        AppIcons.listBullet,
-                        color: AppColors.surface,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         );
@@ -326,6 +233,138 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
           style: TextStyle(color: AppColors.destructive),
         ),
       ),
+    );
+  }
+
+  Widget _buildWikiContent(TreeWikiInfo treeInfo) {
+    final doc = treeInfo.document!;
+    final flatNodes = doc.flatten();
+    if (flatNodes.isEmpty) {
+      return _EmptyWikiView(
+        themeTitle: treeInfo.rootNode.title,
+        onGenerate: () => _generateWiki(treeInfo.rootNode.nodeId),
+      );
+    }
+
+    return Stack(
+      children: [
+        // 进度条
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 2,
+            color: AppColors.textTertiary.withValues(alpha: 0.1),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: _readingProgress,
+              child: Container(color: AppColors.accent),
+            ),
+          ),
+        ),
+        // 内容
+        CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                AppSp.screenPadding,
+                20,
+                AppSp.screenPadding,
+                32 + MediaQuery.of(context).padding.bottom,
+              ),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index == 0) {
+                      return _buildCover(doc, treeInfo.meta?.generatedAt);
+                    }
+                    final node = flatNodes[index - 1];
+                    return _WikiSection(
+                      key: _keyFor(node.nodeId),
+                      node: node,
+                    );
+                  },
+                  childCount: flatNodes.length + 1,
+                ),
+              ),
+            ),
+          ],
+        ),
+        // TOC 按钮
+        Positioned(
+          right: 16,
+          bottom: 24,
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => _exportWiki(treeInfo.rootNode.nodeId),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.textTertiary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      AppIcons.share,
+                      color: AppColors.textSecondary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => _deleteWiki(treeInfo.rootNode.nodeId),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.textTertiary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      AppIcons.delete,
+                      color: AppColors.textSecondary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => _showToc(flatNodes),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      AppIcons.listBullet,
+                      color: AppColors.surface,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -366,6 +405,57 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
   }
 }
 
+class _TreeSelector extends StatelessWidget {
+  const _TreeSelector({
+    required this.trees,
+    required this.selectedRootNodeId,
+    required this.onSelect,
+  });
+
+  final List<TreeWikiInfo> trees;
+  final String selectedRootNodeId;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: AppSp.screenPadding),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: trees.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final tree = trees[index];
+          final selected = tree.rootNode.nodeId == selectedRootNodeId;
+          return CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () => onSelect(tree.rootNode.nodeId),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppColors.accent
+                    : AppColors.textTertiary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                tree.rootNode.title,
+                style: AppTheme.body.copyWith(
+                  color: selected ? AppColors.surface : AppColors.textPrimary,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _EmptyWikiView extends StatelessWidget {
   const _EmptyWikiView({
     required this.themeTitle,
@@ -373,7 +463,7 @@ class _EmptyWikiView extends StatelessWidget {
   });
 
   final String themeTitle;
-  final VoidCallback onGenerate;
+  final VoidCallback? onGenerate;
 
   @override
   Widget build(BuildContext context) {
@@ -408,15 +498,16 @@ class _EmptyWikiView extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                child: CupertinoButton.filled(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  borderRadius: BorderRadius.circular(12),
-                  onPressed: onGenerate,
-                  child: Text(l10n.wikiGenerateButton),
+              if (onGenerate != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: CupertinoButton.filled(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    borderRadius: BorderRadius.circular(12),
+                    onPressed: onGenerate,
+                    child: Text(l10n.wikiGenerateButton),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
