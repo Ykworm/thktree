@@ -13,8 +13,7 @@ import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
-import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
-    show localizedThemeTitle;
+
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/themes/tree_title_filter.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
@@ -228,8 +227,8 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         return CupertinoPageScaffold(
           backgroundColor: AppColors.pageBg,
           navigationBar: ThkNavBar.inline(
-            title:
-                l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),
+            title: '',
+            middle: _buildTabSwitcher(l10n),
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -242,52 +241,19 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               },
               child: const Icon(AppIcons.back),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_selectedTab == _DetailTab.tree)
-                  CupertinoButton(
-                    key: const ValueKey('doc_split_button'),
-                    padding: EdgeInsets.zero,
-                    onPressed: _onImportDocSplit,
-                    child: const Icon(AppIcons.docSplit),
-                  ),
-                CupertinoButton(
-                  key: const ValueKey('overflow_menu_button'),
-                  padding: EdgeInsets.zero,
-                  onPressed: _showOverflowMenu,
-                  child: const Icon(AppIcons.more),
-                ),
-                if (_selectedTab == _DetailTab.tree)
-                  CupertinoButton(
-                    key: const ValueKey('add_node_button'),
-                    padding: EdgeInsets.zero,
-                    onPressed: () async {
-                      final title = await _promptRootTitle(context);
-                      if (title == null) return;
-                      await ref
-                          .read(themeDetailControllerProvider(widget.themeId)
-                              .notifier)
-                          .createRootChatNode(title: title);
-                    },
-                    child: Icon(AppIcons.add),
-                  ),
-              ],
+            trailing: CupertinoButton(
+              key: const ValueKey('overflow_menu_button'),
+              padding: EdgeInsets.zero,
+              onPressed: _showOverflowMenu,
+              child: const Icon(AppIcons.more),
             ),
           ),
-          child: Column(
-            children: [
-              _buildTabSwitcher(l10n),
-              Expanded(
-                child: _selectedTab == _DetailTab.tree
-                    ? _buildTreeTab(data)
-                    : WikiReaderView(
-                        themeId: widget.themeId,
-                        themeTitle: data.themeTitle,
-                      ),
-              ),
-            ],
-          ),
+          child: _selectedTab == _DetailTab.tree
+              ? _buildTreeTab(data)
+              : WikiReaderView(
+                  themeId: widget.themeId,
+                  themeTitle: data.themeTitle,
+                ),
         );
       },
       error: (e, st) => CupertinoPageScaffold(
@@ -302,13 +268,8 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   }
 
   Widget _buildTabSwitcher(AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSp.screenPadding,
-        8,
-        AppSp.screenPadding,
-        8,
-      ),
+    return SizedBox(
+      width: 220,
       child: CupertinoSlidingSegmentedControl<_DetailTab>(
         groupValue: _selectedTab,
         onValueChanged: (value) {
@@ -318,11 +279,11 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         },
         children: {
           _DetailTab.tree: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(l10n.treeTabLabel),
           ),
           _DetailTab.wiki: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(l10n.wikiTabLabel),
           ),
         },
@@ -348,25 +309,64 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             .toList(growable: false)
         : allRoots;
 
+    final treeToolbar = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSp.screenPadding,
+        8,
+        AppSp.screenPadding,
+        8,
+      ),
+      child: Row(
+        children: [
+          CupertinoButton(
+            key: const ValueKey('doc_split_button'),
+            padding: EdgeInsets.zero,
+            onPressed: _onImportDocSplit,
+            child: const Icon(AppIcons.docSplit),
+          ),
+          const Spacer(),
+          CupertinoButton(
+            key: const ValueKey('add_node_button'),
+            padding: EdgeInsets.zero,
+            onPressed: () async {
+              final title = await _promptRootTitle(context);
+              if (title == null) return;
+              await ref
+                  .read(themeDetailControllerProvider(widget.themeId).notifier)
+                  .createRootChatNode(title: title);
+            },
+            child: Icon(AppIcons.add),
+          ),
+        ],
+      ),
+    );
+
     if (allRoots.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              AppIcons.branch,
-              size: 40,
-              color: AppColors.textTertiary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              l10n.emptyTree,
-              style: AppTheme.body.copyWith(
-                color: AppColors.textSecondary,
+      return Column(
+        children: [
+          treeToolbar,
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    AppIcons.branch,
+                    size: 40,
+                    color: AppColors.textTertiary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.emptyTree,
+                    style: AppTheme.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -376,10 +376,11 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
           constraints: const BoxConstraints(maxWidth: 800),
           child: Column(
             children: [
+              treeToolbar,
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSp.screenPadding,
-                  4,
+                  0,
                   AppSp.screenPadding,
                   8,
                 ),
