@@ -18,6 +18,7 @@
 | `doc_split` | `lib/ui/features/doc_split/` | （可后补 `docs/modules/doc_split/`） | 文档拆分工具 |
 | `about` | `lib/ui/features/about/` | （可后补） | 关于页 |
 | `backup_restore` | `lib/ui/features/backup_restore/` | （可后补） | 备份恢复 |
+| `wiki` | `lib/ui/features/wiki/` + `lib/data/services/wiki_store.dart` | `docs/modules/wiki/` | Tree 转 Wiki（快照生成、阅读、导出） |
 | `_shared` | `lib/ui/core/`、`lib/data/`、`docs/_shared/` | `docs/_shared/` | 跨模块共享（非业务 feature 目录） |
 
 > 上表 **id 必须与** `docs/modules/<id>/`（若已建）及 FEATURES「模块」列一致。  
