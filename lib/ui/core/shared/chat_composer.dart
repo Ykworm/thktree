@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -510,9 +511,10 @@ class _DeepThinkingToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _ToolChip(
       icon: AppIcons.brain,
-      label: supported ? '深度思考' : '不支持深度思考',
+      label: supported ? l10n.deepThinking : l10n.deepThinkingNotSupported,
       active: enabled && supported,
       onPressed: supported && !isStreaming ? onToggle : null,
     );

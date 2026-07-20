@@ -3026,6 +3026,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current model does not support images. Please switch to a vision-capable model.'**
   String get controllerVisionNotSupported;
+
+  /// Deep thinking toggle label in chat composer
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Thinking'**
+  String get deepThinking;
+
+  /// Deep thinking toggle label when not supported
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Thinking Not Supported'**
+  String get deepThinkingNotSupported;
 }
 
 class _AppLocalizationsDelegate

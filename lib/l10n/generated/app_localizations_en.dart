@@ -1675,4 +1675,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get controllerVisionNotSupported =>
       'Current model does not support images. Please switch to a vision-capable model.';
+
+  @override
+  String get deepThinking => 'Deep Thinking';
+
+  @override
+  String get deepThinkingNotSupported => 'Deep Thinking Not Supported';
 }

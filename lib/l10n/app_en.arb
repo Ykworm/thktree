@@ -2263,5 +2263,13 @@
   "controllerVisionNotSupported": "Current model does not support images. Please switch to a vision-capable model.",
   "@controllerVisionNotSupported": {
     "description": "Error when trying to send image to non-vision model"
+  },
+  "deepThinking": "Deep Thinking",
+  "@deepThinking": {
+    "description": "Deep thinking toggle label in chat composer"
+  },
+  "deepThinkingNotSupported": "Deep Thinking Not Supported",
+  "@deepThinkingNotSupported": {
+    "description": "Deep thinking toggle label when not supported"
   }
 }

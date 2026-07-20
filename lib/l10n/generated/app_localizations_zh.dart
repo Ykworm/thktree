@@ -1611,4 +1611,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get controllerVisionNotSupported => '当前模型不支持图片，请切换到支持视觉的模型后再上传图片。';
+
+  @override
+  String get deepThinking => '深度思考';
+
+  @override
+  String get deepThinkingNotSupported => '不支持深度思考';
 }

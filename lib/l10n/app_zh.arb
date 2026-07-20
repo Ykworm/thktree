@@ -1190,5 +1190,7 @@
   },
   "ttsOtherHeader": "其他",
   "ttsWaveformLabel": "语音波形",
-  "controllerVisionNotSupported": "当前模型不支持图片，请切换到支持视觉的模型后再上传图片。"
+  "controllerVisionNotSupported": "当前模型不支持图片，请切换到支持视觉的模型后再上传图片。",
+  "deepThinking": "深度思考",
+  "deepThinkingNotSupported": "不支持深度思考"
 }
