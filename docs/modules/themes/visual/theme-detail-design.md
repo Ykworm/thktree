@@ -267,10 +267,10 @@ Tree tab 顶部常驻一行工具行：搜索框 + 两个操作按钮（操作�
 |------|-----|------|
 | 标题搜索框 | `tree_title_search` | `CupertinoSearchTextField`，行为见 7.1.1 |
 | 新建根节点 `+` | `add_node_button` | accent 图标；`_promptRootTitle` → `createRootChatNode` |
-| 导入文档并拆分 📥 | `doc_split_button` | textSecondary 图标；`AppIcons.docSplit` = `arrow.down.doc`（SF Symbol） |
+| 导入文档并拆分 📥 | `doc_split_button` | accent 图标（与 `+` 统一）；`AppIcons.docSplit` = `list.bullet.indent`（SF Symbol） |
 
 - 两个操作按钮用 `_buildToolbarButton`：40×36 圆角矩形底衬（`AppColors.surface` 白卡，圆角 10，图标 20pt），与搜索框等高对齐，视觉重量平衡。
-- docSplit 图标 2026-07-20 由 `square.split.2x1`（形似侧栏开关，语义误导）改为 `arrow.down.doc`。
+- docSplit 图标 2026-07-20 由 `square.split.2x1`（形似侧栏开关，语义误导）改为 `list.bullet.indent`（大纲缩进 = 文档拆成树结构）；颜色由 textSecondary 改为 accent，与 `+` 统一。
 
 ### 7.1.1 节点标题搜索行为
 
