@@ -98,6 +98,9 @@ class _TtsPlayerScreenState extends ConsumerState<TtsPlayerScreen> {
       navigationBar: ThkNavBar.inline(
         title: l10n.ttsPlay,
         onTitleDoubleTap: _scrollToTop,
+        // 本页顶栏保持透明，让 TtsPlayerBackground 透出
+        // （ThkNavBar 默认已改为不透明的 pageBg）
+        backgroundColor: AppColors.transparent,
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,

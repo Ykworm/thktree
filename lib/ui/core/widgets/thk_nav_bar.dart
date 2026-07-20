@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
-
 /// iOS 风格导航栏，支持 Large Title 和 Inline Title 双模式。
 ///
 /// 使用 [ThkNavBar.large] 创建大标题模式（列表页），滚动时自动收为 inline。
@@ -39,8 +38,12 @@ class ThkNavBar {
       alwaysShowMiddle: alwaysShowMiddle,
       padding: padding,
       border: border,
-      // 顶栏默认不透明 surface，避免半透 body 上顶挡住面包屑等
-      backgroundColor: backgroundColor ?? AppColors.surface,
+      // 顶栏跟随页面底色 pageBg（纸做底座，白卡 surface 只给内容卡）：
+      // 静止与滚动同色，顶栏与页面无缝
+      backgroundColor: backgroundColor ?? AppColors.pageBg,
+      // 关闭「滚动到顶栏下方才显示背景」的自动行为：
+      // 否则静止时透成 pageBg、一滚动就渐变成 backgroundColor，顶栏看起来会变色
+      automaticBackgroundVisibility: false,
     );
   }
 
@@ -62,11 +65,16 @@ class ThkNavBar {
     VoidCallback? onTitleDoubleTap,
   }) {
     return CupertinoNavigationBar(
-      middle: middle ?? GestureDetector(
-        onTap: onTitleTap,
-        onDoubleTap: onTitleDoubleTap,
-        child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ),
+      middle:
+          middle ??
+          GestureDetector(
+            onTap: onTitleTap,
+            onDoubleTap: onTitleDoubleTap,
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
       leading: leading,
       trailing: trailing,
       previousPageTitle: previousPageTitle,
@@ -74,7 +82,9 @@ class ThkNavBar {
       automaticallyImplyMiddle: automaticallyImplyMiddle,
       padding: padding,
       border: border,
-      backgroundColor: backgroundColor ?? AppColors.surface,
+      backgroundColor: backgroundColor ?? AppColors.pageBg,
+      // 同 large：固定 pageBg 背景，避免滚动时顶栏变色
+      automaticBackgroundVisibility: false,
     );
   }
 }
@@ -120,9 +130,7 @@ class ThkLargeTitlePage extends StatelessWidget {
             middle: middle,
             previousPageTitle: previousPageTitle,
           ),
-          SliverList(
-            delegate: SliverChildListDelegate(children),
-          ),
+          SliverList(delegate: SliverChildListDelegate(children)),
         ],
       ),
     );

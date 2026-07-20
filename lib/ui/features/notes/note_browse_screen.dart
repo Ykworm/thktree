@@ -174,11 +174,7 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                AppIcons.note,
-                size: 40,
-                color: AppColors.textTertiary,
-              ),
+              Icon(AppIcons.note, size: 40, color: AppColors.textTertiary),
               const SizedBox(height: 12),
               Text(
                 l10n.noNotesYet,
@@ -198,78 +194,78 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
         bottomPad > 0 ? bottomPad + 8 : 24,
       ),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final tn = allThemes[index];
-            final tileColor = AppColors.themeTileColorFor(tn.themeId);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: GestureDetector(
-                key: ValueKey(tn.themeId),
-                onTap: () {
-                  Navigator.of(context).push(
-                    CupertinoPageRoute(
-                      builder: (_) => ThemeNoteListScreen(
-                        themeId: tn.themeId,
-                        notesDir: '${tn.themePath}/notes',
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final tn = allThemes[index];
+          final tileColor = AppColors.themeTileColorFor(tn.themeId);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: GestureDetector(
+              key: ValueKey(tn.themeId),
+              onTap: () {
+                Navigator.of(context).push(
+                  CupertinoPageRoute(
+                    builder: (_) => ThemeNoteListScreen(
+                      themeId: tn.themeId,
+                      notesDir: '${tn.themePath}/notes',
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
+                decoration: AppSurfaces.contentCard(radius: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: tileColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      // sficons 字体 folder 字形墨盒右偏约 0.18em（22px ≈ 4px），
+                      // 左移回圆形徽章的视觉中心
+                      child: Transform.translate(
+                        offset: const Offset(-4, 0),
+                        child: Icon(AppIcons.folder, color: tileColor, size: 22),
                       ),
                     ),
-                  );
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                  decoration: AppSurfaces.contentCard(radius: 14),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: tileColor.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          AppIcons.folder,
-                          color: tileColor,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              localizedThemeTitle(l10n, tn.title),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ).copyWith(color: AppColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            localizedThemeTitle(l10n, tn.title),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ).copyWith(color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.noteCount(tn.noteCount),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              l10n.noteCount(tn.noteCount),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Icon(
-                        CupertinoIcons.chevron_right,
-                        color: AppColors.textTertiary,
-                        size: 16,
-                      ),
-                    ],
-                  ),
+                    ),
+                    Icon(
+                      CupertinoIcons.chevron_right,
+                      color: AppColors.textTertiary,
+                      size: 16,
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
-          childCount: allThemes.length,
-        ),
+            ),
+          );
+        }, childCount: allThemes.length),
       ),
     );
   }
@@ -298,12 +294,14 @@ Future<List<_ThemeNotes>> _loadThemeNotes(WidgetRef ref) async {
         title = map['title'] as String? ?? themeId;
       }
     } catch (_) {}
-    result.add(_ThemeNotes(
-      themeId: themeId,
-      themePath: entity.path,
-      title: title,
-      noteCount: metas.length,
-    ));
+    result.add(
+      _ThemeNotes(
+        themeId: themeId,
+        themePath: entity.path,
+        title: title,
+        noteCount: metas.length,
+      ),
+    );
   }
   result.sort((a, b) {
     final aPinned = a.title == '未分类';
@@ -316,7 +314,9 @@ Future<List<_ThemeNotes>> _loadThemeNotes(WidgetRef ref) async {
 }
 
 Future<void> _createNoteInUncategorized(
-    BuildContext context, WidgetRef ref) async {
+  BuildContext context,
+  WidgetRef ref,
+) async {
   // 1. 选择主题
   final themeResult = await showThemePicker(
     context,
@@ -331,8 +331,9 @@ Future<void> _createNoteInUncategorized(
   // 2. 获取 notesDir
   final paths = await ref.read(appPathsProvider.future);
   if (!context.mounted) return;
-  final notesDir =
-      Directory('${paths.themesDir.path}/${themeResult.themeId}/notes');
+  final notesDir = Directory(
+    '${paths.themesDir.path}/${themeResult.themeId}/notes',
+  );
 
   // 3. 跳转到编辑器
   if (!context.mounted) return;
