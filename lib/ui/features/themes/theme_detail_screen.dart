@@ -398,6 +398,30 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     );
   }
 
+  /// 工具行操作按钮：与搜索框等高的圆角底衬，视觉重量与搜索框平衡。
+  Widget _buildToolbarButton({
+    required Key key,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return CupertinoButton(
+      key: key,
+      padding: EdgeInsets.zero,
+      minimumSize: Size.zero,
+      onPressed: onPressed,
+      child: Container(
+        width: 40,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+    );
+  }
+
   Widget _buildTreeTab(ThemeDetailState data) {
     final l10n = AppLocalizations.of(context)!;
     final allRoots = data.nodes
@@ -425,16 +449,6 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
       ),
       child: Row(
         children: [
-          CupertinoButton(
-            key: const ValueKey('doc_split_button'),
-            padding: EdgeInsets.zero,
-            onPressed: _onImportDocSplit,
-            child: Icon(
-              AppIcons.docSplit,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(width: 8),
           Expanded(
             child: CupertinoSearchTextField(
               key: const ValueKey('tree_title_search'),
@@ -444,9 +458,10 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          CupertinoButton(
+          _buildToolbarButton(
             key: const ValueKey('add_node_button'),
-            padding: EdgeInsets.zero,
+            icon: AppIcons.add,
+            color: AppColors.accent,
             onPressed: () async {
               final title = await _promptRootTitle(context);
               if (title == null) return;
@@ -454,10 +469,13 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   .read(themeDetailControllerProvider(widget.themeId).notifier)
                   .createRootChatNode(title: title);
             },
-            child: Icon(
-              AppIcons.add,
-              color: AppColors.accent,
-            ),
+          ),
+          const SizedBox(width: 8),
+          _buildToolbarButton(
+            key: const ValueKey('doc_split_button'),
+            icon: AppIcons.docSplit,
+            color: AppColors.textSecondary,
+            onPressed: _onImportDocSplit,
           ),
         ],
       ),

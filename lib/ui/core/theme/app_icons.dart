@@ -145,8 +145,8 @@ class AppIcons {
   /// 深度思考 / 推理（reasoning），与模型选择的 sparkles 区分
   static const IconData brain = SFIcons.sf_brain;
 
-  /// 文档拆分 / 结构切分
-  static const IconData docSplit = SFIcons.sf_square_split_2x1;
+  /// 导入文档并拆分（arrow.down.doc，「导入文档」语义）
+  static const IconData docSplit = SFIcons.sf_arrow_down_document;
 
   /// 实验室 tab 占位 icon（flask，iOS 14+）
   /// 后续迭代可换为 SVG（参考主题 tab 的 theme_unselect.svg 模式）
