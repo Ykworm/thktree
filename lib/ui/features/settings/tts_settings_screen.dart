@@ -43,7 +43,7 @@ class _TtsSettingsScreenState extends ConsumerState<TtsSettingsScreen> {
     await ctrl.setVoice(voice.id);
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    final sample = '你好，我是${voice.name}，${l10n.ttsTestPlay}。';
+    final sample = l10n.ttsSampleText(voice.name, l10n.ttsTestPlay);
     await ctrl.play('__preview__', sample, rate: 0.5);
   }
 
@@ -115,7 +115,7 @@ class _TtsSettingsScreenState extends ConsumerState<TtsSettingsScreen> {
                   ),
                 if (others.isNotEmpty)
                   ThkListSection(
-                    header: '其他',
+                    header: l10n.ttsOtherHeader,
                     children: [
                       for (final v in others)
                         _VoiceRow(

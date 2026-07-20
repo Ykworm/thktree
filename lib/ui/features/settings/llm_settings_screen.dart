@@ -16,9 +16,10 @@ class LlmSettingsScreen extends StatelessWidget {
 
   final List<BreadcrumbSegment> parentCrumbs;
 
-  static const _ownCrumb = BreadcrumbSegment(label: '大模型', routeName: 'llm-settings');
+  BreadcrumbSegment _ownCrumb(AppLocalizations l10n) =>
+      BreadcrumbSegment(label: l10n.breadcrumbLLM, routeName: 'llm-settings');
 
-  List<BreadcrumbSegment> get _crumbs => [...parentCrumbs, _ownCrumb];
+  List<BreadcrumbSegment> _crumbs(AppLocalizations l10n) => [...parentCrumbs, _ownCrumb(l10n)];
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +33,7 @@ class LlmSettingsScreen extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            ThkBreadcrumbRow(crumbs: _crumbs),
+            ThkBreadcrumbRow(crumbs: _crumbs(l10n)),
             Expanded(
               child: ThkFillCardPageBody(
                 child: ListView.separated(
@@ -54,7 +55,7 @@ class LlmSettingsScreen extends StatelessWidget {
                               CupertinoPageRoute(
                                 settings: const RouteSettings(name: 'providers-list'),
                                 builder: (context) => LlmProvidersScreen(
-                                  parentCrumbs: _crumbs,
+                                  parentCrumbs: _crumbs(l10n),
                                 ),
                               ),
                             );
@@ -69,7 +70,7 @@ class LlmSettingsScreen extends StatelessWidget {
                               CupertinoPageRoute(
                                 settings: const RouteSettings(name: 'default-model-config'),
                                 builder: (context) => DefaultModelConfigScreen(
-                                  parentCrumbs: _crumbs,
+                                  parentCrumbs: _crumbs(l10n),
                                 ),
                               ),
                             );

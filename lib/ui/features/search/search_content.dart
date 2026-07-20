@@ -408,7 +408,7 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = '修复失败: $e';
+          _error = AppLocalizations.of(context)!.searchRepairFailed(e.toString());
         });
       }
     }
@@ -647,7 +647,7 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '你已有 $backupCount 份本地备份，建议分享一份到 iCloud 或其他设备保存',
+                  l10n.searchBackupSuggestion(backupCount),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -676,9 +676,9 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
                 color: AppColors.accent,
                 borderRadius: BorderRadius.circular(8),
                 onPressed: () => _onBackup(context, l10n),
-                child: const Text(
-                  '去分享',
-                  style: TextStyle(
+                child: Text(
+                  l10n.searchGoShare,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.white,
@@ -691,7 +691,7 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
                 minimumSize: Size.zero,
                 onPressed: _onDismiss,
                 child: Text(
-                  '忽略',
+                  l10n.searchIgnore,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
@@ -883,6 +883,7 @@ class _RecentSearchTagsBodyState extends State<_RecentSearchTagsBody> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       children: [
@@ -890,7 +891,7 @@ class _RecentSearchTagsBodyState extends State<_RecentSearchTagsBody> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '最近搜索',
+              l10n.searchRecent,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -902,7 +903,7 @@ class _RecentSearchTagsBodyState extends State<_RecentSearchTagsBody> {
               minimumSize: Size.zero,
               onPressed: _clearAll,
               child: Text(
-                '清除全部',
+                l10n.searchClearAll,
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.destructive,

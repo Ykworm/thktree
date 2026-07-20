@@ -304,8 +304,8 @@ Future<List<_ThemeNotes>> _loadThemeNotes(WidgetRef ref) async {
     );
   }
   result.sort((a, b) {
-    final aPinned = a.title == '未分类';
-    final bPinned = b.title == '未分类';
+    final aPinned = a.title == kUncategorizedThemeTitle;
+    final bPinned = b.title == kUncategorizedThemeTitle;
     if (aPinned && !bPinned) return -1;
     if (!aPinned && bPinned) return 1;
     return a.title.compareTo(b.title);

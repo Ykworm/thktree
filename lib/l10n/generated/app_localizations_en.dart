@@ -1443,4 +1443,236 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wikiSelectTree => 'Select Tree';
+
+  @override
+  String get backupTitle => 'Backup & Restore';
+
+  @override
+  String get backupDeleteTitle => 'Delete Backup';
+
+  @override
+  String get backupDeleteContent => 'Delete this local backup?';
+
+  @override
+  String get backupBackingUp => 'Backing Up';
+
+  @override
+  String get backupDataConflict => 'Data Conflict';
+
+  @override
+  String get backupDataConflictContent =>
+      'Local data exists. How should the restore proceed?';
+
+  @override
+  String get backupOverwrite => 'Overwrite';
+
+  @override
+  String get backupMerge => 'Merge';
+
+  @override
+  String get backupRestoring => 'Restoring';
+
+  @override
+  String get backupRestoreSuccess => 'Restore successful';
+
+  @override
+  String get backupRestoreFailed => 'Restore failed';
+
+  @override
+  String get backupReminderInterval => 'Reminder Interval';
+
+  @override
+  String backupReminderDaysCurrent(int days) {
+    return 'Every $days days (current)';
+  }
+
+  @override
+  String backupReminderDays(int days) {
+    return 'Every $days days';
+  }
+
+  @override
+  String get backupNotYet => 'Not yet backed up';
+
+  @override
+  String get backupAutoSection => 'Automatic Backup';
+
+  @override
+  String get backupAutoTitle => 'Automatic Backup';
+
+  @override
+  String get backupAutoSubtitle => 'Back up locally every 24 hours';
+
+  @override
+  String get backupLastBackup => 'Last Backup';
+
+  @override
+  String backupLocalSection(int count) {
+    return 'Local Backups ($count)';
+  }
+
+  @override
+  String get backupLocalEmpty => 'No local backups yet';
+
+  @override
+  String get backupManualSection => 'Manual Operations';
+
+  @override
+  String get backupManualShare => 'Back up & Share Now';
+
+  @override
+  String get backupManualShareSubtitle => 'Create a backup and share it';
+
+  @override
+  String get backupManualRestore => 'Restore from Backup File';
+
+  @override
+  String get backupManualRestoreSubtitle => 'Restore data from a zip file';
+
+  @override
+  String get backupReminderSection => 'Share Reminder';
+
+  @override
+  String get backupReminderToggle => 'Reminder Switch';
+
+  @override
+  String get backupReminderToggleSubtitle =>
+      'Periodically remind to share backup';
+
+  @override
+  String backupReminderSubtitle(int days) {
+    return 'Remind every $days days';
+  }
+
+  @override
+  String get clipsTitle => 'Clips';
+
+  @override
+  String get clipsManage => 'Manage';
+
+  @override
+  String get clipsPreview => 'Preview';
+
+  @override
+  String get clipsEmpty => 'No clips yet';
+
+  @override
+  String get clipsEmptyHint => 'Long press selected text to save as clip';
+
+  @override
+  String get clipsClearAllTitle => 'Clear All Clips';
+
+  @override
+  String get clipsClearAllContent => 'Delete all clips? This cannot be undone.';
+
+  @override
+  String get clipsClearAll => 'Clear All';
+
+  @override
+  String get clipsManageTitle => 'Manage Clips';
+
+  @override
+  String get imageSourceSelect => 'Select Image Source';
+
+  @override
+  String get imageFromCamera => 'Take Photo';
+
+  @override
+  String get imageFromGallery => 'Choose from Gallery';
+
+  @override
+  String get imageModelNotSupported => 'Current model does not support images';
+
+  @override
+  String imagePickFailed(String error) {
+    return 'Failed to select image: $error';
+  }
+
+  @override
+  String get searchRecent => 'Recent Searches';
+
+  @override
+  String get searchClearAll => 'Clear All';
+
+  @override
+  String get settingsBackupRestore => 'Backup & Restore';
+
+  @override
+  String get settingsBackupRestoreSubtitle => 'Auto backup · Share · Restore';
+
+  @override
+  String get settingsBackupReminder => 'Backup Reminder';
+
+  @override
+  String get settingsBackupReminderSubtitle => 'Remind every 3-7 days';
+
+  @override
+  String wikiMessageCount(int count) {
+    return '$count messages';
+  }
+
+  @override
+  String get thinkingProcess => 'Thinking Process';
+
+  @override
+  String get daysUnit => 'days';
+
+  @override
+  String get breadcrumbProviders => 'Providers';
+
+  @override
+  String get breadcrumbConfig => 'Config';
+
+  @override
+  String get breadcrumbLLM => 'LLM';
+
+  @override
+  String get breadcrumbModelConfig => 'Model Config';
+
+  @override
+  String get shareContentTooLarge =>
+      'Content too large to save as a single image. Use \"Share Current Conversation\" or shorten the session.';
+
+  @override
+  String shareFailed(String error) {
+    return 'Share failed: $error';
+  }
+
+  @override
+  String searchRepairFailed(String error) {
+    return 'Repair failed: $error';
+  }
+
+  @override
+  String searchBackupSuggestion(int count) {
+    return 'You have $count local backups. Consider sharing one to iCloud or another device.';
+  }
+
+  @override
+  String get searchGoShare => 'Share';
+
+  @override
+  String get searchIgnore => 'Dismiss';
+
+  @override
+  String get controllerDescribeImage => 'Describe this image';
+
+  @override
+  String get controllerApiKeyNotConfigured =>
+      '[API Key not configured] Please go to Settings > Model Providers to configure your API Key.';
+
+  @override
+  String ttsSampleText(String name, String action) {
+    return 'Hello, I\'m $name, $action.';
+  }
+
+  @override
+  String get ttsOtherHeader => 'Other';
+
+  @override
+  String get ttsWaveformLabel => 'Voice Waveform';
+
+  @override
+  String get controllerVisionNotSupported =>
+      'Current model does not support images. Please switch to a vision-capable model.';
 }

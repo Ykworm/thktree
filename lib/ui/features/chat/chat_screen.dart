@@ -945,7 +945,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!_isImageSupported(currentProviderId, currentModelId)) {
       ThkAlert.show(
         context: context,
-        message: '当前模型不支持图片功能',
+        message: l10n.imageModelNotSupported,
         defaultAction: l10n.ok,
       );
       return;
@@ -955,7 +955,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final action = await showCupertinoModalPopup<String>(
       context: context,
       builder: (context) => CupertinoActionSheet(
-        title: Text('选择图片来源'),
+        title: Text(l10n.imageSourceSelect),
         actions: [
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(context, 'camera'),
@@ -964,7 +964,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               children: [
                 Icon(AppIcons.camera, size: 20),
                 const SizedBox(width: 8),
-                Text('拍照'),
+                Text(l10n.imageFromCamera),
               ],
             ),
           ),
@@ -975,7 +975,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               children: [
                 Icon(AppIcons.image, size: 20),
                 const SizedBox(width: 8),
-                Text('从相册选择'),
+                Text(l10n.imageFromGallery),
               ],
             ),
           ),
@@ -1008,7 +1008,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!mounted) return;
       ThkAlert.show(
         context: context,
-        message: '选择图片失败：$e',
+        message: l10n.imagePickFailed(e.toString()),
         defaultAction: l10n.ok,
       );
     }
@@ -1379,9 +1379,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       debugPrint('堆栈: $stackTrace');
       if (!mounted) return;
       // 以前任何异常都提示「内容过多」，把布局/截图/系统分享失败都误报了。
+      final l10n = AppLocalizations.of(context)!;
       final message = e is ShareContentTooLargeException
-          ? '内容过多，无法保存为单张图片，请改用「分享当前对话」或缩短会话'
-          : '分享失败：$e';
+          ? l10n.shareContentTooLarge
+          : l10n.shareFailed(e.toString());
       ThkAlert.show(context: context, message: message);
     }
   }

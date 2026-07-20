@@ -1934,5 +1934,334 @@
   "wikiSelectTree": "Select Tree",
   "@wikiSelectTree": {
     "description": "Wiki tree selector bottom sheet title"
+  },
+  "backupTitle": "Backup & Restore",
+  "@backupTitle": {
+    "description": "Backup restore screen navigation title"
+  },
+  "backupDeleteTitle": "Delete Backup",
+  "@backupDeleteTitle": {
+    "description": "Delete backup confirmation dialog title"
+  },
+  "backupDeleteContent": "Delete this local backup?",
+  "@backupDeleteContent": {
+    "description": "Delete backup confirmation dialog content"
+  },
+  "backupBackingUp": "Backing Up",
+  "@backupBackingUp": {
+    "description": "Progress dialog title during backup"
+  },
+  "backupDataConflict": "Data Conflict",
+  "@backupDataConflict": {
+    "description": "Restore conflict dialog title"
+  },
+  "backupDataConflictContent": "Local data exists. How should the restore proceed?",
+  "@backupDataConflictContent": {
+    "description": "Restore conflict dialog content"
+  },
+  "backupOverwrite": "Overwrite",
+  "@backupOverwrite": {
+    "description": "Overwrite option in restore conflict dialog"
+  },
+  "backupMerge": "Merge",
+  "@backupMerge": {
+    "description": "Merge option in restore conflict dialog"
+  },
+  "backupRestoring": "Restoring",
+  "@backupRestoring": {
+    "description": "Progress dialog title during restore"
+  },
+  "backupRestoreSuccess": "Restore successful",
+  "@backupRestoreSuccess": {
+    "description": "Restore success alert message"
+  },
+  "backupRestoreFailed": "Restore failed",
+  "@backupRestoreFailed": {
+    "description": "Restore failed alert message"
+  },
+  "backupReminderInterval": "Reminder Interval",
+  "@backupReminderInterval": {
+    "description": "Reminder interval picker dialog title"
+  },
+  "backupReminderDaysCurrent": "Every {days} days (current)",
+  "@backupReminderDaysCurrent": {
+    "description": "Current reminder interval option",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReminderDays": "Every {days} days",
+  "@backupReminderDays": {
+    "description": "Reminder interval option",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "backupNotYet": "Not yet backed up",
+  "@backupNotYet": {
+    "description": "Last backup time when never backed up"
+  },
+  "backupAutoSection": "Automatic Backup",
+  "@backupAutoSection": {
+    "description": "Section header for automatic backup"
+  },
+  "backupAutoTitle": "Automatic Backup",
+  "@backupAutoTitle": {
+    "description": "Auto backup toggle title"
+  },
+  "backupAutoSubtitle": "Back up locally every 24 hours",
+  "@backupAutoSubtitle": {
+    "description": "Auto backup toggle subtitle"
+  },
+  "backupLastBackup": "Last Backup",
+  "@backupLastBackup": {
+    "description": "Last backup time row title"
+  },
+  "backupLocalSection": "Local Backups ({count})",
+  "@backupLocalSection": {
+    "description": "Section header for local backups list",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLocalEmpty": "No local backups yet",
+  "@backupLocalEmpty": {
+    "description": "Empty state for local backups list"
+  },
+  "backupManualSection": "Manual Operations",
+  "@backupManualSection": {
+    "description": "Section header for manual backup operations"
+  },
+  "backupManualShare": "Back up & Share Now",
+  "@backupManualShare": {
+    "description": "Manual backup and share row title"
+  },
+  "backupManualShareSubtitle": "Create a backup and share it",
+  "@backupManualShareSubtitle": {
+    "description": "Manual backup and share row subtitle"
+  },
+  "backupManualRestore": "Restore from Backup File",
+  "@backupManualRestore": {
+    "description": "Restore from file row title"
+  },
+  "backupManualRestoreSubtitle": "Restore data from a zip file",
+  "@backupManualRestoreSubtitle": {
+    "description": "Restore from file row subtitle"
+  },
+  "backupReminderSection": "Share Reminder",
+  "@backupReminderSection": {
+    "description": "Section header for share reminder settings"
+  },
+  "backupReminderToggle": "Reminder Switch",
+  "@backupReminderToggle": {
+    "description": "Reminder toggle title"
+  },
+  "backupReminderToggleSubtitle": "Periodically remind to share backup",
+  "@backupReminderToggleSubtitle": {
+    "description": "Reminder toggle subtitle"
+  },
+  "backupReminderSubtitle": "Remind every {days} days",
+  "@backupReminderSubtitle": {
+    "description": "Reminder interval subtitle",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "clipsTitle": "Clips",
+  "@clipsTitle": {
+    "description": "Clips sheet title"
+  },
+  "clipsManage": "Manage",
+  "@clipsManage": {
+    "description": "Clips sheet manage button"
+  },
+  "clipsPreview": "Preview",
+  "@clipsPreview": {
+    "description": "Clip preview dialog title"
+  },
+  "clipsEmpty": "No clips yet",
+  "@clipsEmpty": {
+    "description": "Empty state for clips list"
+  },
+  "clipsEmptyHint": "Long press selected text to save as clip",
+  "@clipsEmptyHint": {
+    "description": "Hint text below empty clips state"
+  },
+  "clipsClearAllTitle": "Clear All Clips",
+  "@clipsClearAllTitle": {
+    "description": "Clear all clips confirmation dialog title"
+  },
+  "clipsClearAllContent": "Delete all clips? This cannot be undone.",
+  "@clipsClearAllContent": {
+    "description": "Clear all clips confirmation dialog content"
+  },
+  "clipsClearAll": "Clear All",
+  "@clipsClearAll": {
+    "description": "Clear all clips button label"
+  },
+  "clipsManageTitle": "Manage Clips",
+  "@clipsManageTitle": {
+    "description": "Clips management screen title"
+  },
+  "imageSourceSelect": "Select Image Source",
+  "@imageSourceSelect": {
+    "description": "Image source selection dialog title"
+  },
+  "imageFromCamera": "Take Photo",
+  "@imageFromCamera": {
+    "description": "Camera option in image source dialog"
+  },
+  "imageFromGallery": "Choose from Gallery",
+  "@imageFromGallery": {
+    "description": "Gallery option in image source dialog"
+  },
+  "imageModelNotSupported": "Current model does not support images",
+  "@imageModelNotSupported": {
+    "description": "Error when model doesn't support image input"
+  },
+  "imagePickFailed": "Failed to select image: {error}",
+  "@imagePickFailed": {
+    "description": "Error when image selection fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecent": "Recent Searches",
+  "@searchRecent": {
+    "description": "Recent searches section header"
+  },
+  "searchClearAll": "Clear All",
+  "@searchClearAll": {
+    "description": "Clear all recent searches button"
+  },
+  "settingsBackupRestore": "Backup & Restore",
+  "@settingsBackupRestore": {
+    "description": "Backup restore settings row title"
+  },
+  "settingsBackupRestoreSubtitle": "Auto backup · Share · Restore",
+  "@settingsBackupRestoreSubtitle": {
+    "description": "Backup restore settings row subtitle"
+  },
+  "settingsBackupReminder": "Backup Reminder",
+  "@settingsBackupReminder": {
+    "description": "Backup reminder settings row title"
+  },
+  "settingsBackupReminderSubtitle": "Remind every 3-7 days",
+  "@settingsBackupReminderSubtitle": {
+    "description": "Backup reminder settings row subtitle"
+  },
+  "wikiMessageCount": "{count} messages",
+  "@wikiMessageCount": {
+    "description": "Message count in wiki node",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "thinkingProcess": "Thinking Process",
+  "@thinkingProcess": {
+    "description": "Thinking/reasoning section title"
+  },
+  "daysUnit": "days",
+  "@daysUnit": {
+    "description": "Time unit for days"
+  },
+  "breadcrumbProviders": "Providers",
+  "@breadcrumbProviders": {
+    "description": "Breadcrumb label for LLM providers list"
+  },
+  "breadcrumbConfig": "Config",
+  "@breadcrumbConfig": {
+    "description": "Breadcrumb label for provider config"
+  },
+  "breadcrumbLLM": "LLM",
+  "@breadcrumbLLM": {
+    "description": "Breadcrumb label for LLM settings"
+  },
+  "breadcrumbModelConfig": "Model Config",
+  "@breadcrumbModelConfig": {
+    "description": "Breadcrumb label for model config"
+  },
+  "shareContentTooLarge": "Content too large to save as a single image. Use \"Share Current Conversation\" or shorten the session.",
+  "@shareContentTooLarge": {
+    "description": "Error when share content is too large for image"
+  },
+  "shareFailed": "Share failed: {error}",
+  "@shareFailed": {
+    "description": "Generic share failure message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRepairFailed": "Repair failed: {error}",
+  "@searchRepairFailed": {
+    "description": "Error when search index repair fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchBackupSuggestion": "You have {count} local backups. Consider sharing one to iCloud or another device.",
+  "@searchBackupSuggestion": {
+    "description": "Suggestion to share backups",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchGoShare": "Share",
+  "@searchGoShare": {
+    "description": "Button to go share backup"
+  },
+  "searchIgnore": "Dismiss",
+  "@searchIgnore": {
+    "description": "Button to dismiss backup suggestion"
+  },
+  "controllerDescribeImage": "Describe this image",
+  "@controllerDescribeImage": {
+    "description": "Default prompt for image description in chat"
+  },
+  "controllerApiKeyNotConfigured": "[API Key not configured] Please go to Settings > Model Providers to configure your API Key.",
+  "@controllerApiKeyNotConfigured": {
+    "description": "Error when API key is not configured"
+  },
+  "ttsSampleText": "Hello, I'm {name}, {action}.",
+  "@ttsSampleText": {
+    "description": "TTS voice preview sample text",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "ttsOtherHeader": "Other",
+  "@ttsOtherHeader": {
+    "description": "Other settings section header in TTS settings"
+  },
+  "ttsWaveformLabel": "Voice Waveform",
+  "@ttsWaveformLabel": {
+    "description": "Semantics label for TTS waveform widget"
+  },
+  "controllerVisionNotSupported": "Current model does not support images. Please switch to a vision-capable model.",
+  "@controllerVisionNotSupported": {
+    "description": "Error when trying to send image to non-vision model"
   }
 }

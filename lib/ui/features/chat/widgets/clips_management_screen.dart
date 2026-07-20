@@ -7,6 +7,7 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
 
 /// 碎片管理页面。
 ///
@@ -67,18 +68,18 @@ class _ClipsManagementScreenState extends ConsumerState<ClipsManagementScreen> {
     return await showCupertinoDialog<bool>(
           context: context,
           builder: (context) => CupertinoAlertDialog(
-            title: const Text('清空全部碎片'),
-            content: const Text('确定要删除所有碎片吗？此操作不可撤销。'),
+            title: Text(AppLocalizations.of(context)!.clipsClearAllTitle),
+            content: Text(AppLocalizations.of(context)!.clipsClearAllContent),
             actions: [
               CupertinoDialogAction(
                 isDefaultAction: true,
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('取消'),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
               CupertinoDialogAction(
                 isDestructiveAction: true,
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('清空'),
+                child: Text(AppLocalizations.of(context)!.clipsClearAll),
               ),
             ],
           ),
@@ -90,8 +91,8 @@ class _ClipsManagementScreenState extends ConsumerState<ClipsManagementScreen> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('管理碎片'),
-        previousPageTitle: '碎片',
+        middle: Text(AppLocalizations.of(context)!.clipsManageTitle),
+        previousPageTitle: AppLocalizations.of(context)!.clipsTitle,
       ),
       child: SafeArea(
         top: false,
@@ -116,7 +117,7 @@ class _ClipsManagementScreenState extends ConsumerState<ClipsManagementScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              '暂无碎片',
+              AppLocalizations.of(context)!.clipsEmpty,
               style: TextStyle(
                 fontSize: 17,
                 color: AppColors.textTertiary,
@@ -181,9 +182,9 @@ class _ClipsManagementScreenState extends ConsumerState<ClipsManagementScreen> {
               color: AppColors.destructive,
               borderRadius: BorderRadius.circular(AppSp.cardRadius),
               onPressed: _clearAll,
-              child: const Text(
-                '清空全部',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.clipsClearAll,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: AppColors.white,

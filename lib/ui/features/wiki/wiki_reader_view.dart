@@ -551,6 +551,7 @@ class _CatalogItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: onTap,
@@ -585,7 +586,7 @@ class _CatalogItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${node.messages.length} 条消息',
+                    l10n.wikiMessageCount(node.messages.length),
                     style: AppTheme.caption1.copyWith(
                       color: AppColors.textTertiary,
                     ),
@@ -876,6 +877,7 @@ class _ReasoningView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -889,7 +891,7 @@ class _ReasoningView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '思考过程',
+              l10n.thinkingProcess,
               style: AppTheme.caption1.copyWith(
                 color: AppColors.textTertiary,
                 fontWeight: FontWeight.w600,

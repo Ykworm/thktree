@@ -1048,5 +1048,147 @@
   "wikiSelectTree": "选择 Tree",
   "@wikiSelectTree": {
     "description": "Wiki tree 选择器底部 sheet 标题"
-  }
+  },
+  "backupTitle": "备份与恢复",
+  "backupDeleteTitle": "删除备份",
+  "backupDeleteContent": "确定删除这份本地备份？",
+  "backupBackingUp": "备份中",
+  "backupDataConflict": "数据冲突",
+  "backupDataConflictContent": "本地已有数据，恢复将如何处理？",
+  "backupOverwrite": "覆盖",
+  "backupMerge": "合并",
+  "backupRestoring": "恢复中",
+  "backupRestoreSuccess": "恢复成功",
+  "backupRestoreFailed": "恢复失败",
+  "backupReminderInterval": "提醒周期",
+  "backupReminderDaysCurrent": "每 {days} 天（当前）",
+  "@backupReminderDaysCurrent": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReminderDays": "每 {days} 天",
+  "@backupReminderDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "backupNotYet": "尚未备份",
+  "backupAutoSection": "自动备份",
+  "backupAutoTitle": "自动备份",
+  "backupAutoSubtitle": "每 24 小时备份一次到本地",
+  "backupLastBackup": "上次备份",
+  "backupLocalSection": "本地备份（{count}）",
+  "@backupLocalSection": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLocalEmpty": "还没有本地备份",
+  "backupManualSection": "手动操作",
+  "backupManualShare": "立即备份并分享",
+  "backupManualShareSubtitle": "生成一份备份并分享出去",
+  "backupManualRestore": "从备份文件恢复",
+  "backupManualRestoreSubtitle": "从 zip 文件恢复数据",
+  "backupReminderSection": "分享提醒",
+  "backupReminderToggle": "提醒开关",
+  "backupReminderToggleSubtitle": "定期提醒把备份分享出去",
+  "backupReminderSubtitle": "每 {days} 天提醒一次",
+  "@backupReminderSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "clipsTitle": "碎片",
+  "clipsManage": "管理",
+  "clipsPreview": "预览",
+  "clipsEmpty": "暂无碎片",
+  "clipsEmptyHint": "长按选中文本可存入碎片",
+  "clipsClearAllTitle": "清空全部碎片",
+  "clipsClearAllContent": "确定要删除所有碎片吗？此操作不可撤销。",
+  "clipsClearAll": "清空全部",
+  "clipsManageTitle": "管理碎片",
+  "imageSourceSelect": "选择图片来源",
+  "imageFromCamera": "拍照",
+  "imageFromGallery": "从相册选择",
+  "imageModelNotSupported": "当前模型不支持图片功能",
+  "imagePickFailed": "选择图片失败：{error}",
+  "@imagePickFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecent": "最近搜索",
+  "searchClearAll": "清除全部",
+  "settingsBackupRestore": "备份与恢复",
+  "settingsBackupRestoreSubtitle": "自动备份 · 分享 · 恢复",
+  "settingsBackupReminder": "备份提醒",
+  "settingsBackupReminderSubtitle": "每 3-7 天提醒一次",
+  "wikiMessageCount": "{count} 条消息",
+  "@wikiMessageCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "thinkingProcess": "思考过程",
+  "daysUnit": "天",
+  "breadcrumbProviders": "提供商",
+  "breadcrumbConfig": "配置",
+  "breadcrumbLLM": "大模型",
+  "breadcrumbModelConfig": "模型配置",
+  "shareContentTooLarge": "内容过多，无法保存为单张图片，请改用「分享当前对话」或缩短会话",
+  "shareFailed": "分享失败：{error}",
+  "@shareFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRepairFailed": "修复失败: {error}",
+  "@searchRepairFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchBackupSuggestion": "你已有 {count} 份本地备份，建议分享一份到 iCloud 或其他设备保存",
+  "@searchBackupSuggestion": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchGoShare": "去分享",
+  "searchIgnore": "忽略",
+  "controllerDescribeImage": "描述这张图片",
+  "controllerApiKeyNotConfigured": "[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。",
+  "ttsSampleText": "你好，我是{name}，{action}。",
+  "@ttsSampleText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "ttsOtherHeader": "其他",
+  "ttsWaveformLabel": "语音波形",
+  "controllerVisionNotSupported": "当前模型不支持图片，请切换到支持视觉的模型后再上传图片。"
 }

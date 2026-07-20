@@ -42,9 +42,10 @@ class _LlmProviderDetailScreenState
   List<LlmModelConfig> _fetchedModels = [];
   LlmError? _fetchError;
 
-  static const _ownCrumb = BreadcrumbSegment(label: '配置', routeName: 'provider-detail');
+  BreadcrumbSegment _ownCrumb(AppLocalizations l10n) =>
+      BreadcrumbSegment(label: l10n.breadcrumbConfig, routeName: 'provider-detail');
 
-  List<BreadcrumbSegment> get _crumbs => [...widget.parentCrumbs, _ownCrumb];
+  List<BreadcrumbSegment> _crumbs(AppLocalizations l10n) => [...widget.parentCrumbs, _ownCrumb(l10n)];
 
   @override
   void initState() {
@@ -115,7 +116,7 @@ class _LlmProviderDetailScreenState
         child: SafeArea(
           child: Column(
             children: [
-              ThkBreadcrumbRow(crumbs: _crumbs),
+              ThkBreadcrumbRow(crumbs: _crumbs(l10n)),
               Expanded(
                 child: _isLoadingApiKey
                     ? const Center(child: CupertinoActivityIndicator())

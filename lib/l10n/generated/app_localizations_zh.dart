@@ -1383,4 +1383,232 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wikiSelectTree => '选择 Tree';
+
+  @override
+  String get backupTitle => '备份与恢复';
+
+  @override
+  String get backupDeleteTitle => '删除备份';
+
+  @override
+  String get backupDeleteContent => '确定删除这份本地备份？';
+
+  @override
+  String get backupBackingUp => '备份中';
+
+  @override
+  String get backupDataConflict => '数据冲突';
+
+  @override
+  String get backupDataConflictContent => '本地已有数据，恢复将如何处理？';
+
+  @override
+  String get backupOverwrite => '覆盖';
+
+  @override
+  String get backupMerge => '合并';
+
+  @override
+  String get backupRestoring => '恢复中';
+
+  @override
+  String get backupRestoreSuccess => '恢复成功';
+
+  @override
+  String get backupRestoreFailed => '恢复失败';
+
+  @override
+  String get backupReminderInterval => '提醒周期';
+
+  @override
+  String backupReminderDaysCurrent(int days) {
+    return '每 $days 天（当前）';
+  }
+
+  @override
+  String backupReminderDays(int days) {
+    return '每 $days 天';
+  }
+
+  @override
+  String get backupNotYet => '尚未备份';
+
+  @override
+  String get backupAutoSection => '自动备份';
+
+  @override
+  String get backupAutoTitle => '自动备份';
+
+  @override
+  String get backupAutoSubtitle => '每 24 小时备份一次到本地';
+
+  @override
+  String get backupLastBackup => '上次备份';
+
+  @override
+  String backupLocalSection(int count) {
+    return '本地备份（$count）';
+  }
+
+  @override
+  String get backupLocalEmpty => '还没有本地备份';
+
+  @override
+  String get backupManualSection => '手动操作';
+
+  @override
+  String get backupManualShare => '立即备份并分享';
+
+  @override
+  String get backupManualShareSubtitle => '生成一份备份并分享出去';
+
+  @override
+  String get backupManualRestore => '从备份文件恢复';
+
+  @override
+  String get backupManualRestoreSubtitle => '从 zip 文件恢复数据';
+
+  @override
+  String get backupReminderSection => '分享提醒';
+
+  @override
+  String get backupReminderToggle => '提醒开关';
+
+  @override
+  String get backupReminderToggleSubtitle => '定期提醒把备份分享出去';
+
+  @override
+  String backupReminderSubtitle(int days) {
+    return '每 $days 天提醒一次';
+  }
+
+  @override
+  String get clipsTitle => '碎片';
+
+  @override
+  String get clipsManage => '管理';
+
+  @override
+  String get clipsPreview => '预览';
+
+  @override
+  String get clipsEmpty => '暂无碎片';
+
+  @override
+  String get clipsEmptyHint => '长按选中文本可存入碎片';
+
+  @override
+  String get clipsClearAllTitle => '清空全部碎片';
+
+  @override
+  String get clipsClearAllContent => '确定要删除所有碎片吗？此操作不可撤销。';
+
+  @override
+  String get clipsClearAll => '清空全部';
+
+  @override
+  String get clipsManageTitle => '管理碎片';
+
+  @override
+  String get imageSourceSelect => '选择图片来源';
+
+  @override
+  String get imageFromCamera => '拍照';
+
+  @override
+  String get imageFromGallery => '从相册选择';
+
+  @override
+  String get imageModelNotSupported => '当前模型不支持图片功能';
+
+  @override
+  String imagePickFailed(String error) {
+    return '选择图片失败：$error';
+  }
+
+  @override
+  String get searchRecent => '最近搜索';
+
+  @override
+  String get searchClearAll => '清除全部';
+
+  @override
+  String get settingsBackupRestore => '备份与恢复';
+
+  @override
+  String get settingsBackupRestoreSubtitle => '自动备份 · 分享 · 恢复';
+
+  @override
+  String get settingsBackupReminder => '备份提醒';
+
+  @override
+  String get settingsBackupReminderSubtitle => '每 3-7 天提醒一次';
+
+  @override
+  String wikiMessageCount(int count) {
+    return '$count 条消息';
+  }
+
+  @override
+  String get thinkingProcess => '思考过程';
+
+  @override
+  String get daysUnit => '天';
+
+  @override
+  String get breadcrumbProviders => '提供商';
+
+  @override
+  String get breadcrumbConfig => '配置';
+
+  @override
+  String get breadcrumbLLM => '大模型';
+
+  @override
+  String get breadcrumbModelConfig => '模型配置';
+
+  @override
+  String get shareContentTooLarge => '内容过多，无法保存为单张图片，请改用「分享当前对话」或缩短会话';
+
+  @override
+  String shareFailed(String error) {
+    return '分享失败：$error';
+  }
+
+  @override
+  String searchRepairFailed(String error) {
+    return '修复失败: $error';
+  }
+
+  @override
+  String searchBackupSuggestion(int count) {
+    return '你已有 $count 份本地备份，建议分享一份到 iCloud 或其他设备保存';
+  }
+
+  @override
+  String get searchGoShare => '去分享';
+
+  @override
+  String get searchIgnore => '忽略';
+
+  @override
+  String get controllerDescribeImage => '描述这张图片';
+
+  @override
+  String get controllerApiKeyNotConfigured =>
+      '[未配置 API Key] 请到设置 > 模型提供商中配置 API Key。';
+
+  @override
+  String ttsSampleText(String name, String action) {
+    return '你好，我是$name，$action。';
+  }
+
+  @override
+  String get ttsOtherHeader => '其他';
+
+  @override
+  String get ttsWaveformLabel => '语音波形';
+
+  @override
+  String get controllerVisionNotSupported => '当前模型不支持图片，请切换到支持视觉的模型后再上传图片。';
 }

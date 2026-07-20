@@ -15,9 +15,10 @@ class LlmProvidersScreen extends ConsumerWidget {
 
   final List<BreadcrumbSegment> parentCrumbs;
 
-  static const _ownCrumb = BreadcrumbSegment(label: '提供商', routeName: 'providers-list');
+  BreadcrumbSegment _ownCrumb(AppLocalizations l10n) =>
+      BreadcrumbSegment(label: l10n.breadcrumbProviders, routeName: 'providers-list');
 
-  List<BreadcrumbSegment> get _crumbs => [...parentCrumbs, _ownCrumb];
+  List<BreadcrumbSegment> _crumbs(AppLocalizations l10n) => [...parentCrumbs, _ownCrumb(l10n)];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +35,7 @@ class LlmProvidersScreen extends ConsumerWidget {
             final result = await Navigator.of(context).push<bool>(
               CupertinoPageRoute(
                 settings: const RouteSettings(name: 'provider-detail'),
-                builder: (_) => LlmProviderDetailScreen(parentCrumbs: _crumbs),
+                builder: (_) => LlmProviderDetailScreen(parentCrumbs: _crumbs(l10n)),
               ),
             );
             if (result == true) {
@@ -47,7 +48,7 @@ class LlmProvidersScreen extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: [
-            ThkBreadcrumbRow(crumbs: _crumbs),
+            ThkBreadcrumbRow(crumbs: _crumbs(l10n)),
             Expanded(
               child: providersAsync.when(
                 data: (providers) {
@@ -95,7 +96,7 @@ class LlmProvidersScreen extends ConsumerWidget {
                         CupertinoPageRoute(
                           settings: const RouteSettings(name: 'provider-detail'),
                           builder: (_) =>
-                              LlmProviderDetailScreen(provider: provider, parentCrumbs: _crumbs),
+                              LlmProviderDetailScreen(provider: provider, parentCrumbs: _crumbs(l10n)),
                         ),
                       );
                       if (result == true) {

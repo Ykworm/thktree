@@ -25,9 +25,10 @@ class DefaultModelConfigScreen extends ConsumerStatefulWidget {
 class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScreen> {
   bool _autoModelSaved = false;
 
-  static const _ownCrumb = BreadcrumbSegment(label: '模型配置', routeName: 'default-model-config');
+  BreadcrumbSegment _ownCrumb(AppLocalizations l10n) =>
+      BreadcrumbSegment(label: l10n.breadcrumbModelConfig, routeName: 'default-model-config');
 
-  List<BreadcrumbSegment> get _crumbs => [...widget.parentCrumbs, _ownCrumb];
+  List<BreadcrumbSegment> _crumbs(AppLocalizations l10n) => [...widget.parentCrumbs, _ownCrumb(l10n)];
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +64,7 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
       child: SafeArea(
         child: Column(
           children: [
-            ThkBreadcrumbRow(crumbs: _crumbs),
+            ThkBreadcrumbRow(crumbs: _crumbs(l10n)),
             Expanded(
               child: settingsAsync.when(
                 data: (_) => ThkFillCardPageBody(
@@ -183,6 +184,7 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
             providerId: providerId,
             modelId: modelId,
             onSave: onSave,
+            l10n: l10n,
           ),
         );
       },
@@ -220,6 +222,7 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
     required String title,
     required String? providerId,
     required String? modelId,
+    required AppLocalizations l10n,
   }) {
     Navigator.of(context).push<bool>(
       CupertinoPageRoute(
@@ -228,7 +231,7 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
           title: title,
           currentProviderId: providerId,
           currentModelId: modelId,
-          parentCrumbs: _crumbs,
+          parentCrumbs: _crumbs(l10n),
           onSelected: (nextProviderId, nextModelId) async {
             onSave(nextProviderId, nextModelId);
           },

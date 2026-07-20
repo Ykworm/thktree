@@ -287,8 +287,8 @@ class _LlmSettingsEntry extends ConsumerWidget {
         Navigator.of(context).push(
           CupertinoPageRoute(
             settings: const RouteSettings(name: 'llm-settings'),
-            builder: (_) => const LlmSettingsScreen(
-              parentCrumbs: [BreadcrumbSegment(label: '设置', routeName: 'settings')],
+            builder: (_) => LlmSettingsScreen(
+              parentCrumbs: [BreadcrumbSegment(label: l10n.settingsTabLabel, routeName: 'settings')],
             ),
           ),
         );
@@ -432,10 +432,11 @@ class _BackupRestoreEntry extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return ThkListTile(
       leading: const Icon(CupertinoIcons.archivebox),
-      title: '备份与恢复',
-      subtitle: '自动备份 · 分享 · 恢复',
+      title: l10n.settingsBackupRestore,
+      subtitle: l10n.settingsBackupRestoreSubtitle,
       trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
       onTap: () {
         Navigator.of(context).push(
@@ -462,8 +463,8 @@ class _BackupReminderToggle extends ConsumerWidget {
         padding: EdgeInsets.only(top: 0.5),
         child: Icon(CupertinoIcons.archivebox),
       ),
-      title: '备份提醒',
-      subtitle: '每 3-7 天提醒一次',
+      title: l10n.settingsBackupReminder,
+      subtitle: l10n.settingsBackupReminderSubtitle,
       trailing: CupertinoSwitch(
         value: enabled,
         onChanged: (value) {

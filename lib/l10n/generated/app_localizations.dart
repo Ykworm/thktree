@@ -2612,6 +2612,420 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select Tree'**
   String get wikiSelectTree;
+
+  /// Backup restore screen navigation title
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & Restore'**
+  String get backupTitle;
+
+  /// Delete backup confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Backup'**
+  String get backupDeleteTitle;
+
+  /// Delete backup confirmation dialog content
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this local backup?'**
+  String get backupDeleteContent;
+
+  /// Progress dialog title during backup
+  ///
+  /// In en, this message translates to:
+  /// **'Backing Up'**
+  String get backupBackingUp;
+
+  /// Restore conflict dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Data Conflict'**
+  String get backupDataConflict;
+
+  /// Restore conflict dialog content
+  ///
+  /// In en, this message translates to:
+  /// **'Local data exists. How should the restore proceed?'**
+  String get backupDataConflictContent;
+
+  /// Overwrite option in restore conflict dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite'**
+  String get backupOverwrite;
+
+  /// Merge option in restore conflict dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get backupMerge;
+
+  /// Progress dialog title during restore
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring'**
+  String get backupRestoring;
+
+  /// Restore success alert message
+  ///
+  /// In en, this message translates to:
+  /// **'Restore successful'**
+  String get backupRestoreSuccess;
+
+  /// Restore failed alert message
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed'**
+  String get backupRestoreFailed;
+
+  /// Reminder interval picker dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Interval'**
+  String get backupReminderInterval;
+
+  /// Current reminder interval option
+  ///
+  /// In en, this message translates to:
+  /// **'Every {days} days (current)'**
+  String backupReminderDaysCurrent(int days);
+
+  /// Reminder interval option
+  ///
+  /// In en, this message translates to:
+  /// **'Every {days} days'**
+  String backupReminderDays(int days);
+
+  /// Last backup time when never backed up
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet backed up'**
+  String get backupNotYet;
+
+  /// Section header for automatic backup
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic Backup'**
+  String get backupAutoSection;
+
+  /// Auto backup toggle title
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic Backup'**
+  String get backupAutoTitle;
+
+  /// Auto backup toggle subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Back up locally every 24 hours'**
+  String get backupAutoSubtitle;
+
+  /// Last backup time row title
+  ///
+  /// In en, this message translates to:
+  /// **'Last Backup'**
+  String get backupLastBackup;
+
+  /// Section header for local backups list
+  ///
+  /// In en, this message translates to:
+  /// **'Local Backups ({count})'**
+  String backupLocalSection(int count);
+
+  /// Empty state for local backups list
+  ///
+  /// In en, this message translates to:
+  /// **'No local backups yet'**
+  String get backupLocalEmpty;
+
+  /// Section header for manual backup operations
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Operations'**
+  String get backupManualSection;
+
+  /// Manual backup and share row title
+  ///
+  /// In en, this message translates to:
+  /// **'Back up & Share Now'**
+  String get backupManualShare;
+
+  /// Manual backup and share row subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Create a backup and share it'**
+  String get backupManualShareSubtitle;
+
+  /// Restore from file row title
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from Backup File'**
+  String get backupManualRestore;
+
+  /// Restore from file row subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Restore data from a zip file'**
+  String get backupManualRestoreSubtitle;
+
+  /// Section header for share reminder settings
+  ///
+  /// In en, this message translates to:
+  /// **'Share Reminder'**
+  String get backupReminderSection;
+
+  /// Reminder toggle title
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Switch'**
+  String get backupReminderToggle;
+
+  /// Reminder toggle subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Periodically remind to share backup'**
+  String get backupReminderToggleSubtitle;
+
+  /// Reminder interval subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Remind every {days} days'**
+  String backupReminderSubtitle(int days);
+
+  /// Clips sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Clips'**
+  String get clipsTitle;
+
+  /// Clips sheet manage button
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get clipsManage;
+
+  /// Clip preview dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get clipsPreview;
+
+  /// Empty state for clips list
+  ///
+  /// In en, this message translates to:
+  /// **'No clips yet'**
+  String get clipsEmpty;
+
+  /// Hint text below empty clips state
+  ///
+  /// In en, this message translates to:
+  /// **'Long press selected text to save as clip'**
+  String get clipsEmptyHint;
+
+  /// Clear all clips confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All Clips'**
+  String get clipsClearAllTitle;
+
+  /// Clear all clips confirmation dialog content
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all clips? This cannot be undone.'**
+  String get clipsClearAllContent;
+
+  /// Clear all clips button label
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get clipsClearAll;
+
+  /// Clips management screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Clips'**
+  String get clipsManageTitle;
+
+  /// Image source selection dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Select Image Source'**
+  String get imageSourceSelect;
+
+  /// Camera option in image source dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get imageFromCamera;
+
+  /// Gallery option in image source dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get imageFromGallery;
+
+  /// Error when model doesn't support image input
+  ///
+  /// In en, this message translates to:
+  /// **'Current model does not support images'**
+  String get imageModelNotSupported;
+
+  /// Error when image selection fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to select image: {error}'**
+  String imagePickFailed(String error);
+
+  /// Recent searches section header
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Searches'**
+  String get searchRecent;
+
+  /// Clear all recent searches button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get searchClearAll;
+
+  /// Backup restore settings row title
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & Restore'**
+  String get settingsBackupRestore;
+
+  /// Backup restore settings row subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Auto backup · Share · Restore'**
+  String get settingsBackupRestoreSubtitle;
+
+  /// Backup reminder settings row title
+  ///
+  /// In en, this message translates to:
+  /// **'Backup Reminder'**
+  String get settingsBackupReminder;
+
+  /// Backup reminder settings row subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Remind every 3-7 days'**
+  String get settingsBackupReminderSubtitle;
+
+  /// Message count in wiki node
+  ///
+  /// In en, this message translates to:
+  /// **'{count} messages'**
+  String wikiMessageCount(int count);
+
+  /// Thinking/reasoning section title
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking Process'**
+  String get thinkingProcess;
+
+  /// Time unit for days
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get daysUnit;
+
+  /// Breadcrumb label for LLM providers list
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get breadcrumbProviders;
+
+  /// Breadcrumb label for provider config
+  ///
+  /// In en, this message translates to:
+  /// **'Config'**
+  String get breadcrumbConfig;
+
+  /// Breadcrumb label for LLM settings
+  ///
+  /// In en, this message translates to:
+  /// **'LLM'**
+  String get breadcrumbLLM;
+
+  /// Breadcrumb label for model config
+  ///
+  /// In en, this message translates to:
+  /// **'Model Config'**
+  String get breadcrumbModelConfig;
+
+  /// Error when share content is too large for image
+  ///
+  /// In en, this message translates to:
+  /// **'Content too large to save as a single image. Use \"Share Current Conversation\" or shorten the session.'**
+  String get shareContentTooLarge;
+
+  /// Generic share failure message
+  ///
+  /// In en, this message translates to:
+  /// **'Share failed: {error}'**
+  String shareFailed(String error);
+
+  /// Error when search index repair fails
+  ///
+  /// In en, this message translates to:
+  /// **'Repair failed: {error}'**
+  String searchRepairFailed(String error);
+
+  /// Suggestion to share backups
+  ///
+  /// In en, this message translates to:
+  /// **'You have {count} local backups. Consider sharing one to iCloud or another device.'**
+  String searchBackupSuggestion(int count);
+
+  /// Button to go share backup
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get searchGoShare;
+
+  /// Button to dismiss backup suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get searchIgnore;
+
+  /// Default prompt for image description in chat
+  ///
+  /// In en, this message translates to:
+  /// **'Describe this image'**
+  String get controllerDescribeImage;
+
+  /// Error when API key is not configured
+  ///
+  /// In en, this message translates to:
+  /// **'[API Key not configured] Please go to Settings > Model Providers to configure your API Key.'**
+  String get controllerApiKeyNotConfigured;
+
+  /// TTS voice preview sample text
+  ///
+  /// In en, this message translates to:
+  /// **'Hello, I\'m {name}, {action}.'**
+  String ttsSampleText(String name, String action);
+
+  /// Other settings section header in TTS settings
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get ttsOtherHeader;
+
+  /// Semantics label for TTS waveform widget
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Waveform'**
+  String get ttsWaveformLabel;
+
+  /// Error when trying to send image to non-vision model
+  ///
+  /// In en, this message translates to:
+  /// **'Current model does not support images. Please switch to a vision-capable model.'**
+  String get controllerVisionNotSupported;
 }
 
 class _AppLocalizationsDelegate

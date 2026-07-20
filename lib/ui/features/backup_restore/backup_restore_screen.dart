@@ -12,6 +12,7 @@ import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
 
 /// 备份与恢复聚合页：自动备份 / 本地备份列表 / 手动备份 / 恢复 / 分享提醒
 class BackupRestoreScreen extends ConsumerStatefulWidget {
@@ -65,16 +66,16 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     final ok = await showCupertinoDialog<bool>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('删除备份'),
-        content: const Text('确定删除这份本地备份？'),
+        title: Text(AppLocalizations.of(context)!.backupDeleteTitle),
+        content: Text(AppLocalizations.of(context)!.backupDeleteContent),
         actions: [
           CupertinoDialogAction(
             isDestructiveAction: true,
-            child: const Text('删除'),
+            child: Text(AppLocalizations.of(context)!.delete),
             onPressed: () => Navigator.of(ctx).pop(true),
           ),
           CupertinoDialogAction(
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancel),
             onPressed: () => Navigator.of(ctx).pop(false),
           ),
         ],
@@ -93,8 +94,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     unawaited(showCupertinoDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const CupertinoAlertDialog(
-        title: Text('备份中'),
+      builder: (_) => CupertinoAlertDialog(
+        title: Text(AppLocalizations.of(context)!.backupBackingUp),
         content: Padding(
           padding: EdgeInsets.only(top: 16),
           child: CupertinoActivityIndicator(),
@@ -113,7 +114,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       await _snoozeReminder();
     } catch (e) {
       if (navigator.canPop()) navigator.pop();
-      _showAlert('错误', e.toString());
+      _showAlert(AppLocalizations.of(context)!.error, e.toString());
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -141,20 +142,20 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       final ImportMode? chosen = await showCupertinoDialog<ImportMode>(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('数据冲突'),
-          content: const Text('本地已有数据，恢复将如何处理？'),
+          title: Text(AppLocalizations.of(context)!.backupDataConflict),
+          content: Text(AppLocalizations.of(context)!.backupDataConflictContent),
           actions: [
             CupertinoDialogAction(
-              child: const Text('覆盖'),
+              child: Text(AppLocalizations.of(context)!.backupOverwrite),
               onPressed: () => Navigator.of(ctx).pop(ImportMode.overwrite),
             ),
             CupertinoDialogAction(
-              child: const Text('合并'),
+              child: Text(AppLocalizations.of(context)!.backupMerge),
               onPressed: () => Navigator.of(ctx).pop(ImportMode.merge),
             ),
             CupertinoDialogAction(
               isDestructiveAction: true,
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancel),
               onPressed: () => Navigator.of(ctx).pop(),
             ),
           ],
@@ -169,8 +170,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     unawaited(showCupertinoDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const CupertinoAlertDialog(
-        title: Text('恢复中'),
+      builder: (_) => CupertinoAlertDialog(
+        title: Text(AppLocalizations.of(context)!.backupRestoring),
         content: Padding(
           padding: EdgeInsets.only(top: 16),
           child: CupertinoActivityIndicator(),
@@ -190,14 +191,14 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     }
     if (!mounted) return;
     if (error != null) {
-      _showAlert('错误', error.toString());
+      _showAlert(AppLocalizations.of(context)!.error, error.toString());
     } else if (result != null) {
       if (result.status == ImportResultStatus.success) {
         ref.invalidate(appPathsProvider);
         _refreshBackups();
-        _showAlert('成功', '恢复成功');
+        _showAlert(AppLocalizations.of(context)!.success, AppLocalizations.of(context)!.backupRestoreSuccess);
       } else {
-        _showAlert('错误', result.message ?? '恢复失败');
+        _showAlert(AppLocalizations.of(context)!.error, result.message ?? AppLocalizations.of(context)!.backupRestoreFailed);
       }
     }
     if (mounted) setState(() => _busy = false);
@@ -212,7 +213,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         content: Text(content),
         actions: [
           CupertinoDialogAction(
-            child: const Text('好'),
+            child: Text(AppLocalizations.of(context)!.ok),
             onPressed: () => Navigator.of(ctx).pop(),
           ),
         ],
@@ -225,15 +226,17 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     final chosen = await showCupertinoDialog<int>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('提醒周期'),
+        title: Text(AppLocalizations.of(context)!.backupReminderInterval),
         actions: [
           ...options.map((d) => CupertinoDialogAction(
-                child: Text(d == current ? '每 $d 天（当前）' : '每 $d 天'),
+                child: Text(d == current
+                    ? AppLocalizations.of(context)!.backupReminderDaysCurrent(d)
+                    : AppLocalizations.of(context)!.backupReminderDays(d)),
                 onPressed: () => Navigator.of(ctx).pop(d),
               )),
           CupertinoDialogAction(
             isDestructiveAction: true,
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancel),
             onPressed: () => Navigator.of(ctx).pop(),
           ),
         ],
@@ -247,7 +250,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   }
 
   String _fmtTime(DateTime? t) {
-    if (t == null) return '尚未备份';
+    if (t == null) return AppLocalizations.of(context)!.backupNotYet;
     final d = t.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
     return '${d.year}-${two(d.month)}-${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
@@ -277,16 +280,16 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     final settings =
         ref.watch(settingsControllerProvider).whenOrNull(data: (s) => s);
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('备份与恢复')),
+      navigationBar: CupertinoNavigationBar(middle: Text(AppLocalizations.of(context)!.backupTitle)),
       child: SafeArea(
         child: CupertinoScrollbar(
           child: ListView(
             children: [
-              _sectionHeader('自动备份'),
+              _sectionHeader(AppLocalizations.of(context)!.backupAutoSection),
               _row(
                 leading: const Icon(CupertinoIcons.clock_fill),
-                title: '自动备份',
-                subtitle: '每 24 小时备份一次到本地',
+                title: AppLocalizations.of(context)!.backupAutoTitle,
+                subtitle: AppLocalizations.of(context)!.backupAutoSubtitle,
                 trailing: CupertinoSwitch(
                   value: settings?.autoBackupEnabled ?? true,
                   onChanged: (v) => ref
@@ -296,38 +299,38 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               ),
               _row(
                 leading: const Icon(CupertinoIcons.timer),
-                title: '上次备份',
+                title: AppLocalizations.of(context)!.backupLastBackup,
                 subtitle: _fmtTime(settings?.lastAutoBackupAt),
                 trailing: const SizedBox.shrink(),
               ),
 
-              _sectionHeader('本地备份（${_backups.length}）'),
+              _sectionHeader(AppLocalizations.of(context)!.backupLocalSection(_backups.length)),
               if (_backups.isEmpty)
-                _emptyHint('还没有本地备份')
+                _emptyHint(AppLocalizations.of(context)!.backupLocalEmpty)
               else
                 ..._backups.map(_backupTile),
 
-              _sectionHeader('手动操作'),
+              _sectionHeader(AppLocalizations.of(context)!.backupManualSection),
               _row(
                 leading: const Icon(CupertinoIcons.share),
-                title: '立即备份并分享',
-                subtitle: '生成一份备份并分享出去',
+                title: AppLocalizations.of(context)!.backupManualShare,
+                subtitle: AppLocalizations.of(context)!.backupManualShareSubtitle,
                 trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
                 onTap: _manualBackup,
               ),
               _row(
                 leading: const Icon(CupertinoIcons.download_circle),
-                title: '从备份文件恢复',
-                subtitle: '从 zip 文件恢复数据',
+                title: AppLocalizations.of(context)!.backupManualRestore,
+                subtitle: AppLocalizations.of(context)!.backupManualRestoreSubtitle,
                 trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
                 onTap: _restore,
               ),
 
-              _sectionHeader('分享提醒'),
+              _sectionHeader(AppLocalizations.of(context)!.backupReminderSection),
               _row(
                 leading: const Icon(CupertinoIcons.bell),
-                title: '提醒开关',
-                subtitle: '定期提醒把备份分享出去',
+                title: AppLocalizations.of(context)!.backupReminderToggle,
+                subtitle: AppLocalizations.of(context)!.backupReminderToggleSubtitle,
                 trailing: CupertinoSwitch(
                   value: settings?.backupReminderEnabled ?? true,
                   onChanged: (v) => ref
@@ -337,8 +340,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               ),
               _row(
                 leading: const Icon(CupertinoIcons.calendar),
-                title: '提醒周期',
-                subtitle: '每 ${settings?.backupReminderIntervalDays ?? 3} 天提醒一次',
+                title: AppLocalizations.of(context)!.backupReminderInterval,
+                subtitle: AppLocalizations.of(context)!.backupReminderSubtitle(settings?.backupReminderIntervalDays ?? 3),
                 trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
                 onTap: () =>
                     _pickInterval(settings?.backupReminderIntervalDays ?? 3),

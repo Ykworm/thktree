@@ -108,6 +108,7 @@ class _AboutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: () async {
         await Clipboard.setData(ClipboardData(text: value));
@@ -115,8 +116,8 @@ class _AboutTile extends StatelessWidget {
         showCupertinoDialog<void>(
           context: context,
           barrierDismissible: true,
-          builder: (_) => const CupertinoAlertDialog(
-            content: Text('已复制'),
+          builder: (_) => CupertinoAlertDialog(
+            content: Text(l10n.copied),
           ),
         );
       },

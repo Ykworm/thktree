@@ -340,6 +340,7 @@ class _DaysChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         for (final days in _kDayOptions) ...[
@@ -370,7 +371,7 @@ class _DaysChips extends StatelessWidget {
         ],
         const Spacer(),
         Text(
-          '天',
+          l10n.daysUnit,
           style: TextStyle(
             fontSize: 14,
             color: AppColors.textTertiary,

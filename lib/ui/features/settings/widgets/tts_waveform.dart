@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/features/settings/tts_tokens.dart';
 
 /// 5-bar 波形均衡器。仅在 isActive=true 时通过 [Ticker] 采样驱动；
@@ -87,7 +88,7 @@ class _TtsWaveformState extends State<TtsWaveform>
     final color = widget.isActive ? TtsColors.waveformActive : TtsColors.waveformIdle;
     return RepaintBoundary(
       child: Semantics(
-        label: '语音波形',
+        label: AppLocalizations.of(context)!.ttsWaveformLabel,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,

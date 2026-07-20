@@ -9,6 +9,7 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/features/chat/widgets/clips_management_screen.dart';
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
 
 /// 弹出碎片库 sheet。
 ///
@@ -127,11 +128,11 @@ class _ClipsSheetState extends ConsumerState<ClipsSheet> {
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('关闭'),
+                  child: Text(AppLocalizations.of(context)!.close),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    '碎片',
+                    AppLocalizations.of(context)!.clipsTitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 17,
@@ -143,9 +144,9 @@ class _ClipsSheetState extends ConsumerState<ClipsSheet> {
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
                   onPressed: _openManagement,
-                  child: const Text(
-                    '管理',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  child: Text(
+                    AppLocalizations.of(context)!.clipsManage,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -174,7 +175,7 @@ class _ClipsSheetState extends ConsumerState<ClipsSheet> {
             ),
             const SizedBox(height: 12),
             Text(
-              '暂无碎片',
+              AppLocalizations.of(context)!.clipsEmpty,
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.textTertiary,
@@ -182,7 +183,7 @@ class _ClipsSheetState extends ConsumerState<ClipsSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              '长按选中文本可存入碎片',
+              AppLocalizations.of(context)!.clipsEmptyHint,
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textTertiary.withValues(alpha: 0.7),
@@ -285,10 +286,10 @@ class _ClipPreviewDialog extends StatelessWidget {
                 // 标题栏：标题 + 关闭按钮
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        '预览',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.clipsPreview,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
