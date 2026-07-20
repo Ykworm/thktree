@@ -474,7 +474,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
           _buildToolbarButton(
             key: const ValueKey('doc_split_button'),
             icon: AppIcons.docSplit,
-            color: AppColors.textSecondary,
+            color: AppColors.accent,
             onPressed: _onImportDocSplit,
           ),
         ],
