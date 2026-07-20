@@ -29,7 +29,7 @@
 | iOS | `BackdropFilter` + 半透 fill（约 55% 暖白量级，`AppGlass.fill`） |
 | Android | **不透明** `fillOpaque` paper-warm（无 blur，防脏与性能） |
 | 叠层 | 底 tab **必须 Stack 叠在内容上方**，Column 并排无法磨到页面像素 |
-| 顶栏 | `navBarBackground` = 不透明 `surface`，避免 body 上顶挡住面包屑等 |
+| 顶栏 | `ThkNavBar` = 不透明 `pageBg`（顶栏属底座纸色，非白卡），且 `automaticBackgroundVisibility: false`：静止与滚动同色，滚动不变色；特例：TTS 播放器页显式透明让自定义背景透出 |
 
 Composer 专用：比 chrome 更透的双条毛玻璃（输入 pill + 工具 pill），工具字必须落在玻璃上，禁止裸叠气泡正文。背后必须是消息列表像素（`ChatListView` 不铺实心 `pageBg`，用 `bottomContentInset`）。
 
