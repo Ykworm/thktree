@@ -40,6 +40,10 @@
 
 - [specs/2026-06-05-语音播放功能-design.md](specs/2026-06-05-语音播放功能-design.md) — TTS 完整设计书（架构/iOS 原生 AVSpeechSynthesizer/UI/数据流/i18n/测试/扩展）
 
+## 国际化
+
+备份与恢复页面（`backup_restore_screen.dart`）已完整国际化（2026-07-21），所有硬编码中文替换为 l10n 调用（`backupTitle`/`backupDeleteTitle`/`backupBackingUp`/`backupDataConflict` 等 ~36 个键）。面包屑标签（`breadcrumbProviders`/`breadcrumbConfig`/`breadcrumbLLM`/`breadcrumbModelConfig`）也已国际化。
+
 ## 备份与恢复
 
 设置页中「备份与恢复」为聚合入口，进入 `BackupRestoreScreen` 后分区管理：

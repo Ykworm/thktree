@@ -112,7 +112,7 @@ KIMI、MIMO、DeepSeek、豆包（模型级）、**xAI Grok** 支持原生联网
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 本地持久化 | _shared | ✅ 完成 | 2026-06-06 | — | — | `lib/data/services/file_write_queue.dart` + `lib/data/services/app_database.dart` | Markdown 正文 + SQLite 元数据/关系 |
-| 国际化 | _shared | ✅ 完成 | 2026-06-07 | — | — | `lib/l10n/` | flutter_localizations，中英双语，持续更新中 |
+| 国际化 | _shared | ✅ 完成 | 2026-07-21 | — | — | `lib/l10n/` | flutter_localizations，中英双语，~500 个 ARB 键；backup_restore/clips/markdown toolbar/breadcrumb 等已完整国际化 |
 
 ## 8. Lab 模块（lab）
 

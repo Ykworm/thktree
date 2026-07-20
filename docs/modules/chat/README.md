@@ -46,6 +46,7 @@
 - **聊天页祖先链面包屑**（2026-07-09）：节点深埋树里、导航栏只显当前节点标题，不知在第几层。聊天页消息列表顶部加面包屑 `主题 / 主题名 / 祖先1 / … / 当前节点`，沿 `parentId` 回溯（`_buildCrumbs` 读 `themeDetailControllerProvider(themeId).nodes`），点任意祖先段经 `GoRouter.go(path)` 声明式跳回。末段（当前节点）不可点。**不放**主题详情页（tree 页平铺无层级，面包屑无意义）。涉及 4 个运行时崩溃修复（initState/dispose 改 provider 断言、go_router 栈摘空、暴露内部 ULID），详见 [spec](specs/chat-breadcrumb-nav.md) + [war-story](../../war-stories/flutter/2026-07-09-chat-breadcrumb-nav-crashes.md）。
 - **选区工具栏分支 + 复制即清选区**（2026-07-09）：选区菜单（复制 / 全选 / 分支 / 放入抽屉）新增「分支」按钮，从活跃选区即时分支——读取 `branchFromSelectionProvider`（chat_screen 挂载时注册 `_branchFromSelection` 回调，卸载时清空），此刻选区一定还在，直接消费，不经过全局残留选区。复制 / 放入抽屉 / 分支三个"消费选区"的动作执行后清除全局选区状态（`currentSelectionProvider`），避免分支预览残留已取消的选区；「更多 → 分支」改传 `selectedText: null`，不再读残留选区。根因与修法见 [war-story](../../war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md）。
 - **分享问答对为图片**（2026-07-17 分片改进）：`ShareService`（`lib/data/services/share_service.dart`）将对话消息构建 `ShareCardWidget` → overlay 布局 → 高清截图。超 GPU 纹理上限（4096px）时自动纵向分片 + `package:image` 软件拼接，避免长聊截断。清晰度下限 1.5（不再压到 0.2 糊字），最终输出长边上限 24576px 防 OOM。`RepaintBoundary` 在 Opacity 内侧保证导出图不受 0.02 透明度影响。
+- **碎片系统完整国际化**（2026-07-21）：`clips_sheet.dart`、`clips_management_screen.dart`、`clips_context_menu.dart` 所有硬编码中文替换为 l10n 调用（`clipsTitle`/`clipsManage`/`clipsEmpty`/`clipsClearAll`/`clipsBranch`/`clipsSaveToDrawer` 等）。
 
 ## 代码文件
 
