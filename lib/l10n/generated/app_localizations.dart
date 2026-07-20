@@ -3038,6 +3038,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deep Thinking Not Supported'**
   String get deepThinkingNotSupported;
+
+  /// Context menu item to branch from selection
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get clipsBranch;
+
+  /// Context menu item to save selection to clips
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Clips'**
+  String get clipsSaveToDrawer;
+
+  /// Markdown toolbar bold tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get markdownBold;
+
+  /// Markdown toolbar italic tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get markdownItalic;
+
+  /// Markdown toolbar strikethrough tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Strikethrough'**
+  String get markdownStrikethrough;
+
+  /// Markdown toolbar heading tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get markdownHeading;
+
+  /// Markdown toolbar bullet list tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet List'**
+  String get markdownBulletList;
+
+  /// Markdown toolbar numbered list tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered List'**
+  String get markdownNumberedList;
+
+  /// Markdown toolbar checkbox tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Checkbox'**
+  String get markdownCheckbox;
+
+  /// Markdown toolbar code tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get markdownCode;
+
+  /// Markdown toolbar quote tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get markdownQuote;
+
+  /// Markdown toolbar link tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get markdownLink;
+
+  /// Markdown toolbar divider tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Divider'**
+  String get markdownDivider;
+
+  /// Markdown toolbar table tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get markdownTable;
+
+  /// Markdown bold placeholder text
+  ///
+  /// In en, this message translates to:
+  /// **'bold text'**
+  String get markdownBoldPlaceholder;
+
+  /// Markdown italic placeholder text
+  ///
+  /// In en, this message translates to:
+  /// **'italic text'**
+  String get markdownItalicPlaceholder;
+
+  /// Markdown strikethrough placeholder text
+  ///
+  /// In en, this message translates to:
+  /// **'strikethrough text'**
+  String get markdownStrikethroughPlaceholder;
+
+  /// Markdown link placeholder text
+  ///
+  /// In en, this message translates to:
+  /// **'link text'**
+  String get markdownLinkPlaceholder;
+
+  /// Markdown table column 1 header
+  ///
+  /// In en, this message translates to:
+  /// **'Column 1'**
+  String get markdownTableHeader1;
+
+  /// Markdown table column 2 header
+  ///
+  /// In en, this message translates to:
+  /// **'Column 2'**
+  String get markdownTableHeader2;
+
+  /// Markdown table column 3 header
+  ///
+  /// In en, this message translates to:
+  /// **'Column 3'**
+  String get markdownTableHeader3;
 }
 
 class _AppLocalizationsDelegate

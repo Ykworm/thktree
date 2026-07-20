@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
 
@@ -15,6 +16,7 @@ class MarkdownToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 44,
       decoration: BoxDecoration(
@@ -30,66 +32,66 @@ class MarkdownToolbar extends StatelessWidget {
           children: [
             _ToolbarButton(
               icon: SFIcons.sf_bold,
-              tooltip: '粗体',
-              onPressed: () => _wrapSelection('**', '**', '粗体'),
+              tooltip: l10n.markdownBold,
+              onPressed: () => _wrapSelection('**', '**', l10n.markdownBoldPlaceholder),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_italic,
-              tooltip: '斜体',
-              onPressed: () => _wrapSelection('_', '_', '斜体'),
+              tooltip: l10n.markdownItalic,
+              onPressed: () => _wrapSelection('_', '_', l10n.markdownItalicPlaceholder),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_strikethrough,
-              tooltip: '删除线',
-              onPressed: () => _wrapSelection('~~', '~~', '删除线'),
+              tooltip: l10n.markdownStrikethrough,
+              onPressed: () => _wrapSelection('~~', '~~', l10n.markdownStrikethroughPlaceholder),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_textformat_size,
-              tooltip: '标题',
+              tooltip: l10n.markdownHeading,
               onPressed: _toggleHeading,
             ),
             const _Divider(),
             _ToolbarButton(
               icon: SFIcons.sf_list_bullet,
-              tooltip: '无序列表',
+              tooltip: l10n.markdownBulletList,
               onPressed: () => _insertAtLineStart('- ', ''),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_list_number,
-              tooltip: '有序列表',
+              tooltip: l10n.markdownNumberedList,
               onPressed: () => _insertAtLineStart('1. ', ''),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_checklist_unchecked,
-              tooltip: '复选框',
+              tooltip: l10n.markdownCheckbox,
               onPressed: () => _insertAtLineStart('- [ ] ', ''),
             ),
             const _Divider(),
             _ToolbarButton(
               icon: SFIcons.sf_curlybraces,
-              tooltip: '代码',
+              tooltip: l10n.markdownCode,
               onPressed: () => _wrapSelection('`', '`', 'code'),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_quote_closing,
-              tooltip: '引用',
+              tooltip: l10n.markdownQuote,
               onPressed: () => _insertAtLineStart('> ', ''),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_link,
-              tooltip: '链接',
-              onPressed: () => _wrapSelection('[', '](url)', '链接文字'),
+              tooltip: l10n.markdownLink,
+              onPressed: () => _wrapSelection('[', '](url)', l10n.markdownLinkPlaceholder),
             ),
             _ToolbarButton(
               icon: SFIcons.sf_ruler,
-              tooltip: '分隔线',
+              tooltip: l10n.markdownDivider,
               onPressed: () => _insertText('\n---\n'),
             ),
             const _Divider(),
             _ToolbarButton(
               icon: SFIcons.sf_tablecells,
-              tooltip: '表格',
-              onPressed: _insertTable,
+              tooltip: l10n.markdownTable,
+              onPressed: () => _insertTable(l10n),
             ),
           ],
         ),
@@ -140,8 +142,8 @@ class MarkdownToolbar extends StatelessWidget {
   }
 
   /// 插入 3x3 markdown 表格模板
-  void _insertTable() {
-    final table = '\n| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n|  |  |  |\n|  |  |  |\n';
+  void _insertTable(AppLocalizations l10n) {
+    final table = '\n| ${l10n.markdownTableHeader1} | ${l10n.markdownTableHeader2} | ${l10n.markdownTableHeader3} |\n| --- | --- | --- |\n|  |  |  |\n|  |  |  |\n';
     _insertText(table);
   }
 

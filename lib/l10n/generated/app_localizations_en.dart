@@ -1681,4 +1681,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deepThinkingNotSupported => 'Deep Thinking Not Supported';
+
+  @override
+  String get clipsBranch => 'Branch';
+
+  @override
+  String get clipsSaveToDrawer => 'Save to Clips';
+
+  @override
+  String get markdownBold => 'Bold';
+
+  @override
+  String get markdownItalic => 'Italic';
+
+  @override
+  String get markdownStrikethrough => 'Strikethrough';
+
+  @override
+  String get markdownHeading => 'Heading';
+
+  @override
+  String get markdownBulletList => 'Bullet List';
+
+  @override
+  String get markdownNumberedList => 'Numbered List';
+
+  @override
+  String get markdownCheckbox => 'Checkbox';
+
+  @override
+  String get markdownCode => 'Code';
+
+  @override
+  String get markdownQuote => 'Quote';
+
+  @override
+  String get markdownLink => 'Link';
+
+  @override
+  String get markdownDivider => 'Divider';
+
+  @override
+  String get markdownTable => 'Table';
+
+  @override
+  String get markdownBoldPlaceholder => 'bold text';
+
+  @override
+  String get markdownItalicPlaceholder => 'italic text';
+
+  @override
+  String get markdownStrikethroughPlaceholder => 'strikethrough text';
+
+  @override
+  String get markdownLinkPlaceholder => 'link text';
+
+  @override
+  String get markdownTableHeader1 => 'Column 1';
+
+  @override
+  String get markdownTableHeader2 => 'Column 2';
+
+  @override
+  String get markdownTableHeader3 => 'Column 3';
 }

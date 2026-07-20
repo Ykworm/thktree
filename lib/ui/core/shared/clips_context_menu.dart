@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show AdaptiveTextSelectionToolbar;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/selection_state.dart';
 
@@ -61,7 +62,7 @@ Widget buildClipsContextMenu(
       ),
       if (onBranch != null)
         ContextMenuButtonItem(
-          label: '分支',
+          label: AppLocalizations.of(context)!.clipsBranch,
           onPressed: () {
             selectableRegionState.hideToolbar();
             // 从活跃选区即时分支：此刻选区一定还在，直接消费并清除全局状态。
@@ -70,7 +71,7 @@ Widget buildClipsContextMenu(
           },
         ),
       ContextMenuButtonItem(
-        label: '放入抽屉',
+        label: AppLocalizations.of(context)!.clipsSaveToDrawer,
         onPressed: () {
           selectableRegionState.hideToolbar();
           // 同理：选区已消费，清除全局选区状态，防止后续分支流程误用残留。

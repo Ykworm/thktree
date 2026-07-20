@@ -1617,4 +1617,67 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deepThinkingNotSupported => '不支持深度思考';
+
+  @override
+  String get clipsBranch => '分支';
+
+  @override
+  String get clipsSaveToDrawer => '放入抽屉';
+
+  @override
+  String get markdownBold => '粗体';
+
+  @override
+  String get markdownItalic => '斜体';
+
+  @override
+  String get markdownStrikethrough => '删除线';
+
+  @override
+  String get markdownHeading => '标题';
+
+  @override
+  String get markdownBulletList => '无序列表';
+
+  @override
+  String get markdownNumberedList => '有序列表';
+
+  @override
+  String get markdownCheckbox => '复选框';
+
+  @override
+  String get markdownCode => '代码';
+
+  @override
+  String get markdownQuote => '引用';
+
+  @override
+  String get markdownLink => '链接';
+
+  @override
+  String get markdownDivider => '分隔线';
+
+  @override
+  String get markdownTable => '表格';
+
+  @override
+  String get markdownBoldPlaceholder => '粗体文字';
+
+  @override
+  String get markdownItalicPlaceholder => '斜体文字';
+
+  @override
+  String get markdownStrikethroughPlaceholder => '删除线文字';
+
+  @override
+  String get markdownLinkPlaceholder => '链接文字';
+
+  @override
+  String get markdownTableHeader1 => '列1';
+
+  @override
+  String get markdownTableHeader2 => '列2';
+
+  @override
+  String get markdownTableHeader3 => '列3';
 }

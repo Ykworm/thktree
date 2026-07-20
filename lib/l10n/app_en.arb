@@ -2271,5 +2271,89 @@
   "deepThinkingNotSupported": "Deep Thinking Not Supported",
   "@deepThinkingNotSupported": {
     "description": "Deep thinking toggle label when not supported"
+  },
+  "clipsBranch": "Branch",
+  "@clipsBranch": {
+    "description": "Context menu item to branch from selection"
+  },
+  "clipsSaveToDrawer": "Save to Clips",
+  "@clipsSaveToDrawer": {
+    "description": "Context menu item to save selection to clips"
+  },
+  "markdownBold": "Bold",
+  "@markdownBold": {
+    "description": "Markdown toolbar bold tooltip"
+  },
+  "markdownItalic": "Italic",
+  "@markdownItalic": {
+    "description": "Markdown toolbar italic tooltip"
+  },
+  "markdownStrikethrough": "Strikethrough",
+  "@markdownStrikethrough": {
+    "description": "Markdown toolbar strikethrough tooltip"
+  },
+  "markdownHeading": "Heading",
+  "@markdownHeading": {
+    "description": "Markdown toolbar heading tooltip"
+  },
+  "markdownBulletList": "Bullet List",
+  "@markdownBulletList": {
+    "description": "Markdown toolbar bullet list tooltip"
+  },
+  "markdownNumberedList": "Numbered List",
+  "@markdownNumberedList": {
+    "description": "Markdown toolbar numbered list tooltip"
+  },
+  "markdownCheckbox": "Checkbox",
+  "@markdownCheckbox": {
+    "description": "Markdown toolbar checkbox tooltip"
+  },
+  "markdownCode": "Code",
+  "@markdownCode": {
+    "description": "Markdown toolbar code tooltip"
+  },
+  "markdownQuote": "Quote",
+  "@markdownQuote": {
+    "description": "Markdown toolbar quote tooltip"
+  },
+  "markdownLink": "Link",
+  "@markdownLink": {
+    "description": "Markdown toolbar link tooltip"
+  },
+  "markdownDivider": "Divider",
+  "@markdownDivider": {
+    "description": "Markdown toolbar divider tooltip"
+  },
+  "markdownTable": "Table",
+  "@markdownTable": {
+    "description": "Markdown toolbar table tooltip"
+  },
+  "markdownBoldPlaceholder": "bold text",
+  "@markdownBoldPlaceholder": {
+    "description": "Markdown bold placeholder text"
+  },
+  "markdownItalicPlaceholder": "italic text",
+  "@markdownItalicPlaceholder": {
+    "description": "Markdown italic placeholder text"
+  },
+  "markdownStrikethroughPlaceholder": "strikethrough text",
+  "@markdownStrikethroughPlaceholder": {
+    "description": "Markdown strikethrough placeholder text"
+  },
+  "markdownLinkPlaceholder": "link text",
+  "@markdownLinkPlaceholder": {
+    "description": "Markdown link placeholder text"
+  },
+  "markdownTableHeader1": "Column 1",
+  "@markdownTableHeader1": {
+    "description": "Markdown table column 1 header"
+  },
+  "markdownTableHeader2": "Column 2",
+  "@markdownTableHeader2": {
+    "description": "Markdown table column 2 header"
+  },
+  "markdownTableHeader3": "Column 3",
+  "@markdownTableHeader3": {
+    "description": "Markdown table column 3 header"
   }
 }
