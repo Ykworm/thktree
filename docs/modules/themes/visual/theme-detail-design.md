@@ -251,24 +251,35 @@ onLongPress: () => _showRenameDialog(context, ref, node, themeId, allNodes),
 ThkNavBar.inline(
   title: l10n.treeTitle(localizedThemeTitle(l10n, data.themeTitle)),
   leading: CupertinoButton(/* 返回 */),
-  trailing: Row(
-    children: [
-      CupertinoButton(/* ⋯ overflow */),
-      CupertinoButton(/* + 新建根节点 */),
-    ],
-  ),
+  trailing: CupertinoButton(/* ⋯ overflow */),
 )
 ```
 
-### 7.1 节点标题搜索（body 顶部）
+### 7.1 工具行（body 顶部）
 
-有节点时，NavBar 下方常驻搜索框（`key: tree_title_search`）：
+Tree tab 顶部常驻一行工具行：搜索框 + 两个操作按钮（操作集中右侧）：
+
+```
+[ 🔍 搜索框 (Expanded) ]  [ + ]  [ 📥 ]
+```
+
+| 元素 | key | 说明 |
+|------|-----|------|
+| 标题搜索框 | `tree_title_search` | `CupertinoSearchTextField`，行为见 7.1.1 |
+| 新建根节点 `+` | `add_node_button` | accent 图标；`_promptRootTitle` → `createRootChatNode` |
+| 导入文档并拆分 📥 | `doc_split_button` | textSecondary 图标；`AppIcons.docSplit` = `arrow.down.doc`（SF Symbol） |
+
+- 两个操作按钮用 `_buildToolbarButton`：40×36 圆角矩形底衬（`AppColors.surface` 白卡，圆角 10，图标 20pt），与搜索框等高对齐，视觉重量平衡。
+- docSplit 图标 2026-07-20 由 `square.split.2x1`（形似侧栏开关，语义误导）改为 `arrow.down.doc`。
+
+### 7.1.1 节点标题搜索行为
 
 | 项 | 行为 |
 |----|------|
 | 匹配 | `title.toLowerCase().contains(query)`，**不**搜消息 / lastMessagePreview |
 | 展示 | 滤树：只渲染 `visibleNodeIds`（命中 + 祖先）；保持缩进层级 |
 | 算法 | `visibleNodeIdsForTitleQuery`（`tree_title_filter.dart`）；空 query → `null`（不过滤） |
+| 触发 | `onChanged` live 过滤（本地过滤，无需显式提交；与笔记 tab 的显式搜索不同，见 `docs/_tmp/search-explicit-button.md`） |
 | 搜索态 | 强制展开（忽略 `_collapsedIds`）；`reorderEnabled=false`（无拖拽手柄 / DragTarget） |
 | 仍可用 | 点进 chat、长按重命名、swipe 删除/分支 |
 | 无命中 | `l10n.treeTitleSearchNoResults`（「无匹配标题」） |
@@ -281,7 +292,7 @@ ThkNavBar.inline(
 
 ### 8.1 树空状态
 
-- 主题下无任何根节点：`l10n.emptyTree`（不展示搜索框）
+- 主题下无任何根节点：工具行保留（可搜索 / 新建 / 导入）+ 居中 `l10n.emptyTree`
 - 有节点但标题搜索无命中：搜索框保留 + `l10n.treeTitleSearchNoResults`
 
 ### 8.2 错误 / Loading
