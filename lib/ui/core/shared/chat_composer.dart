@@ -415,7 +415,7 @@ class _ToolChip extends StatelessWidget {
     final Color fg = active
         ? AppColors.accent
         : onPressed != null
-            ? AppColors.textSecondary
+            ? AppColors.textTertiary
             : AppColors.textTertiary.withValues(alpha: 0.55);
 
     return CupertinoButton(
@@ -442,7 +442,7 @@ class _ToolChip extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                   color: fg,
                 ),
               ),
