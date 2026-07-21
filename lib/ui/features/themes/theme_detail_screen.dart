@@ -376,41 +376,82 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   }
 
   Widget _buildTabSwitcher(AppLocalizations l10n) {
-    return SizedBox(
-      width: 180, // slightly smaller width for native feel
-      child: CupertinoSlidingSegmentedControl<_DetailTab>(
-        groupValue: _selectedTab,
-        onValueChanged: (value) {
-          if (value != null) {
-            setState(() => _selectedTab = value);
-          }
-        },
-        backgroundColor: AppColors.surfaceMuted, // Warm muted background instead of cool gray
-        thumbColor: AppColors.surface,
-        children: {
-          _DetailTab.tree: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              l10n.treeTabLabel,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: _selectedTab == _DetailTab.tree ? FontWeight.w600 : FontWeight.w500,
-                color: _selectedTab == _DetailTab.tree ? AppColors.textPrimary : AppColors.textSecondary,
+    return Container(
+      width: 160,
+      height: 32,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted, // 柔和暖白灰底色
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedTab = _DetailTab.tree);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _selectedTab == _DetailTab.tree ? AppColors.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: _selectedTab == _DetailTab.tree
+                      ? [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  l10n.treeTabLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: _selectedTab == _DetailTab.tree ? FontWeight.w600 : FontWeight.w500,
+                    color: _selectedTab == _DetailTab.tree ? AppColors.textPrimary : AppColors.textSecondary,
+                  ),
+                ),
               ),
             ),
           ),
-          _DetailTab.wiki: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              l10n.wikiTabLabel,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: _selectedTab == _DetailTab.wiki ? FontWeight.w600 : FontWeight.w500,
-                color: _selectedTab == _DetailTab.wiki ? AppColors.textPrimary : AppColors.textSecondary,
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedTab = _DetailTab.wiki);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _selectedTab == _DetailTab.wiki ? AppColors.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: _selectedTab == _DetailTab.wiki
+                      ? [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  l10n.wikiTabLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: _selectedTab == _DetailTab.wiki ? FontWeight.w600 : FontWeight.w500,
+                    color: _selectedTab == _DetailTab.wiki ? AppColors.textPrimary : AppColors.textSecondary,
+                  ),
+                ),
               ),
             ),
           ),
-        },
+        ],
       ),
     );
   }
