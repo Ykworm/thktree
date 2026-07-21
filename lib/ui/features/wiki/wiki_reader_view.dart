@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
@@ -780,13 +781,16 @@ class _EmptyWikiView extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: Transform.translate(
-                    // Optical alignment: the book glyph sits slightly high.
-                    offset: const Offset(0, 4),
-                    child: Icon(
-                      AppIcons.book,
-                      size: 76,
-                      color: AppColors.matteGold,
+                  child: SvgPicture.string(
+                    '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>''',
+                    width: 76,
+                    height: 76,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.matteGold,
+                      BlendMode.srcIn,
                     ),
                   ),
                 ),
