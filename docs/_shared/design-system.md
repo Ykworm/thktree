@@ -51,6 +51,20 @@ Composer 专用：比 chrome 更透的双条毛玻璃（输入 pill + 工具 pil
 
 完整分期与验收记录见 [CHANGELOG/2026-07-17-warm-paper-glass.md](../CHANGELOG/2026-07-17-warm-paper-glass.md)。
 
+## 排版与排布范式 (Editorial Layout)
+
+### 空态扉页感 (Editorial Empty State)
+
+空态不要做得像“系统报错提示”。应当像“打开一本新书的空白扉页”。
+- **主标题**：降低对抗感。使用 `w400`（常规字重），并配合 `letterSpacing: 1.2` 拉开字间距，营造印刷品的呼吸感；使用 `AppColors.textMatteGoldDark` 并叠加 `0.8` 透明度。
+- **副标题**：禁止使用突兀的冷灰（如 `textSecondary/Tertiary`）。使用与主标题同色系的 `textMatteGoldDark` 叠加 `0.5` 透明度贯通色调，并设置 `height: 1.5` 增加行高。
+- **视觉中心**：不要使用死板的方形容器和边框，让主图形（如 SVG）直接成为视觉中心。
+
+### 字体图标陷阱与 SVG 替代
+
+- **居中陷阱**：Flutter 中的 `Icon` 渲染的是字体包围盒（bounding box），字体设计为了基线对齐通常偏上。在方形卡片中用 `Center` 包裹 `CupertinoIcons` 永远会导致**视觉偏上**。
+- **解决方案**：在空态卡片或对几何居中要求极高的场景中，**禁止使用字体图标手动调 offset**，必须引入 `flutter_svg`，使用真正的 SVG 矢量图配合 `Center` 进行渲染。
+
 ---
 
 ## 单一真源
@@ -85,6 +99,7 @@ Composer 专用：比 chrome 更透的双条毛玻璃（输入 pill + 工具 pil
 - `CupertinoColors.*`
 - `Color(0x…)`（含 `Color.fromARGB` / `Color.fromRGBO` / `Color.from`）
 - 装饰性特征色也走 token：`AppColors.labBg / labAccentBlue / labAccentOrange / labAccentPurple / waveTeal / waveOrange / wavePurple`
+- **原生的 `CupertinoSlidingSegmentedControl`**：其内置的半透明叠加逻辑会破坏我们精准配置的字色和底色，导致未选中状态文字发虚、无法看清。在严格色系中应改用自定义的 `Container` + `Row` 组合实现。
 
 > 注：Material `Colors.*` 当前未强制拦截，但同样建议走 token；后续可纳入 guard。  
 > 玻璃/氛围相关裸色仅允许出现在 `app_surfaces.dart` 与明确声明的 glass shell 内（与 color 真源同纪律）。
