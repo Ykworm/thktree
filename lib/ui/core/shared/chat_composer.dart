@@ -250,15 +250,13 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   child: Row(
                     children: [
-                      if (widget.onWebSearchToggle != null) ...[
+                      if (widget.onWebSearchToggle != null)
                         _WebSearchToggle(
                           enabled: widget.webSearchEnabled,
                           supported: widget.webSearchSupported,
                           isStreaming: widget.isStreaming,
                           onToggle: widget.onWebSearchToggle!,
                         ),
-                        if (showThinkingTool) const _ToolDivider(),
-                      ],
                       if (widget.alwaysThinking)
                         _AlwaysThinkingIndicator(
                           isStreaming: widget.isStreaming,
@@ -336,21 +334,6 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
       text: updated,
       selection: TextSelection.collapsed(offset: start + 1),
       composing: TextRange.empty,
-    );
-  }
-}
-
-/// 工具 pill 内竖线分隔
-class _ToolDivider extends StatelessWidget {
-  const _ToolDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: AppSp.dividerThickness,
-      height: 14,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      color: AppColors.border.withValues(alpha: 0.85),
     );
   }
 }
