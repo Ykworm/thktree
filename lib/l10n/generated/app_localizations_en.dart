@@ -1683,6 +1683,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deepThinkingNotSupported => 'Deep Thinking Not Supported';
 
   @override
+  String get webSearch => 'Web Search';
+
+  @override
+  String get webSearchNotSupported => 'No Web Search';
+
+  @override
   String get clipsBranch => 'Branch';
 
   @override

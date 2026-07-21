@@ -1619,6 +1619,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deepThinkingNotSupported => '不支持深度思考';
 
   @override
+  String get webSearch => '联网搜索';
+
+  @override
+  String get webSearchNotSupported => '不支持联网';
+
+  @override
   String get clipsBranch => '分支';
 
   @override

@@ -3039,6 +3039,18 @@ abstract class AppLocalizations {
   /// **'Deep Thinking Not Supported'**
   String get deepThinkingNotSupported;
 
+  /// Web search toggle label in chat composer
+  ///
+  /// In en, this message translates to:
+  /// **'Web Search'**
+  String get webSearch;
+
+  /// Web search toggle label when not supported
+  ///
+  /// In en, this message translates to:
+  /// **'No Web Search'**
+  String get webSearchNotSupported;
+
   /// Context menu item to branch from selection
   ///
   /// In en, this message translates to:

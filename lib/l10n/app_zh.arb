@@ -1193,6 +1193,8 @@
   "controllerVisionNotSupported": "当前模型不支持图片，请切换到支持视觉的模型后再上传图片。",
   "deepThinking": "深度思考",
   "deepThinkingNotSupported": "不支持深度思考",
+  "webSearch": "联网搜索",
+  "webSearchNotSupported": "不支持联网",
   "clipsBranch": "分支",
   "clipsSaveToDrawer": "放入抽屉",
   "markdownBold": "粗体",

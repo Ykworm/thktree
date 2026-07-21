@@ -2272,6 +2272,14 @@
   "@deepThinkingNotSupported": {
     "description": "Deep thinking toggle label when not supported"
   },
+  "webSearch": "Web Search",
+  "@webSearch": {
+    "description": "Web search toggle label in chat composer"
+  },
+  "webSearchNotSupported": "No Web Search",
+  "@webSearchNotSupported": {
+    "description": "Web search toggle label when not supported"
+  },
   "clipsBranch": "Branch",
   "@clipsBranch": {
     "description": "Context menu item to branch from selection"

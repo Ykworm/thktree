@@ -470,9 +470,9 @@ class _WebSearchToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _ToolChip(
-      icon: enabled ? AppIcons.globe : AppIcons.globeSlash,
-      label: supported ? '联网搜索' : '不支持联网',
+      label: supported ? l10n.webSearch : l10n.webSearchNotSupported,
       active: enabled && supported,
       onPressed: supported && !isStreaming ? onToggle : null,
     );
@@ -587,7 +587,7 @@ class _ComposerGlassShell extends StatelessWidget {
   final Widget child;
   final BorderRadius borderRadius;
 
-  /// ~22% 暖白；靠 blur 保可读，避免「实心白块」（token 见 AppGlass）
+  /// ~20% 暖白；靠 blur 保可读，避免「实心白块」（token 见 AppGlass）
   static const _fill = AppGlass.composerFill;
   static const _blur = AppGlass.composerBlurSigma;
   static const _stroke = AppGlass.composerStroke;
