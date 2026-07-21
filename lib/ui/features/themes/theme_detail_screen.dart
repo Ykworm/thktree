@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -375,25 +376,82 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   }
 
   Widget _buildTabSwitcher(AppLocalizations l10n) {
-    return SizedBox(
-      width: 220,
-      child: CupertinoSlidingSegmentedControl<_DetailTab>(
-        groupValue: _selectedTab,
-        onValueChanged: (value) {
-          if (value != null) {
-            setState(() => _selectedTab = value);
-          }
-        },
-        children: {
-          _DetailTab.tree: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(l10n.treeTabLabel),
+    return Container(
+      width: 200,
+      height: 36,
+      decoration: BoxDecoration(
+        color: AppColors.labCoolBg, // 极其扁平的淡银灰底色
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedTab = _DetailTab.tree);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _selectedTab == _DetailTab.tree ? AppColors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: _selectedTab == _DetailTab.tree
+                      ? [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  l10n.treeTabLabel,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: _selectedTab == _DetailTab.tree ? FontWeight.w600 : FontWeight.w400,
+                    color: _selectedTab == _DetailTab.tree ? AppColors.textPrimary : AppColors.textTertiary,
+                  ),
+                ),
+              ),
+            ),
           ),
-          _DetailTab.wiki: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(l10n.wikiTabLabel),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedTab = _DetailTab.wiki);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _selectedTab == _DetailTab.wiki ? AppColors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: _selectedTab == _DetailTab.wiki
+                      ? [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  l10n.wikiTabLabel,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: _selectedTab == _DetailTab.wiki ? FontWeight.w600 : FontWeight.w400,
+                    color: _selectedTab == _DetailTab.wiki ? AppColors.textPrimary : AppColors.textTertiary,
+                  ),
+                ),
+              ),
+            ),
           ),
-        },
+        ],
       ),
     );
   }
@@ -454,6 +512,17 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               key: const ValueKey('tree_title_search'),
               controller: _titleSearchController,
               placeholder: l10n.treeTitleSearchHint,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               onChanged: (value) => setState(() => _titleQuery = value),
             ),
           ),
@@ -995,7 +1064,7 @@ class _DragHandleState extends State<_DragHandle>
           child: Icon(
             CupertinoIcons.line_horizontal_3,
             size: 22,
-            color: AppColors.textSecondary,
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
           ),
         ),
         child: AnimatedBuilder(
@@ -1011,7 +1080,7 @@ class _DragHandleState extends State<_DragHandle>
               child: Icon(
                 CupertinoIcons.line_horizontal_3,
                 size: 22,
-                color: AppColors.textSecondary,
+                color: AppColors.textTertiary.withValues(alpha: 0.5),
               ),
             ),
           ),

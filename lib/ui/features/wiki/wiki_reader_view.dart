@@ -787,16 +787,41 @@ class _EmptyWikiView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                AppIcons.book,
-                size: 64,
-                color: AppColors.textTertiary.withValues(alpha: 0.5),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.matteGoldLight, // 非常淡的暖金色
+                      AppColors.matteGoldBg, // 极淡的暖灰
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.matteGoldBorder,
+                    width: 0.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.matteGold.withValues(alpha: 0.1),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  AppIcons.book,
+                  size: 64,
+                  color: AppColors.matteGold, // 高级暖沙金
+                ),
               ),
               const SizedBox(height: 20),
               Text(
                 l10n.wikiEmptyTitle,
                 style: AppTheme.title1.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppColors.textMatteGoldDark, // 带有暖灰调的深色
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
@@ -809,17 +834,38 @@ class _EmptyWikiView extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 28),
-              if (onGenerate != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: CupertinoButton.filled(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+              if (onGenerate != null) ...[
+                const SizedBox(height: 32),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.matteGold.withValues(alpha: 0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    color: AppColors.matteGold, // 暖沙金按钮
                     borderRadius: BorderRadius.circular(12),
                     onPressed: onGenerate,
-                    child: Text(l10n.wikiGenerateButton),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(CupertinoIcons.wand_stars, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.wikiGenerateButton,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              ],
             ],
           ),
         ),

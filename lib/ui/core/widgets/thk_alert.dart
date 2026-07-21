@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// iOS 风格警告对话框封装，简化 [CupertinoAlertDialog] 的调用。
 ///
@@ -43,39 +45,46 @@ class ThkAlert {
     return showCupertinoDialog<void>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: title != null ? Text(title) : null,
-        content: message != null ? Text(message) : null,
-        actions: [
-          if (destructiveAction != null)
-            CupertinoDialogAction(
-              isDestructiveAction: true,
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                onDestructive?.call();
-              },
-              child: Text(destructiveAction),
+      builder: (dialogContext) => Theme(
+          data: ThemeData(
+            cupertinoOverrideTheme: const CupertinoThemeData(
+              primaryColor: AppColors.matteGold, // 默认按钮改为高级暖沙金
             ),
-          if (defaultAction != null)
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                onDefault?.call();
-              },
-              child: Text(defaultAction),
-            ),
-          if (cancelAction != null)
-            CupertinoDialogAction(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                onCancel?.call();
-              },
-              child: Text(cancelAction),
-            ),
-        ],
-      ),
-    );
+          ),
+          child: CupertinoAlertDialog(
+            title: title != null ? Text(title) : null,
+            content: message != null ? Text(message) : null,
+            actions: [
+              if (destructiveAction != null)
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    onDestructive?.call();
+                  },
+                  child: Text(destructiveAction),
+                ),
+              if (defaultAction != null)
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    onDefault?.call();
+                  },
+                  child: Text(defaultAction),
+                ),
+              if (cancelAction != null)
+                CupertinoDialogAction(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    onCancel?.call();
+                  },
+                  child: Text(cancelAction),
+                ),
+            ],
+          ),
+        ),
+      );
   }
 
   /// 显示一个确认/取消双按钮对话框。
@@ -94,26 +103,33 @@ class ThkAlert {
     return showCupertinoDialog<void>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: title != null ? Text(title) : null,
-        content: message != null ? Text(message) : null,
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              onCancel?.call();
-            },
-            child: Text(cancelAction),
+      builder: (dialogContext) => Theme(
+        data: ThemeData(
+          cupertinoOverrideTheme: const CupertinoThemeData(
+            primaryColor: AppColors.matteGold, // 默认按钮改为高级暖沙金
           ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              onConfirm?.call();
-            },
-            child: Text(confirmAction),
-          ),
-        ],
+        ),
+        child: CupertinoAlertDialog(
+          title: title != null ? Text(title) : null,
+          content: message != null ? Text(message) : null,
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onCancel?.call();
+              },
+              child: Text(cancelAction),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onConfirm?.call();
+              },
+              child: Text(confirmAction),
+            ),
+          ],
+        ),
       ),
     );
   }

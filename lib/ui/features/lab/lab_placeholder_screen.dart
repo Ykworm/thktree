@@ -6,13 +6,15 @@ import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_durations.dart';
 import 'package:thk_tree/ui/core/theme/app_spacing.dart';
-import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 
-/// Lab tab — 实验台调性，但 **不是** 深色夜店。
+/// 专属 Lab 背景色：清冷的科技银灰（区别于书房的暖纸色）
+const _kLabCoolBg = AppColors.labCoolBg;
+
+/// Lab tab — 实验台调性。
 ///
-/// - 硬约束：保留顶部 [lab_bg_with_title] 英雄图（图内已有 Lab 字标）
-/// - 画布：Warm Paper [pageBg]，与书房同底座，但用 Lab 三色徽章区分
-/// - 不再重复 EXPERIMENT / Lab 标题；图下直接接功能卡
+/// - 调性区分：书房是“暖白/人文”，Lab 是“冷白/科技”。
+/// - 我们使用极简的冷灰背景 [ _kLabCoolBg ]，搭配纯白高亮卡片。
+/// - 保留原图的鲜艳与对比度（不加漂白滤镜），作为页面的视觉中心。
 class LabPlaceholderScreen extends ConsumerWidget {
   const LabPlaceholderScreen({super.key});
 
@@ -22,17 +24,16 @@ class LabPlaceholderScreen extends ConsumerWidget {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      // 顶图偏亮/彩，状态栏用深色图标更清晰
       value: const SystemUiOverlayStyle(
         statusBarColor: AppColors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
       ),
       child: CupertinoPageScaffold(
-        backgroundColor: AppColors.pageBg,
+        backgroundColor: _kLabCoolBg,
         child: CustomScrollView(
           slivers: [
-            // ── Hero：顶图 + 底缘柔和过渡到纸底（消掉硬切缝）──────────
+            // ── Hero：原汁原味的鲜艳顶图 ──────────
             SliverToBoxAdapter(
               child: Stack(
                 alignment: Alignment.bottomCenter,
@@ -42,7 +43,7 @@ class LabPlaceholderScreen extends ConsumerWidget {
                     width: double.infinity,
                     fit: BoxFit.fitWidth,
                   ),
-                  // 白 → pageBg 渐变，盖住图底白边与内容区的硬接缝
+                  // 底部柔和过渡到冷灰背景
                   Positioned(
                     left: 0,
                     right: 0,
@@ -55,8 +56,8 @@ class LabPlaceholderScreen extends ConsumerWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              AppColors.pageBg.withValues(alpha: 0),
-                              AppColors.pageBg,
+                              _kLabCoolBg.withValues(alpha: 0),
+                              _kLabCoolBg,
                             ],
                           ),
                         ),
@@ -66,7 +67,7 @@ class LabPlaceholderScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            // ── 功能卡（浅色纸上的实验入口）────────────────────────
+            // ── 功能卡（科技感高亮白卡）────────────────────────
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 AppSp.screenPadding,
@@ -109,8 +110,7 @@ class LabPlaceholderScreen extends ConsumerWidget {
   }
 }
 
-/// 浅色实验入口卡：白卡 + 左侧色条 + 彩色图标井（与主题列表徽章同源逻辑，
-/// 但用 Lab 霓虹三色，形成「同底座、不同口音」）。
+/// 清透科技感的入口卡片：纯白底 + 淡蓝阴影 + 左侧色条 + 彩色图标井
 class _FeatureCard extends StatefulWidget {
   const _FeatureCard({
     required this.icon,
@@ -146,12 +146,26 @@ class _FeatureCardState extends State<_FeatureCard> {
         duration: AppDur.copyFeedback,
         curve: AppDur.copyFeedbackCurve,
         child: AnimatedOpacity(
-          opacity: _pressed ? 0.94 : 1.0,
+          opacity: _pressed ? 0.8 : 1.0,
           duration: AppDur.copyFeedback,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-            decoration: AppSurfaces.contentCard(radius: 16),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.black.withValues(alpha: 0.03),
+                width: 0.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withValues(alpha: 0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Row(
               children: [
                 Container(
@@ -166,7 +180,7 @@ class _FeatureCardState extends State<_FeatureCard> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
+                    color: accent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(widget.icon, color: accent, size: 22),
@@ -198,7 +212,7 @@ class _FeatureCardState extends State<_FeatureCard> {
                 ),
                 Icon(
                   CupertinoIcons.chevron_right,
-                  color: AppColors.textTertiary,
+                  color: AppColors.textTertiary.withValues(alpha: 0.5),
                   size: 16,
                 ),
               ],

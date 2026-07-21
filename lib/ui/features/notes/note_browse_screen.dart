@@ -109,19 +109,23 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
       resizeToAvoidBottomInset: false,
-      child: ThkPageAtmosphere(
-        titleContentHeight: 96,
-        child: CustomScrollView(
-          slivers: [
-            ThkNavBar.large(
-              title: l10n.notes,
-              trailing: CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () => _createNoteInUncategorized(context, ref),
-                key: const ValueKey('add_note_button'),
-                child: Icon(AppIcons.add),
-              ),
+      child: CustomScrollView(
+        slivers: [
+          ThkNavBar.large(
+            title: l10n.notes,
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _createNoteInUncategorized(context, ref),
+              key: const ValueKey('add_note_button'),
+              child: Icon(AppIcons.add),
             ),
+          ),
+          CupertinoSliverRefreshControl(
+            onRefresh: () async {
+              await _load();
+            },
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -144,7 +148,6 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 

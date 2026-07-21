@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
-import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/search/search_content.dart';
 
 class SearchScreen extends ConsumerWidget {
@@ -29,10 +28,7 @@ class SearchScreen extends ConsumerWidget {
           ),
         ),
       ),
-      // P3：搜索页氛围光（空态/结果背后静光；不进列表 cell）
-      child: ThkPageAtmosphere(
-        child: const SafeArea(child: SearchContent()),
-      ),
+      child: const SafeArea(child: SearchContent()),
     );
   }
 

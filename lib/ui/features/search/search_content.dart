@@ -255,6 +255,17 @@ class _SearchBoxState extends State<SearchBox> {
       controller: _controller,
       focusNode: _focusNode,
       placeholder: widget.placeholder ?? l10n.searchHint,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       onChanged: (value) {
         // Skip when syncing from notifier to avoid circular push-back.
         if (!_syncing) {
@@ -634,24 +645,38 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.matteGoldLight, // 非常淡的暖金色（几乎是泛着金光的白）
+            AppColors.matteGoldBg, // 极淡的暖灰/米色，收敛粉色感
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        border: Border.all(
+          color: AppColors.matteGoldBorder, // 极细的暖沙色边框
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(CupertinoIcons.archivebox, size: 18, color: AppColors.accent),
+              const Icon(
+                CupertinoIcons.archivebox,
+                size: 18,
+                color: AppColors.matteGold, // 克制的高级哑光金/暖沙金
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   l10n.searchBackupSuggestion(backupCount),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: AppColors.textMatteGoldDark, // 带有暖灰调的深色文字
                   ),
                 ),
               ),

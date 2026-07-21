@@ -19,6 +19,12 @@ color:
     paletteClay: { value: "0xFFC47856" }
     paletteGold: { value: "0xFFC9A24E" }
     palettePlum: { value: "0xFF8B6AAE" }
+    matteGoldLight: { value: "0xFFFFFDF5", label: "非常淡的暖金色" }
+    matteGoldBg: { value: "0xFFF9F7F1", label: "极淡的暖灰/米色" }
+    matteGoldBorder: { value: "0xFFF2EADC", label: "极细的暖沙色边框" }
+    textMatteGoldDark: { value: "0xFF5C544D", label: "带有暖灰调的深色文字" }
+    matteGold: { value: "0xFFD4A373", label: "高级哑光金/暖沙金" }
+    labCoolBg: { value: "0xFFF2F4F7", label: "极其扁平的淡银灰底色" }
     accent: { value: "0xFF4A7AB5", label: "paper blue — 唯一主交互" }
     accentDeep: { value: "0xFF3D6A9E", label: "pressed" }
     destructive: { value: "0xFFDC2626", label: "硬红保留" }

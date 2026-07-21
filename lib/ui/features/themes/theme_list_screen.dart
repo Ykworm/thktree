@@ -27,12 +27,9 @@ class ThemeListScreen extends ConsumerWidget {
     final themesAsync = ref.watch(themeListControllerProvider);
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
-      // P3：主题列表页级静光；蓝光从 large title 一带释放
-      child: ThkPageAtmosphere(
-        titleContentHeight: 96,
-        child: CustomScrollView(
-          slivers: [
-            ThkNavBar.large(
+      child: CustomScrollView(
+        slivers: [
+          ThkNavBar.large(
               title: l10n.themesTabLabel,
               trailing: CupertinoButton(
                 key: const ValueKey('add_theme_button'),
@@ -95,7 +92,6 @@ class ThemeListScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

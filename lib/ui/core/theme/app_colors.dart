@@ -69,6 +69,16 @@ class AppColors {
   static const sageGray = Color(0xFF8B9080); // 橄榄灰
   static const slateBlue = Color(0xFF6B7B8E); // 深蓝灰
 
+  // ── 哑光渐变/高级强调 (Matte Gradient & Gold) ───────────────────
+  static const matteGoldLight = Color(0xFFFFFDF5); // 非常淡的暖金色
+  static const matteGoldBg = Color(0xFFF9F7F1); // 极淡的暖灰/米色
+  static const matteGoldBorder = Color(0xFFF2EADC); // 极细的暖沙色边框
+  static const textMatteGoldDark = Color(0xFF5C544D); // 带有暖灰调的深色文字
+  static const matteGold = Color(0xFFD4A373); // 高级哑光金/暖沙金
+
+  // ── Lab/特定冷灰背景 ──────────────────────────────────────
+  static const labCoolBg = Color(0xFFF2F4F7); // 极其扁平的淡银灰底色
+
   /// 主题色列表，与 [themeTileColors] / 五色系统对齐。
   static const themeColors = [
     paletteBlue, // blue

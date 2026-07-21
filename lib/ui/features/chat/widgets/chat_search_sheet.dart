@@ -105,6 +105,17 @@ class _ChatSearchPageState extends State<_ChatSearchPage> {
               controller: _controller,
               focusNode: _focusNode,
               placeholder: l10n.searchInChat,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               onChanged: _onQueryChanged,
             ),
           ),

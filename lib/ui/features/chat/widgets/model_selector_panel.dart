@@ -190,6 +190,17 @@ class _ModelSelectorPanelState extends ConsumerState<ModelSelectorPanel> {
                     controller: _searchController,
                     placeholder: l10n.searchModels,
                     style: CupertinoTheme.of(context).textTheme.textStyle,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.black.withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
                     onChanged: (value) => setState(() => _query = value),
                   ),
                 ),
