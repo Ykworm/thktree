@@ -37,8 +37,7 @@ worktree → discuss → go-gate → plan → go-gate → read-tmp
 
 | 节点 | 具体做什么 |
 |------|------------|
-| `worktree` | 同 Chat Session 内一个 topic 一个 worktree：**首次创建，后续复用**；禁止主动新建。报告绝对路径 |
-| `worktree` … `unit` | 与 fullmode **相同**（含双 go-gate、plan、`_tmp` 必须） |
+| `worktree` … `unit` | 与 fullmode **相同**（含双 go-gate、plan、`_tmp` 必须）；worktree 先 `git worktree list` 检查，不存在则创建、已存在则复用，禁止同 session 内主动新建 |
 | `commit` | 提交 **代码**（无大测试脚本开发） |
 | **`ctsync-ask`** | **询问用户**：「是否执行 ctsync 同步文档？」 |
 | → 用户 **是** | **`yk-frontend-context-sync`** → **`yk-frontend-cleanup-docs-tmp`** → **commit docs** → 然后 `merge` |

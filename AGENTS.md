@@ -84,9 +84,10 @@ Discuss:  /Users/…/{REPO}-worktrees/fix-color/docs/_tmp/fix-color.md
 ### Chat Session 与 Worktree 的默认关系
 
 - **一个 Chat Session 默认只对应一个 topic、一个 worktree。**
-- litemode / fullmode 首次进入时创建 worktree；同 session 后续请求**默认复用**该 worktree。
-- **agent 不得在同 session 内主动新建 worktree**，除非用户明确说「新开 worktree / 新 topic」。
+- litemode / fullmode 进入时，若 `../${REPO}-worktrees/<topic>` **不存在则创建，已存在则复用**。同 session 后续请求默认复用；**跨 session 继续同一 topic 也复用现有 worktree**。
+- **agent 不得在同 session 内主动新建 worktree**；仅当用户明确说「新开 worktree / 新 topic」时，才视为用户主动打破默认。
 - 若用户想处理不同 topic，应**新开 Chat Session**。
+- agent 进入 litemode / fullmode 时必须报告：当前 topic、worktree 路径、本次是**新建**还是**复用**。
 
 ### 讨论 → 开干
 
