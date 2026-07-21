@@ -855,11 +855,18 @@ class _EmptyWikiView extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(CupertinoIcons.wand_stars, size: 18),
+                        const Icon(
+                          CupertinoIcons.wand_stars,
+                          size: 18,
+                          color: AppColors.white,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           l10n.wikiGenerateButton,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.white,
+                          ),
                         ),
                       ],
                     ),
