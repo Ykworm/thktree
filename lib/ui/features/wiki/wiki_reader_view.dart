@@ -764,58 +764,26 @@ class _EmptyWikiView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.matteGoldLight, // 非常淡的暖金色
-                      AppColors.matteGoldBg, // 极淡的暖灰
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: AppColors.matteGoldBorder,
-                    width: 0.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.matteGold.withValues(alpha: 0.1),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: SizedBox.square(
-                  dimension: 72,
-                  child: Center(
-                    child: Transform.translate(
-                      // Cupertino book glyph has a slightly high visual center.
-                      offset: const Offset(0, 2),
-                      child: Icon(
-                        AppIcons.book,
-                        size: 64,
-                        color: AppColors.matteGold, // 高级暖沙金
-                      ),
-                    ),
-                  ),
-                ),
+              Icon(
+                AppIcons.book,
+                size: 80,
+                color: AppColors.matteGold.withValues(alpha: 0.8), // 柔和的大尺寸图标
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Text(
                 l10n.wikiEmptyTitle,
-                style: AppTheme.title1.copyWith(
+                style: AppTheme.headline.copyWith(
                   color: AppColors.textMatteGoldDark, // 带有暖灰调的深色
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500, // 降低字重，显得更温和
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 l10n.wikiEmptySubtitle(themeTitle),
-                style: AppTheme.body.copyWith(color: AppColors.textSecondary),
+                style: AppTheme.body.copyWith(
+                  color: AppColors.textTertiary, // 降级为 Tertiary，更柔和
+                ),
                 textAlign: TextAlign.center,
               ),
               if (onGenerate != null) ...[
