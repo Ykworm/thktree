@@ -821,6 +821,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
+  String get pinAction => 'Pin';
+
+  @override
+  String get noteAction => 'Note';
+
+  @override
+  String get pinnedToast => 'Pinned — pull from right edge to view';
+
+  @override
+  String get pinPeekTitle => 'Pinned';
+
+  @override
+  String get pinJump => 'Jump';
+
+  @override
+  String get pinToNote => 'To Note';
+
+  @override
+  String get pinRemove => 'Remove';
+
+  @override
+  String get pinContentMissing => 'Content no longer exists';
+
+  @override
+  String get pinAddedToNoteToast => 'Added to note';
+
+  @override
+  String get copyFullText => 'Copy Full Text';
+
+  @override
   String get faceIdLock => 'Face ID Lock';
 
   @override

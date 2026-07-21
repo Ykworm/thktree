@@ -30,9 +30,12 @@ import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/core/shared/selection_state.dart';
 import 'package:thk_tree/ui/core/shared/clips_context_menu.dart';
 import 'package:thk_tree/data/services/share_service.dart';
+import 'package:thk_tree/data/services/scroll_anchor_store.dart';
+import 'package:thk_tree/data/services/pin_storage.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_markdown_sheet.dart';
+import 'package:thk_tree/ui/features/chat/widgets/pin_peek_panel.dart';
 import 'package:thk_tree/ui/features/chat/user_questions.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
@@ -100,6 +103,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// 滚动位置：是否接近底部（控制浮动按钮显隐）。
   bool _isNearBottom = true;
 
+  /// chat 滚动锚点 store（异步加载，dispose 落盘也用它）。
+  late final Future<ScrollAnchorStore> _scrollAnchorStoreFuture;
+
+  /// 该 chat 记住的锚点 msgId，加载后传给 ChatListView 恢复位置。
+  String? _initialAnchorMsgId;
+
+  /// 滚动时持续跟踪的首条可见消息，dispose 时落盘。
+  /// 不在 dispose 里读 `_chatListKey.currentState`：子树先拆，state 已失效。
+  String? _currentFirstVisibleMsgId;
+
+  /// 对照栏 Jump 待滚动的 msgId：消费一次即清空，优先于滚动锚点恢复。
+  String? _pendingJumpMsgId;
+
+  /// 右缘对照栏把手的 overlay 条目（pins 为空时把手自己不显示）。
+  OverlayEntry? _pinHandleEntry;
+
   /// 当前对话的深度思考开关（per-session in-memory，
   /// 切换模型时重置为 false，避免新模型不支持时还保留开启状态）。
   bool _deepThinkingEnabled = false;
@@ -127,6 +146,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // 读 notifier 引用是安全的（不修改 provider，不违反构建期断言），
     // 缓存起来供 dispose 使用。
     _branchNotifier = ref.read(branchFromSelectionProvider.notifier);
+    _scrollAnchorStoreFuture = ref.read(scrollAnchorStoreProvider.future);
+    // 对照栏 Jump 的 pending scroll 优先于滚动锚点恢复：
+    // 有 pending 就跳过锚点加载，消费后清空 provider（读是同步允许的，
+    // 清空延迟到首帧后，避免构建期改 provider 触发断言）。
+    _pendingJumpMsgId = ref.read(pendingScrollMsgIdProvider);
+    if (_pendingJumpMsgId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(pendingScrollMsgIdProvider.notifier).clear();
+      });
+    } else {
+      // 读取本 chat 的滚动锚点，恢复上次离开时的位置
+      unawaited(_loadScrollAnchor());
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // 右缘对照栏把手：不用 rootOverlay，让后续 push 的页面盖住它
+      _pinHandleEntry = OverlayEntry(
+        builder: (_) => PinEdgeHandle(onOpen: _openPinPeekPanel),
+      );
+      Overlay.of(context).insert(_pinHandleEntry!);
+    });
     // 把"从活跃选区直接分支"的回调注册到全局 provider，
     // 供选区工具栏「分支」按钮读取（见 buildClipsContextMenu）。
     // 这样分支从活跃选区即时触发，不依赖 currentSelectionProvider 的残留值。
@@ -143,8 +184,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  /// 异步读取本 chat 的滚动锚点，读到后交给 ChatListView 恢复。
+  Future<void> _loadScrollAnchor() async {
+    try {
+      final store = await _scrollAnchorStoreFuture;
+      final anchor = await store.anchorFor(widget.nodeId);
+      if (!mounted || anchor == null) return;
+      setState(() => _initialAnchorMsgId = anchor);
+    } catch (_) {
+      // 锚点读取失败不影响正常聊天，静默退回默认吸底
+    }
+  }
+
+  /// 离开 chat 时落盘滚动锚点：非底部记首条可见消息，在底部则清除
+  /// （底部是默认状态，不需要记）。fire-and-forget，不阻塞卸载。
+  void _saveScrollAnchor() {
+    final nodeId = widget.nodeId;
+    final msgId = _currentFirstVisibleMsgId;
+    final nearBottom = _isNearBottom;
+    unawaited(_scrollAnchorStoreFuture.then((store) async {
+      try {
+        if (nearBottom || msgId == null) {
+          await store.remove(nodeId);
+        } else {
+          await store.setAnchor(nodeId, msgId);
+        }
+      } catch (_) {
+        // 落盘失败静默忽略，下次进入退回默认吸底
+      }
+    }));
+  }
+
   @override
   void dispose() {
+    _pinHandleEntry?.remove();
+    _pinHandleEntry = null;
+    _saveScrollAnchor();
     // 卸载时清空分支回调，避免被已销毁的 chat 上下文误触发。
     // 注意：不能在 dispose 同步改 provider —— 此时 widget 树仍在 finalize，
     // Riverpod 的 _debugCanModifyProviders 断言会拦截（缓存引用也没用，
@@ -257,6 +332,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// 把消息加入 Pin 对照列表（上限 5 条，FIFO 淘汰）。
+  Future<void> _pinMessage(SessionMessage message) async {
+    if (message.body.trim().isEmpty || !mounted) return;
+
+    // 摘要：合并空白后取前 100 字符，供对照卡片预览
+    final excerpt = message.body.replaceAll(RegExp(r'\s+'), ' ').trim();
+    try {
+      final pinStorage = await ref.read(pinStorageProvider.future);
+      await pinStorage.add(
+        kind: PinKind.message,
+        themeId: widget.themeId,
+        nodeId: widget.nodeId,
+        msgId: message.msgId,
+        excerpt: excerpt.length <= 100 ? excerpt : excerpt.substring(0, 100),
+      );
+      ref.read(pinListVersionProvider.notifier).bump();
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ThkToast.show(context, l10n.pinnedToast);
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(context: context, message: 'Failed to pin: $e');
+    }
+  }
+
+  /// 打开右缘对照栏面板（对照 Pin 列表预览）。
+  void _openPinPeekPanel() {
+    unawaited(showPinPeekPanel(
+      context,
+      currentThemeId: widget.themeId,
+      currentNodeId: widget.nodeId,
+      onJumpInPlace: (msgId) =>
+          _chatListKey.currentState?.scrollToMessage(msgId),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -307,6 +418,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     final messagesAsync = ref.watch(chatControllerProvider(_args));
+
+    // 对照栏 Jump：消息列表异步加载完成后滚动到目标消息（消费一次即清空）。
+    // 目标消息已不存在时静默放弃，退回默认吸底。
+    final jumpMsgId = _pendingJumpMsgId;
+    if (jumpMsgId != null) {
+      messagesAsync.whenData((messages) {
+        if (_pendingJumpMsgId == null) return;
+        _pendingJumpMsgId = null;
+        if (!messages.any((m) => m.msgId == jumpMsgId)) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _chatListKey.currentState?.scrollToMessage(jumpMsgId);
+        });
+      });
+    }
     final isStreaming = messagesAsync.maybeWhen(
       data: (messages) =>
           messages.any((m) => m.status == SessionMessageStatus.streaming),
@@ -582,6 +708,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           child: ChatListView(
                             key: _chatListKey,
                             messages: messages,
+                            initialAnchorMsgId: _initialAnchorMsgId,
+                            onFirstVisibleMsgIdChanged: (msgId) {
+                              _currentFirstVisibleMsgId = msgId;
+                            },
                             // 双条毛玻璃（输入 pill + 工具 pill）更高，留足滚到底空白
                             bottomContentInset: 168,
                             onScrollPositionChanged: (nearBottom) {
@@ -644,6 +774,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                           message.status ==
                                               SessionMessageStatus.done
                                       ? () => _saveMessageAsNote(message)
+                                      : null,
+                                  onPin: message.role ==
+                                              SessionRole.assistant &&
+                                          message.status ==
+                                              SessionMessageStatus.done
+                                      ? () => _pinMessage(message)
                                       : null,
                                   onShareEntireChat: () =>
                                       _shareEntireChat(messages),
@@ -775,6 +911,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               });
                             }
                           },
+                          // 「查看整棵树」常驻入口，与 more 菜单同一跳转
+                          onViewTree: () => context.go(
+                            '/themes/${widget.themeId}/full-tree?currentNodeId=${widget.nodeId}',
+                          ),
                         ),
                       ],
                     ),

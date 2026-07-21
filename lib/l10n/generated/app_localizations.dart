@@ -1526,6 +1526,66 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// Message bubble text button to pin a message for comparison. Kept in English in all locales by design
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get pinAction;
+
+  /// Message bubble text button to save a message as a note. Kept in English in all locales by design
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteAction;
+
+  /// Toast shown after a message or note is pinned successfully
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned — pull from right edge to view'**
+  String get pinnedToast;
+
+  /// Title of the pin peek panel pulled in from the right edge
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get pinPeekTitle;
+
+  /// Pin card action: jump to the pinned message or note
+  ///
+  /// In en, this message translates to:
+  /// **'Jump'**
+  String get pinJump;
+
+  /// Pin card action: append the pinned content to a note
+  ///
+  /// In en, this message translates to:
+  /// **'To Note'**
+  String get pinToNote;
+
+  /// Pin card action: remove this pin from the list
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get pinRemove;
+
+  /// Shown on a pin card when the pinned message or note has been deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Content no longer exists'**
+  String get pinContentMissing;
+
+  /// Toast shown after pinned content is appended to a note
+  ///
+  /// In en, this message translates to:
+  /// **'Added to note'**
+  String get pinAddedToNoteToast;
+
+  /// Message long-press menu item to copy the entire message body
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Full Text'**
+  String get copyFullText;
+
   /// Settings tile title for Face ID lock toggle
   ///
   /// In en, this message translates to:

@@ -28,6 +28,9 @@ import 'package:thk_tree/data/services/keyword_aggregation_service.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/data/services/keyword_category_storage.dart';
 import 'package:thk_tree/data/services/clip_storage.dart';
+import 'package:thk_tree/data/services/scroll_anchor_store.dart';
+import 'package:thk_tree/data/services/pin_storage.dart';
+import 'package:thk_tree/data/services/pin_content_loader.dart';
 
 class NoteListVersionNotifier extends Notifier<int> {
   @override
@@ -37,6 +40,32 @@ class NoteListVersionNotifier extends Notifier<int> {
 }
 
 final noteListVersionProvider = NotifierProvider<NoteListVersionNotifier, int>(NoteListVersionNotifier.new);
+
+class PinListVersionNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+/// Pin 列表变更版本号：Pin add/remove 后 bump，
+/// 右缘把手与对照面板 watch 它来刷新。
+final pinListVersionProvider = NotifierProvider<PinListVersionNotifier, int>(PinListVersionNotifier.new);
+
+/// 对照栏 Jump 的待滚动消息：跳转前置位，
+/// ChatScreen 进入时消费（读一次即清空），优先于滚动锚点恢复。
+class PendingScrollMsgIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String msgId) => state = msgId;
+
+  void clear() => state = null;
+}
+
+final pendingScrollMsgIdProvider =
+    NotifierProvider<PendingScrollMsgIdNotifier, String?>(
+        PendingScrollMsgIdNotifier.new);
 
 final appPathsProvider = FutureProvider<AppPaths>((ref) async {
   final paths = await AppPaths.load();
@@ -505,6 +534,36 @@ final keywordCategoryStorageProvider =
 final clipStorageProvider = FutureProvider<ClipStorage>((ref) async {
   final paths = await ref.watch(appPathsProvider.future);
   return ClipStorage(rootDir: paths.rootDir.path);
+});
+
+/// 全局 `scroll_anchors.json` 文件读写器（chat 滚动锚点记忆）。
+///
+/// 记住每个 chat（nodeId）离开时首条可见消息，重新进入时恢复滚动位置。
+final scrollAnchorStoreProvider = FutureProvider<ScrollAnchorStore>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  return ScrollAnchorStore(rootDir: paths.rootDir.path);
+});
+
+/// 全局 `pins.json` 文件读写器（多 chat 对照的 Pin 列表）。
+///
+/// Pin 是用户钉住的消息或笔记（上限 5 条），供对照栏展示。
+/// 不绑定 session/node/theme，全局共享。
+final pinStorageProvider = FutureProvider<PinStorage>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  return PinStorage(rootDir: paths.rootDir.path);
+});
+
+/// Pin 卡片全文解析器（对照栏）。
+///
+/// message 锚点走 `SessionStore.readSession`（与 ChatController 同一读路径）；
+/// note 锚点按 `themes/<themeId>/notes` 直接读文件。
+final pinContentLoaderProvider = FutureProvider<PinContentLoader>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  final sessionStore = await ref.watch(sessionStoreProvider.future);
+  return PinContentLoader(
+    themesDir: paths.themesDir.path,
+    sessionReader: sessionStore.readSession,
+  );
 });
 
 /// 单个 theme 的关键词分析状态机服务（依赖对应 [keywordAnalysisStorageProvider]）。

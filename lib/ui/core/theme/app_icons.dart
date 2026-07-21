@@ -88,6 +88,9 @@ class AppIcons {
   /// Icons.star
   static const IconData star = SFIcons.sf_star;
 
+  /// Icons.push_pin / pin.fill（对照 Pin 入口）
+  static const IconData pin = SFIcons.sf_pin_fill;
+
   // ── 设置 / 提供商 ──
 
   /// Icons.settings

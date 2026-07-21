@@ -779,6 +779,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get retry => '重试';
 
   @override
+  String get pinAction => 'Pin';
+
+  @override
+  String get noteAction => 'Note';
+
+  @override
+  String get pinnedToast => '已 Pin，从屏幕右缘拉出查看';
+
+  @override
+  String get pinPeekTitle => '已 Pin';
+
+  @override
+  String get pinJump => '跳转';
+
+  @override
+  String get pinToNote => '存入笔记';
+
+  @override
+  String get pinRemove => '移除';
+
+  @override
+  String get pinContentMissing => '内容不存在';
+
+  @override
+  String get pinAddedToNoteToast => '已加入笔记';
+
+  @override
+  String get copyFullText => '复制全文';
+
+  @override
   String get faceIdLock => 'Face ID 锁定';
 
   @override

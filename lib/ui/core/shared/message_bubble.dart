@@ -316,6 +316,7 @@ class MessageBubble extends ConsumerStatefulWidget {
     this.userQuestion,
     this.userQuestionImage,
     this.onSaveToNote,
+    this.onPin,
     this.showTimestamp = false,
     this.onShareEntireChat,
   });
@@ -331,6 +332,9 @@ class MessageBubble extends ConsumerStatefulWidget {
 
   /// 点击"存为笔记"按钮时的回调
   final VoidCallback? onSaveToNote;
+
+  /// 点击"Pin"按钮时的回调（加入对照列表）
+  final VoidCallback? onPin;
 
   /// 是否在气泡上方显示时间戳
   final bool showTimestamp;
@@ -357,6 +361,38 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     if (mounted) {
       setState(() => _copied = false);
     }
+  }
+
+  /// 长按气泡空白区弹出的消息级操作菜单。
+  ///
+  /// 手势只挂在标题行等非文本命中区，不与 SelectionArea 的文本长按选择冲突。
+  void _showMessageActions() {
+    final l10n = AppLocalizations.of(context)!;
+    final actions = <GridAction>[
+      if (widget.onPin != null)
+        GridAction(
+          label: l10n.pinAction,
+          icon: AppIcons.pin,
+          color: AppColors.accent,
+          onPressed: widget.onPin!,
+        ),
+      if (widget.onSaveToNote != null)
+        GridAction(
+          label: l10n.noteAction,
+          icon: AppIcons.note,
+          color: AppColors.waveTeal,
+          onPressed: widget.onSaveToNote!,
+        ),
+      if (widget.message.body.isNotEmpty)
+        GridAction(
+          label: l10n.copyFullText,
+          icon: AppIcons.copy,
+          color: AppColors.textSecondary,
+          onPressed: _copyToClipboard,
+        ),
+    ];
+    if (actions.isEmpty) return;
+    ThkGridBottomSheet.show(context: context, actions: actions);
   }
 
   void _showShareSheet() {
@@ -545,19 +581,25 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              displayTitle,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
+                      // 标题行是气泡的非文本命中区：长按弹消息级菜单，
+                      // 不影响正文的文本选择手势
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onLongPress: _showMessageActions,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                displayTitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 6),
                       if (widget.message.status == SessionMessageStatus.error)
@@ -625,7 +667,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                           widget.message.status != SessionMessageStatus.streaming) ...[
                         const SizedBox(height: 6),
                         Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisSize: MainAxisSize.max,
                           children: [
                             CupertinoButton(
                               padding: EdgeInsets.zero,
@@ -659,19 +701,6 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                       color: AppColors.textSecondary,
                                     ),
                             ),
-                            if (widget.onSaveToNote != null) ...[
-                              const SizedBox(width: 12),
-                              CupertinoButton(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                onPressed: widget.onSaveToNote,
-                                child: Icon(
-                                  AppIcons.note,
-                                  size: 18,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
                             if (widget.onRetry != null) ...[
                               const SizedBox(width: 12),
                               if (widget.message.status == SessionMessageStatus.error)
@@ -695,6 +724,38 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                     color: AppColors.textSecondary,
                                   ),
                                 ),
+                            ],
+                            if (widget.onSaveToNote != null) ...[
+                              const Spacer(),
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                onPressed: widget.onSaveToNote,
+                                child: Text(
+                                  l10n.noteAction,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.success,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (widget.onPin != null) ...[
+                              if (widget.onSaveToNote == null) const Spacer(),
+                              const SizedBox(width: 12),
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                onPressed: widget.onPin,
+                                child: Text(
+                                  l10n.pinAction,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.success,
+                                  ),
+                                ),
+                              ),
                             ],
                           ],
                         ),

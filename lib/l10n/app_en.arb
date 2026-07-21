@@ -1042,6 +1042,46 @@
   "@retry": {
     "description": "Button label to retry failed message"
   },
+  "pinAction": "Pin",
+  "@pinAction": {
+    "description": "Message bubble text button to pin a message for comparison. Kept in English in all locales by design"
+  },
+  "noteAction": "Note",
+  "@noteAction": {
+    "description": "Message bubble text button to save a message as a note. Kept in English in all locales by design"
+  },
+  "pinnedToast": "Pinned — pull from right edge to view",
+  "@pinnedToast": {
+    "description": "Toast shown after a message or note is pinned successfully"
+  },
+  "pinPeekTitle": "Pinned",
+  "@pinPeekTitle": {
+    "description": "Title of the pin peek panel pulled in from the right edge"
+  },
+  "pinJump": "Jump",
+  "@pinJump": {
+    "description": "Pin card action: jump to the pinned message or note"
+  },
+  "pinToNote": "To Note",
+  "@pinToNote": {
+    "description": "Pin card action: append the pinned content to a note"
+  },
+  "pinRemove": "Remove",
+  "@pinRemove": {
+    "description": "Pin card action: remove this pin from the list"
+  },
+  "pinContentMissing": "Content no longer exists",
+  "@pinContentMissing": {
+    "description": "Shown on a pin card when the pinned message or note has been deleted"
+  },
+  "pinAddedToNoteToast": "Added to note",
+  "@pinAddedToNoteToast": {
+    "description": "Toast shown after pinned content is appended to a note"
+  },
+  "copyFullText": "Copy Full Text",
+  "@copyFullText": {
+    "description": "Message long-press menu item to copy the entire message body"
+  },
   "faceIdLock": "Face ID Lock",
   "@faceIdLock": {
     "description": "Settings tile title for Face ID lock toggle"

@@ -32,6 +32,7 @@ class ChatComposer extends ConsumerStatefulWidget {
     this.selectedImageData,
     this.selectedImageMimeType,
     this.onImageRemove,
+    this.onViewTree,
   });
 
   final String hintText;
@@ -77,6 +78,11 @@ class ChatComposer extends ConsumerStatefulWidget {
   /// 移除已选图片回调
   final VoidCallback? onImageRemove;
 
+  /// 「查看整棵树」导航入口回调（null 表示不显示）。
+  ///
+  /// 常驻工具行最右侧，与 more 菜单里的「查看整棵树」同一入口。
+  final VoidCallback? onViewTree;
+
   @override
   ConsumerState<ChatComposer> createState() => _ChatComposerState();
 }
@@ -105,7 +111,8 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
   Widget build(BuildContext context) {
     final showTools = widget.onWebSearchToggle != null ||
         widget.onDeepThinkingToggle != null ||
-        widget.alwaysThinking;
+        widget.alwaysThinking ||
+        widget.onViewTree != null;
 
     final attachEnabled =
         widget.onImagePick != null && widget.imageSupported && !widget.isStreaming;
@@ -268,6 +275,11 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                           isStreaming: widget.isStreaming,
                           onToggle: widget.onDeepThinkingToggle!,
                         ),
+                      // 「查看整棵树」常驻入口：icon-only，右对齐
+                      if (widget.onViewTree != null) ...[
+                        const Spacer(),
+                        _ViewTreeEntry(onTap: widget.onViewTree!),
+                      ],
                     ],
                   ),
                 ),
@@ -429,6 +441,28 @@ class _ToolChip extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 「查看整棵树」icon-only 入口（工具行最右侧，与 more 菜单同款树图标）
+class _ViewTreeEntry extends StatelessWidget {
+  const _ViewTreeEntry({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      key: const ValueKey('view_tree_button'),
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(36, 36),
+      onPressed: onTap,
+      child: const Icon(
+        AppIcons.accountTree,
+        size: 18,
+        color: AppColors.accent,
       ),
     );
   }

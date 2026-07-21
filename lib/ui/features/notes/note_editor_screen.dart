@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
+import 'package:thk_tree/data/services/pin_storage.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
@@ -206,6 +207,42 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     }());
   }
 
+  /// 把整篇笔记加入 Pin 对照列表（上限 5 条，FIFO 淘汰）。
+  Future<void> _pinNote() async {
+    if (_noteId == null) return;
+
+    // 有未落盘的改动先保存，保证 Pin 的摘要与磁盘一致
+    if (_dirty) await _saveNow();
+
+    // 摘要：优先标题，否则正文；合并空白后取前 100 字符
+    final source = _titleController.text.trim().isNotEmpty
+        ? _titleController.text.trim()
+        : _bodyController.text;
+    final excerpt = source.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (excerpt.isEmpty) return;
+
+    try {
+      final pinStorage = await ref.read(pinStorageProvider.future);
+      await pinStorage.add(
+        kind: PinKind.note,
+        themeId: widget.themeId,
+        noteId: _noteId,
+        excerpt: excerpt.length <= 100 ? excerpt : excerpt.substring(0, 100),
+      );
+      ref.read(pinListVersionProvider.notifier).bump();
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ThkToast.show(context, l10n.pinnedToast);
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: e.toString(),
+        defaultAction: 'OK',
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -214,29 +251,46 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       backgroundColor: AppColors.pageBg,
       navigationBar: ThkNavBar.inline(
         title: widget.themeTitle,
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () async {
-            final title = _titleController.text.trim();
-            final body = _bodyController.text.trim();
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              key: const ValueKey('pin_note_button'),
+              padding: EdgeInsets.zero,
+              onPressed: _noteId == null ? null : _pinNote,
+              child: Icon(
+                AppIcons.pin,
+                size: 20,
+                color: _noteId == null
+                    ? AppColors.textTertiary
+                    : AppColors.accent,
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () async {
+                final title = _titleController.text.trim();
+                final body = _bodyController.text.trim();
 
-            // 标题和正文都为空时拦截
-            if (title.isEmpty && body.isEmpty) {
-              ThkAlert.show(
-                context: context,
-                message: l10n.titleCannotBeEmpty,
-                defaultAction: l10n.ok,
-              );
-              return;
-            }
+                // 标题和正文都为空时拦截
+                if (title.isEmpty && body.isEmpty) {
+                  ThkAlert.show(
+                    context: context,
+                    message: l10n.titleCannotBeEmpty,
+                    defaultAction: l10n.ok,
+                  );
+                  return;
+                }
 
-            await _saveNow();
-            if (!mounted) return;
-            if (context.mounted) {
-              Navigator.of(context).pop();
-            }
-          },
-          child: Icon(AppIcons.check),
+                await _saveNow();
+                if (!mounted) return;
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Icon(AppIcons.check),
+            ),
+          ],
         ),
       ),
       child: SafeArea(

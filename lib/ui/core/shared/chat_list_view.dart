@@ -12,6 +12,8 @@ class ChatListView extends StatefulWidget {
     required this.messages,
     required this.messageBuilder,
     this.onScrollPositionChanged,
+    this.onFirstVisibleMsgIdChanged,
+    this.initialAnchorMsgId,
     /// 额外底部留白（浮层 composer 高度），列表仍铺满以便磨砂透出气泡
     this.bottomContentInset = 0,
   });
@@ -21,6 +23,13 @@ class ChatListView extends StatefulWidget {
 
   /// 当滚动位置变化时回调，参数 `isNearBottom` 表示是否接近底部。
   final ValueChanged<bool>? onScrollPositionChanged;
+
+  /// 视口顶部第一条可见消息变化时回调，供外部持续跟踪滚动位置。
+  final ValueChanged<String?>? onFirstVisibleMsgIdChanged;
+
+  /// 进入时要恢复的锚点 msgId（上次离开时的首条可见消息）。
+  /// 非 null 时首帧不吸底，改为滚到该消息；可晚于首帧传入（store 异步加载）。
+  final String? initialAnchorMsgId;
 
   /// 滚到底时最后一条消息上方的留白（不裁剪列表绘制区域）
   final double bottomContentInset;
@@ -37,10 +46,36 @@ class ChatListViewState extends State<ChatListView> {
   bool _stickToBottom = true;
   bool _isNearBottom = true;
 
+  /// 待恢复的锚点 msgId，等消息非空后恢复一次即清空。
+  String? _pendingAnchorMsgId;
+
+  /// 上次回调过的首条可见消息，用于去重。
+  String? _lastReportedFirstVisible;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    if (widget.initialAnchorMsgId != null) {
+      _scheduleAnchorRestore(widget.initialAnchorMsgId!);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 锚点来自异步加载的 store，可能晚于列表首次构建才到达
+    if (_pendingAnchorMsgId == null &&
+        widget.initialAnchorMsgId != null &&
+        widget.initialAnchorMsgId != oldWidget.initialAnchorMsgId) {
+      _scheduleAnchorRestore(widget.initialAnchorMsgId!);
+    }
+  }
+
+  /// 登记一次锚点恢复：期间禁止吸底，避免被 build 的 postFrame 拉回底部。
+  void _scheduleAnchorRestore(String msgId) {
+    _pendingAnchorMsgId = msgId;
+    _stickToBottom = false;
   }
 
   @override
@@ -58,6 +93,32 @@ class ChatListViewState extends State<ChatListView> {
       _isNearBottom = nearBottom;
       widget.onScrollPositionChanged?.call(nearBottom);
     }
+    if (widget.onFirstVisibleMsgIdChanged != null) {
+      final first = firstVisibleMsgId;
+      if (first != _lastReportedFirstVisible) {
+        _lastReportedFirstVisible = first;
+        widget.onFirstVisibleMsgIdChanged!.call(first);
+      }
+    }
+  }
+
+  /// 视口顶部第一条（至少部分）可见消息的 msgId；无则 null。
+  ///
+  /// 按消息顺序遍历 `_itemKeys`，取第一条底部边缘仍在视口顶之下的消息；
+  /// 底部已被滚过视口顶的（不可见）排除。
+  String? get firstVisibleMsgId {
+    if (!_scrollController.hasClients) return null;
+    final listBox = context.findRenderObject() as RenderBox?;
+    if (listBox == null || !listBox.hasSize) return null;
+    final viewportTop = listBox.localToGlobal(Offset.zero).dy;
+    for (final msg in widget.messages) {
+      final box = _itemKeys[msg.msgId]?.currentContext?.findRenderObject()
+          as RenderBox?;
+      if (box == null || !box.hasSize) continue;
+      final bottom = box.localToGlobal(Offset.zero).dy + box.size.height;
+      if (bottom > viewportTop) return msg.msgId;
+    }
+    return null;
   }
 
   /// 滚动到指定消息（通过 msgId 定位）。
@@ -167,6 +228,21 @@ class ChatListViewState extends State<ChatListView> {
     // 清理不再存在的 key
     final currentIds = <String>{for (final m in widget.messages) m.msgId};
     _itemKeys.keys.where((id) => !currentIds.contains(id)).toList().forEach(_itemKeys.remove);
+
+    // 恢复滚动锚点：等消息非空后恢复一次，不做重试
+    if (_pendingAnchorMsgId != null && widget.messages.isNotEmpty) {
+      final anchor = _pendingAnchorMsgId!;
+      _pendingAnchorMsgId = null;
+      if (widget.messages.any((m) => m.msgId == anchor)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          scrollToMessage(anchor);
+        });
+      } else {
+        // 锚点消息已不存在，退回默认吸底
+        _stickToBottom = true;
+      }
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
