@@ -30,9 +30,9 @@ color:
     scrimSoft: { value: "0x0D000000" }
     questionSourceTag: { value: "0x804A7AB5" }
     accentLight: { light: "0xFFEDF2F8", dark: "0xFF1E3A5F" }
-    pageBg: { light: "0xFFF7F5F0", dark: "0xFF020617" }
+    pageBg: { light: "0xFFFAF9F6", dark: "0xFF020617" }
     surface: { light: "0xFFFFFFFF", dark: "0xFF0F172A" }
-    surfaceMuted: { light: "0xFFF3EFE8", dark: "0xFF1E293B" }
+    surfaceMuted: { light: "0xFFF2EFEA", dark: "0xFF1E293B" }
     textPrimary: { light: "0xFF1F2933", dark: "0xFFF1F5F9" }
     textSecondary: { light: "0xFF4A5568", dark: "0xFF94A3B8" }
     textTertiary: { light: "0xFF8492A6", dark: "0xFF64748B" }

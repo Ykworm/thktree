@@ -117,13 +117,13 @@ class AppColors {
 
   // ── Surface（暖纸 + 白卡）──────────────────────────────────────
   static Color get pageBg => _brightness == Brightness.light
-      ? const Color(0xFFF4F5F7) // modern cool gray
+      ? const Color(0xFFFAF9F6) // 高明度雅白 (亮纸色)
       : const Color(0xFF020617); // Slate 950（dark 未改）
   static Color get surface => _brightness == Brightness.light
       ? const Color(0xFFFFFFFF) // 白卡
       : const Color(0xFF0F172A); // Slate 900
   static Color get surfaceMuted => _brightness == Brightness.light
-      ? const Color(0xFFEBEDF0) // muted cool gray
+      ? const Color(0xFFF2EFEA) // 柔和暖白灰
       : const Color(0xFF1E293B); // Slate 800
 
   // ── Text（ink 系）──────────────────────────────────────────────
