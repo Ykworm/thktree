@@ -377,13 +377,10 @@ class _CircleIconButton extends StatelessWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(
-          color: onPressed != null ? AppColors.accent.withValues(alpha: 0.1) : AppColors.transparent,
-          shape: BoxShape.circle,
-        ),
+        alignment: Alignment.center,
         child: Icon(
           icon,
-          size: 20,
+          size: 22,
           color: onPressed != null ? AppColors.accent : AppColors.textQuaternary,
         ),
       ),
