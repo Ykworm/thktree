@@ -795,20 +795,26 @@ class _EmptyWikiView extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               Text(
                 l10n.wikiEmptyTitle,
                 style: AppTheme.headline.copyWith(
-                  color: AppColors.textMatteGoldDark, // 带有暖灰调的深色
-                  fontWeight: FontWeight.w500, // 降低字重，显得更温和
+                  color: AppColors.textMatteGoldDark.withValues(
+                    alpha: 0.8,
+                  ), // 进一步柔化
+                  fontWeight: FontWeight.w400, // 降为常规字重，去掉对抗感
+                  letterSpacing: 1.2, // 增加字间距，营造印刷品呼吸感
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 l10n.wikiEmptySubtitle(themeTitle),
                 style: AppTheme.body.copyWith(
-                  color: AppColors.textTertiary, // 降级为 Tertiary，更柔和
+                  color: AppColors.textMatteGoldDark.withValues(
+                    alpha: 0.5,
+                  ), // 统一暖色系，代替突兀的冷灰
+                  height: 1.5, // 增加行高，提升排版质感
                 ),
                 textAlign: TextAlign.center,
               ),
