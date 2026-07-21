@@ -87,20 +87,16 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
     final l10n = AppLocalizations.of(context)!;
     try {
       final paths = await ref.read(appPathsProvider.future);
-      final wikiDir = Directory(p.join(
-        paths.themesDir.path,
-        widget.themeId,
-        'wiki',
-        rootNodeId,
-      ));
+      final wikiDir = Directory(
+        p.join(paths.themesDir.path, widget.themeId, 'wiki', rootNodeId),
+      );
       final zipFile = await const WikiExportService().exportWiki(
         wikiDir: wikiDir,
         themeTitle: widget.themeTitle,
       );
-      await Share.shareXFiles(
-        [XFile(zipFile.path)],
-        sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
-      );
+      await Share.shareXFiles([
+        XFile(zipFile.path),
+      ], sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1));
     } catch (e) {
       if (!mounted) return;
       showCupertinoDialog<void>(
@@ -139,10 +135,14 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
         }
 
         // 章节阅读页
-        if (_chapterNodeId != null && selected.hasWiki && selected.document != null) {
+        if (_chapterNodeId != null &&
+            selected.hasWiki &&
+            selected.document != null) {
           final doc = selected.document!;
           final flatNodes = doc.flatten();
-          final currentIndex = flatNodes.indexWhere((n) => n.nodeId == _chapterNodeId);
+          final currentIndex = flatNodes.indexWhere(
+            (n) => n.nodeId == _chapterNodeId,
+          );
           if (currentIndex >= 0) {
             return _WikiChapterView(
               node: flatNodes[currentIndex],
@@ -168,7 +168,9 @@ class _WikiReaderViewState extends ConsumerState<WikiReaderView> {
                 selectedRootNodeId: state.selectedRootNodeId!,
                 onSelect: (rootNodeId) {
                   ref
-                      .read(wikiReaderControllerProvider(widget.themeId).notifier)
+                      .read(
+                        wikiReaderControllerProvider(widget.themeId).notifier,
+                      )
                       .selectTree(rootNodeId);
                   setState(() => _chapterNodeId = null);
                 },
@@ -294,7 +296,8 @@ class _TreeSelector extends StatelessWidget {
                                   if (tree.hasWiki)
                                     Text(
                                       l10n.wikiGeneratedAt(
-                                          tree.meta?.generatedAt ?? ''),
+                                        tree.meta?.generatedAt ?? '',
+                                      ),
                                       style: AppTheme.caption1.copyWith(
                                         color: AppColors.textTertiary,
                                       ),
@@ -348,11 +351,7 @@ class _TreeSelector extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                AppIcons.branch,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
+              Icon(AppIcons.branch, size: 18, color: AppColors.textSecondary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -409,9 +408,7 @@ class _WikiCatalogView extends StatelessWidget {
         if (meta != null)
           Text(
             l10n.wikiGeneratedAt(meta!.generatedAt),
-            style: AppTheme.caption1.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppTheme.caption1.copyWith(color: AppColors.textTertiary),
           ),
       ],
     );
@@ -426,10 +423,7 @@ class _WikiCatalogView extends StatelessWidget {
             padding: EdgeInsets.zero,
             onPressed: onExport,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.textTertiary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(18),
@@ -458,10 +452,7 @@ class _WikiCatalogView extends StatelessWidget {
             padding: EdgeInsets.zero,
             onPressed: onDelete,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.destructive.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(18),
@@ -469,17 +460,11 @@ class _WikiCatalogView extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    AppIcons.delete,
-                    size: 16,
-                    color: AppColors.destructive,
-                  ),
+                  Icon(AppIcons.delete, size: 16, color: AppColors.destructive),
                   const SizedBox(width: 6),
                   Text(
                     l10n.delete,
-                    style: AppTheme.body.copyWith(
-                      color: AppColors.destructive,
-                    ),
+                    style: AppTheme.body.copyWith(color: AppColors.destructive),
                   ),
                 ],
               ),
@@ -505,34 +490,31 @@ class _WikiCatalogView extends StatelessWidget {
             32 + MediaQuery.of(context).padding.bottom,
           ),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index == 0) {
-                  return _buildCover(l10n);
-                }
-                if (index == 1) {
-                  return _buildActions(l10n);
-                }
-                if (index == 2) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 24, bottom: 12),
-                    child: Text(
-                      l10n.wikiTocTitle,
-                      style: AppTheme.title1.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index == 0) {
+                return _buildCover(l10n);
+              }
+              if (index == 1) {
+                return _buildActions(l10n);
+              }
+              if (index == 2) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 12),
+                  child: Text(
+                    l10n.wikiTocTitle,
+                    style: AppTheme.title1.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
-                  );
-                }
-                final node = flatNodes[index - 3];
-                return _CatalogItem(
-                  node: node,
-                  onTap: () => onOpenChapter(node.nodeId),
+                  ),
                 );
-              },
-              childCount: flatNodes.length + 3,
-            ),
+              }
+              final node = flatNodes[index - 3];
+              return _CatalogItem(
+                node: node,
+                onTap: () => onOpenChapter(node.nodeId),
+              );
+            }, childCount: flatNodes.length + 3),
           ),
         ),
       ],
@@ -541,10 +523,7 @@ class _WikiCatalogView extends StatelessWidget {
 }
 
 class _CatalogItem extends StatelessWidget {
-  const _CatalogItem({
-    required this.node,
-    required this.onTap,
-  });
+  const _CatalogItem({required this.node, required this.onTap});
 
   final WikiNode node;
   final VoidCallback onTap;
@@ -577,8 +556,9 @@ class _CatalogItem extends StatelessWidget {
                     node.title,
                     style: AppTheme.body.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight:
-                          node.depth <= 2 ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: node.depth <= 2
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       fontSize: node.depth == 1 ? 17 : 16,
                     ),
                     maxLines: 1,
@@ -769,10 +749,7 @@ class _WikiChapterView extends StatelessWidget {
 }
 
 class _EmptyWikiView extends StatelessWidget {
-  const _EmptyWikiView({
-    required this.themeTitle,
-    required this.onGenerate,
-  });
+  const _EmptyWikiView({required this.themeTitle, required this.onGenerate});
 
   final String themeTitle;
   final VoidCallback? onGenerate;
@@ -811,10 +788,19 @@ class _EmptyWikiView extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  AppIcons.book,
-                  size: 64,
-                  color: AppColors.matteGold, // 高级暖沙金
+                child: SizedBox.square(
+                  dimension: 72,
+                  child: Center(
+                    child: Transform.translate(
+                      // Cupertino book glyph has a slightly high visual center.
+                      offset: const Offset(0, 2),
+                      child: Icon(
+                        AppIcons.book,
+                        size: 64,
+                        color: AppColors.matteGold, // 高级暖沙金
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -829,9 +815,7 @@ class _EmptyWikiView extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 l10n.wikiEmptySubtitle(themeTitle),
-                style: AppTheme.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTheme.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               if (onGenerate != null) ...[
@@ -848,7 +832,10 @@ class _EmptyWikiView extends StatelessWidget {
                     ],
                   ),
                   child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     color: AppColors.matteGold, // 暖沙金按钮
                     borderRadius: BorderRadius.circular(12),
                     onPressed: onGenerate,
@@ -897,10 +884,7 @@ class _WikiMessageView extends StatelessWidget {
           ? AppSurfaces.contentCard(radius: 12)
           : BoxDecoration(
               border: Border(
-                left: BorderSide(
-                  color: AppColors.accent,
-                  width: 3,
-                ),
+                left: BorderSide(color: AppColors.accent, width: 3),
               ),
             ),
       child: Column(
