@@ -1,13 +1,17 @@
-import 'package:thk_tree/ui/features/notes/note_browse_screen.dart' show formatRelativeTime;
+import 'package:thk_tree/ui/features/notes/note_browse_screen.dart'
+    show formatRelativeTime, localizedThemeTitle;
 import 'dart:async';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
+import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectionArea;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart'
@@ -607,10 +611,14 @@ class ThemeNoteListScreen extends ConsumerStatefulWidget {
   const ThemeNoteListScreen({
     super.key,
     required this.themeId,
+    required this.themeTitle,
+    required this.themePath,
     required this.notesDir,
   });
 
   final String themeId;
+  final String themeTitle;
+  final String themePath;
   final String notesDir;
 
   @override
@@ -639,7 +647,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
       _error = null;
     });
     try {
-      final metas = await _store.listNoteMetas();
+      final metas = await _store.listNoteMetas(includePreview: true);
       if (!mounted) return;
       setState(() {
         _metas = metas;
@@ -666,13 +674,15 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
       });
     }
     final l10n = AppLocalizations.of(context)!;
+    final displayTitle = localizedThemeTitle(l10n, widget.themeTitle);
 
     return ThkLargeTitlePage(
-      title: l10n.notes,
+      title: displayTitle,
+      previousPageTitle: l10n.notes,
       backgroundColor: AppColors.pageBg,
       trailing: CupertinoButton(
         padding: EdgeInsets.zero,
-        onPressed: () => _createNote(context, ref),
+        onPressed: () => _createNote(context),
         key: const ValueKey('add_note_button'),
         child: Icon(AppIcons.add),
       ),
@@ -680,32 +690,56 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
     );
   }
 
-  Future<void> _createNote(BuildContext context, WidgetRef ref) async {
-    final navigator = Navigator.of(context);
-    // 1. 选择主题
-    final themeResult = await showThemePicker(
-      context,
-      ref,
-      onThemeCreated: () {
-        ref.invalidate(themeListControllerProvider);
-      },
-    );
-    if (themeResult == null) return;
+  /// 已在分类内：直接新建，跳过主题选择器。
+  Future<void> _createNote(BuildContext context) async {
     if (!mounted) return;
-
-    // 2. 跳转到编辑器
-    if (!mounted) return;
-    navigator.push(
+    Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (_) => NoteEditorScreen(
-          themeId: themeResult.themeId,
-          themeTitle: themeResult.themeTitle,
-          themePath: themeResult.themePath,
+          themeId: widget.themeId,
+          themeTitle: widget.themeTitle,
+          themePath: widget.themePath,
           notesDir: widget.notesDir,
           createMode: true,
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(NoteMeta meta) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return CupertinoAlertDialog(
+          title: Text(l10n.deleteNote),
+          content: Text(l10n.deleteNoteConfirmTitle(meta.title)),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(l10n.delete),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+    try {
+      await _store.deleteNote(noteId: meta.noteId);
+      ref.read(noteListVersionProvider.notifier).bump();
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: '${l10n.deleteFailed}: $e',
+        defaultAction: l10n.ok,
+      );
+    }
   }
 
   List<Widget> _buildChildren(AppLocalizations l10n) {
@@ -723,7 +757,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
           padding: const EdgeInsets.only(top: 80),
           child: Center(
             child: Text(
-              '${l10n.noNotesYet}: $_error',
+              _error.toString(),
               style: TextStyle(color: AppColors.destructive),
             ),
           ),
@@ -732,115 +766,175 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
     }
     final metas = _metas ?? [];
     if (metas.isEmpty) {
-      return [
-        Padding(
-          padding: const EdgeInsets.only(top: 80),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  AppIcons.note,
-                  size: 40,
-                  color: AppColors.textTertiary,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.noNotesYet,
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ];
+      return [_buildEmptyState(l10n)];
     }
+
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final tileColor = AppColors.themeTileColorFor(widget.themeId);
+
     return [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        child: DecoratedBox(
-          decoration: AppSurfaces.contentCard(radius: 14),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Column(
-              children: [
-                for (int i = 0; i < metas.length; i++) ...[
-                  SwipeableRow(
-                    key: ValueKey(metas[i].noteId),
-                    onSwipeLeft: () async {
-                      final l10n = AppLocalizations.of(context)!;
-                      final confirmed = await showCupertinoDialog<bool>(
-                        context: context,
-                        builder: (ctx) {
-                          return CupertinoAlertDialog(
-                            title: Text(l10n.deleteNote),
-                            content: Text(
-                                l10n.deleteNoteConfirmTitle(metas[i].title)),
-                            actions: [
-                              CupertinoDialogAction(
-                                onPressed: () =>
-                                    Navigator.of(ctx).pop(false),
-                                child: Text(l10n.cancel),
-                              ),
-                              CupertinoDialogAction(
-                                isDestructiveAction: true,
-                                onPressed: () =>
-                                    Navigator.of(ctx).pop(true),
-                                child: Text(l10n.delete),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                      if (confirmed != true) return;
-                      try {
-                        await _store.deleteNote(noteId: metas[i].noteId);
-                        ref
-                            .read(noteListVersionProvider.notifier)
-                            .bump();
-                      } catch (e) {
-                        if (!mounted) return;
-                        ThkAlert.show(
-                          context: context,
-                          message: '${l10n.deleteFailed}: $e',
-                          defaultAction: l10n.ok,
-                        );
-                      }
-                    },
-                    leftActionLabel: l10n.swipeDelete,
-                    leftActionIcon: AppIcons.delete,
-                    leftActionColor: AppColors.destructive,
-                    child: ThkListTile(
-                      title: metas[i].title,
-                      subtitle: metas[i].preview != null
-                          ? metas[i].preview!
-                          : formatRelativeTime(l10n, metas[i].updatedAt),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          CupertinoPageRoute(
-                            builder: (_) => NoteDetailScreen(
-                              notesDir: widget.notesDir,
-                              noteId: metas[i].noteId,
-                            ),
-                          ),
-                        );
-                      },
+      for (final meta in metas)
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSp.screenPadding,
+            0,
+            AppSp.screenPadding,
+            12,
+          ),
+          child: SwipeableRow(
+            key: ValueKey(meta.noteId),
+            onSwipeLeft: () => _confirmDelete(meta),
+            leftActionLabel: l10n.swipeDelete,
+            leftActionIcon: AppIcons.delete,
+            leftActionColor: AppColors.destructive,
+            child: _NoteListCard(
+              meta: meta,
+              tileColor: tileColor,
+              relativeTime: formatRelativeTime(l10n, meta.updatedAt),
+              onTap: () {
+                Navigator.of(context).push(
+                  CupertinoPageRoute(
+                    builder: (_) => NoteDetailScreen(
+                      notesDir: widget.notesDir,
+                      noteId: meta.noteId,
                     ),
                   ),
-                  if (i < metas.length - 1)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(start: 16),
-                      child: Container(
-                        height: 0.5,
-                        color: AppColors.border,
-                      ),
-                    ),
-                ],
-              ],
+                );
+              },
             ),
           ),
         ),
-      ),
+      SizedBox(height: bottomPad > 0 ? bottomPad + 8 : 24),
     ];
+  }
+
+  Widget _buildEmptyState(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 72, 32, 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.string(
+              '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+  <polyline points="14 2 14 8 20 8"/>
+  <line x1="16" y1="13" x2="8" y2="13"/>
+  <line x1="16" y1="17" x2="8" y2="17"/>
+  <line x1="10" y1="9" x2="8" y2="9"/>
+</svg>''',
+              width: 64,
+              height: 64,
+              colorFilter: const ColorFilter.mode(
+                AppColors.matteGold,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(height: 28),
+            Text(
+              l10n.noNotesYet,
+              style: AppTheme.headline.copyWith(
+                color: AppColors.textMatteGoldDark.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w400,
+                letterSpacing: 1.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 主题内笔记列表卡：色徽章 + 标题 + 预览 + 相对时间。
+class _NoteListCard extends StatelessWidget {
+  const _NoteListCard({
+    required this.meta,
+    required this.tileColor,
+    required this.relativeTime,
+    required this.onTap,
+  });
+
+  final NoteMeta meta;
+  final Color tileColor;
+  final String relativeTime;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = meta.preview?.trim();
+    final hasPreview = preview != null && preview.isNotEmpty;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: AppSurfaces.contentCard(radius: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tileColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(AppIcons.note, color: tileColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    meta.title.isEmpty ? '—' : meta.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (hasPreview) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      preview,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.35,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Text(
+                    relativeTime,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Icon(
+                CupertinoIcons.chevron_right,
+                color: AppColors.textTertiary,
+                size: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

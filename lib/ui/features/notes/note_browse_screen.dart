@@ -209,6 +209,8 @@ class _NoteBrowseScreenState extends ConsumerState<NoteBrowseScreen> {
                   CupertinoPageRoute(
                     builder: (_) => ThemeNoteListScreen(
                       themeId: tn.themeId,
+                      themeTitle: tn.title,
+                      themePath: tn.themePath,
                       notesDir: '${tn.themePath}/notes',
                     ),
                   ),
