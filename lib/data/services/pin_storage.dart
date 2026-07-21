@@ -116,7 +116,7 @@ class _PinFile {
 /// 数据规则：
 /// - 排序：createdAt 倒序（最新在前）
 /// - 去重：同锚点（同 msgId 或同 noteId）重复 Pin → 刷新 excerpt/createdAt 移到最前
-/// - 上限：5 条，满了 FIFO 静默淘汰最早的
+/// - 上限：5 条，满了拒绝新增（抛 [StateError]），调用方负责提示用户先移除
 /// - 持久化：磁盘存储，App 重启后还在
 class PinStorage {
   PinStorage({required this.rootDir});
@@ -142,10 +142,36 @@ class PinStorage {
     return List.unmodifiable(_cache!);
   }
 
+  /// 该锚点是否已被 Pin（msgId / noteId 去重锚点）。
+  Future<bool> isPinned({
+    required PinKind kind,
+    String? msgId,
+    String? noteId,
+  }) async {
+    final anchorKey =
+        kind == PinKind.message ? 'm:$msgId' : 'n:$noteId';
+    final pins = await getAll();
+    return pins.any((p) => p.anchorKey == anchorKey);
+  }
+
+  /// 预判：以 [kind] + 锚点调 [add] 时是否会因满员被拒
+  /// （已满员且不是重复锚点）。调用方据此提示「先移除一条」。
+  Future<bool> isFullFor({
+    required PinKind kind,
+    String? msgId,
+    String? noteId,
+  }) async {
+    final anchorKey =
+        kind == PinKind.message ? 'm:$msgId' : 'n:$noteId';
+    final pins = await getAll();
+    return pins.length >= maxPins &&
+        pins.every((p) => p.anchorKey != anchorKey);
+  }
+
   /// 添加 Pin。
   ///
   /// - 去重：同锚点已存在 → 刷新 excerpt/createdAt 移到最前
-  /// - 上限：满 5 条时 FIFO 淘汰最早的
+  /// - 上限：满 5 条且为新锚点 → 抛 [StateError]，不落盘
   Future<List<Pin>> add({
     required PinKind kind,
     String? themeId,
@@ -171,6 +197,10 @@ class PinStorage {
       pins.removeAt(existingIdx);
       pins.insert(0, updated);
     } else {
+      // 上限：满员拒绝新增（调用方应先用 isFullFor 预判并提示）
+      if (pins.length >= maxPins) {
+        throw StateError('pin limit reached ($maxPins)');
+      }
       // 新建
       pins.insert(0, Pin(
         id: _generateId(),
@@ -182,10 +212,6 @@ class PinStorage {
         excerpt: excerpt,
         createdAt: now,
       ));
-      // FIFO 淘汰
-      if (pins.length > maxPins) {
-        pins.removeRange(maxPins, pins.length);
-      }
     }
 
     await _writeToDisk(pins);
@@ -197,6 +223,21 @@ class PinStorage {
   Future<List<Pin>> remove(String id) async {
     final pins = List<Pin>.from(await getAll());
     pins.removeWhere((p) => p.id == id);
+    await _writeToDisk(pins);
+    _cache = pins;
+    return List.unmodifiable(pins);
+  }
+
+  /// 按锚点删除（msgId / noteId），用于「再次点击取消 Pin」；不存在时静默跳过。
+  Future<List<Pin>> removeByAnchor({
+    required PinKind kind,
+    String? msgId,
+    String? noteId,
+  }) async {
+    final anchorKey =
+        kind == PinKind.message ? 'm:$msgId' : 'n:$noteId';
+    final pins = List<Pin>.from(await getAll());
+    pins.removeWhere((p) => p.anchorKey == anchorKey);
     await _writeToDisk(pins);
     _cache = pins;
     return List.unmodifiable(pins);

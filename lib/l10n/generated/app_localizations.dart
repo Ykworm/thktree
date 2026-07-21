@@ -1544,16 +1544,34 @@ abstract class AppLocalizations {
   /// **'Pinned — pull from right edge to view'**
   String get pinnedToast;
 
+  /// Toast shown after a pin is removed by tapping the pin button again
+  ///
+  /// In en, this message translates to:
+  /// **'Unpinned'**
+  String get unpinnedToast;
+
+  /// Toast shown when pinning is rejected because the 5-pin limit was reached
+  ///
+  /// In en, this message translates to:
+  /// **'Pin limit reached (5) — remove one in the drawer first'**
+  String get pinLimitToast;
+
+  /// Message bubble action to remove an existing pin. Kept in English in all locales by design
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get unpinAction;
+
   /// Title of the pin peek panel pulled in from the right edge
   ///
   /// In en, this message translates to:
   /// **'Pinned'**
   String get pinPeekTitle;
 
-  /// Pin card action: jump to the pinned message or note
+  /// Pin card action: jump to the source of the pinned message or note
   ///
   /// In en, this message translates to:
-  /// **'Jump'**
+  /// **'Source'**
   String get pinJump;
 
   /// Pin card action: append the pinned content to a note

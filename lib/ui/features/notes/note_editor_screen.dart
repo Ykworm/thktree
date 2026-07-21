@@ -13,6 +13,12 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/notes/generate_title_screen.dart';
 
 /// Notion 风格的笔记编辑器，标题和内容一体编辑。
+///
+/// 三种打开方式：
+/// - `createMode`：新建（进入即落盘空笔记，供「+」流程）；
+/// - `deferCreate`：延迟创建（预填 [initialTitle]/[initialBody]，✓ 才落盘，
+///   返回则丢弃，供「消息存为笔记」流程）；
+/// - 默认：编辑已存在的 [noteId]。
 class NoteEditorScreen extends ConsumerStatefulWidget {
   const NoteEditorScreen({
     super.key,
@@ -22,6 +28,9 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
     required this.notesDir,
     this.noteId,
     this.createMode = false,
+    this.deferCreate = false,
+    this.initialTitle,
+    this.initialBody,
   });
 
   final String themeId;
@@ -30,6 +39,11 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
   final String notesDir;
   final String? noteId;
   final bool createMode;
+
+  /// 延迟创建：进入时不落盘，✓ 时才建笔记（见类注释）。
+  final bool deferCreate;
+  final String? initialTitle;
+  final String? initialBody;
 
   @override
   ConsumerState<NoteEditorScreen> createState() => _NoteEditorScreenState();
@@ -51,7 +65,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     _store = NoteStore(notesDir: Directory(widget.notesDir));
     _noteId = widget.noteId;
 
-    if (widget.createMode) {
+    if (widget.deferCreate) {
+      // 延迟创建：只预填内容，不落盘；✓ 时才建笔记（见 _onConfirm）
+      _titleController.text = widget.initialTitle ?? '';
+      _bodyController.text = widget.initialBody ?? '';
+      _dirty = true;
+    } else if (widget.createMode) {
       _createNote();
     } else {
       _loadNote();
@@ -207,9 +226,66 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     }());
   }
 
-  /// 把整篇笔记加入 Pin 对照列表（上限 5 条，FIFO 淘汰）。
+  /// Pin / 取消 Pin 整篇笔记（上限 5 条，满员拦截不淘汰旧条目）。
   Future<void> _pinNote() async {
+    // 延迟创建模式：Pin 蕴含保存（note 不存在就没法 pin），
+    // Pin 后不退出页面
+    if (_noteId == null && widget.deferCreate) {
+      try {
+        final meta =
+            await _store.createNote(themeId: widget.themeId, title: '');
+        if (!mounted) return;
+        setState(() => _noteId = meta.noteId);
+        _dirty = true;
+      } catch (e) {
+        if (!mounted) return;
+        ThkAlert.show(
+          context: context,
+          message: e.toString(),
+          defaultAction: 'OK',
+        );
+        return;
+      }
+    }
     if (_noteId == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      final pinStorage = await ref.read(pinStorageProvider.future);
+      // 已 Pin → 再点取消（不需要动笔记内容）
+      if (await pinStorage.isPinned(kind: PinKind.note, noteId: _noteId)) {
+        await pinStorage.removeByAnchor(kind: PinKind.note, noteId: _noteId);
+        ref.read(pinListVersionProvider.notifier).bump();
+        if (!mounted) return;
+        ThkToast.show(
+          context,
+          l10n.unpinnedToast,
+          icon: AppIcons.pinSlash,
+          iconColor: AppColors.textTertiary,
+        );
+        return;
+      }
+      // 满员拦截：不淘汰旧条目，提示先移除
+      if (await pinStorage.isFullFor(kind: PinKind.note, noteId: _noteId)) {
+        if (!mounted) return;
+        ThkToast.show(
+          context,
+          l10n.pinLimitToast,
+          icon: AppIcons.exclamationCircle,
+          iconColor: AppColors.destructive,
+        );
+        return;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: e.toString(),
+        defaultAction: 'OK',
+      );
+      return;
+    }
 
     // 有未落盘的改动先保存，保证 Pin 的摘要与磁盘一致
     if (_dirty) await _saveNow();
@@ -231,8 +307,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       );
       ref.read(pinListVersionProvider.notifier).bump();
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ThkToast.show(context, l10n.pinnedToast);
+      ThkToast.show(
+        context,
+        l10n.pinnedToast,
+        icon: AppIcons.checkCircle,
+      );
     } catch (e) {
       if (!mounted) return;
       ThkAlert.show(
@@ -243,9 +322,60 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     }
   }
 
+  /// ✓ 确认：标题/正文都为空时拦截；延迟创建模式下此时才真正落盘；
+  /// 保存后退出。
+  Future<void> _onConfirm() async {
+    final l10n = AppLocalizations.of(context)!;
+    final title = _titleController.text.trim();
+    final body = _bodyController.text.trim();
+
+    // 标题和正文都为空时拦截
+    if (title.isEmpty && body.isEmpty) {
+      ThkAlert.show(
+        context: context,
+        message: l10n.titleCannotBeEmpty,
+        defaultAction: l10n.ok,
+      );
+      return;
+    }
+
+    // 延迟创建：✓ 才建笔记（直接返回退出则什么都不落盘）
+    if (_noteId == null && widget.deferCreate) {
+      try {
+        final meta =
+            await _store.createNote(themeId: widget.themeId, title: '');
+        if (!mounted) return;
+        _noteId = meta.noteId;
+        _dirty = true;
+      } catch (e) {
+        if (!mounted) return;
+        ThkAlert.show(
+          context: context,
+          message: e.toString(),
+          defaultAction: 'OK',
+        );
+        return;
+      }
+    }
+
+    await _saveNow();
+    if (!mounted) return;
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // 延迟创建模式下 Pin 也可用：点击即保存并 Pin（见 _pinNote）
+    final pinEnabled = _noteId != null || widget.deferCreate;
+    // 已 Pin 状态：换 slash 图标 + 绿色，再点即取消
+    final pinned = ref
+            .watch(pinAnchorKeysProvider)
+            .value
+            ?.contains('n:$_noteId') ??
+        false;
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
@@ -257,37 +387,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             CupertinoButton(
               key: const ValueKey('pin_note_button'),
               padding: EdgeInsets.zero,
-              onPressed: _noteId == null ? null : _pinNote,
+              onPressed: pinEnabled ? _pinNote : null,
               child: Icon(
-                AppIcons.pin,
+                pinned ? AppIcons.pinSlash : AppIcons.pin,
                 size: 20,
-                color: _noteId == null
-                    ? AppColors.textTertiary
-                    : AppColors.accent,
+                color: pinned
+                    ? AppColors.success
+                    : (pinEnabled
+                        ? AppColors.accent
+                        : AppColors.textTertiary),
               ),
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
-              onPressed: () async {
-                final title = _titleController.text.trim();
-                final body = _bodyController.text.trim();
-
-                // 标题和正文都为空时拦截
-                if (title.isEmpty && body.isEmpty) {
-                  ThkAlert.show(
-                    context: context,
-                    message: l10n.titleCannotBeEmpty,
-                    defaultAction: l10n.ok,
-                  );
-                  return;
-                }
-
-                await _saveNow();
-                if (!mounted) return;
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
+              onPressed: _onConfirm,
               child: Icon(AppIcons.check),
             ),
           ],

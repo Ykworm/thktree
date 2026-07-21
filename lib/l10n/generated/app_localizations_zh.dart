@@ -788,10 +788,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pinnedToast => '已 Pin，从屏幕右缘拉出查看';
 
   @override
+  String get unpinnedToast => '已取消 Pin';
+
+  @override
+  String get pinLimitToast => '最多 Pin 5 条，先到抽屉里移除一条';
+
+  @override
+  String get unpinAction => 'Unpin';
+
+  @override
   String get pinPeekTitle => '已 Pin';
 
   @override
-  String get pinJump => '跳转';
+  String get pinJump => '来源';
 
   @override
   String get pinToNote => '存入笔记';

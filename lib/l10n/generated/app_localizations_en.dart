@@ -830,10 +830,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pinnedToast => 'Pinned — pull from right edge to view';
 
   @override
+  String get unpinnedToast => 'Unpinned';
+
+  @override
+  String get pinLimitToast =>
+      'Pin limit reached (5) — remove one in the drawer first';
+
+  @override
+  String get unpinAction => 'Unpin';
+
+  @override
   String get pinPeekTitle => 'Pinned';
 
   @override
-  String get pinJump => 'Jump';
+  String get pinJump => 'Source';
 
   @override
   String get pinToNote => 'To Note';

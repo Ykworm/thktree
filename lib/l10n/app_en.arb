@@ -1054,13 +1054,25 @@
   "@pinnedToast": {
     "description": "Toast shown after a message or note is pinned successfully"
   },
+  "unpinnedToast": "Unpinned",
+  "@unpinnedToast": {
+    "description": "Toast shown after a pin is removed by tapping the pin button again"
+  },
+  "pinLimitToast": "Pin limit reached (5) — remove one in the drawer first",
+  "@pinLimitToast": {
+    "description": "Toast shown when pinning is rejected because the 5-pin limit was reached"
+  },
+  "unpinAction": "Unpin",
+  "@unpinAction": {
+    "description": "Message bubble action to remove an existing pin. Kept in English in all locales by design"
+  },
   "pinPeekTitle": "Pinned",
   "@pinPeekTitle": {
     "description": "Title of the pin peek panel pulled in from the right edge"
   },
-  "pinJump": "Jump",
+  "pinJump": "Source",
   "@pinJump": {
-    "description": "Pin card action: jump to the pinned message or note"
+    "description": "Pin card action: jump to the source of the pinned message or note"
   },
   "pinToNote": "To Note",
   "@pinToNote": {

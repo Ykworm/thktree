@@ -1,14 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show SelectableText;
+import 'package:flutter/material.dart' show SelectionArea;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:path/path.dart' as p;
 import 'package:thk_tree/data/services/pin_content_loader.dart';
 import 'package:thk_tree/data/services/pin_storage.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/shared/link_launcher.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
@@ -18,9 +20,15 @@ import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_select_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 
-/// 打开对照栏面板（从右侧滑入，点外侧 scrim 关闭）。
+/// 面板是否已打开：防止连点手柄重复 push 出多个叠层面板。
+bool _pinPanelOpen = false;
+
+/// 打开对照栏面板（居上大卡片 + 底部关闭按钮，全屏深色 scrim，点外侧关闭）。
 ///
-/// [currentThemeId] / [currentNodeId] 用于 Jump 时识别「同一 chat 就地滚动」；
+/// push 到 root navigator：面板与 scrim 盖住整个屏幕（含 shell 底部 tab bar），
+/// 关闭按钮才能压在 tab bar 区域上。
+///
+/// [currentThemeId] / [currentNodeId] 用于 Source 时识别「同一 chat 就地滚动」；
 /// [onJumpInPlace] 在同一 chat 时回调就地滚动，避免重复 push 当前页。
 Future<void> showPinPeekPanel(
   BuildContext context, {
@@ -28,24 +36,29 @@ Future<void> showPinPeekPanel(
   String? currentNodeId,
   void Function(String msgId)? onJumpInPlace,
 }) {
-  return Navigator.of(context).push(
-    _SlideFromRightRoute(
-      builder: (_) => PinPeekPanel(
-        currentThemeId: currentThemeId,
-        currentNodeId: currentNodeId,
-        onJumpInPlace: onJumpInPlace,
-      ),
-    ),
-  );
+  if (_pinPanelOpen) return Future.value();
+  _pinPanelOpen = true;
+  return Navigator.of(context, rootNavigator: true)
+      .push(
+        _SlideFromRightRoute(
+          builder: (_) => PinPeekPanel(
+            currentThemeId: currentThemeId,
+            currentNodeId: currentNodeId,
+            onJumpInPlace: onJumpInPlace,
+          ),
+        ),
+      )
+      .whenComplete(() => _pinPanelOpen = false);
 }
 
-/// 从右往左滑入的半屏路由（镜像 search_screen 的 _SlideFromLeftRoute）。
+/// 从右往左滑入的透明路由（镜像 search_screen 的 _SlideFromLeftRoute）。
+/// scrim 用较深的 50% 黑（scrimMid 太透）。
 class _SlideFromRightRoute extends PageRouteBuilder<void> {
   _SlideFromRightRoute({required this.builder})
       : super(
           opaque: false,
           barrierDismissible: true,
-          barrierColor: AppColors.scrimMid,
+          barrierColor: AppColors.scrim,
           transitionDuration: const Duration(milliseconds: 280),
           reverseTransitionDuration: const Duration(milliseconds: 240),
           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -74,8 +87,9 @@ class _SlideFromRightRoute extends PageRouteBuilder<void> {
 
 /// 屏幕右缘的细长竖条把手（对照栏入口）。
 ///
-/// 以 OverlayEntry 挂在 ChatScreen 上；自身带 [Positioned] 定位。
-/// pins 为空时不显示；点击或向左拖动打开对照面板。
+/// 挂在 shell 层（[ShellPinEdgeHandle]，Themes / Notes tab 常驻）；
+/// 自身带 [Positioned] 定位。pins 为空时不显示；
+/// 点击或向左拖动打开对照面板，上下拖动可自由移动位置（会话内记忆）。
 class PinEdgeHandle extends ConsumerStatefulWidget {
   const PinEdgeHandle({super.key, required this.onOpen});
 
@@ -87,6 +101,9 @@ class PinEdgeHandle extends ConsumerStatefulWidget {
 
 class _PinEdgeHandleState extends ConsumerState<PinEdgeHandle> {
   int _count = 0;
+
+  /// 相对默认位置（屏高约 1/4 处）的纵向拖动偏移；仅会话内记忆，不落盘。
+  double _dragOffsetY = 0;
 
   @override
   void initState() {
@@ -110,15 +127,30 @@ class _PinEdgeHandleState extends ConsumerState<PinEdgeHandle> {
     ref.listen(pinListVersionProvider, (_, _) => unawaited(_reload()));
     if (_count == 0) return const SizedBox.shrink();
 
-    final screenHeight = MediaQuery.of(context).size.height;
+    final mq = MediaQuery.of(context);
+    final screenHeight = mq.size.height;
+    // 默认放在上半部分的中间（屏幕约 1/4 高度处），不挡聊天正文
+    final defaultTop = screenHeight / 4 - 50;
+    final minTop = mq.padding.top + 4;
+    final maxTop = screenHeight - mq.padding.bottom - 104;
+    final top =
+        (defaultTop + _dragOffsetY).clamp(minTop, maxTop).toDouble();
+
     return Positioned(
       right: 0,
-      top: screenHeight / 2 - 50,
+      top: top,
       child: GestureDetector(
         onTap: widget.onOpen,
         onHorizontalDragEnd: (details) {
           // 向左快速拖动也打开面板
           if ((details.primaryVelocity ?? 0) < -100) widget.onOpen();
+        },
+        onVerticalDragUpdate: (details) {
+          // 上下拖动自由移动把手位置
+          final newTop = (top + details.delta.dy)
+              .clamp(minTop, maxTop)
+              .toDouble();
+          setState(() => _dragOffsetY = newTop - defaultTop);
         },
         child: Container(
           width: 26,
@@ -161,7 +193,31 @@ class _PinEdgeHandleState extends ConsumerState<PinEdgeHandle> {
   }
 }
 
-/// 对照栏面板：右缘拉出，横向 PageView 一页一张 Pin 卡（上限 5 条）。
+/// shell 层对照栏把手：Themes / Notes tab 常驻（挂在 _MainShell /
+/// AndroidNavigationShell 的 Stack 里，分支内 push 的页面盖不住）。
+///
+/// 打开面板时读取 ChatScreen 注册的 [pinJumpContextProvider]：
+/// 面板正覆盖当前 chat 时，message pin 的 Source 才能就地滚动。
+class ShellPinEdgeHandle extends ConsumerWidget {
+  const ShellPinEdgeHandle({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PinEdgeHandle(
+      onOpen: () {
+        final jump = ref.read(pinJumpContextProvider);
+        unawaited(showPinPeekPanel(
+          context,
+          currentThemeId: jump?.themeId,
+          currentNodeId: jump?.nodeId,
+          onJumpInPlace: jump?.jumpInPlace,
+        ));
+      },
+    );
+  }
+}
+
+/// 对照栏面板：居上大卡片 + 底部关闭按钮，横向 PageView 一页一张 Pin 卡（上限 5 条）。
 class PinPeekPanel extends ConsumerStatefulWidget {
   const PinPeekPanel({
     super.key,
@@ -227,30 +283,48 @@ class _PinPeekPanelState extends ConsumerState<PinPeekPanel> {
   Widget build(BuildContext context) {
     ref.listen(pinListVersionProvider, (_, _) => unawaited(_reload()));
     final l10n = AppLocalizations.of(context)!;
-    final screenWidth = MediaQuery.of(context).size.width;
+    final mediaQuery = MediaQuery.of(context);
+    final screenSize = mediaQuery.size;
+    // 卡片高度动态算：顶部安全区 +8 起，底边延伸到关闭按钮上方 20px，
+    // 不同机型上卡片与 X 的间距都一致
+    final cardTop = mediaQuery.padding.top + 8;
+    final closeTop = screenSize.height - mediaQuery.padding.bottom - 18 - 44;
+    final cardHeight = closeTop - cardTop - 20;
 
     return GestureDetector(
       onTap: () => Navigator.of(context).pop(),
       behavior: HitTestBehavior.translucent,
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: GestureDetector(
-          onTap: () {}, // 阻止点击面板区域关闭
-          child: Container(
-            width: screenWidth * 0.85,
-            height: double.infinity,
-            color: AppColors.pageBg,
-            child: SafeArea(
-              child: Column(
-                children: [
-                  // 标题栏
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Row(
+      child: Stack(
+        children: [
+          // 大卡片：靠上放置，底边接近底部的关闭按钮
+          Positioned(
+            top: cardTop,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {}, // 阻止点击卡片区域关闭
+                child: Container(
+                  width: screenSize.width * 0.92,
+                  height: cardHeight,
+                  decoration: BoxDecoration(
+                    color: AppColors.pageBg,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.elevationShadow,
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Column(
                       children: [
-                        const SizedBox(width: 48),
-                        Expanded(
+                        // 标题
+                        Padding(
+                          padding: const EdgeInsets.only(top: 14, bottom: 4),
                           child: Text(
                             l10n.pinPeekTitle,
                             textAlign: TextAlign.center,
@@ -260,72 +334,88 @@ class _PinPeekPanelState extends ConsumerState<PinPeekPanel> {
                             ),
                           ),
                         ),
-                        SizedBox(
-                          width: 48,
-                          child: CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Icon(
-                              AppIcons.close,
-                              size: 20,
-                              color: AppColors.textTertiary,
+                        // 页码指示（多于一张时；放标题下，避开底边关闭按钮）
+                        if (!_loading && _pins.length > 1)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                for (var i = 0; i < _pins.length; i++)
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 3),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: i == _currentPage
+                                          ? AppColors.accent
+                                          : AppColors.textQuaternary,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
+                        // 卡片 PageView（左右滑动切换）
+                        Expanded(
+                          child: _loading
+                              ? const Center(
+                                  child: CupertinoActivityIndicator())
+                              : PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: _pins.length,
+                                  // 必须 setState：页码圆点跟着当前页高亮
+                                  onPageChanged: (i) =>
+                                      setState(() => _currentPage = i),
+                                  itemBuilder: (context, index) => _PinCard(
+                                    key: ValueKey(_pins[index].id),
+                                    pin: _pins[index],
+                                    currentThemeId: widget.currentThemeId,
+                                    currentNodeId: widget.currentNodeId,
+                                    onJumpInPlace: widget.onJumpInPlace,
+                                  ),
+                                ),
                         ),
                       ],
                     ),
                   ),
-                  // 卡片 PageView
-                  Expanded(
-                    child: _loading
-                        ? const Center(child: CupertinoActivityIndicator())
-                        : PageView.builder(
-                            controller: _pageController,
-                            itemCount: _pins.length,
-                            onPageChanged: (i) => _currentPage = i,
-                            itemBuilder: (context, index) => _PinCard(
-                              key: ValueKey(_pins[index].id),
-                              pin: _pins[index],
-                              currentThemeId: widget.currentThemeId,
-                              currentNodeId: widget.currentNodeId,
-                              onJumpInPlace: widget.onJumpInPlace,
-                            ),
-                          ),
-                  ),
-                  // 页码指示（多于一张时）
-                  if (!_loading && _pins.length > 1)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12, top: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < _pins.length; i++)
-                            Container(
-                              width: 6,
-                              height: 6,
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: i == _currentPage
-                                    ? AppColors.accent
-                                    : AppColors.textQuaternary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          // 关闭按钮：下移到屏幕底部，压在 shell 的 tab bar 区域上，点击缩回聊天页
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: mediaQuery.padding.bottom + 18,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    // 深色半透明圆 + 白图标：在白底 tab bar 上也不会被看成 tab 按钮
+                    color: AppColors.black.withValues(alpha: 0.65),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    AppIcons.close,
+                    size: 20,
+                    color: AppColors.surface,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// 单张 Pin 卡：来源行 + 全文可滚动预览 + Jump / To Note / Remove。
+/// 单张 Pin 卡：来源行 + 全文可滚动预览 + Source / To Note / Remove。
 class _PinCard extends ConsumerStatefulWidget {
   const _PinCard({
     super.key,
@@ -386,7 +476,7 @@ class _PinCardState extends ConsumerState<_PinCard> {
     return nodeTitle != null ? '$themeTitle · $nodeTitle' : themeTitle;
   }
 
-  /// Jump：消息 → 跳到对应 chat 并滚到该消息；笔记 → 打开笔记编辑器。
+  /// Source：消息 → 跳到来源 chat 并滚到该消息；笔记 → 打开笔记编辑器。
   Future<void> _jump(String? themeTitle) async {
     final pin = widget.pin;
     if (pin.kind == PinKind.message) {
@@ -515,12 +605,17 @@ class _PinCardState extends ConsumerState<_PinCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SelectableText(
-                            _content?.body ?? pin.excerpt,
-                            style: TextStyle(
-                              fontSize: 15,
-                              height: 1.5,
-                              color: AppColors.textPrimary,
+                          // 渲染 markdown（与笔记详情页一致），可长按选中
+                          SelectionArea(
+                            child: GptMarkdown(
+                              _content?.body ?? pin.excerpt,
+                              style: TextStyle(
+                                fontSize: 15,
+                                height: 1.5,
+                                color: AppColors.textPrimary,
+                              ),
+                              onLinkTap: (url, _) =>
+                                  openMarkdownLink(context, url),
                             ),
                           ),
                           if (_content == null)

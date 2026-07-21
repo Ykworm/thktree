@@ -19,6 +19,8 @@ import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/platform/android/android_brightness_controller.dart';
 import 'package:thk_tree/ui/platform/android/android_color_scheme.dart';
 import 'package:thk_tree/ui/platform/android/android_nav_bar.dart';
+import 'package:thk_tree/ui/features/chat/widgets/pin_peek_panel.dart'
+    show ShellPinEdgeHandle;
 
 /// 响应式断点判定（导出便于单测）。宽度 ≥ [kAndroidTabletBreakpoint] 视为平板，
 /// 走导航栏（rail）；否则手机，走底部导航栏。
@@ -137,7 +139,16 @@ class _AndroidNavigationShellState extends State<AndroidNavigationShell>
                 Expanded(
                   child: ColoredBox(
                     color: AppColors.pageBg,
-                    child: widget.navigationShell,
+                    // 对照栏把手：仅 Themes(1) / Notes(2) tab 显示，
+                    // 叠在分支内容上，分支内 push 的页面盖不住
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        widget.navigationShell,
+                        if (selectedIndex == 1 || selectedIndex == 2)
+                          const ShellPinEdgeHandle(),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -147,7 +158,16 @@ class _AndroidNavigationShellState extends State<AndroidNavigationShell>
                 Expanded(
                   child: ColoredBox(
                     color: AppColors.pageBg,
-                    child: widget.navigationShell,
+                    // 对照栏把手：仅 Themes(1) / Notes(2) tab 显示，
+                    // 叠在分支内容上，分支内 push 的页面盖不住
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        widget.navigationShell,
+                        if (selectedIndex == 1 || selectedIndex == 2)
+                          const ShellPinEdgeHandle(),
+                      ],
+                    ),
                   ),
                 ),
                 // 键盘弹出时隐藏底部导航栏：Column 不会自动让出空间，

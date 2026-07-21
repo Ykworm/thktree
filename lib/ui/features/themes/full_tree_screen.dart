@@ -43,11 +43,14 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
   bool _hintExpanded = true;
   final List<String> _selectedNodeIds = [];
 
+  /// 进入时定位到当前节点：节点数据异步加载，须等 data 分支渲染出目标行
+  /// 后再滚动；首帧 loading 时滚动会被静默跳过，故不在 initState 里触发。
+  bool _needsInitialScroll = true;
+
   @override
   void initState() {
     super.initState();
     _multiSelectMode = widget.initialMultiSelect;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrentNode());
   }
 
   @override
@@ -59,14 +62,14 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
   void _scrollToCurrentNode() {
     if (widget.currentNodeId == null) return;
     final key = _highlightKey.currentContext;
-    if (key != null) {
-      Scrollable.ensureVisible(
-        key,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        alignment: 0.3,
-      );
-    }
+    if (key == null) return; // 目标行尚未渲染，保留标记待下次 build 重试
+    _needsInitialScroll = false;
+    Scrollable.ensureVisible(
+      key,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: 0.3,
+    );
   }
 
   void _enterMultiSelect() {
@@ -217,6 +220,14 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
               ),
             ),
           );
+        }
+
+        // 数据就绪且目标行已渲染后，定位到当前节点（仅首次，见 _needsInitialScroll）
+        if (widget.currentNodeId != null && _needsInitialScroll) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _scrollToCurrentNode();
+          });
         }
 
         // Nav bar title: multi-select → theme/merge context; else single root

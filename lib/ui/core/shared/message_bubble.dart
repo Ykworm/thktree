@@ -317,6 +317,7 @@ class MessageBubble extends ConsumerStatefulWidget {
     this.userQuestionImage,
     this.onSaveToNote,
     this.onPin,
+    this.isPinned = false,
     this.showTimestamp = false,
     this.onShareEntireChat,
   });
@@ -333,8 +334,11 @@ class MessageBubble extends ConsumerStatefulWidget {
   /// 点击"存为笔记"按钮时的回调
   final VoidCallback? onSaveToNote;
 
-  /// 点击"Pin"按钮时的回调（加入对照列表）
+  /// 点击"Pin"按钮时的回调（加入对照列表；已 Pin 时为取消）
   final VoidCallback? onPin;
+
+  /// 当前消息是否已被 Pin（决定按钮文案 Pin / Unpin 与图标）
+  final bool isPinned;
 
   /// 是否在气泡上方显示时间戳
   final bool showTimestamp;
@@ -371,8 +375,8 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     final actions = <GridAction>[
       if (widget.onPin != null)
         GridAction(
-          label: l10n.pinAction,
-          icon: AppIcons.pin,
+          label: widget.isPinned ? l10n.unpinAction : l10n.pinAction,
+          icon: widget.isPinned ? AppIcons.pinSlash : AppIcons.pin,
           color: AppColors.accent,
           onPressed: widget.onPin!,
         ),
@@ -748,7 +752,9 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                 minimumSize: Size.zero,
                                 onPressed: widget.onPin,
                                 child: Text(
-                                  l10n.pinAction,
+                                  widget.isPinned
+                                      ? l10n.unpinAction
+                                      : l10n.pinAction,
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,

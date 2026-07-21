@@ -22,6 +22,9 @@ class AppIcons {
   /// Icons.check_circle
   static const IconData checkCircle = SFIcons.sf_checkmark_circle_fill;
 
+  /// Icons.error / exclamationmark.circle.fill（上限、警告提示）
+  static const IconData exclamationCircle =
+      SFIcons.sf_exclamationmark_circle_fill;
   /// Icons.delete / Icons.delete_outline
   static const IconData delete = SFIcons.sf_trash;
 
@@ -88,8 +91,9 @@ class AppIcons {
   /// Icons.star
   static const IconData star = SFIcons.sf_star;
 
-  /// Icons.push_pin / pin.fill（对照 Pin 入口）
+  /// 对照 Pin 入口：未 Pin / 已 Pin（再点取消）
   static const IconData pin = SFIcons.sf_pin_fill;
+  static const IconData pinSlash = SFIcons.sf_pin_slash_fill;
 
   // ── 设置 / 提供商 ──
 

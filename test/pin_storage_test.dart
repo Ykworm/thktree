@@ -46,20 +46,26 @@ void main() {
     expect((jsonDecode(text) as Map)['schema'], 'pins/v1');
   });
 
-  test('上限 5 条，满后 FIFO 淘汰最早的', () async {
-    for (var i = 1; i <= 6; i++) {
+  test('上限 5 条，满后拒绝新增（抛 StateError，旧条目不动）', () async {
+    for (var i = 1; i <= PinStorage.maxPins; i++) {
       await store.add(
         kind: PinKind.message,
         msgId: 'msg_$i',
         excerpt: 'e$i',
       );
-      // 保证 createdAt 有先后
-      await Future<void>.delayed(const Duration(milliseconds: 2));
     }
+    // 第 6 条新锚点 → 抛错不落盘
+    expect(
+      () => store.add(kind: PinKind.message, msgId: 'msg_6', excerpt: 'e6'),
+      throwsStateError,
+    );
     final pins = await store.getAll();
     expect(pins.length, PinStorage.maxPins);
-    // 最早的 msg_1 被淘汰，最新在前
-    expect(pins.map((p) => p.msgId), ['msg_6', 'msg_5', 'msg_4', 'msg_3', 'msg_2']);
+    expect(pins.map((p) => p.msgId), containsAll(['msg_1', 'msg_5']));
+
+    // 满员时重复锚点仍允许（去重刷新）
+    await store.add(kind: PinKind.message, msgId: 'msg_1', excerpt: 'e1-new');
+    expect((await store.getAll()).first.msgId, 'msg_1');
   });
 
   test('同锚点去重：同 msgId 重复 Pin 刷新 excerpt/createdAt 并移到最前', () async {
@@ -86,6 +92,60 @@ void main() {
     await store.add(kind: PinKind.message, msgId: 'x', excerpt: 'm');
     await store.add(kind: PinKind.note, noteId: 'x', excerpt: 'n');
     expect((await store.getAll()).length, 2);
+  });
+
+  test('isFullFor：满员且新锚点时为 true，未满员或重复锚点时为 false', () async {
+    // 未满员
+    expect(
+      await store.isFullFor(kind: PinKind.message, msgId: 'msg_1'),
+      isFalse,
+    );
+
+    for (var i = 1; i <= PinStorage.maxPins; i++) {
+      await store.add(kind: PinKind.message, msgId: 'msg_$i', excerpt: 'e$i');
+    }
+
+    // 满员 + 新锚点 → 会被拒
+    expect(
+      await store.isFullFor(kind: PinKind.message, msgId: 'msg_new'),
+      isTrue,
+    );
+    // 满员 + 重复锚点 → 去重刷新，不受限
+    expect(
+      await store.isFullFor(kind: PinKind.message, msgId: 'msg_1'),
+      isFalse,
+    );
+    // 满员 + note 新锚点 → 会被拒
+    expect(
+      await store.isFullFor(kind: PinKind.note, noteId: 'note_new'),
+      isTrue,
+    );
+  });
+
+  test('isPinned / removeByAnchor：按锚点查询与取消 Pin', () async {
+    await store.add(kind: PinKind.message, msgId: 'msg_1', excerpt: 'e1');
+    await store.add(kind: PinKind.note, noteId: 'note_1', excerpt: 'n1');
+
+    expect(
+      await store.isPinned(kind: PinKind.message, msgId: 'msg_1'),
+      isTrue,
+    );
+    expect(await store.isPinned(kind: PinKind.note, noteId: 'note_1'), isTrue);
+    expect(
+      await store.isPinned(kind: PinKind.message, msgId: 'msg_404'),
+      isFalse,
+    );
+
+    await store.removeByAnchor(kind: PinKind.message, msgId: 'msg_1');
+    expect(
+      await store.isPinned(kind: PinKind.message, msgId: 'msg_1'),
+      isFalse,
+    );
+    expect((await store.getAll()).length, 1);
+
+    // 不存在时静默跳过
+    await store.removeByAnchor(kind: PinKind.note, noteId: 'note_404');
+    expect((await store.getAll()).length, 1);
   });
 
   test('remove 删除单条，不存在时静默跳过', () async {

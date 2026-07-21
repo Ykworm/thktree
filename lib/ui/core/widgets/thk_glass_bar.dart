@@ -21,6 +21,7 @@ class ThkGlassBar extends StatelessWidget {
     this.padding,
     this.width,
     this.height,
+    this.color,
   });
 
   final Widget child;
@@ -30,11 +31,16 @@ class ThkGlassBar extends StatelessWidget {
   final double? width;
   final double? height;
 
+  /// 填充色覆盖：默认 [AppGlass.chromeFill]（iOS 半透 + blur）。
+  /// 深色 barrier 上的 sheet 应传不透明色（如 [AppGlass.fillOpaque]），
+  /// 半透白叠深色 scrim 会发灰蓝。
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final blur = AppGlass.useBlur;
     final decoration = BoxDecoration(
-      color: AppGlass.chromeFill,
+      color: color ?? AppGlass.chromeFill,
       borderRadius: borderRadius,
       border: border ??
           Border(

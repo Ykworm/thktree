@@ -19,6 +19,7 @@ import 'package:thk_tree/ui/core/shared/llm_setup_check.dart'
 import 'package:thk_tree/ui/core/shared/link_launcher.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
+import 'package:thk_tree/data/services/pin_storage.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -171,6 +172,83 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     await Future<void>.delayed(const Duration(seconds: 2));
     if (mounted) {
       setState(() => _copied = false);
+    }
+  }
+
+  /// Pin / 取消 Pin 整篇笔记（上限 5 条，满员拦截不淘汰旧条目）。
+  /// 本页只有 notesDir + noteId，themeId 从 NoteMeta 取。
+  Future<void> _pinNote() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      final pinStorage = await ref.read(pinStorageProvider.future);
+      // 已 Pin → 再点取消（不需要动笔记内容）
+      if (await pinStorage.isPinned(
+          kind: PinKind.note, noteId: widget.noteId)) {
+        await pinStorage.removeByAnchor(
+            kind: PinKind.note, noteId: widget.noteId);
+        ref.read(pinListVersionProvider.notifier).bump();
+        if (!mounted) return;
+        ThkToast.show(
+          context,
+          l10n.unpinnedToast,
+          icon: AppIcons.pinSlash,
+          iconColor: AppColors.textTertiary,
+        );
+        return;
+      }
+      // 满员拦截：不淘汰旧条目，提示先移除
+      if (await pinStorage.isFullFor(
+          kind: PinKind.note, noteId: widget.noteId)) {
+        if (!mounted) return;
+        ThkToast.show(
+          context,
+          l10n.pinLimitToast,
+          icon: AppIcons.exclamationCircle,
+          iconColor: AppColors.destructive,
+        );
+        return;
+      }
+
+      // 编辑中有未落盘的改动先保存，保证 Pin 的摘要与磁盘一致
+      if (_editing) {
+        await _store.writeBody(widget.noteId, _controller.text);
+        _body = _controller.text;
+        ref.read(noteListVersionProvider.notifier).bump();
+      }
+
+      // 摘要：优先标题，否则正文；合并空白后取前 100 字符
+      final bodyText = _editing ? _controller.text : _body;
+      final source = _title.trim().isNotEmpty ? _title.trim() : bodyText;
+      final excerpt = source.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (excerpt.isEmpty) return;
+
+      final metas = await _store.listNoteMetas();
+      final themeId = metas
+          .where((m) => m.noteId == widget.noteId)
+          .firstOrNull
+          ?.themeId;
+      if (themeId == null || themeId.isEmpty) return;
+      await pinStorage.add(
+        kind: PinKind.note,
+        themeId: themeId,
+        noteId: widget.noteId,
+        excerpt: excerpt.length <= 100 ? excerpt : excerpt.substring(0, 100),
+      );
+      ref.read(pinListVersionProvider.notifier).bump();
+      if (!mounted) return;
+      ThkToast.show(
+        context,
+        l10n.pinnedToast,
+        icon: AppIcons.checkCircle,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ThkAlert.show(
+        context: context,
+        message: e.toString(),
+        defaultAction: 'OK',
+      );
     }
   }
 
@@ -524,7 +602,81 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
           ],
         ),
       ),
-      child: _buildBody(l10n),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildBody(l10n),
+          _buildPinFab(),
+        ],
+      ),
+    );
+  }
+
+  /// Pin 悬浮按钮的位置；null = 默认（右缘偏下）。仅会话内记忆。
+  Offset? _pinFabPos;
+
+  /// 可拖动的圆形 Pin 悬浮按钮：点按 Pin / 取消 Pin 本篇笔记，
+  /// 按住拖动随意摆放。已 Pin 时变绿色 slash 图标。
+  Widget _buildPinFab() {
+    const fabSize = 44.0;
+    final pinned = ref
+            .watch(pinAnchorKeysProvider)
+            .value
+            ?.contains('n:${widget.noteId}') ??
+        false;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxX = (constraints.maxWidth - fabSize - 8)
+            .clamp(8.0, double.infinity)
+            .toDouble();
+        final maxY = (constraints.maxHeight - fabSize - 8)
+            .clamp(8.0, double.infinity)
+            .toDouble();
+        final pos = _pinFabPos ?? Offset(maxX - 8, maxY * 0.72);
+        final x = pos.dx.clamp(8.0, maxX).toDouble();
+        final y = pos.dy.clamp(8.0, maxY).toDouble();
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              left: x,
+              top: y,
+              child: GestureDetector(
+                key: const ValueKey('note_detail_pin_fab'),
+                onTap: () => unawaited(_pinNote()),
+                onPanUpdate: (details) {
+                  setState(() {
+                    _pinFabPos = Offset(
+                      (x + details.delta.dx).clamp(8.0, maxX).toDouble(),
+                      (y + details.delta.dy).clamp(8.0, maxY).toDouble(),
+                    );
+                  });
+                },
+                child: Container(
+                  width: fabSize,
+                  height: fabSize,
+                  decoration: BoxDecoration(
+                    color: pinned ? AppColors.success : AppColors.accent,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.elevationShadow,
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    pinned ? AppIcons.pinSlash : AppIcons.pin,
+                    size: 20,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

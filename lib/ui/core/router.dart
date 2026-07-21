@@ -13,6 +13,8 @@ import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/platform/android/android_navigation_shell.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
+import 'package:thk_tree/ui/features/chat/widgets/pin_peek_panel.dart'
+    show ShellPinEdgeHandle;
 import 'package:thk_tree/ui/features/lab/lab_placeholder_screen.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_ranking_screen.dart';
 import 'package:thk_tree/ui/features/lab/keyword_ranking/theme_selection_screen.dart';
@@ -283,6 +285,11 @@ class _MainShell extends ConsumerWidget {
             data: contentMq,
             child: navigationShell,
           ),
+          // 对照栏把手：仅 Themes(1) / Notes(2) tab 显示；挂在 shell 层，
+          // 分支内 push 的页面（笔记编辑器、详情页等）也盖不住它
+          if (navigationShell.currentIndex == 1 ||
+              navigationShell.currentIndex == 2)
+            const ShellPinEdgeHandle(),
           if (!keyboardOpen)
             Positioned(
               left: 0,

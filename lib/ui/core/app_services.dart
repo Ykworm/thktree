@@ -52,6 +52,15 @@ class PinListVersionNotifier extends Notifier<int> {
 /// 右缘把手与对照面板 watch 它来刷新。
 final pinListVersionProvider = NotifierProvider<PinListVersionNotifier, int>(PinListVersionNotifier.new);
 
+/// 已 Pin 锚点集合（`m:<msgId>` / `n:<noteId>`），
+/// 供各处 pin 按钮显示「已 Pin / 未 Pin」状态；跟随版本号刷新。
+final pinAnchorKeysProvider = FutureProvider<Set<String>>((ref) async {
+  ref.watch(pinListVersionProvider);
+  final storage = await ref.watch(pinStorageProvider.future);
+  final pins = await storage.getAll();
+  return pins.map((p) => p.anchorKey).toSet();
+});
+
 /// 对照栏 Jump 的待滚动消息：跳转前置位，
 /// ChatScreen 进入时消费（读一次即清空），优先于滚动锚点恢复。
 class PendingScrollMsgIdNotifier extends Notifier<String?> {
@@ -66,6 +75,40 @@ class PendingScrollMsgIdNotifier extends Notifier<String?> {
 final pendingScrollMsgIdProvider =
     NotifierProvider<PendingScrollMsgIdNotifier, String?>(
         PendingScrollMsgIdNotifier.new);
+
+/// 对照栏把手的「当前 chat」跳转上下文。
+///
+/// ChatScreen 存活时注册（dispose 时按引用清除），shell 层把手
+/// （[ShellPinEdgeHandle]）打开对照面板时透传：
+/// 同一 chat 的 message pin 才能走「就地滚动」而不是重新 push。
+class PinJumpContext {
+  const PinJumpContext({
+    required this.themeId,
+    required this.nodeId,
+    required this.jumpInPlace,
+  });
+
+  final String themeId;
+  final String nodeId;
+  final void Function(String msgId) jumpInPlace;
+}
+
+class PinJumpContextNotifier extends Notifier<PinJumpContext?> {
+  @override
+  PinJumpContext? build() => null;
+
+  void register(PinJumpContext ctx) => state = ctx;
+
+  /// 仅当当前值仍是 [ctx]（同一引用）时清除，
+  /// 避免误清掉后挂载的 chat 页注册的新值。
+  void clearIfSame(PinJumpContext ctx) {
+    if (state == ctx) state = null;
+  }
+}
+
+final pinJumpContextProvider =
+    NotifierProvider<PinJumpContextNotifier, PinJumpContext?>(
+        PinJumpContextNotifier.new);
 
 final appPathsProvider = FutureProvider<AppPaths>((ref) async {
   final paths = await AppPaths.load();

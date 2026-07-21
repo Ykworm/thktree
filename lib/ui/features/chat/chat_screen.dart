@@ -35,10 +35,8 @@ import 'package:thk_tree/data/services/pin_storage.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_outline_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_search_sheet.dart';
 import 'package:thk_tree/ui/features/chat/widgets/chat_markdown_sheet.dart';
-import 'package:thk_tree/ui/features/chat/widgets/pin_peek_panel.dart';
 import 'package:thk_tree/ui/features/chat/user_questions.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
-import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/ui/features/notes/note_editor_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/domain/node.dart';
@@ -116,8 +114,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// 对照栏 Jump 待滚动的 msgId：消费一次即清空，优先于滚动锚点恢复。
   String? _pendingJumpMsgId;
 
-  /// 右缘对照栏把手的 overlay 条目（pins 为空时把手自己不显示）。
-  OverlayEntry? _pinHandleEntry;
+  /// 注册到 [pinJumpContextProvider] 的「当前 chat」跳转上下文，
+  /// dispose 时按引用精准清除（同 _branchCallback 的守卫思路）。
+  PinJumpContext? _pinJumpContext;
+
+  /// 缓存 [pinJumpContextProvider] 的 notifier 引用供 dispose 使用
+  /// （widget 卸载后 ref 失效，同 _branchNotifier）。
+  PinJumpContextNotifier? _pinJumpContextNotifier;
 
   /// 当前对话的深度思考开关（per-session in-memory，
   /// 切换模型时重置为 false，避免新模型不支持时还保留开启状态）。
@@ -160,13 +163,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       // 读取本 chat 的滚动锚点，恢复上次离开时的位置
       unawaited(_loadScrollAnchor());
     }
+    // 把手已上移到 shell 层（Themes / Notes tab 常驻，见 ShellPinEdgeHandle），
+    // 这里只注册「当前 chat」跳转上下文：面板 Source 命中同一 chat 时就地滚动。
+    _pinJumpContextNotifier = ref.read(pinJumpContextProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // 右缘对照栏把手：不用 rootOverlay，让后续 push 的页面盖住它
-      _pinHandleEntry = OverlayEntry(
-        builder: (_) => PinEdgeHandle(onOpen: _openPinPeekPanel),
+      final ctx = PinJumpContext(
+        themeId: widget.themeId,
+        nodeId: widget.nodeId,
+        jumpInPlace: (msgId) =>
+            _chatListKey.currentState?.scrollToMessage(msgId),
       );
-      Overlay.of(context).insert(_pinHandleEntry!);
+      _pinJumpContext = ctx;
+      _pinJumpContextNotifier?.register(ctx);
     });
     // 把"从活跃选区直接分支"的回调注册到全局 provider，
     // 供选区工具栏「分支」按钮读取（见 buildClipsContextMenu）。
@@ -217,19 +226,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
-    _pinHandleEntry?.remove();
-    _pinHandleEntry = null;
     _saveScrollAnchor();
-    // 卸载时清空分支回调，避免被已销毁的 chat 上下文误触发。
+    // 卸载时清空分支回调与 pin 跳转上下文，避免被已销毁的 chat 上下文误触发。
     // 注意：不能在 dispose 同步改 provider —— 此时 widget 树仍在 finalize，
     // Riverpod 的 _debugCanModifyProviders 断言会拦截（缓存引用也没用，
     // 因为断言看的是"是否在构建/finalize 期"，不是"是否用 ref"）。
     // 延迟到微任务，此时已脱离构建期；并用闭包引用做守卫，只清我们自己设的值。
     final notifier = _branchNotifier;
     final cb = _branchCallback;
+    final pinNotifier = _pinJumpContextNotifier;
+    final pinCtx = _pinJumpContext;
     Future.microtask(() {
       try {
         if (notifier?.state == cb) notifier?.state = null;
+        if (pinCtx != null) pinNotifier?.clearIfSame(pinCtx);
       } catch (_) {
         // Provider 已随 ProviderScope 销毁，无需清理。
       }
@@ -278,6 +288,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// 将助手消息保存为笔记（临时标题 = 正文前 N 字）。
   ///
   /// 使用当前对话所在主题作为笔记分类。若主题不存在则自动创建同名主题。
+  /// 打开的是延迟创建编辑器（deferCreate）：✓ 才落盘，返回则丢弃。
   Future<void> _saveMessageAsNote(SessionMessage message) async {
     if (message.body.trim().isEmpty || !mounted) return;
 
@@ -305,14 +316,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         themeId = newTheme.themeId;
       }
 
-      final notesDir = Directory('${paths.themesDir.path}/$themeId/notes');
-      final store = NoteStore(notesDir: notesDir);
-
-      final meta = await store.createNote(themeId: themeId, title: tempTitle);
-      await store.writeBody(meta.noteId, message.body);
-
-      ref.read(noteListVersionProvider.notifier).bump();
-
       if (!mounted) return;
 
       Navigator.of(context).push(
@@ -321,8 +324,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             themeId: themeId,
             themeTitle: themeTitle,
             themePath: '${paths.themesDir.path}/$themeId',
-            notesDir: notesDir.path,
-            noteId: meta.noteId,
+            notesDir: '${paths.themesDir.path}/$themeId/notes',
+            deferCreate: true,
+            initialTitle: tempTitle,
+            initialBody: message.body,
           ),
         ),
       );
@@ -332,14 +337,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  /// 把消息加入 Pin 对照列表（上限 5 条，FIFO 淘汰）。
+  /// Pin / 取消 Pin 消息（上限 5 条，满员拦截不淘汰旧条目）。
   Future<void> _pinMessage(SessionMessage message) async {
     if (message.body.trim().isEmpty || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
 
     // 摘要：合并空白后取前 100 字符，供对照卡片预览
     final excerpt = message.body.replaceAll(RegExp(r'\s+'), ' ').trim();
     try {
       final pinStorage = await ref.read(pinStorageProvider.future);
+      // 已 Pin → 再点取消
+      if (await pinStorage.isPinned(
+        kind: PinKind.message,
+        msgId: message.msgId,
+      )) {
+        await pinStorage.removeByAnchor(
+          kind: PinKind.message,
+          msgId: message.msgId,
+        );
+        ref.read(pinListVersionProvider.notifier).bump();
+        if (!mounted) return;
+        ThkToast.show(
+          context,
+          l10n.unpinnedToast,
+          icon: AppIcons.pinSlash,
+          iconColor: AppColors.textTertiary,
+        );
+        return;
+      }
+      // 满员拦截：不淘汰旧条目，提示先移除
+      if (await pinStorage.isFullFor(
+        kind: PinKind.message,
+        msgId: message.msgId,
+      )) {
+        if (!mounted) return;
+        ThkToast.show(
+          context,
+          l10n.pinLimitToast,
+          icon: AppIcons.exclamationCircle,
+          iconColor: AppColors.destructive,
+        );
+        return;
+      }
       await pinStorage.add(
         kind: PinKind.message,
         themeId: widget.themeId,
@@ -349,23 +388,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       );
       ref.read(pinListVersionProvider.notifier).bump();
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ThkToast.show(context, l10n.pinnedToast);
+      ThkToast.show(
+        context,
+        l10n.pinnedToast,
+        icon: AppIcons.checkCircle,
+      );
     } catch (e) {
       if (!mounted) return;
       ThkAlert.show(context: context, message: 'Failed to pin: $e');
     }
-  }
-
-  /// 打开右缘对照栏面板（对照 Pin 列表预览）。
-  void _openPinPeekPanel() {
-    unawaited(showPinPeekPanel(
-      context,
-      currentThemeId: widget.themeId,
-      currentNodeId: widget.nodeId,
-      onJumpInPlace: (msgId) =>
-          _chatListKey.currentState?.scrollToMessage(msgId),
-    ));
   }
 
   @override
@@ -781,6 +812,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                               SessionMessageStatus.done
                                       ? () => _pinMessage(message)
                                       : null,
+                                  isPinned: ref
+                                          .watch(pinAnchorKeysProvider)
+                                          .value
+                                          ?.contains('m:${message.msgId}') ??
+                                      false,
                                   onShareEntireChat: () =>
                                       _shareEntireChat(messages),
                                 );

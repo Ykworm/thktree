@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/widgets/thk_glass_bar.dart';
 
 /// 网格底栏操作项。
@@ -38,6 +39,11 @@ class ThkGridBottomSheet {
       context: context,
       backgroundColor: Colors.transparent,
       useSafeArea: false,
+      // root navigator：sheet 盖住 shell 的 tab bar
+      // （在分支 navigator 里弹会被 tab bar 压住底部操作区）；
+      // isScrollControlled：解除默认半屏高度上限，操作项多时不被裁切
+      useRootNavigator: true,
+      isScrollControlled: true,
       builder: (context) => _SheetContent(
         actions: actions,
         destructiveActions: destructiveActions,
@@ -67,13 +73,14 @@ class _SheetContent extends StatelessWidget {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final bottomSafeGap = bottomInset > 0 ? 8.0 : 4.0;
     const sheetRadius = BorderRadius.vertical(top: Radius.circular(16));
-    // 半透明磨砂：barrier 后的页面内容在 sheet 下方，可被 blur 磨到
+    // 不透明 paper-warm：半透玻璃叠在深色 modal barrier 上会发灰蓝
     return ThkGlassBar(
       borderRadius: sheetRadius,
-      border: Border(
-        top: BorderSide(color: AppColors.border, width: 0.5),
-        left: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
-        right: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
+      color: AppGlass.fillOpaque,
+      // borderRadius 要求 Border 四边颜色/宽度一致（paint 期断言），
+      // 统一 0.5 描边；圆角裁切由 ThkGlassBar 的 ClipRRect 负责
+      border: Border.fromBorderSide(
+        BorderSide(color: AppColors.border, width: 0.5),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -87,8 +94,8 @@ class _SheetContent extends StatelessWidget {
           if (destructiveActions != null &&
               destructiveActions!.isNotEmpty) ...[
             Container(
-              height: 6,
-              color: AppColors.surfaceMuted.withValues(alpha: 0.5),
+              height: 0.5,
+              color: AppColors.border,
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(16, 6, 16, showCancel ? 4 : 0),
