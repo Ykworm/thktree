@@ -26,6 +26,7 @@ REPO=$(basename "$(git rev-parse --show-toplevel)")
 ## 红线（不可违反）
 
 - **litemode / fullmode**：方案未齐前不写业务代码（litemode 微改可跳过长 brainstorm，但验收要说清）  
+- **litemode / fullmode 一个 Chat Session 一个 worktree**：首次创建、后续复用；禁止同 session 主动新建 worktree  
 - **freemode**：实验自由，但仍禁止把密钥提交进 git、禁止对共享分支 force push  
 - 代码 commit 与文档 commit **必须分开**（litemode/fullmode）  
 - 合并回 dev：`rebase origin/dev` + `--ff-only`；共享分支禁止 rewrite  
@@ -79,6 +80,13 @@ Discuss:  /Users/…/{REPO}-worktrees/fix-color/docs/_tmp/fix-color.md
 **litemode / fullmode 开工时：**  
 若 `docs/_tmp/<topic>.md` 存在 → **必须先 read**，再改代码。  
 用户续聊可说：`继续 topic fix-color` 或 `继续 docs/_tmp/fix-color.md`。
+
+### Chat Session 与 Worktree 的默认关系
+
+- **一个 Chat Session 默认只对应一个 topic、一个 worktree。**
+- litemode / fullmode 首次进入时创建 worktree；同 session 后续请求**默认复用**该 worktree。
+- **agent 不得在同 session 内主动新建 worktree**，除非用户明确说「新开 worktree / 新 topic」。
+- 若用户想处理不同 topic，应**新开 Chat Session**。
 
 ### 讨论 → 开干
 

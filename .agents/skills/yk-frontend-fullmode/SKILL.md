@@ -36,7 +36,7 @@ worktree → discuss → go-gate → plan → go-gate → read-tmp
 
 | 节点 | 具体做什么 |
 |------|------------|
-| `worktree` | 先建隔离检出；报绝对路径 |
+| `worktree` | 同 Chat Session 内一个 topic 一个 worktree：**首次创建，后续复用**；禁止主动新建。报告绝对路径 |
 | `discuss` / `plan` / 双 `go-gate` | 方向确认 + plan 后再确认 |
 | `read-tmp` | 开写前再读 |
 | `implement` / `unit` | 业务 + 必跑 unit |
