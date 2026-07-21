@@ -28,7 +28,7 @@ void main() {
   test('page canvas token is paper, not pure white', () {
     AppColors.setBrightness(Brightness.light);
     expect(AppColors.pageBg, isNot(AppColors.surface));
-    expect(AppColors.pageBg.toARGB32(), 0xFFF7F5F0);
+    expect(AppColors.pageBg.toARGB32(), 0xFFFAF9F6); // Warm paper (雅白)
   });
 
   test('AppGlass fill is translucent; opaque fallback is solid paper-warm', () {

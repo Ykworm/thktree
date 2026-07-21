@@ -9,9 +9,9 @@ void main() {
   tearDown(() => AppColors.setBrightness(Brightness.light));
 
   test('paper / paper-warm / white card', () {
-    expect(AppColors.pageBg.toARGB32(), 0xFFF7F5F0);
-    expect(AppColors.surfaceMuted.toARGB32(), 0xFFF3EFE8);
-    expect(AppColors.surface.toARGB32(), 0xFFFFFFFF);
+    expect(AppColors.pageBg.toARGB32(), 0xFFFAF9F6); // 雅白
+    expect(AppColors.surfaceMuted.toARGB32(), 0xFFF2EFEA); // 柔和暖白灰
+    expect(AppColors.surface.toARGB32(), 0xFFFFFFFF); // 白卡
   });
 
   test('ink text ladder', () {
