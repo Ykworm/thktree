@@ -119,6 +119,58 @@
 - title：必填，可修改
 - createdAt/updatedAt：必填
 
+### 3.3 pins.json（2026-07-21 新增）
+
+路径：`<rootDir>/pins.json`（应用根目录全局文件，与 `themes/` 同级）
+
+Pin 对照栏的钉住列表。上限 5 条，满 FIFO 淘汰最早；同锚点（同 msgId 或同 noteId）去重并刷新 createdAt。
+
+```json
+{
+  "schema": "pins/v1",
+  "pins": [
+    {
+      "id": "pin_01J8Z...",
+      "kind": "message",
+      "themeId": "thm_01J8Z...",
+      "nodeId": "nd_01J8Z...",
+      "msgId": "msg_01J8Z...",
+      "noteId": null,
+      "excerpt": "卡片预览摘要（正文前 100 字符）",
+      "createdAt": "2026-07-21T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+字段：
+- schema：固定 `pins/v1`
+- kind：枚举 `message` | `note`；message 必填 themeId/nodeId/msgId，note 必填 themeId/noteId
+- excerpt：预览摘要，跳转/展示失败时的兜底
+- createdAt：排序与 FIFO 依据
+
+### 3.4 scroll_anchors.json（2026-07-21 新增）
+
+路径：`<rootDir>/scroll_anchors.json`（应用根目录全局文件）
+
+chat 滚动位置记忆：每 nodeId 记录离开时的首条可见 msgId，重进 chat 时恢复；回到底部则删除该条（底部是默认状态，不记）。
+
+```json
+{
+  "schema": "scroll_anchors/v1",
+  "anchors": {
+    "nd_01J8Z...": {
+      "msgId": "msg_01J8Z...",
+      "updatedAt": "2026-07-21T12:00:00.000Z"
+    }
+  }
+}
+```
+
+字段：
+- schema：固定 `scroll_anchors/v1`
+- anchors：Map<nodeId, {msgId, updatedAt}>
+
 ---
 
 ## 4. session.md（对话正文真相源）

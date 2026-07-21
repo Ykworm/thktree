@@ -41,7 +41,7 @@
 | Markdown 工具栏增强 | notes | ✅ 完成 | 2026-06-17 | [README](modules/notes/README.md) | — | `lib/ui/core/widgets/markdown_toolbar.dart` | 标题级别循环切换（h2→h3→h1→无）+ 表格插入按钮 |
 | 标题必填校验 | notes | ✅ 完成 | 2026-06-29 | [README](modules/notes/README.md) | — | `lib/ui/features/notes/note_editor_screen.dart` | NoteEditorScreen ✓ 按钮加 `trim().isEmpty` 拦截 → 弹 `titleCannotBeEmpty` ThkAlert（单"确定"按钮），不调 `_saveNow` 不 pop；l10n 新增 `titleCannotBeEmpty`（zh + en）；详见 [notes/CHANGELOG 第 11 节](modules/notes/CHANGELOG.md#11-笔记标题必填校验2026-06-29) + [CHANGELOG](CHANGELOG/2026-06-29-note-title-required.md) |
 | 图片插入 | notes | 📋 待开发 | 2026-06-17 | [README](modules/notes/README.md) | — | — | 编辑器工具栏插入图片，支持相册/拍照 |
-| Chat-to-Note | notes | ✅ 完成 | 2026-07-04 | [README](modules/notes/README.md) | — | `lib/ui/features/chat/chat_screen.dart` + `lib/ui/core/shared/message_bubble.dart` | assistant 消息"存为笔记"按钮，自动用当前主题创建笔记并跳转编辑器 |
+| Chat-to-Note | notes | ✅ 完成 | 2026-07-21 | [README](modules/notes/README.md) | — | `lib/ui/features/chat/chat_screen.dart` + `lib/ui/core/shared/message_bubble.dart` | assistant 消息存为笔记：2026-07-21 起按钮从 icon 改为 action row 右端绿色 **Note** 文字按钮；另对照栏 To Note 走 `NoteSelectScreen`（2026-07-21 首次接线）追加到既有笔记或新建 |
 | LLM 生成标题 | notes | ✅ 完成 | 2026-07-04 | [README](modules/notes/README.md) | — | `lib/ui/features/notes/generate_title_screen.dart` | 笔记详情更多菜单→生成标题，LLM 生成备选列表 + 自定义输入 |
 | 笔记转移主题 | notes | ✅ 完成 | 2026-07-04 | [README](modules/notes/README.md) | — | `lib/ui/features/notes/note_detail_screen.dart` + `lib/data/stores/note_store.dart` | 笔记详情更多菜单→转移主题，NoteStore.moveNote 跨目录迁移 |
 
@@ -67,6 +67,9 @@
 | Context Usage Bar | chat | ✅ 完成 | 2026-07-08 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart`（`_ContextUsageBar`） | 对话页底部 1px 高 token 使用率进度条，>85% 变红警示 |
 | 聊天页祖先链面包屑 | chat | ✅ 完成 | 2026-07-09 | [README](modules/chat/README.md) | — | `lib/ui/features/chat/chat_screen.dart`（`_buildCrumbs`）+ `lib/ui/core/widgets/thk_breadcrumb_nav.dart` | 消息列表顶部 `主题 / 主题名 / 祖先 / 当前` 面包屑，沿 parentId 回溯，点祖先段 `GoRouter.go(path)` 跳回；修 4 个运行时崩溃（initState/dispose 改 provider、go_router 栈摘空、暴露内部 ID），详见 [spec](modules/chat/specs/chat-breadcrumb-nav.md) + [war-story](war-stories/flutter/2026-07-09-chat-breadcrumb-nav-crashes.md) |
 | 选区工具栏分支 + 复制即清选区 | chat | ✅ 完成 | 2026-07-09 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/clips_context_menu.dart` + `lib/ui/core/shared/selection_state.dart` + `lib/ui/features/chat/chat_screen.dart` | 选区菜单（复制 / 全选 / 分支 / 放入抽屉）新增「分支」按钮，从活跃选区即时分支（读 `branchFromSelectionProvider`）；复制 / 放入抽屉 / 分支消费选区后即清除全局选区状态，避免分支预览残留已取消的选区；「更多 → 分支」改传 `selectedText: null`；详见 [war-story](war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md) |
+| Pin 对照栏 | chat | ✅ 完成 | 2026-07-21 | [README](modules/chat/README.md) | — | `lib/data/services/pin_storage.dart` + `lib/data/services/pin_content_loader.dart` + `lib/ui/features/chat/widgets/pin_peek_panel.dart` | 气泡 action row 右端绿色 Pin/Note 文字按钮 + 长按标题行消息菜单，把 message 或整篇笔记钉进 pins.json（≤5，FIFO + 同锚点去重）；chat 页右缘把手（带计数徽标）拉出 85% 宽横向 PageView 大卡预览，卡片动作：Jump（跳回原 chat 对应 message / 打开笔记）/ To Note（`NoteSelectScreen` 首次接线，追加到既有笔记或新建）/ Remove |
+| 滚动位置记忆 | chat | ✅ 完成 | 2026-07-21 | [README](modules/chat/README.md) | — | `lib/data/services/scroll_anchor_store.dart` + `lib/ui/core/shared/chat_list_view.dart` + `lib/ui/features/chat/chat_screen.dart` | 每 nodeId 持久化首条可见 msgId（scroll_anchors.json），离开 chat 时保存、重进时经 `scrollToMessage` 恢复并跳过吸底；查看树/搜索跳回不丢位置；在底部则清除锚点 |
+| 查看树入口入 composer | chat | ✅ 完成 | 2026-07-21 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/chat_composer.dart` | `onViewTree` 参数，工具行最右 icon-only chip（`AppIcons.accountTree`），与 more 菜单原入口并存 |
 
 ### 联网搜索
 

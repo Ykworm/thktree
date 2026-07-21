@@ -16,7 +16,7 @@
 | **NoteBrowseScreen** | 所有笔记的浏览入口（Large Title + slivers 滚动布局） |
 | **NoteEditorScreen** | 笔记编辑器（Markdown 输入） |
 | **NoteDetailScreen** | 笔记详情（只读 + 编辑入口） |
-| **NoteSelectScreen** | 笔记选择器（从主题创建对话时选笔记） |
+| **NoteSelectScreen** | 笔记选择器（对照栏 To Note：追加内容到既有笔记或新建） |
 | **NodeLocationPicker** | 节点位置选择器（笔记挂载到哪个节点） |
 
 ## 2. 功能列表
@@ -36,6 +36,7 @@
 | **Chat-to-Note** | ✅ 完成 | 2026-07-04 | assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote`），自动用当前主题创建笔记并跳转 `NoteEditorScreen`；主题不存在时自动创建同名主题 |
 | **LLM 生成标题** | ✅ 完成 | 2026-07-04 | `GenerateTitleScreen`：复用 `TitleSuggestionService` 生成备选标题列表，支持自定义输入 + 点选确认 |
 | **笔记转移主题** | ✅ 完成 | 2026-07-04 | `NoteStore.moveNote` 跨目录迁移（frontmatter themeId 更新 + 文件物理移动），`NoteDetailScreen` 更多菜单新增"转移主题"入口 |
+| **笔记 Pin + NoteSelectScreen 接线** | ✅ 完成 | 2026-07-21 | 编辑器顶栏 Pin 图标把整篇笔记钉进对照栏（kind=note）；`NoteSelectScreen` 由对照栏 To Note 首次接线（追加到既有笔记或新建） |
 
 ## 3. 代码文件
 
