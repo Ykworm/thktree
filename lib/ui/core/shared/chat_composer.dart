@@ -113,175 +113,170 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
     final showThinkingTool =
         widget.alwaysThinking || widget.onDeepThinkingToggle != null;
 
-    // 双条毛玻璃（对照 Kimi + 截图定稿）：
-    // 1) 输入 pill：更透，+ 在框内；碎片/发送为右侧独立圆钮
-    // 2) 工具 pill：单独玻璃底，字绝不裸叠气泡
+    // 大胶囊毛玻璃
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (widget.selectedImageData != null) ...[
-            _ComposerGlassShell(
-              borderRadius: BorderRadius.circular(18),
-              child: _ImagePreview(
-                imageData: widget.selectedImageData!,
-                onRemove: widget.onImageRemove!,
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          // 主行：输入玻璃 pill + 右侧圆钮
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+      child: _ComposerGlassShell(
+        borderRadius: BorderRadius.circular(28),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: _ComposerGlassShell(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Focus(
-                    onKeyEvent: (node, event) {
-                      if (!widget.enabled) return KeyEventResult.ignored;
-                      if (event is! KeyDownEvent) {
-                        return KeyEventResult.ignored;
-                      }
-                      if (event.logicalKey != LogicalKeyboardKey.enter &&
-                          event.logicalKey != LogicalKeyboardKey.numpadEnter) {
-                        return KeyEventResult.ignored;
-                      }
-                      final composing = _controller.value.composing;
-                      if (composing.isValid && !composing.isCollapsed) {
-                        return KeyEventResult.ignored;
-                      }
-                      if (HardwareKeyboard.instance.isShiftPressed ||
-                          HardwareKeyboard.instance.isControlPressed) {
-                        _insertNewline();
-                        return KeyEventResult.handled;
-                      }
-                      _send();
-                      return KeyEventResult.handled;
-                    },
-                    child: CupertinoTextField(
-                      key: const ValueKey('chat_input'),
-                      controller: _controller,
-                      focusNode: _inputFocusNode,
-                      enabled: widget.enabled,
-                      autofocus: true,
-                      minLines: 1,
-                      maxLines: 6,
-                      keyboardType: TextInputType.multiline,
-                      autocorrect: false,
-                      enableInteractiveSelection: true,
-                      textCapitalization: TextCapitalization.none,
-                      smartDashesType: SmartDashesType.disabled,
-                      smartQuotesType: SmartQuotesType.disabled,
-                      placeholder: widget.hintText,
-                      placeholderStyle: TextStyle(
-                        color: AppColors.textQuaternary,
-                        fontSize: 16,
-                      ),
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                      ),
-                      // + 在输入框内侧最左（Kimi / 截图）
-                      prefix: widget.onImagePick != null
-                          ? CupertinoButton(
-                              key: const ValueKey('attach_image_button'),
-                              padding: const EdgeInsets.only(
-                                left: 10,
-                                right: 2,
-                              ),
-                              minimumSize: const Size(36, 36),
-                              onPressed:
-                                  attachEnabled ? widget.onImagePick : null,
-                              child: Icon(
-                                AppIcons.add,
-                                size: 22,
-                                color: attachEnabled
-                                    ? AppColors.accent
-                                    : AppColors.textQuaternary,
-                              ),
-                            )
-                          : null,
-                      decoration: const BoxDecoration(
-                        color: AppColors.transparent,
-                      ),
-                      padding: EdgeInsets.fromLTRB(
-                        widget.onImagePick != null ? 0 : 16,
-                        12,
-                        14,
-                        12,
-                      ),
-                      onSubmitted: (_) {
+              if (widget.selectedImageData != null) ...[
+                _ImagePreview(
+                  imageData: widget.selectedImageData!,
+                  onRemove: widget.onImageRemove!,
+                ),
+                const SizedBox(height: 4),
+              ],
+              // 主行：输入框 + 右侧按钮
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Focus(
+                      onKeyEvent: (node, event) {
+                        if (!widget.enabled) return KeyEventResult.ignored;
+                        if (event is! KeyDownEvent) {
+                          return KeyEventResult.ignored;
+                        }
+                        if (event.logicalKey != LogicalKeyboardKey.enter &&
+                            event.logicalKey != LogicalKeyboardKey.numpadEnter) {
+                          return KeyEventResult.ignored;
+                        }
                         final composing = _controller.value.composing;
                         if (composing.isValid && !composing.isCollapsed) {
-                          return;
+                          return KeyEventResult.ignored;
                         }
                         if (HardwareKeyboard.instance.isShiftPressed ||
                             HardwareKeyboard.instance.isControlPressed) {
-                          return;
+                          _insertNewline();
+                          return KeyEventResult.handled;
                         }
                         _send();
+                        return KeyEventResult.handled;
                       },
+                      child: CupertinoTextField(
+                        key: const ValueKey('chat_input'),
+                        controller: _controller,
+                        focusNode: _inputFocusNode,
+                        enabled: widget.enabled,
+                        autofocus: true,
+                        minLines: 1,
+                        maxLines: 6,
+                        keyboardType: TextInputType.multiline,
+                        autocorrect: false,
+                        enableInteractiveSelection: true,
+                        textCapitalization: TextCapitalization.none,
+                        smartDashesType: SmartDashesType.disabled,
+                        smartQuotesType: SmartQuotesType.disabled,
+                        placeholder: widget.hintText,
+                        placeholderStyle: TextStyle(
+                          color: AppColors.textQuaternary,
+                          fontSize: 16,
+                        ),
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                        ),
+                        prefix: widget.onImagePick != null
+                            ? CupertinoButton(
+                                key: const ValueKey('attach_image_button'),
+                                padding: const EdgeInsets.only(
+                                  left: 10,
+                                  right: 2,
+                                ),
+                                minimumSize: const Size(36, 36),
+                                onPressed:
+                                    attachEnabled ? widget.onImagePick : null,
+                                child: Icon(
+                                  AppIcons.add,
+                                  size: 22,
+                                  color: attachEnabled
+                                      ? AppColors.accent
+                                      : AppColors.textQuaternary,
+                                ),
+                              )
+                            : null,
+                        decoration: const BoxDecoration(
+                          color: AppColors.transparent,
+                        ),
+                        padding: EdgeInsets.fromLTRB(
+                          widget.onImagePick != null ? 0 : 16,
+                          12,
+                          14,
+                          12,
+                        ),
+                        onSubmitted: (_) {
+                          final composing = _controller.value.composing;
+                          if (composing.isValid && !composing.isCollapsed) {
+                            return;
+                          }
+                          if (HardwareKeyboard.instance.isShiftPressed ||
+                              HardwareKeyboard.instance.isControlPressed) {
+                            return;
+                          }
+                          _send();
+                        },
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 4),
+                  _CircleIconButton(
+                    icon: AppIcons.clips,
+                    onPressed: _openClipsSheet,
+                  ),
+                  const SizedBox(width: 4),
+                  _CircleIconButton(
+                    buttonKey: ValueKey(
+                      widget.isStreaming ? 'stop_button' : 'send_button',
+                    ),
+                    icon: widget.isStreaming ? AppIcons.stop : AppIcons.send,
+                    onPressed: widget.enabled
+                        ? widget.isStreaming
+                            ? _stopStreaming
+                            : _send
+                        : null,
+                  ),
+                  const SizedBox(width: 10), // 右侧边距
+                ],
+              ),
+              // 工具行：无背景直接放入大胶囊
+              if (showTools) ...[
+                const SizedBox(height: 2),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  child: Row(
+                    children: [
+                      if (widget.onWebSearchToggle != null) ...[
+                        _WebSearchToggle(
+                          enabled: widget.webSearchEnabled,
+                          supported: widget.webSearchSupported,
+                          isStreaming: widget.isStreaming,
+                          onToggle: widget.onWebSearchToggle!,
+                        ),
+                        if (showThinkingTool) const _ToolDivider(),
+                      ],
+                      if (widget.alwaysThinking)
+                        _AlwaysThinkingIndicator(
+                          isStreaming: widget.isStreaming,
+                        )
+                      else if (widget.onDeepThinkingToggle != null)
+                        _DeepThinkingToggle(
+                          enabled: widget.deepThinkingEnabled,
+                          supported: widget.deepThinkingSupported,
+                          isStreaming: widget.isStreaming,
+                          onToggle: widget.onDeepThinkingToggle!,
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _CircleGlassButton(
-                icon: AppIcons.clips,
-                onPressed: _openClipsSheet,
-              ),
-              const SizedBox(width: 6),
-              _CircleGlassButton(
-                buttonKey: ValueKey(
-                  widget.isStreaming ? 'stop_button' : 'send_button',
-                ),
-                icon: widget.isStreaming ? AppIcons.stop : AppIcons.send,
-                onPressed: widget.enabled
-                    ? widget.isStreaming
-                        ? _stopStreaming
-                        : _send
-                    : null,
-              ),
+              ],
             ],
           ),
-          // 工具行：独立毛玻璃 pill（禁止裸字叠消息）
-          if (showTools) ...[
-            const SizedBox(height: 8),
-            _ComposerGlassShell(
-              borderRadius: BorderRadius.circular(22),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: Row(
-                  children: [
-                    if (widget.onWebSearchToggle != null) ...[
-                      _WebSearchToggle(
-                        enabled: widget.webSearchEnabled,
-                        supported: widget.webSearchSupported,
-                        isStreaming: widget.isStreaming,
-                        onToggle: widget.onWebSearchToggle!,
-                      ),
-                      if (showThinkingTool) const _ToolDivider(),
-                    ],
-                    if (widget.alwaysThinking)
-                      _AlwaysThinkingIndicator(
-                        isStreaming: widget.isStreaming,
-                      )
-                    else if (widget.onDeepThinkingToggle != null)
-                      _DeepThinkingToggle(
-                        enabled: widget.deepThinkingEnabled,
-                        supported: widget.deepThinkingSupported,
-                        isStreaming: widget.isStreaming,
-                        onToggle: widget.onDeepThinkingToggle!,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -360,9 +355,9 @@ class _ToolDivider extends StatelessWidget {
   }
 }
 
-/// 输入行右侧圆钮（碎片 / 发送）：独立小毛玻璃圆，不塞进输入 pill
-class _CircleGlassButton extends StatelessWidget {
-  const _CircleGlassButton({
+/// 输入行右侧圆钮（碎片 / 发送）：无毛玻璃底的图标按钮
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({
     required this.icon,
     this.onPressed,
     this.buttonKey,
@@ -374,13 +369,18 @@ class _CircleGlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ComposerGlassShell(
-      borderRadius: BorderRadius.circular(22),
-      child: CupertinoButton(
-        key: buttonKey,
-        padding: EdgeInsets.zero,
-        minimumSize: const Size(44, 44),
-        onPressed: onPressed,
+    return CupertinoButton(
+      key: buttonKey,
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(44, 44),
+      onPressed: onPressed,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: onPressed != null ? AppColors.accent.withValues(alpha: 0.1) : AppColors.transparent,
+          shape: BoxShape.circle,
+        ),
         child: Icon(
           icon,
           size: 20,
@@ -397,13 +397,13 @@ class _CircleGlassButton extends StatelessWidget {
 /// - 不可点：弱化灰
 class _ToolChip extends StatelessWidget {
   const _ToolChip({
-    required this.icon,
+    this.icon,
     required this.label,
     this.active = false,
     this.onPressed,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String label;
 
   /// 视觉激活态（accent）。只读 indicator 也可为 true（onPressed 为 null）。
@@ -434,8 +434,10 @@ class _ToolChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 15, color: fg),
-              const SizedBox(width: 5),
+              if (icon != null) ...[
+                Icon(icon, size: 15, color: fg),
+                const SizedBox(width: 5),
+              ],
               Text(
                 label,
                 style: TextStyle(
@@ -487,7 +489,7 @@ class _AlwaysThinkingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     // 始终开启（不可点击）：active 视觉但无交互，表明这是状态而非开关
     return const _ToolChip(
-      icon: AppIcons.brain,
+      icon: null,
       label: '深度思考（默认）',
       active: true,
       onPressed: null,
@@ -513,7 +515,7 @@ class _DeepThinkingToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return _ToolChip(
-      icon: AppIcons.brain,
+      icon: null,
       label: supported ? l10n.deepThinking : l10n.deepThinkingNotSupported,
       active: enabled && supported,
       onPressed: supported && !isStreaming ? onToggle : null,
