@@ -43,7 +43,7 @@ lib/ui/features/themes/
 ├── theme_detail_screen.dart        # 树视图 + 标题搜索 + tree page 合并&创建入口
 ├── theme_detail_controller.dart    # AsyncNotifier.family<ThemeDetailState, String>
 ├── tree_title_filter.dart          # 标题过滤纯函数（命中 ∪ 祖先）
-├── full_tree_screen.dart           # 整树全展开视图 + 多选合并模式
+├── full_tree_screen.dart           # 整树全展开视图 + 多选合并模式（带 currentNodeId 进入时等节点数据就绪后滚动定位高亮行）
 ├── merge_chat_confirm_screen.dart  # 合并&创建 Step 2（标题 + 挂载位置）
 └── merge_chat_tree_scope.dart      # 子树计算纯函数（currentTreeRootIdOf / subTreeNodes / directChildren）
 ```

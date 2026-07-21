@@ -123,7 +123,7 @@
 
 路径：`<rootDir>/pins.json`（应用根目录全局文件，与 `themes/` 同级）
 
-Pin 对照栏的钉住列表。上限 5 条，满 FIFO 淘汰最早；同锚点（同 msgId 或同 noteId）去重并刷新 createdAt。
+Pin 对照栏的钉住列表。上限 5 条，满员拒绝新增（抛 StateError，UI 提示先移除）；同锚点（同 msgId 或同 noteId）去重并刷新 createdAt；支持按锚点删除（removeByAnchor，用于再点取消 Pin）。
 
 ```json
 {

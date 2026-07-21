@@ -37,16 +37,17 @@
 | **Chat-to-Note** | ✅ 完成 | 2026-07-04 | assistant 消息"存为笔记"按钮（`MessageBubble.onSaveToNote`），自动用当前主题创建笔记并跳转 `NoteEditorScreen`；主题不存在时自动创建同名主题 |
 | **LLM 生成标题** | ✅ 完成 | 2026-07-04 | `GenerateTitleScreen`：复用 `TitleSuggestionService` 生成备选标题列表，支持自定义输入 + 点选确认 |
 | **笔记转移主题** | ✅ 完成 | 2026-07-04 | `NoteStore.moveNote` 跨目录迁移（frontmatter themeId 更新 + 文件物理移动），`NoteDetailScreen` 更多菜单新增"转移主题"入口 |
-| **笔记 Pin + NoteSelectScreen 接线** | ✅ 完成 | 2026-07-21 | 编辑器顶栏 Pin 图标把整篇笔记钉进对照栏（kind=note）；`NoteSelectScreen` 由对照栏 To Note 首次接线（追加到既有笔记或新建） |
+| **笔记 Pin + NoteSelectScreen 接线** | ✅ 完成 | 2026-07-21 | Pin 双态（Pin/Unpin 再点取消，满 5 条拦截提示先移除）：编辑器顶栏 pin 图标（状态换 pin-slash + 绿色）；详情页为可拖动圆形悬浮按钮（默认右缘 72% 高，随意拖动）；`NoteSelectScreen` 由对照栏 To Note 首次接线（追加到既有笔记或新建） |
 | **分类列表卡式 UI** | ✅ 完成 | 2026-07-21 | `ThemeNoteListScreen`：分类名大标题、独立 contentCard、主题色徽章、正文预览、分类内 ➕ 直建、Editorial 空态；见 [visual/notes-list-design.md](visual/notes-list-design.md) 第 2 节 |
+| **消息存笔记延迟创建** | ✅ 完成 | 2026-07-21 | 气泡 Note 按钮打开 `NoteEditorScreen`（`deferCreate` + 预填标题/正文），✓ 才 `createNote` 落盘，返回丢弃；延迟模式下 pin = 保存并 Pin（原行为：进入即落盘，不点 ✓ 笔记也已存在） |
 
 ## 3. 代码文件
 
 ```
 lib/ui/features/notes/
 ├── note_browse_screen.dart         # 笔记浏览（Large Title + slivers）
-├── note_detail_screen.dart         # 笔记详情 + ThemeNoteListScreen（分类列表）
-├── note_editor_screen.dart         # 笔记编辑器
+├── note_detail_screen.dart         # 笔记详情 + ThemeNoteListScreen（分类列表；网格底栏 Action Sheet + 生成标题 + 转移主题 + 可拖动悬浮 Pin）
+├── note_editor_screen.dart         # 笔记编辑器（createMode 新建 / deferCreate 延迟创建 / 编辑既有）
 ├── note_select_screen.dart         # 笔记选择器
 ├── node_location_picker.dart       # 节点位置选择器
 └── generate_title_screen.dart      # LLM 生成标题（286 行）

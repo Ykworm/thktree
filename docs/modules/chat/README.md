@@ -47,7 +47,7 @@
 - **选区工具栏分支 + 复制即清选区**（2026-07-09）：选区菜单（复制 / 全选 / 分支 / 放入抽屉）新增「分支」按钮，从活跃选区即时分支——读取 `branchFromSelectionProvider`（chat_screen 挂载时注册 `_branchFromSelection` 回调，卸载时清空），此刻选区一定还在，直接消费，不经过全局残留选区。复制 / 放入抽屉 / 分支三个"消费选区"的动作执行后清除全局选区状态（`currentSelectionProvider`），避免分支预览残留已取消的选区；「更多 → 分支」改传 `selectedText: null`，不再读残留选区。根因与修法见 [war-story](../../war-stories/flutter/2026-07-09-chat-selection-residual-branch-preview.md）。
 - **分享问答对为图片**（2026-07-17 分片改进）：`ShareService`（`lib/data/services/share_service.dart`）将对话消息构建 `ShareCardWidget` → overlay 布局 → 高清截图。超 GPU 纹理上限（4096px）时自动纵向分片 + `package:image` 软件拼接，避免长聊截断。清晰度下限 1.5（不再压到 0.2 糊字），最终输出长边上限 24576px 防 OOM。`RepaintBoundary` 在 Opacity 内侧保证导出图不受 0.02 透明度影响。
 - **碎片系统完整国际化**（2026-07-21）：`clips_sheet.dart`、`clips_management_screen.dart`、`clips_context_menu.dart` 所有硬编码中文替换为 l10n 调用（`clipsTitle`/`clipsManage`/`clipsEmpty`/`clipsClearAll`/`clipsBranch`/`clipsSaveToDrawer` 等）。
-- **Pin 对照栏**（2026-07-21）：气泡 action row 右端绿色 **Pin** / **Note** 文字按钮（l10n key 各语言均为英文）+ 长按气泡标题行弹消息级菜单（Pin / Note / 复制全文，手势不干扰 SelectionArea 文本选择）；Pin 数据存 `pins.json`（`PinStorage`，≤5 条 FIFO + 同锚点去重，kind = message | note）；chat 页右缘 `PinEdgeHandle`（OverlayEntry，带计数徽标，pins 为空不显示）拉出 85% 宽面板，横向 PageView 大卡预览全文，动作 = Jump（同 chat 就地滚 / 跨 chat `pendingScrollMsgIdProvider` + push 恢复定位 / note 打开编辑器）/ To Note（`NoteSelectScreen`）/ Remove（删空自动关面板）
+- **Pin 对照栏**（2026-07-21，同日二轮改版）：气泡 action row 右端 **Pin** / **Note** 文字按钮 + 长按气泡标题行弹消息级菜单（手势不干扰 SelectionArea）；Pin 按钮双态——已 Pin 显示 Unpin + pin-slash 图标，再点取消（`PinStorage.removeByAnchor`，状态源 `pinAnchorKeysProvider`）；Pin 数据存 `pins.json`（`PinStorage`，上限 5 条**满员拦截**抛 StateError + 同锚点去重，kind = message | note）；右缘把手 `PinEdgeHandle` 挂 **shell 层**（Themes / Notes tab 常驻，分支内 push 页面盖不住；可上下拖动；`_pinPanelOpen` 防重入），面板 push 到 root navigator 全屏覆盖（含 tab bar）：居上大卡片（宽 92%，底边贴近关闭按钮）+ 深色 scrim + 底部圆形关闭按钮，横向 PageView 滑动切换（页码圆点生效），预览卡 `GptMarkdown` 渲染；动作 = Source（同 chat 就地滚——ChatScreen 注册 `pinJumpContextProvider` / 跨 chat `pendingScrollMsgIdProvider` + push / note 打开编辑器）/ To Note（`NoteSelectScreen`）/ Remove（删空自动关面板）；提示走 `ThkToast` 暖白卡片（成功 ✓ / 取消 pin-slash / 满员警告图标）
 - **滚动位置记忆**（2026-07-21）：`ScrollAnchorStore`（scroll_anchors.json）按 nodeId 持久化首条可见 msgId；`ChatListView` 新增 `firstVisibleMsgId` getter 与 `initialAnchorMsgId` 恢复模式（恢复时跳过吸底）；离开 chat 落盘（在底部则删锚点），查看树/搜索跳回不丢位置
 - **查看树入口入 composer**（2026-07-21）：`ChatComposer.onViewTree`，工具行最右 icon-only chip；`showTools` 条件包含它，保证常驻；与 more 菜单原入口并存
 
@@ -71,12 +71,12 @@
 | `integration_test/chat_async_recovery_test.dart` | 后台中断恢复集成测试（4 个 testWidgets：findInterrupted / resumeInterrupted / cancelResumeQueue / bridge.begin-end 配对） | 新增 |
 | `lib/ui/core/widgets/thk_breadcrumb_nav.dart` | 通用面包屑组件：`BreadcrumbSegment`（label + 可选 goPath / routeName）+ `ThkBreadcrumbRow`（分隔符 `/`、末段不可点）；`_popToRoute` 按 goPath 走 `GoRouter.go()` / 否则 `popUntil` | 复用 |
 | `integration_test/chat_breadcrumb_test.dart` | 面包屑回归测试：进聊天页不崩 + 逐段点击回跳正确 + 全程无 provider/go_router 崩溃（纯导航、不依赖 LLM） | 新增 |
-| `lib/data/services/pin_storage.dart` | Pin 对照栏存储：`pins.json`（schema pins/v1，≤5 FIFO + 同锚点去重 + 手动 remove） | 253 |
+| `lib/data/services/pin_storage.dart` | Pin 对照栏存储：`pins.json`（schema pins/v1，上限 5 条满员抛 StateError + 同锚点去重 + remove / removeByAnchor + isPinned / isFullFor 查询） | 294 |
 | `lib/data/services/scroll_anchor_store.dart` | 滚动位置记忆存储：`scroll_anchors.json`（schema scroll_anchors/v1，per-nodeId 首条可见 msgId） | 156 |
 | `lib/data/services/pin_content_loader.dart` | 按 Pin 锚点解析全文：message 走 SessionStore 读路径，note 走 NoteStore.readBody；失效返回 null | 78 |
-| `lib/ui/features/chat/widgets/pin_peek_panel.dart` | 对照栏：`PinEdgeHandle` 右缘把手 + 右滑出面板 + 横向 PageView 大卡（Jump / To Note / Remove） | 603 |
-| `lib/ui/core/widgets/thk_toast.dart` | 共享轻提示（OverlayEntry 底部 pill，2s 消失） | 40 |
-| `test/pin_storage_test.dart` / `test/scroll_anchor_store_test.dart` / `test/pin_content_loader_test.dart` | Pin 存储 / 滚动锚点 / 内容解析 unit 测试（17 用例） | 新增 |
+| `lib/ui/features/chat/widgets/pin_peek_panel.dart` | 对照栏：`PinEdgeHandle` 右缘把手（shell 层常驻、可拖动）+ `ShellPinEdgeHandle`（读 `pinJumpContextProvider`）+ root navigator 居上大卡片面板（横向 PageView + 圆点 + GptMarkdown 预览，Source / To Note / Remove） | 698 |
+| `lib/ui/core/widgets/thk_toast.dart` | 共享轻提示（OverlayEntry 暖白卡片 + 可选状态图标，淡入上浮约 2s 淡出，不拦截触摸） | 149 |
+| `test/pin_storage_test.dart` / `test/scroll_anchor_store_test.dart` / `test/pin_content_loader_test.dart` | Pin 存储 / 滚动锚点 / 内容解析 unit 测试（19 用例） | 新增 |
 
 ## 子文档
 
