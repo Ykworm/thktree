@@ -20,11 +20,11 @@
 | 主题排序 | "未分类"置顶，其余字典序 | 未分类是用户从笔记 tab 直接创建的落点 |
 | 主题项交互 | 点击进入主题内列表 | 无 swipe 操作，主题本身不支持删除 |
 | 笔记项交互 | 点击进入详情 + 左滑删除 | 删除是高频操作，swipe 提升效率 |
-| 标题栏样式 | 总览用 `ThkNavBar.inline`，列表用 `ThkLargeTitlePage` | 与主题 page 保持视觉一致 |
-| 大标题字体 | Cormorant Garamond w600 | 复用 `AppTheme.largeTitle` |
-| 列表项分隔 | 跟随 `ThkListSection` 默认样式 | 不画额外分割线 |
+| 标题栏样式 | 总览用 `ThkNavBar.large`，分类列表用 `ThkLargeTitlePage` | 与主题 page 保持视觉一致 |
+| 分类列表大标题 | 分类名（`localizedThemeTitle`），非「笔记」 | `previousPageTitle` = `l10n.notes` |
+| 分类列表形态 | 每条笔记独立 `contentCard` 行卡 | 对齐主题列表 / 总览卡行，非整组大卡 |
 | 删除二次确认 | `CupertinoAlertDialog` + `isDestructiveAction` | 符合 iOS HIG |
-| 加载/空/错误态 | 居中显示，统一在主滚动容器中 | 保证下拉手势总能触发 |
+| 加载/空/错误态 | 居中显示，统一在主滚动容器中；空态 Editorial（matte gold） | 保证下拉手势总能触发 |
 | 顶部搜索入口 | 复用搜索 tab 的 `SearchContent`（空查询显示主题分组；非空查询显示全文搜索结果） | 统一两套入口的搜索能力，详见 `docs/_tmp/note-search-unify-plan.md` |
 
 ---
@@ -209,6 +209,8 @@ onTap: () {
     CupertinoPageRoute(
       builder: (_) => ThemeNoteListScreen(
         themeId: tn.themeId,
+        themeTitle: tn.title,
+        themePath: tn.themePath,
         notesDir: '${tn.themePath}/notes',
       ),
     ),
@@ -217,29 +219,31 @@ onTap: () {
 ```
 
 - 用 `CupertinoPageRoute` 而非 `go_router`，保持 iOS 原生左滑返回手势
-- `notesDir` 直接传绝对路径，避免子页面再 `await appPathsProvider`
+- `notesDir` / `themePath` 直接传绝对路径，避免子页面再 `await appPathsProvider`
+- `themeTitle` 用于大标题本地化与当前分类内直建
 
 ---
 
 ## 2. ThemeNoteListScreen — 主题内笔记列表
 
+> 实现文件：`lib/ui/features/notes/note_detail_screen.dart`（与 `NoteDetailScreen` 同文件）。
+
 ### 2.1 屏幕形态
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│  笔记                                                [ + ]  │  ← ThkLargeTitlePage 大标题
+│  ‹ 笔记                                                     │
+│  心理学                                              [ + ]  │  ← 大标题 = 分类名
 │  ────────────────────                                       │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ 心理学读书笔记                              ← 左滑删除 │  │
-│  │ 2026-06-07-abcd · 2026-06-07 10:23                  │    │
-│  ├─────────────────────────────────────────────────────┤    │
-│  │ 焦虑与防御机制                                   │    │
-│  │ 2026-06-05-efgh · 2026-06-05 14:11                  │    │
-│  ├─────────────────────────────────────────────────────┤    │
-│  │ 存在主义治疗                                     │    │
-│  │ 2026-06-03-ijkl · 2026-06-03 09:45                  │    │
+│  │ [色徽章·note]  心理学读书笔记                     › │    │  ← 独立 contentCard
+│  │                正文预览最多两行…                    │    │
+│  │                3 小时前                    ← 左滑删除 │    │
+│  └─────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ [色徽章·note]  焦虑与防御机制                     › │    │
+│  │                相对时间…                            │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -249,10 +253,12 @@ onTap: () {
 
 ```dart
 return ThkLargeTitlePage(
-  title: l10n.notes,
+  title: localizedThemeTitle(l10n, widget.themeTitle),
+  previousPageTitle: l10n.notes,
+  backgroundColor: AppColors.pageBg,
   trailing: CupertinoButton(
     padding: EdgeInsets.zero,
-    onPressed: () => _createNote(context, ref),
+    onPressed: () => _createNote(context),
     child: Icon(AppIcons.add),
   ),
   children: _buildChildren(l10n),
@@ -261,70 +267,33 @@ return ThkLargeTitlePage(
 
 | 元素 | 规范 |
 |------|------|
-| 大标题 | `l10n.notes`，`AppTheme.largeTitle`（衬线 Cormorant Garamond） |
-| 右上角 | ➕，`CupertinoButton`（`padding: zero`） |
-| 列表容器 | `ThkListSection` |
-| 列表项 | `SwipeableRow` 包裹 `ThkListTile` |
-| 标题 | 笔记 `meta.title` |
-| 副标题 | `'{noteId} · {updatedAt}'`（中间分隔符是 `·`，U+00B7） |
+| 大标题 | `localizedThemeTitle(l10n, themeTitle)`（分类名，未分类走 l10n） |
+| previous | `l10n.notes` |
+| 右上角 | ➕，当前分类直建（跳过 `showThemePicker`） |
+| 列表 | 每条 `SwipeableRow` + `_NoteListCard`（独立 `AppSurfaces.contentCard`） |
+| 加载 | `listNoteMetas(includePreview: true)` |
+| 卡行 leading | 圆徽章 + `AppIcons.note`，色 = `themeTileColorFor(themeId)` |
+| 标题 | `meta.title`，16 / w600 / `textPrimary`，1 行 ellipsis |
+| 预览 | `meta.preview`，最多 2 行 `textSecondary`；无则省略 |
+| 时间 | `formatRelativeTime`，12 / `textTertiary` |
+| trailing | chevron |
 
 ### 2.3 SwipeableRow 左滑删除
 
-```dart
-SwipeableRow(
-  key: ValueKey(meta.noteId),
-  onSwipeLeft: () async {
-    final confirmed = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: Text(l10n.deleteNote),
-        content: Text(l10n.deleteNoteConfirmTitle(meta.title)),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await _store.deleteNote(noteId: meta.noteId);
-      ref.read(noteListVersionProvider.notifier).bump();
-    } catch (e) {
-      if (!mounted) return;
-      ThkAlert.show(
-        context: context,
-        message: '${l10n.deleteFailed}: $e',
-        defaultAction: l10n.ok,
-      );
-    }
-  },
-  leftActionLabel: l10n.swipeDelete,
-  leftActionIcon: AppIcons.delete,
-  leftActionColor: CupertinoColors.destructiveRed,
-  child: ThkListTile(...),
-)
-```
+逻辑不变：确认 dialog → `deleteNote` + `noteListVersionProvider.bump()`；失败 `ThkAlert`。
 
 | SwipeableRow 属性 | 值 |
 |------------------|----|
 | `leftActionLabel` | `l10n.swipeDelete` |
 | `leftActionIcon` | `AppIcons.delete` |
-| `leftActionColor` | `CupertinoColors.destructiveRed` |
-| `key` | `ValueKey(meta.noteId)` — 保证 swipe 状态在重建时正确恢复 |
+| `leftActionColor` | `AppColors.destructive` |
+| `key` | `ValueKey(meta.noteId)` |
 
 **二次确认弹窗规范**：
 
 - 标题：`l10n.deleteNote`
-- 内容：`l10n.deleteNoteConfirmTitle(meta.title)` — "确定删除《xxx》？"
+- 内容：`l10n.deleteNoteConfirmTitle(meta.title)`
 - 操作：取消 + 删除（`isDestructiveAction: true`）
-- 失败处理：用 `ThkAlert.show` 兜底提示
 
 ### 2.4 列表项点击 → 详情
 
@@ -343,22 +312,34 @@ onTap: () {
 
 ### 2.5 ➕ 按钮 → 新建
 
-`ThemeNoteListScreen._createNote` 复用与总览相同的"先选主题再编辑"流程，但因为已经在一个主题内，预选当前 `themeId` 体验更顺（**当前实现仍走 picker，作为未来优化点**）。
+**当前分类直建**（2026-07-21）：不再弹 `showThemePicker`，直接
+
+```dart
+NoteEditorScreen(
+  themeId: widget.themeId,
+  themeTitle: widget.themeTitle,
+  themePath: widget.themePath,
+  notesDir: widget.notesDir,
+  createMode: true,
+)
+```
+
+总览页 ➕ 仍走「先选主题再编辑」。
 
 ### 2.6 状态展示
 
 | 状态 | 视觉 |
 |------|------|
 | 加载中 | `Padding(top: 80) + Center(CupertinoActivityIndicator)` |
-| 错误 | `Padding(top: 80) + systemRed 文字` |
-| 空 | `Padding(top: 80) + l10n.noNotesYet + textSecondary` |
-| 有数据 | `ThkListSection` 包裹的 `SwipeableRow` 列表 |
+| 错误 | `Padding(top: 80) + destructive 文字` |
+| 空 | Editorial：matte gold SVG 笔记图标 + `l10n.noNotesYet`（`textMatteGoldDark` / w400 / letterSpacing） |
+| 有数据 | 独立卡行列表（卡间距 12） |
 
-> **空态/错误态也包裹在 `ThkLargeTitlePage.children` 里**，保证下拉刷新手势始终可用（参见 [`./README.md#23`](./README.md) 提到的"曾尝试过但不可行的方案"）。
+> **空态/错误态也包裹在 `ThkLargeTitlePage.children` 里**，保证下拉刷新手势始终可用。
 
 ### 2.7 状态管理
 
-与 `NoteBrowseScreen` 完全一致：`noteListVersionProvider` + `addPostFrameCallback` + 手动 `_load()` + `setState`。
+与 `NoteBrowseScreen` 一致：`noteListVersionProvider` + `addPostFrameCallback` + 手动 `_load()` + `setState`。
 
 ---
 
@@ -366,13 +347,13 @@ onTap: () {
 
 | 文件 | 内容 |
 |------|------|
-| `lib/ui/features/notes/note_browse_screen.dart` | `NoteBrowseScreen` + `ThemeNoteListScreen` + `_loadThemeNotes` + `_createNoteInUncategorized` + `kUncategorizedThemeTitle` / `localizedThemeTitle` |
-| `lib/data/stores/note_store.dart` | `listNoteMetas / deleteNote` 等 CRUD |
+| `lib/ui/features/notes/note_browse_screen.dart` | `NoteBrowseScreen` + `_loadThemeNotes` + `_createNoteInUncategorized` + `kUncategorizedThemeTitle` / `localizedThemeTitle` / `formatRelativeTime` |
+| `lib/ui/features/notes/note_detail_screen.dart` | `NoteDetailScreen` + `ThemeNoteListScreen` + `_NoteListCard` |
+| `lib/data/stores/note_store.dart` | `listNoteMetas(includePreview:)` / `deleteNote` 等 CRUD |
 | `lib/ui/core/widgets/swipeable_row.dart` | `SwipeableRow` 组件 |
-| `lib/ui/core/widgets/thk_list_section.dart` | `ThkListSection` 容器 |
-| `lib/ui/core/widgets/thk_list_tile.dart` | `ThkListTile` 列表项 |
-| `lib/ui/core/widgets/thk_nav_bar.dart` | `ThkNavBar.inline` / `ThkLargeTitlePage` |
-| `lib/ui/core/theme/app_icons.dart` | `AppIcons.add / delete` |
+| `lib/ui/core/widgets/thk_nav_bar.dart` | `ThkNavBar` / `ThkLargeTitlePage` |
+| `lib/ui/core/theme/app_surfaces.dart` | `AppSurfaces.contentCard` |
+| `lib/ui/core/theme/app_icons.dart` | `AppIcons.add / delete / note` |
 | `lib/ui/core/app_services.dart` | `noteListVersionProvider` 定义 |
 | `lib/l10n/app_zh.arb` · `app_en.arb` | `notes / noteCount / noNotesYet / deleteNote / deleteNoteConfirmTitle / swipeDelete / uncategorized` |
 
@@ -392,15 +373,16 @@ onTap: () {
 9. **版本号触发**：写操作后 `bump()` → 列表自动 `_load()`
 
 ### 4.2 ThemeNoteListScreen
-1. **空态**：主题内无笔记时显示 `l10n.noNotesYet`
+1. **空态**：Editorial 空态 + `l10n.noNotesYet`（matte gold）
 2. **加载态**：显示 `CupertinoActivityIndicator`
 3. **左滑删除**：swipe 后弹 `CupertinoAlertDialog` → 确认后 `deleteNote` + `bump`
 4. **左滑取消**：取消时不删除，按钮回弹
 5. **左滑失败**：删除异常时 `ThkAlert` 提示，列表不更新
-6. **点击进入**：点击 `ThkListTile` → push `NoteDetailScreen`，左滑返回手势可用
+6. **点击进入**：点击卡行 → push `NoteDetailScreen`，左滑返回手势可用
 7. **ValueKey 稳定**：swipe 状态在版本号 bump 重载时正确恢复（`ValueKey(meta.noteId)`）
-8. **大标题字体**：标题是 Cormorant Garamond w600
-9. **副标题格式**：`'{noteId} · {updatedAt}'`（中点 U+00B7）
+8. **大标题**：分类名（`localizedThemeTitle`），非固定「笔记」
+9. **预览**：`includePreview: true`，有正文时最多 2 行摘要
+10. **➕ 直建**：不弹主题选择器，写入当前 `themeId`
 
 ### 4.3 共享
 1. **noteListVersionProvider 唯一性**：所有 `bump()` 路径都通过 `noteListVersionProvider.notifier`
@@ -413,7 +395,7 @@ onTap: () {
 
 ## 5. Assumptions
 
-- 主题数量不会很多（< 50），`ThkListSection` 性能足够
+- 主题数量不会很多（< 50），独立卡行列表性能足够
 - 笔记数量单主题内 < 500 时不需要虚拟列表
 - 隐藏目录以 `.` 开头为约定
 - `noteListVersionProvider` 不会持久化，应用重启后从 0 开始
@@ -427,6 +409,7 @@ onTap: () {
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
 | 🟡 | 主题内笔记搜索 | 在 `ThemeNoteListScreen` 顶部加搜索框，按 title 模糊匹配 |
-| 🟢 | `ThemeNoteListScreen` ➕ 按钮预选当前主题 | 跳过 picker 步骤 |
 | 🟢 | 主题分组折叠/展开 | 主题数 > 10 时可折叠 |
 | 🟢 | 主题按最近编辑时间排序 | 替代字典序 |
+
+> 已完成（2026-07-21）：分类内 ➕ 直建；卡式列表 + 预览 + 分类名大标题 + Editorial 空态。 |

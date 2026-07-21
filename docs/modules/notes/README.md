@@ -14,6 +14,7 @@
 | 屏幕 | 职责 |
 |------|------|
 | **NoteBrowseScreen** | 所有笔记的浏览入口（Large Title + slivers 滚动布局） |
+| **ThemeNoteListScreen** | 某分类下的笔记明细列表（卡式行 + 预览；实现于 `note_detail_screen.dart`） |
 | **NoteEditorScreen** | 笔记编辑器（Markdown 输入） |
 | **NoteDetailScreen** | 笔记详情（只读 + 编辑入口） |
 | **NoteSelectScreen** | 笔记选择器（对照栏 To Note：追加内容到既有笔记或新建） |
@@ -37,13 +38,14 @@
 | **LLM 生成标题** | ✅ 完成 | 2026-07-04 | `GenerateTitleScreen`：复用 `TitleSuggestionService` 生成备选标题列表，支持自定义输入 + 点选确认 |
 | **笔记转移主题** | ✅ 完成 | 2026-07-04 | `NoteStore.moveNote` 跨目录迁移（frontmatter themeId 更新 + 文件物理移动），`NoteDetailScreen` 更多菜单新增"转移主题"入口 |
 | **笔记 Pin + NoteSelectScreen 接线** | ✅ 完成 | 2026-07-21 | 编辑器顶栏 Pin 图标把整篇笔记钉进对照栏（kind=note）；`NoteSelectScreen` 由对照栏 To Note 首次接线（追加到既有笔记或新建） |
+| **分类列表卡式 UI** | ✅ 完成 | 2026-07-21 | `ThemeNoteListScreen`：分类名大标题、独立 contentCard、主题色徽章、正文预览、分类内 ➕ 直建、Editorial 空态；见 [visual/notes-list-design.md](visual/notes-list-design.md) 第 2 节 |
 
 ## 3. 代码文件
 
 ```
 lib/ui/features/notes/
 ├── note_browse_screen.dart         # 笔记浏览（Large Title + slivers）
-├── note_detail_screen.dart         # 笔记详情（网格底栏 Action Sheet + 生成标题 + 转移主题）
+├── note_detail_screen.dart         # 笔记详情 + ThemeNoteListScreen（分类列表）
 ├── note_editor_screen.dart         # 笔记编辑器
 ├── note_select_screen.dart         # 笔记选择器
 ├── node_location_picker.dart       # 节点位置选择器
@@ -94,6 +96,7 @@ lib/ui/features/notes/
 
 ## 7. 相关历史
 
+- **2026-07-21** — `ThemeNoteListScreen` 卡式 UI：分类名大标题、`includePreview`、独立 contentCard、分类内 ➕ 直建、Editorial 空态
 - **2026-07-04** — 新增 3 个功能：(1) Chat-to-Note — assistant 消息"存为笔记"，自动用当前主题创建笔记并跳转编辑器；(2) LLM 生成标题 — `GenerateTitleScreen`（286 行），复用 `TitleSuggestionService`；(3) 笔记转移主题 — `NoteStore.moveNote` 跨目录迁移
 - **2026-06-29** — NoteEditorScreen ✓ 按钮加空标题校验（`titleCannotBeEmpty` alert），新增 `integration_test/note_title_required_test.dart`（5 个 case）
 - **2026-06-07** — 笔记列表页改为 ThkLargeTitlePage + slivers 布局

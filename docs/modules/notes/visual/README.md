@@ -40,9 +40,9 @@
             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  ThemeNoteListScreen     主题内笔记列表                      │
-│  ── 大标题页：ThkLargeTitlePage                             │
-│  ── 列表项：SwipeableRow + ThkListTile（左滑删除）           │
-│  ── 副标题："{noteId} · {updatedAt}"                        │
+│  ── 大标题：分类名 + previous「笔记」                        │
+│  ── 独立 contentCard 行：色徽章 + 标题 + 预览 + 相对时间     │
+│  ── SwipeableRow 左滑删除；➕ 当前分类直建                   │
 │  ── 点击 → NoteDetailScreen                                 │
 └─────────────────────────────────────────────────────────────┘
             │
@@ -193,7 +193,8 @@ void _updateSearchIndex() {
 
 | 文件 | 职责 |
 |------|------|
-| `lib/ui/features/notes/note_browse_screen.dart` | 笔记总览（按主题分组） + 主题内列表 `ThemeNoteListScreen` |
+| `lib/ui/features/notes/note_browse_screen.dart` | 笔记总览（按主题分组） |
+| `lib/ui/features/notes/note_detail_screen.dart` | 笔记详情 + 主题内列表 `ThemeNoteListScreen` |
 | `lib/ui/features/notes/note_detail_screen.dart` | 笔记详情/阅读/编辑切换 |
 | `lib/ui/features/notes/note_editor_screen.dart` | Notion 风格独立编辑器 |
 | `lib/ui/features/notes/note_select_screen.dart` | 聊天 → 笔记的弹窗选择页 |

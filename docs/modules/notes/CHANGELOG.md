@@ -49,10 +49,10 @@
 - 按主题分组的笔记总览 (`NoteBrowseScreen`），点击进入该主题下的笔记列表
 - 主题内的笔记列表 (`ThemeNoteListScreen`)，点击进入笔记内容
 - 支持下拉刷新
-- 列表项支持左滑删除（`Dismissible`），红色背景 + 垃圾桶图标 + 确认 dialog
+- 列表项支持左滑删除（`SwipeableRow`），确认 dialog 后删除
 - 实现位置：
  - [note_browse_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_browse_screen.dart)
- - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart#L163-L250)
+ - [note_detail_screen.dart](file:///Users/yuweikang/dev/ykcode/ThkTree/lib/ui/features/notes/note_detail_screen.dart)
 
 ### 2.6 笔记删除
 - `NoteStore.deleteNote(noteId)`：删除 `.md` 文件，返回 1/0
@@ -478,3 +478,30 @@ String _updateYamlThemeId(String content, String themeId)
 | 🟡 | 空白状态按钮置灰/隐藏 | "生成标题"和"转移"在笔记无内容时应禁用 |
 | 🟢 | User 角色消息存为笔记 | 当前仅支持 assistant 消息 |
 | 🟢 | 转移目标主题支持"新建" | 目前只能选已有主题 |
+
+---
+
+## 13. ThemeNoteListScreen 卡式 UI（2026-07-21）
+
+### 13.1 变更摘要
+
+Notes 总览点进某分类后的明细列表（`ThemeNoteListScreen`）视觉与交互对齐 Warm Paper Glass：
+
+| 项 | 之前 | 之后 |
+|----|------|------|
+| 大标题 | 固定 `l10n.notes` | `localizedThemeTitle`（分类名）+ `previousPageTitle: notes` |
+| 列表形态 | 整组大卡 + `ThkListTile` | 每条独立 `contentCard` + 主题色 note 徽章 |
+| 副信息 | 无预览 / 仅相对时间 | `listNoteMetas(includePreview: true)` + 最多 2 行预览 + 相对时间 |
+| ➕ | 弹 `showThemePicker` | 当前分类直建 `NoteEditorScreen` |
+| 空态 | 冷灰图标 + textSecondary | Editorial（matte gold SVG + `noNotesYet`） |
+
+### 13.2 文件
+
+- `lib/ui/features/notes/note_detail_screen.dart` — `ThemeNoteListScreen` / `_NoteListCard`
+- `lib/ui/features/notes/note_browse_screen.dart` — push 时传 `themeTitle` / `themePath`
+- 文档：`visual/notes-list-design.md` 第 2 节 · `design-tokens.yaml` · `visual/README.md` · 模块 README
+
+### 13.3 未做
+
+- 主题内标题搜索框（仍见 notes-list-design 第 6 节未来项）
+- integration/e2e 脚本（litemode 本轮未开发）

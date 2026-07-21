@@ -48,7 +48,7 @@ screens:
 
     interactions:
       - trigger: "tap item"
-        action: "Navigator.push(ThemeNoteListScreen(themeId, notesDir))"
+        action: "Navigator.push(ThemeNoteListScreen(themeId, themeTitle, themePath, notesDir))"
         route: "CupertinoPageRoute（保留左滑返回手势）"
       - trigger: "NavBar +"
         action: "showThemePicker() → NoteEditorScreen(createMode: true)"
@@ -69,21 +69,27 @@ screens:
 
   # ── 主题内笔记列表 ────────────────────────────────────────
   ThemeNoteListScreen:
-    file: "lib/ui/features/notes/note_browse_screen.dart"
-    stateManagement: "StatefulWidget + noteListVersionProvider"
+    file: "lib/ui/features/notes/note_detail_screen.dart"
+    stateManagement: "ConsumerStatefulWidget + noteListVersionProvider"
+    ctor: "themeId, themeTitle, themePath, notesDir"
+    load: "listNoteMetas(includePreview: true)"
 
     layout:
       type: "ThkLargeTitlePage"
-      title: "l10n.notes"
+      title: "localizedThemeTitle(l10n, themeTitle)"
+      previousPageTitle: "l10n.notes"
       titleStyle: "AppTheme.largeTitle (Cormorant Garamond)"
       trailing:
         - icon: "AppIcons.add"
-          action: "_createNote()"
+          action: "NoteEditorScreen(createMode: true) 当前分类直建（无 picker）"
 
     listItem:
-      type: "SwipeableRow + ThkListTile"
+      type: "SwipeableRow + _NoteListCard (contentCard)"
+      leading: "circle badge + AppIcons.note, color=themeTileColorFor(themeId)"
       title: "meta.title"
-      subtitle: "'{noteId} · {updatedAt}'"
+      preview: "meta.preview, maxLines 2, textSecondary"
+      time: "formatRelativeTime(updatedAt), textTertiary"
+      trailing: "chevron"
       key: "ValueKey(meta.noteId)"
       swipeLeft:
         color: "AppColors.destructive"
@@ -102,13 +108,14 @@ screens:
       - trigger: "swipe left"
         action: "delete（见 listItem.swipeLeft）"
       - trigger: "NavBar +"
-        action: "_createNote()"
+        action: "当前 theme 直建 NoteEditorScreen"
 
     states:
       empty:
+        style: "Editorial Empty State"
+        icon: "SVG note, AppColors.matteGold"
         text: "l10n.noNotesYet"
-        textColor: "AppColors.textSecondary"
-        topPadding: 80
+        textColor: "AppColors.textMatteGoldDark @ 0.8"
       loading:
         widget: "CupertinoActivityIndicator"
         topPadding: 80
