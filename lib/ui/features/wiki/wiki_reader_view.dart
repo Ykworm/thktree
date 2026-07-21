@@ -764,10 +764,32 @@ class _EmptyWikiView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                AppIcons.book,
-                size: 80,
-                color: AppColors.matteGold.withValues(alpha: 0.8), // 柔和的大尺寸图标
+              Container(
+                width: 136,
+                height: 136,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.matteGoldLight, AppColors.matteGoldBg],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.matteGoldBorder,
+                    width: 0.5,
+                  ),
+                ),
+                child: Center(
+                  child: Transform.translate(
+                    // Optical alignment: the book glyph sits slightly high.
+                    offset: const Offset(0, 4),
+                    child: Icon(
+                      AppIcons.book,
+                      size: 76,
+                      color: AppColors.matteGold,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               Text(
