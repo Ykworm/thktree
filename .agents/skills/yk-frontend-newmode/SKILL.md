@@ -94,7 +94,7 @@ nodes:
 | `discuss` | 写/改 `docs/_tmp/<topic>.md` |
 | `read-tmp` | 读 `_tmp` |
 | `plan` | 更新 `_tmp` 里的实现步骤 |
-| `go-gate` | 验收对齐；未「可以」则停 |
+| `go-gate` | 验收对齐；输出摘要并**停下等待**；未收到「可以 / 开干 / go」则停 |
 | `worktree` | 建 worktree；**必报** `Worktree: <绝对路径>` |
 | `register-module` | 新模块：登记表 → FEATURES → mkdir |
 | `implement` | 业务代码 |

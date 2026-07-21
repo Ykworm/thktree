@@ -37,7 +37,10 @@ worktree → discuss → go-gate → plan → go-gate → read-tmp
 
 | 节点 | 具体做什么 |
 |------|------------|
-| `worktree` … `unit` | 与 fullmode **相同**（含双 go-gate、plan、`_tmp` 必须）；worktree 先 `git worktree list` 检查，不存在则创建、已存在则复用，禁止同 session 内主动新建 |
+| `worktree` | 与 fullmode 相同：先 `git worktree list`，不存在则创建、已存在则复用；禁止同 session 主动新建；报告路径及「新建/复用」 |
+| `discuss` / `plan` / `read-tmp` | 与 fullmode **相同**（`_tmp` 必须有，无则先建最短稿） |
+| **`go-gate`**（双 gate：discuss 后 + plan 后） | **停等**：输出方案 / plan 摘要 → 明确问用户 → **停下等待**；未收到「可以 / 开干 / go」**不得进入下一节点**。微改可压缩为一句话确认，**不可省略** |
+| `implement` / `unit` | 业务代码 + 必跑 unit |
 | `commit` | 提交 **代码**（无大测试脚本开发） |
 | **`ctsync-ask`** | **询问用户**：「是否执行 ctsync 同步文档？」 |
 | → 用户 **是** | **`yk-frontend-context-sync`** → **`yk-frontend-cleanup-docs-tmp`** → **commit docs** → 然后 `merge` |

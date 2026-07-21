@@ -37,7 +37,8 @@ worktree → discuss → go-gate → plan → go-gate → read-tmp
 | 节点 | 具体做什么 |
 |------|------------|
 | `worktree` | 1. 先 `git worktree list` 检查 `../${REPO}-worktrees/<topic>` 是否已存在<br>2. 不存在则创建；已存在则复用<br>3. 复用前 `git status --porcelain`，如有未提交改动先报告<br>4. 禁止同 session 内主动新建；报告绝对路径及「新建/复用」 |
-| `discuss` / `plan` / 双 `go-gate` | 方向确认 + plan 后再确认 |
+| `discuss` / `plan` | 方向讨论写入 `_tmp`；plan 落进 `_tmp` 步骤 |
+| **`go-gate`**（双 gate：discuss 后 + plan 后） | **停等**：输出方案 / plan 摘要 → 明确问用户 → **停下等待**；未收到「可以 / 开干 / go」**不得进入下一节点** |
 | `read-tmp` | 开写前再读 |
 | `implement` / `unit` | 业务 + 必跑 unit |
 | `dev-integration-test` | **写/改** integration 测试脚本与 case |
