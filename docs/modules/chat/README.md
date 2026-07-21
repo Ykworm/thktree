@@ -95,7 +95,10 @@
 
 - 改 chat_screen 布局前必读 [notes 模块 README](../notes/README.md)，两者 UI 风格共用 Large Title + slivers
 - **键盘与底栏空隙（2026-07-16）**：iOS `_MainShell` / Android `AndroidNavigationShell` 在键盘弹起时**隐藏底部 tab**，让 shell 内页面用真实 `viewInsets` 贴键盘。**禁止**在 `ChatScreen` 里用 `View.viewInsets` 覆盖恢复完整键盘高度——Chat 在 shell `Expanded` 内时会与 tab 占位叠加，在联网搜索等工具行下方挤出 tab 高空白。详见 [CHANGELOG/2026-07-16](../../CHANGELOG/2026-07-16-ios-chat-keyboard-gap.md)。
-- **Warm Paper 毛玻璃输入（2026-07-17）**：`ChatScreen` 用 **Stack** 铺满 `ChatListView` + 底部浮层 `ChatComposer`；列表不铺不透明 `pageBg`，才能 `BackdropFilter` 磨到气泡。composer = **输入 pill**（更透）+ 右侧独立圆钮 + **工具 pill**（芯片落在玻璃上）。顶栏保持不透明 `AppGlass.navBarBackground`。详见 [CHANGELOG/2026-07-17](../../CHANGELOG/2026-07-17-warm-paper-glass.md) 与 [design-system](../../_shared/design-system.md)。
+- **输入区域 (ChatComposer) 视觉规范**：
+  - **质感**：放弃容易叠加显脏的毛玻璃 (BackdropFilter)，采用“悬浮白瓷” (Solid Ceramic) 质感。外壳为不透明的纯白 (`AppColors.surface`)，配合 2% ~ 4% 透明度的极淡双层投影。
+  - **按钮**：右侧的操作圆钮取消一切交互底块，仅保留图标变色以维持极致干净。
+  - **工具开关**：联网搜索、深度思考等辅助开关采用纯文字呈现（无图标），以维持横向胶囊的极简观感。
 - 新增 LLM provider 时，模型选择 panel 会自动出现（无需改 chat 代码），但要在 llm 模块注册 provider
 - 流式断网/超时处理：参考 `integration_test/chat_streaming_test.dart` 的边界用例
 - 注意 `autoTriggerReply` 启动参数与 notes 模块的"从笔记续聊"按钮联动
