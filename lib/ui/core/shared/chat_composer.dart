@@ -186,7 +186,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                                 key: const ValueKey('attach_image_button'),
                                 padding: const EdgeInsets.only(
                                   left: 10,
-                                  right: 2,
+                                  right: 8,
                                 ),
                                 minimumSize: const Size(36, 36),
                                 onPressed:
@@ -415,7 +415,7 @@ class _ToolChip extends StatelessWidget {
     final Color fg = active
         ? AppColors.accent
         : onPressed != null
-            ? AppColors.accent.withValues(alpha: 0.88)
+            ? AppColors.textSecondary
             : AppColors.textTertiary.withValues(alpha: 0.55);
 
     return CupertinoButton(
