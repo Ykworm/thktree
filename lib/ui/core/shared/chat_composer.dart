@@ -567,46 +567,38 @@ class _ComposerGlassShell extends StatelessWidget {
   final Widget child;
   final BorderRadius borderRadius;
 
-  /// ~20% 暖白；靠 blur 保可读，避免「实心白块」（token 见 AppGlass）
-  static const _fill = AppGlass.composerFill;
-  static const _blur = AppGlass.composerBlurSigma;
-  static const _stroke = AppGlass.composerStroke;
-
   @override
   Widget build(BuildContext context) {
-    if (!AppGlass.useBlur) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppGlass.fillOpaque.withValues(alpha: 0.96),
-          borderRadius: borderRadius,
-          border: Border.all(color: AppColors.border),
-          boxShadow: AppSurfaces.cardShadowSm,
-        ),
-        child: ClipRRect(borderRadius: borderRadius, child: child),
-      );
-    }
-
+    // 放弃容易显脏的毛玻璃，采用 "悬浮白瓷" (Solid Ceramic) 质感。
+    // 在高明度雅白 (0xFFFAF9F6) 的背景上，纯白 (0xFFFFFFFF) 的悬浮胶囊配合柔和阴影，
+    // 视觉上最干净、最通透，不会受到底层内容滚动或阴影自身叠加的污染。
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: AppColors.surface, // 纯白
         borderRadius: borderRadius,
-        boxShadow: AppSurfaces.cardShadowSm,
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.8), // 极细边框勾勒轮廓
+          width: AppSp.dividerThickness,
+        ),
+        boxShadow: [
+          // 专属的悬浮弥散阴影，让白瓷胶囊轻盈浮起
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.04), // 极淡的投影
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+            spreadRadius: -4,
+          ),
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.02), // 边缘极近处的硬阴影
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+            spreadRadius: -2,
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: borderRadius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: _blur, sigmaY: _blur),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: _fill,
-              borderRadius: borderRadius,
-              border: Border.all(
-                color: _stroke,
-                width: AppSp.dividerThickness,
-              ),
-            ),
-            child: child,
-          ),
-        ),
+        child: child,
       ),
     );
   }
