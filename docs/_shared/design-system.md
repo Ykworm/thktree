@@ -19,6 +19,8 @@
 - **纸：** `#F7F5F0` / paper-warm `#F3EFE8`
 - **唯一主交互：** 雾蓝 accent `#4A7AB5`（`AppColors.accent`）
 - **五色（分类 / 主题 tile / 节点圆，非第二 accent）：** blue / sage / clay / gold / plum
+- **高级强调 (Matte Gold)：** 哑光暖沙金 `#D4A373`，搭配极淡暖金/米白渐变。用于极简且极具质感的全局引导、空状态卡片及 Alert 确认按钮，替代生硬的原生蓝。
+- **独立冷灰空间 (Lab)：** 冷银灰 `#F2F4F7`（`AppColors.labCoolBg`）。用于 Lab 等需要与“暖纸”拉开材质区分、体现科技感与精密感的独立页面。
 - **success → sage**；Lab 霓虹色豁免书房换肤
 
 ### 玻璃（`AppGlass`，`lib/ui/core/theme/app_surfaces.dart`）
