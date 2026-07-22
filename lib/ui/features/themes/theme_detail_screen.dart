@@ -72,7 +72,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
       actions.addAll([
         CupertinoActionSheetAction(
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context, rootNavigator: true).pop();
             ref
                 .read(themeDetailControllerProvider(widget.themeId).notifier)
                 .refresh();
@@ -81,7 +81,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         ),
         CupertinoActionSheetAction(
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context, rootNavigator: true).pop();
             _collapsedIds.isEmpty ? _collapseAll() : _expandAll();
           },
           child: Text(
@@ -90,7 +90,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         ),
         CupertinoActionSheetAction(
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context, rootNavigator: true).pop();
             context.push(
               '/themes/${widget.themeId}/full-tree?multiSelect=true',
             );
@@ -107,7 +107,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
           actions.addAll([
             CupertinoActionSheetAction(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context, rootNavigator: true).pop();
                 ref
                     .read(wikiReaderControllerProvider(widget.themeId).notifier)
                     .generateWiki(rootNodeId);
@@ -116,7 +116,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             ),
             CupertinoActionSheetAction(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context, rootNavigator: true).pop();
                 _exportWiki(rootNodeId);
               },
               child: Text(l10n.wikiExportAction),
@@ -124,7 +124,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             CupertinoActionSheetAction(
               isDestructiveAction: true,
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context, rootNavigator: true).pop();
                 _confirmDeleteWiki(rootNodeId);
               },
               child: Text(l10n.delete),
@@ -134,7 +134,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
           actions.add(
             CupertinoActionSheetAction(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context, rootNavigator: true).pop();
                 ref
                     .read(wikiReaderControllerProvider(widget.themeId).notifier)
                     .generateWiki(rootNodeId);
