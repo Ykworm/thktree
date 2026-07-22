@@ -300,29 +300,31 @@ class _NodeLocationPickerContentState
                   padding: const EdgeInsets.all(32),
                   child: Center(child: Text(l10n.noThemesYet)),
                 )
-              : CupertinoListSection.insetGrouped(
-                  children: themes
-                      .map((theme) => CupertinoListTile(
-                            title: Text(theme.title),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_preSelectedThemeId == theme.themeId)
-                                  Icon(
-                                    CupertinoIcons.checkmark,
-                                    color: AppColors.accent,
-                                  ),
-                                const CupertinoListTileChevron(),
-                              ],
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _preSelectedThemeId = null;
-                              });
-                              _selectTheme(theme);
-                            },
-                          ))
-                      .toList(),
+              : SingleChildScrollView(
+                  child: CupertinoListSection.insetGrouped(
+                    children: themes
+                        .map((theme) => CupertinoListTile(
+                              title: Text(theme.title),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_preSelectedThemeId == theme.themeId)
+                                    Icon(
+                                      CupertinoIcons.checkmark,
+                                      color: AppColors.accent,
+                                    ),
+                                  const CupertinoListTileChevron(),
+                                ],
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  _preSelectedThemeId = null;
+                                });
+                                _selectTheme(theme);
+                              },
+                            ))
+                        .toList(),
+                  ),
                 ),
         ),
       ],
@@ -365,15 +367,17 @@ class _NodeLocationPickerContentState
         ),
         // "As root chat" option and node tree in one section
         Flexible(
-          child: CupertinoListSection.insetGrouped(
-            children: [
-              CupertinoListTile(
-                leading: Icon(AppIcons.chat),
-                title: Text(l10n.asRootChat),
-                onTap: () => _selectLocation(parentId: null),
-              ),
-              ..._buildNodeItems(rootNodes, nodes, 0),
-            ],
+          child: SingleChildScrollView(
+            child: CupertinoListSection.insetGrouped(
+              children: [
+                CupertinoListTile(
+                  leading: Icon(AppIcons.chat),
+                  title: Text(l10n.asRootChat),
+                  onTap: () => _selectLocation(parentId: null),
+                ),
+                ..._buildNodeItems(rootNodes, nodes, 0),
+              ],
+            ),
           ),
         ),
       ],
@@ -580,14 +584,16 @@ class _ThemePickerContentState extends ConsumerState<_ThemePickerContent> {
           )
         else
           Flexible(
-            child: CupertinoListSection.insetGrouped(
-              children: [
-                for (final theme in _themes ?? [])
-                  CupertinoListTile(
-                    title: Text(theme.title),
-                    onTap: () => _selectTheme(theme),
-                  ),
-              ],
+            child: SingleChildScrollView(
+              child: CupertinoListSection.insetGrouped(
+                children: [
+                  for (final theme in _themes ?? [])
+                    CupertinoListTile(
+                      title: Text(theme.title),
+                      onTap: () => _selectTheme(theme),
+                    ),
+                ],
+              ),
             ),
           ),
       ],
