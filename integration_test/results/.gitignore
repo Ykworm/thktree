@@ -1,0 +1,3 @@
+# 结果/失败截图 artifacts/*.png 随结果一起提交进仓库（不再 gitignore）。
+# 目的：Gitee 上 results/<CASE-ID>/<platform>.md 用相对路径 ../artifacts/... 内联渲染，
+# 开源协作者无需任何图床 / 第三方 key 即可直接查看。

@@ -6,24 +6,24 @@
 
 红线与路由引用本表定义。
 
-| 模式 | 一句话 | skill |
-|------|--------|-------|
+| 模式           | 一句话                                         | skill                  |
+| ------------ | ------------------------------------------- | ---------------------- |
 | **litemode** | 默认日常微改；不开发 integration/e2e 测试脚本；ctsync 先问用户 | `yk-frontend-litemode` |
-| **fullmode** | 完整闭环；开发 integration/e2e 测试脚本；ctsync 必做 | `yk-frontend-fullmode` |
-| **freemode** | 全自由实验；不强制 worktree / `_tmp` / merge | `yk-frontend-freemode` |
-| **newmode** | 用户自定义节点组合，行为由组合的节点列表决定 | `yk-frontend-newmode` |
+| **fullmode** | 完整闭环；开发 integration/e2e 测试脚本；ctsync 必做      | `yk-frontend-fullmode` |
+| **freemode** | 全自由实验；不强制 worktree / `_tmp` / merge         | `yk-frontend-freemode` |
+| **newmode**  | 用户自定义节点组合，行为由组合的节点列表决定                      | `yk-frontend-newmode`  |
 
 ## 红线（不可违反）
 
-- **go-gate 未确认（用户未说「可以 / 开干 / go」）前不写业务代码**（litemode / fullmode；微改可压缩确认形式，不可省略）  
-- **litemode / fullmode 一个 Chat Session 一个 worktree**：首次创建、后续复用；禁止同 session 主动新建 worktree  
-- **freemode**：实验自由，但仍禁止把密钥提交进 git、禁止对共享分支 force push  
-- 代码 commit 与文档 commit **必须分开**（litemode/fullmode）  
-- 合并回 dev：`rebase origin/dev` + `--ff-only`；共享分支禁止 rewrite  
-- 验证优先；禁止为凑覆盖率写低价值测试  
-- 搜索：`rg` 优先于 `grep`  
-- context-sync 只改 doc，不改代码、不 commit  
-- **禁止章节符号（Unicode U+00A7 / section sign）**：聊天回复、`docs/**`、`docs/_tmp/**`、commit/PR 说明、skill 正文 **一律不得出现该字符**。章节交叉引用写 **「第 N 节」** 或直接写标题。细则见 `chinese-documentation` skill；**本条常驻生效，不依赖用户是否触发该 skill**
+- **go-gate 未确认（用户未说「可以 / 开干 / go」）前不写业务代码**（litemode / fullmode；微改可压缩确认形式，不可省略）
+- **litemode / fullmode 一个 Chat Session 一个 worktree**：首次创建、后续复用；禁止同 session 主动新建 worktree
+- **freemode**：实验自由，但仍禁止把密钥提交进 git、禁止对共享分支 force push
+- 代码 commit 与文档 commit **必须分开**（litemode/fullmode）
+- 合并回 dev：`rebase origin/dev` + `--ff-only`；共享分支禁止 rewrite
+- 验证优先；禁止为凑覆盖率写低价值测试
+- 搜索：`rg` 优先于 `grep`
+- context-sync 只改 doc，不改代码、不 commit
+- **禁止章节符号（**`§` **/ U+00A7）：** 聊天回复、`docs/**`、`docs/_tmp/**`、commit/PR 说明、skill 正文中**一律不得出现** `§` **字符**。章节交叉引用一律使用英文 **「Section N」**（如 `Section 3.2`）或直接写标题。细则见 `chinese-documentation` skill；本条常驻生效。
 
 ## 核心约定
 
@@ -63,42 +63,42 @@ REPO=$(basename "$(git rev-parse --show-toplevel)")
 
 ### 原则
 
-1. **登记先于文件夹**：id 以登记表为准，LLM 起名也必须落进登记表。  
-2. **diff 先于聊天**：范围以 git 为准。  
-3. **确认先于写 doc**：ctsync 已如此。  
+1. **登记先于文件夹**：id 以登记表为准，LLM 起名也必须落进登记表。
+2. **diff 先于聊天**：范围以 git 为准。
+3. **确认先于写 doc**：ctsync 已如此。
 4. **闸门显式**：读不够 / 名冲突 / 验收不清 → **停并提问**，不假装做完。
 
 ### 断点表（哪一步容易断、怎么防）
 
-| 断点 | 症状 | 闸门 / 补救 |
-|------|------|-------------|
-| 新 chat 无上文 | 重聊已定结论 | 必读 `_tmp/<topic>.md`；用户点名 topic |
-| 没读模块 README | 踩 SSE/存储等坑 | ARCHITECTURE 地图 + README 顶部必读；改前 cross-check |
-| 双人新模块两名 | `docs/modules` 分叉 | 登记表 + `migrate_module_slug.sh` |
-| ctsync 乱改 | 写错模块 / 漏改 | 只认登记 id + diff；**确认后才写** |
-| 当 E2E 完成其实只是 integration | 假闭环 | 桌面仓：`test:e2e` 只真壳；iOS 测轨看 test PROGRESS |
-| litemode 未 merge | 你在 dev 测不到 | litemode **强制** merge 进 dev |
-| freemode 实验进主线 | 脏历史 | freemode 不默认；要进 dev 先升 litemode/fullmode 收尾 |
-| 信息缺失仍开工 | 半成品 | go-gate：验收不清 → 停下提问 |
+| 断点                       | 症状                | 闸门 / 补救                                                                       |
+| ------------------------ | ----------------- | ----------------------------------------------------------------------------- |
+| 新 chat 无上文               | 重聊已定结论            | 必读 `_tmp/<topic>.md`；用户点名 topic                                               |
+| 没读模块 README              | 踩 SSE/存储等坑        | ARCHITECTURE 地图 + README 顶部必读；改前 cross-check                                  |
+| 双人新模块两名                  | `docs/modules` 分叉 | 登记表 + `migrate_module_slug.sh`                                                |
+| ctsync 乱改                | 写错模块 / 漏改         | 只认登记 id + diff；**确认后才写**                                                      |
+| 当 E2E 完成其实只是 integration | 假闭环               | 所有端：必须真壳启动（非 `flutter test integration_test/`）；测试进度参考 `docs/test/PROGRESS.md` |
+| litemode 未 merge         | 你在 dev 测不到        | litemode **强制** merge 进 dev                                                   |
+| freemode 实验进主线           | 脏历史               | freemode 不默认；要进 dev 先升 litemode/fullmode 收尾                                   |
+| 信息缺失仍开工                  | 半成品               | go-gate：验收不清 → 停下提问                                                           |
 
 ## 项目特化（换新项目时改这里）
 
-- 设计 token code-first：`lib/ui/core/theme/app_colors.dart` → `dart run scripts/sync-design-tokens.dart`  
-- 模块登记表 → `docs/modules/README.md`；校验 `bash tools/check_module_registry.sh`  
-- 集成测试 → `thktree-e2e-test` skill + `docs/_shared/integration-testing/`  
-- 模块代码结构 → `lib/ui/features/<id>/`  
+- 设计 token code-first：`lib/ui/core/theme/app_colors.dart` → `dart run scripts/sync-design-tokens.dart`
+- 模块登记表 → `docs/modules/README.md`；校验 `bash tools/check_module_registry.sh`
+- 集成测试 → `thktree-e2e-test` skill + `docs/_shared/integration-testing/` + `integration_test/`
+- 模块代码结构 → `lib/ui/features/<id>/`
 - Doc Map：架构 `docs/ARCHITECTURE.md` · 功能 `docs/FEATURES.md` · 品牌 `docs/BRAND.md` · 存储 `docs/_shared/storage-format.md` · ADR `docs/decisions/`
 
 ## 路由
 
 协作 skill 前缀：`yk-frontend-`。
 
-- 默认日常 → `litemode` · 完整闭环 → `fullmode` · 真全自由 → `freemode` · 自定义流程 → `newmode`（可 `file:` / `preset:`）  
-- git 合入主分支 → `yk-frontend-merge`（rebase + ff-only）  
-- 文档同步 → `yk-frontend-context-sync` / `ctsync`  
-- 清 `docs/_tmp` 讨论稿 → `yk-frontend-cleanup-docs-tmp`（**ctsync 与 docs commit 之间**）  
-- 删 worktree → 仅节点 `remove-worktree`（无独立 skill；默认不删）  
-- 讨论 → `brainstorming`（若启用）· 计划 → `writing-plans`  
+- 默认日常 → `litemode` · 完整闭环 → `fullmode` · 真全自由 → `freemode` · 自定义流程 → `newmode`（可 `file:` / `preset:`）
+- git 合入主分支 → `yk-frontend-merge`（rebase + ff-only）
+- 文档同步 → `yk-frontend-context-sync` / `ctsync`
+- 清 `docs/_tmp` 讨论稿 → `yk-frontend-cleanup-docs-tmp`（**ctsync 与 docs commit 之间**）
+- 删 worktree → 仅节点 `remove-worktree`（无独立 skill；默认不删）
+- 讨论 → `brainstorming`（若启用）· 计划 → `writing-plans`
 - Flutter → `flutter-dev`；E2E → `thktree-e2e-test`
 
 ## 协作习惯

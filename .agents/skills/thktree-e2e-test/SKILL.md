@@ -1,6 +1,6 @@
 ---
 name: thktree-e2e-test
-description: ThkTree Flutter 集成测试（integration_test）工程化规范。integration_test 是独立 git 子模块（gitee.com/ykfork/thktree-e2e-tests，branch master）。覆盖目录结构（_support/ + common/ + platform/<feature>/ + platform/desktop/ + platform/recovery/）、人话版 test case 目录（integration_test/docs/test-cases-catalog.md，规范真源）、命名规则、新测试放置判定、运行命令、三端 worktree 子模块协作约定。写或改任何 integration_test 文件、新增 E2E 用例、或在某平台 worktree 跑测试前，必须加载本 skill。
+description: ThkTree Flutter 集成测试（integration_test）工程化规范。integration_test 是本地目录。覆盖目录结构（_support/ + common/ + platform/<feature>/ + platform/desktop/ + platform/recovery/）、人话版 test case 目录（integration_test/docs/test-cases-catalog.md，规范真源）、命名规则、新测试放置判定、运行命令、三端 worktree 协作约定。写或改任何 integration_test 文件、新增 E2E 用例、或在某平台 worktree 跑测试前，必须加载本 skill。
 agent_created: true
 ---
 
@@ -15,28 +15,28 @@ agent_created: true
 
 > 本 skill 是规范单一真源。AGENTS.md 只留指针，不内联此内容。
 
-## integration_test 是独立子模块（2026-07-12 起）
+## integration_test 是本地目录（2026-07-22 起）
 
-`integration_test/` **不再**内嵌在各端 app 仓库，而是独立 git 子模块：
+`integration_test/` 现在是 ThkTree 主仓库内的本地目录，不再是独立 git 子模块：
 
-- 远端：`https://gitee.com/ykfork/thktree-e2e-tests.git`（**branch 恒为 `master`**）
-- 各端 worktree（ThkTree 主仓 / thktree-android / thktree-macos）通过 `.gitmodules` + gitlink **pin 同一 master**，三端测试真源一致
-- 本地未初始化时先跑：`git submodule update --init`
+- 所有测试代码直接在主仓库中管理
+- 三端（ThkTree 主仓 / thktree-android / thktree-macos）通过 git worktree 共享同一份代码
+- 本地目录结构与之前保持一致
 
-**为什么抽子模块**：之前三端共享 integration_test 靠 selective checkout / stash 同步，易翻车；子模块单真源，「改 master → 各 worktree `git submodule update` 提 pin」更干净，且允许外部贡献者直接给子模块 master 提 PR（开源友好）。
+**为什么改回本地目录**：简化工作流程，避免子模块的复杂性，所有测试代码与主应用代码一起版本控制。
 
 **贡献测试 case 的正确流程**：
 
 ```
-1. 进入子模块目录：cd integration_test
-2. 确保 master 最新：git checkout master && git pull
+1. 进入项目根目录：cd ThkTree
+2. 确保 dev 分支最新：git checkout dev && git pull
 3. 改/加测试 Dart + 改 docs/test-cases-catalog.md（人话 case 内容）
-4. 在子模块内提交：git add -A && git commit && git push origin master
-5. 回到 app worktree 提 pin：git add integration_test && git commit -m "test: bump e2e submodule"
+4. 在主仓库内提交：git add integration_test/ && git commit
+5. 推送到远端：git push origin dev
 ```
 
-> 改测试 **只动子模块仓库**，不要在各 app worktree 内直接编辑 integration_test/（会被 submodule 覆盖/冲突）。
-> 别人也改了 master 时：子模块里 `git pull`，app worktree 里 `git submodule update` 即可同步最新。
+> 改测试 **直接在主仓库内编辑**，无需进入子模块目录。
+> 别人也改了测试时：`git pull` 即可同步最新。
 
 ## 目标目录结构（规范态）
 
@@ -123,45 +123,44 @@ flutter test integration_test/platform/branch/android_test.dart -d emulator-5554
 flutter test integration_test/ -d <device>
 ```
 
-## Worktree / 子模块协作约定
+## Worktree 协作约定
 
-`integration_test/` 是子模块，三端共享同一 master。因此**没有「某 worktree 只改某平台目录」的物理隔离**——隔离靠的是协作纪律：
+`integration_test/` 现在是本地目录，三端通过 git worktree 共享同一份代码。因此**没有「某 worktree 只改某平台目录」的物理隔离**——隔离靠的是协作纪律：
 
-| 平台 | 你去改子模块里的 | 提交到 |
+| 平台 | 你去改主仓库里的 | 提交到 |
 |---|---|---|
-| iOS | `common/` `platform/*/ios_test.dart` `platform/recovery/ios_test.dart` | 子模块 master |
-| Android | `platform/*/android_test.dart` | 子模块 master |
-| macOS | `platform/desktop/*` | 子模块 master |
-| 跨平台 | `common/` `_support/` | 子模块 master |
+| iOS | `common/` `platform/*/ios_test.dart` `platform/recovery/ios_test.dart` | 主仓库 dev 分支 |
+| Android | `platform/*/android_test.dart` | 主仓库 dev 分支 |
+| macOS | `platform/desktop/*` | 主仓库 dev 分支 |
+| 跨平台 | `common/` `_support/` | 主仓库 dev 分支 |
 
-- 在**任一** app worktree 里 `cd integration_test` 即可改子模块；改完在子模块内 commit + push master
-- 子模块内重排文件一律用 `git mv`（不是 `mv`），保留 rename 历史
+- 在**任一** app worktree 里直接编辑 `integration_test/` 即可；改完在主仓库内 commit + push dev
+- 重排文件一律用 `git mv`（不是 `mv`），保留 rename 历史
 - import 路径修正后必须 `flutter analyze integration_test/` 0 error（允许预存的 `topic_llm_client` 等 LlmClient mock `invalid_override` 历史债，见红线）
-- 子模块内提交同样遵循**代码 commit 与文档 commit 分离**（Dart 一个 commit、catalog/test-data 一个 commit）
-- app worktree 侧只提交「bump submodule pin」：`git add integration_test && git commit -m "test: bump e2e submodule"`
+- 提交同样遵循**代码 commit 与文档 commit 分离**（Dart 一个 commit、catalog/test-data 一个 commit）
 
-## 现行态（2026-07-12 重排完成 + 子模块化）
+## 现行态（2026-07-22 改回本地目录）
 
-- 三端（ThkTree 主仓 / thktree-android / thktree-macos）`integration_test/` 已统一为子模块引用，pin 同一 master
+- 三端（ThkTree 主仓 / thktree-android / thktree-macos）`integration_test/` 已统一为本地目录，通过 git worktree 共享同一份代码
 - 旧结构（`_shared/ + android/ + ios/ + macos/` 平铺）已完全迁移到 `_support/ + common/ + platform/<feature>/ + platform/desktop/ + platform/recovery/`
 - macOS 桌面测试已归位 `platform/desktop/`（12 文件，保留 desktop_ 前缀，import 改 `../../_support/`）
 - Android `platform/{branch,image,share}/android_test.dart` 已建
-- 人话 case 目录 `docs/test-cases-catalog.md` + `test-data/topics.md` 已随子模块落盘
+- 人话 case 目录 `docs/test-cases-catalog.md` + `test-data/topics.md` 已随本地目录落盘
 - 详细进度见主仓 `docs/test-engineering-plan.md`（Phase 0–4 全完成）
 
-## 测试结果存放（results/，在子模块内）
+## 测试结果存放（results/，在本地目录内）
 
 - 模型：每个 case 每端一份结果文件，**跑完覆盖旧结果，不堆历史**
 - 路径：`results/<CASE-ID>/<platform>.md`（ios/android/macos 各一份，互不被覆盖）
 - 失败截图：`results/artifacts/<CASE-ID>-<platform>.png`（gitignore，不进仓库）
 - 运行：`bash integration_test/tools/run_e2e.sh <CASE-ID> <platform>`（自动从 catalog 解析脚本 + `--plain-name`，注入真实 LLM key）
 - **LLM 硬约束：绝对禁止 mock**，缺真实 key 时 runner 拒绝运行
-- 格式与提交约定见子模块 `integration_test/results/README.md`
+- 格式与提交约定见 `integration_test/results/README.md`
 
 ## 红线
 
 - `common/` 禁止出现任何 `Platform.is*` / `defaultTargetPlatform` 分支
-- **禁止在各 app worktree 内直接编辑 `integration_test/` 下的文件**——改测试必须进子模块仓库（见上「集成测试是独立子模块」）
+- **禁止在各 app worktree 内直接编辑 `integration_test/` 下的文件**——改测试必须在主仓库内进行（见上「integration_test 是本地目录」）
 - 禁止为凑覆盖率生成低价值测试（见 AGENTS.md 红线）
 - B4 手势冲突修复已落地 `lib/ui/core/shared/message_bubble.dart`：Android 跳过 `SelectionArea`，iOS/macOS 不变；新增 Android 交互测试时不要依赖文本选区
 - 人话 case 目录 `docs/test-cases-catalog.md` 是规范真源：新增/修改测试 case 时**同步更新 catalog**（Dart 实现必须忠实于 md 描述的 case 内容）
