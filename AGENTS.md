@@ -17,6 +17,7 @@
 
 - **go-gate 未确认（用户未说「可以 / 开干 / go」）前不写业务代码**（litemode / fullmode；微改可压缩确认形式，不可省略）
 - **litemode / fullmode 一个 Chat Session 一个 worktree**：首次创建、后续复用；禁止同 session 主动新建 worktree
+- **litemode / fullmode 禁止直接在 dev 修改代码**：所有代码改动必须在 worktree 内完成；若工具限制无法直接编辑 worktree 文件，告知用户并停止，不得在 dev 上修改
 - **freemode**：实验自由，但仍禁止把密钥提交进 git、禁止对共享分支 force push
 - 代码 commit 与文档 commit **必须分开**（litemode/fullmode）
 - 合并回 dev：`rebase origin/dev` + `--ff-only`；共享分支禁止 rewrite
