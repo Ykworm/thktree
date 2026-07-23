@@ -47,7 +47,8 @@ class AppIcons {
   static const IconData eye = SFIcons.sf_eye;
 
   /// 隐藏（管理 Trees 眼睛关 / 左滑隐藏）
-  static const IconData eyeSlash = SFIcons.sf_eye_slash;
+  /// 用 fill 版：描边 eye.slash 字形不对称，和文字垂直居中时容易看起来「歪」
+  static const IconData eyeSlash = SFIcons.sf_eye_slash_fill;
 
   // ── 导航 ──
 
