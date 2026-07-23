@@ -16,7 +16,9 @@ import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
+import 'package:thk_tree/ui/features/themes/theme_ui_prefs_controller.dart';
 import 'package:thk_tree/ui/features/themes/tree_title_filter.dart';
+import 'package:thk_tree/data/services/theme_ui_prefs_store.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
@@ -53,7 +55,6 @@ class ThemeDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
-  final Set<String> _collapsedIds = {};
   final TextEditingController _titleSearchController = TextEditingController();
   String _titleQuery = '';
   _DetailTab _selectedTab = _DetailTab.tree;
@@ -64,9 +65,14 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     super.dispose();
   }
 
+  ThemeUiPrefs get _prefs =>
+      ref.read(themeUiPrefsControllerProvider(widget.themeId)).value ??
+      const ThemeUiPrefs();
+
   void _showOverflowMenu() {
     final l10n = AppLocalizations.of(context)!;
     final actions = <Widget>[];
+    final collapsedIds = _prefs.collapsedIds;
 
     if (_selectedTab == _DetailTab.tree) {
       actions.addAll([
@@ -82,11 +88,18 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         CupertinoActionSheetAction(
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
-            _collapsedIds.isEmpty ? _collapseAll() : _expandAll();
+            collapsedIds.isEmpty ? _collapseAll() : _expandAll();
           },
           child: Text(
-            _collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll,
+            collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll,
           ),
+        ),
+        CupertinoActionSheetAction(
+          onPressed: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            context.push('/themes/${widget.themeId}/manage-trees');
+          },
+          child: Text(l10n.manageTrees),
         ),
         CupertinoActionSheetAction(
           onPressed: () {
@@ -235,15 +248,15 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     for (final n in nodes) {
       if (n.parentId != null) parentIds.add(n.parentId!);
     }
-    setState(() {
-      _collapsedIds.addAll(parentIds);
-    });
+    ref
+        .read(themeUiPrefsControllerProvider(widget.themeId).notifier)
+        .collapseAll(parentIds);
   }
 
   void _expandAll() {
-    setState(() {
-      _collapsedIds.clear();
-    });
+    ref
+        .read(themeUiPrefsControllerProvider(widget.themeId).notifier)
+        .expandAll();
   }
 
   Future<void> _onImportDocSplit() async {
@@ -482,6 +495,13 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
 
   Widget _buildTreeTab(ThemeDetailState data) {
     final l10n = AppLocalizations.of(context)!;
+    // 订阅折叠/隐藏偏好，变更后重建列表。
+    final prefs =
+        ref.watch(themeUiPrefsControllerProvider(widget.themeId)).value ??
+            const ThemeUiPrefs();
+    final collapsedIds = prefs.collapsedIds;
+    final hiddenRootIds = prefs.hiddenRootIds;
+
     final allRoots = data.nodes
         .where((n) => n.parentId == null)
         .toList(growable: false);
@@ -490,13 +510,16 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     final visibleIds = visibleNodeIdsForTitleQuery(data.nodes, _titleQuery);
     final searchActive = visibleIds != null;
     final effectiveCollapsed =
-        searchActive ? const <String>{} : _collapsedIds;
+        searchActive ? const <String>{} : collapsedIds;
 
+    // 搜索态仍包含隐藏 root，便于找回；浏览态过滤 hidden。
     final roots = searchActive
         ? allRoots
             .where((n) => visibleIds.contains(n.nodeId))
             .toList(growable: false)
-        : allRoots;
+        : allRoots
+            .where((n) => !hiddenRootIds.contains(n.nodeId))
+            .toList(growable: false);
 
     final treeToolbar = Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -593,17 +616,52 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              AppIcons.search,
+                              searchActive
+                                  ? AppIcons.search
+                                  : (hiddenRootIds.isNotEmpty
+                                      ? AppIcons.eyeSlash
+                                      : AppIcons.search),
                               size: 40,
                               color: AppColors.textTertiary,
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              l10n.treeTitleSearchNoResults,
+                              searchActive
+                                  ? l10n.treeTitleSearchNoResults
+                                  : (hiddenRootIds.isNotEmpty
+                                      ? l10n.allTreesHidden
+                                      : l10n.treeTitleSearchNoResults),
                               style: AppTheme.body.copyWith(
                                 color: AppColors.textSecondary,
                               ),
                             ),
+                            if (!searchActive &&
+                                hiddenRootIds.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                l10n.allTreesHiddenHint,
+                                style: AppTheme.caption1.copyWith(
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              CupertinoButton(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                onPressed: () => context.push(
+                                  '/themes/${widget.themeId}/manage-trees',
+                                ),
+                                child: Text(
+                                  l10n.manageTrees,
+                                  style: AppTheme.body.copyWith(
+                                    color: AppColors.accent,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       )
@@ -641,13 +699,22 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                                         if (searchActive) {
                                           return;
                                         }
-                                        setState(() {
-                                          if (!_collapsedIds
-                                              .remove(id)) {
-                                            _collapsedIds
-                                                .add(id);
-                                          }
-                                        });
+                                        ref
+                                            .read(
+                                              themeUiPrefsControllerProvider(
+                                                widget.themeId,
+                                              ).notifier,
+                                            )
+                                            .toggleCollapsed(id);
+                                      },
+                                      onHideRoot: () {
+                                        ref
+                                            .read(
+                                              themeUiPrefsControllerProvider(
+                                                widget.themeId,
+                                              ).notifier,
+                                            )
+                                            .hideRoot(root.nodeId);
                                       },
                                     ),
                                 ],
@@ -726,6 +793,7 @@ class _TreeRowView extends ConsumerWidget {
     required this.onToggleCollapse,
     this.visibleNodeIds,
     this.reorderEnabled = true,
+    this.onHideRoot,
   });
 
   final String themeId;
@@ -740,6 +808,9 @@ class _TreeRowView extends ConsumerWidget {
 
   /// When false (title search active), drag reorder is disabled.
   final bool reorderEnabled;
+
+  /// Root 行左滑「隐藏」；非 root 为 null。
+  final VoidCallback? onHideRoot;
 
   static const _kIndent = AppSp.treeIndent;
 
@@ -852,6 +923,12 @@ class _TreeRowView extends ConsumerWidget {
         themeId: themeId,
         allNodes: allNodes,
       ),
+      // Root：左滑露出 隐藏 | 删除；非 root 仅删除。
+      onSwipeLeftSecondary: isRoot ? onHideRoot : null,
+      leftSecondaryActionLabel: isRoot ? l10n.swipeHide : null,
+      leftSecondaryActionIcon: isRoot ? AppIcons.eyeSlash : null,
+      leftSecondaryActionColor:
+          isRoot ? AppColors.textSecondary : null,
       onSwipeRight: atMaxDepth
           ? null
           : () => _onCreateBranchFromMenu(context, ref, node: node),
@@ -963,6 +1040,7 @@ class _TreeRowView extends ConsumerWidget {
           visibleNodeIds: visibleNodeIds,
           reorderEnabled: reorderEnabled,
           onToggleCollapse: onToggleCollapse,
+          // 仅 depth==0 可隐藏；子节点不传。
         ),
       );
     }

@@ -800,6 +800,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get swipeBranch => 'Branch';
 
   @override
+  String get swipeHide => 'Hide';
+
+  @override
+  String get manageTrees => 'Manage Trees';
+
+  @override
+  String get manageTreesHint =>
+      'Tap the eye to show or hide a root tree in the list.';
+
+  @override
+  String get allTreesHidden => 'All trees are hidden';
+
+  @override
+  String get allTreesHiddenHint => 'Show them again in Manage Trees';
+
+  @override
   String get viewTree => 'View Tree';
 
   @override

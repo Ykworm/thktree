@@ -7,8 +7,9 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 /// 用户再**主动点击**露出的按钮才会触发回调。这是为了避免"滑动一点点就误删"。
 ///
 /// 行为规范：
-/// - 按钮固定宽度 80pt（参考 [修复左滑删除按钮宽度无限增加问题]）
-/// - 拖动超过 60pt 阈值后松手，自动展开到 80pt；否则回弹
+/// - 单侧单按钮固定宽度 80pt（参考 [修复左滑删除按钮宽度无限增加问题]）
+/// - 左滑可配置第二按钮 [onSwipeLeftSecondary]（再 +80pt），顺序：次要 | 主（靠右）
+/// - 拖动超过 60pt 阈值后松手，自动展开；否则回弹
 /// - 点击按钮后先回弹，再触发回调，确保后续弹窗干净显示
 class SwipeableRow extends StatefulWidget {
   const SwipeableRow({
@@ -19,6 +20,10 @@ class SwipeableRow extends StatefulWidget {
     this.leftActionLabel,
     this.leftActionIcon,
     this.leftActionColor,
+    this.onSwipeLeftSecondary,
+    this.leftSecondaryActionLabel,
+    this.leftSecondaryActionIcon,
+    this.leftSecondaryActionColor,
     this.rightActionLabel,
     this.rightActionIcon,
     this.rightActionColor,
@@ -26,7 +31,8 @@ class SwipeableRow extends StatefulWidget {
 
   final Widget child;
 
-  /// 用户点击左滑露出的按钮时触发。`null` 表示禁用左滑操作。
+  /// 用户点击左滑露出的**主**按钮时触发（靠右，通常为删除）。
+  /// `null` 表示禁用左滑（若 secondary 也 null）。
   final VoidCallback? onSwipeLeft;
 
   /// 用户点击右滑露出的按钮时触发。`null` 表示禁用右滑操作。
@@ -35,6 +41,12 @@ class SwipeableRow extends StatefulWidget {
   final String? leftActionLabel;
   final IconData? leftActionIcon;
   final Color? leftActionColor;
+
+  /// 左滑第二按钮（靠左，通常为隐藏等软操作）。需与主按钮配套。
+  final VoidCallback? onSwipeLeftSecondary;
+  final String? leftSecondaryActionLabel;
+  final IconData? leftSecondaryActionIcon;
+  final Color? leftSecondaryActionColor;
 
   final String? rightActionLabel;
   final IconData? rightActionIcon;
@@ -49,11 +61,22 @@ class _SwipeableRowState extends State<SwipeableRow>
   late final AnimationController _controller;
   double _dragExtent = 0;
   static const _kThreshold = 60.0;
-  static const _kMaxExtent = 80.0;
   static const _kButtonWidth = 80.0;
 
-  bool get _canSwipeLeft => widget.onSwipeLeft != null;
+  bool get _hasPrimaryLeft => widget.onSwipeLeft != null;
+  bool get _hasSecondaryLeft => widget.onSwipeLeftSecondary != null;
+  bool get _canSwipeLeft => _hasPrimaryLeft || _hasSecondaryLeft;
   bool get _canSwipeRight => widget.onSwipeRight != null;
+
+  int get _leftButtonCount {
+    var n = 0;
+    if (_hasPrimaryLeft) n++;
+    if (_hasSecondaryLeft) n++;
+    return n;
+  }
+
+  double get _maxLeftExtent => _kButtonWidth * _leftButtonCount;
+  double get _maxRightExtent => _canSwipeRight ? _kButtonWidth : 0;
 
   @override
   void initState() {
@@ -86,18 +109,17 @@ class _SwipeableRowState extends State<SwipeableRow>
     if (!_canSwipeLeft && !_canSwipeRight) return;
     setState(() {
       var next = _dragExtent + details.delta.dx;
-      // 禁用一侧的滑动时，禁止向那一侧拖动
       if (!_canSwipeLeft && next < 0) next = 0;
       if (!_canSwipeRight && next > 0) next = 0;
-      _dragExtent = next.clamp(-_kMaxExtent, _kMaxExtent);
+      _dragExtent = next.clamp(-_maxLeftExtent, _maxRightExtent);
     });
   }
 
   void _onPanEnd(DragEndDetails details) {
     if (_dragExtent < -_kThreshold) {
-      _animateTo(-_kMaxExtent);
+      _animateTo(-_maxLeftExtent);
     } else if (_dragExtent > _kThreshold) {
-      _animateTo(_kMaxExtent);
+      _animateTo(_maxRightExtent);
     } else {
       _snapBack();
     }
@@ -119,12 +141,12 @@ class _SwipeableRowState extends State<SwipeableRow>
   Widget build(BuildContext context) {
     final absExtent = _dragExtent.abs();
     final isLeft = _dragExtent < 0;
-    final visibleWidth = absExtent.clamp(0.0, _kButtonWidth);
+    final leftVisible = isLeft ? absExtent.clamp(0.0, _maxLeftExtent) : 0.0;
+    final rightVisible = !isLeft ? absExtent.clamp(0.0, _maxRightExtent) : 0.0;
 
     return ClipRect(
       child: Stack(
         children: [
-          // Action buttons behind content
           if (absExtent > 0)
             Positioned.fill(
               child: Row(
@@ -135,23 +157,34 @@ class _SwipeableRowState extends State<SwipeableRow>
                       label: widget.rightActionLabel!,
                       color: widget.rightActionColor!,
                       alignment: Alignment.center,
-                      width: visibleWidth,
+                      width: rightVisible,
                       onTap: widget.onSwipeRight!,
                     ),
                   const Spacer(),
-                  if (isLeft && _canSwipeLeft)
-                    _buildAction(
-                      icon: widget.leftActionIcon!,
-                      label: widget.leftActionLabel!,
-                      color: widget.leftActionColor!,
-                      alignment: Alignment.center,
-                      width: visibleWidth,
-                      onTap: widget.onSwipeLeft!,
-                    ),
+                  if (isLeft && _canSwipeLeft) ...[
+                    if (_hasSecondaryLeft)
+                      _buildAction(
+                        icon: widget.leftSecondaryActionIcon!,
+                        label: widget.leftSecondaryActionLabel!,
+                        color: widget.leftSecondaryActionColor!,
+                        alignment: Alignment.center,
+                        width: (leftVisible - _kButtonWidth)
+                            .clamp(0.0, _kButtonWidth),
+                        onTap: widget.onSwipeLeftSecondary!,
+                      ),
+                    if (_hasPrimaryLeft)
+                      _buildAction(
+                        icon: widget.leftActionIcon!,
+                        label: widget.leftActionLabel!,
+                        color: widget.leftActionColor!,
+                        alignment: Alignment.center,
+                        width: leftVisible.clamp(0.0, _kButtonWidth),
+                        onTap: widget.onSwipeLeft!,
+                      ),
+                  ],
                 ],
               ),
             ),
-          // Sliding content
           Transform.translate(
             offset: Offset(_dragExtent, 0),
             child: GestureDetector(
@@ -186,25 +219,28 @@ class _SwipeableRowState extends State<SwipeableRow>
         width: width,
         color: color,
         alignment: alignment,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: AppColors.white, size: 20),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              softWrap: false,
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: width < 24
+            ? const SizedBox.shrink()
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: AppColors.white, size: 20),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.clip,
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

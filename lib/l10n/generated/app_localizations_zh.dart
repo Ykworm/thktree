@@ -758,6 +758,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get swipeBranch => '分支';
 
   @override
+  String get swipeHide => '隐藏';
+
+  @override
+  String get manageTrees => '管理 Trees';
+
+  @override
+  String get manageTreesHint => '点眼睛控制 root tree 在列表中的显示；隐藏后可在此恢复。';
+
+  @override
+  String get allTreesHidden => '所有 tree 已隐藏';
+
+  @override
+  String get allTreesHiddenHint => '在「管理 Trees」中重新显示';
+
+  @override
   String get viewTree => '查看整棵树';
 
   @override

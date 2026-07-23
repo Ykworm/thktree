@@ -1023,6 +1023,26 @@
   "@swipeBranch": {
     "description": "Swipe action label for creating a branch"
   },
+  "swipeHide": "Hide",
+  "@swipeHide": {
+    "description": "Swipe action label to hide a root tree from the list"
+  },
+  "manageTrees": "Manage Trees",
+  "@manageTrees": {
+    "description": "Overflow menu entry and screen title for root tree visibility"
+  },
+  "manageTreesHint": "Tap the eye to show or hide a root tree in the list.",
+  "@manageTreesHint": {
+    "description": "Hint text on the manage trees screen"
+  },
+  "allTreesHidden": "All trees are hidden",
+  "@allTreesHidden": {
+    "description": "Empty state when every root tree is hidden"
+  },
+  "allTreesHiddenHint": "Show them again in Manage Trees",
+  "@allTreesHiddenHint": {
+    "description": "Hint under all-trees-hidden empty state"
+  },
   "viewTree": "View Tree",
   "myQuestions": "Session Messages",
   "myQuestionsTitle": "My Sent Messages",

@@ -29,6 +29,7 @@ import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/data/services/keyword_category_storage.dart';
 import 'package:thk_tree/data/services/clip_storage.dart';
 import 'package:thk_tree/data/services/scroll_anchor_store.dart';
+import 'package:thk_tree/data/services/theme_ui_prefs_store.dart';
 import 'package:thk_tree/data/services/pin_storage.dart';
 import 'package:thk_tree/data/services/pin_content_loader.dart';
 
@@ -585,6 +586,13 @@ final clipStorageProvider = FutureProvider<ClipStorage>((ref) async {
 final scrollAnchorStoreProvider = FutureProvider<ScrollAnchorStore>((ref) async {
   final paths = await ref.watch(appPathsProvider.future);
   return ScrollAnchorStore(rootDir: paths.rootDir.path);
+});
+
+/// 全局 `theme_ui_prefs.json`：主题详情折叠状态 + root tree 隐藏。
+final themeUiPrefsStoreProvider =
+    FutureProvider<ThemeUiPrefsStore>((ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  return ThemeUiPrefsStore(rootDir: paths.rootDir.path);
 });
 
 /// 全局 `pins.json` 文件读写器（多 chat 对照的 Pin 列表）。

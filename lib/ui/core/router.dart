@@ -29,6 +29,7 @@ import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_detail_screen.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_screen.dart';
 import 'package:thk_tree/ui/features/themes/full_tree_screen.dart';
+import 'package:thk_tree/ui/features/themes/manage_trees_screen.dart';
 import 'package:thk_tree/ui/features/themes/merge_chat_confirm_screen.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/ui/features/about/about_screen.dart';
@@ -124,6 +125,16 @@ final appRouter = GoRouter(
                     currentNodeId: currentNodeId,
                     initialMultiSelect: multiSelect,
                   ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/themes/:themeId/manage-trees',
+              pageBuilder: (context, state) {
+                final themeId = state.pathParameters['themeId']!;
+                return CupertinoPage(
+                  name: 'manage-trees-$themeId',
+                  child: ManageTreesScreen(themeId: themeId),
                 );
               },
             ),

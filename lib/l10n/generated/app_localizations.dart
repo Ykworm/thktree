@@ -1484,6 +1484,36 @@ abstract class AppLocalizations {
   /// **'Branch'**
   String get swipeBranch;
 
+  /// Swipe action label to hide a root tree from the list
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get swipeHide;
+
+  /// Overflow menu entry and screen title for root tree visibility
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Trees'**
+  String get manageTrees;
+
+  /// Hint text on the manage trees screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the eye to show or hide a root tree in the list.'**
+  String get manageTreesHint;
+
+  /// Empty state when every root tree is hidden
+  ///
+  /// In en, this message translates to:
+  /// **'All trees are hidden'**
+  String get allTreesHidden;
+
+  /// Hint under all-trees-hidden empty state
+  ///
+  /// In en, this message translates to:
+  /// **'Show them again in Manage Trees'**
+  String get allTreesHiddenHint;
+
   /// More action label for viewing the full tree
   ///
   /// In en, this message translates to:

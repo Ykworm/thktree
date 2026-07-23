@@ -43,6 +43,12 @@ class AppIcons {
   /// Icons.more_vert
   static const IconData more = SFIcons.sf_ellipsis;
 
+  /// 可见（管理 Trees 眼睛开）
+  static const IconData eye = SFIcons.sf_eye;
+
+  /// 隐藏（管理 Trees 眼睛关 / 左滑隐藏）
+  static const IconData eyeSlash = SFIcons.sf_eye_slash;
+
   // ── 导航 ──
 
   /// Icons.arrow_back
