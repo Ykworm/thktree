@@ -34,53 +34,38 @@
 REPO=$(basename "$(git rev-parse --show-toplevel)")
 # worktree  ../${REPO}-worktrees/<topic>
 # 分支      ${REPO}/<topic>
-# 讨论稿    docs/_tmp/<topic>.md   ← worktree 名 = 分支后缀 = _tmp 名，同一 <topic>
+# 讨论稿    docs/_tmp/<topic>.md   ← 讨论稿文件名中的 <topic>、worktree 目录名、分支后缀，三者必须一致
 ```
 
-不写死项目名。worktree 是整仓检出，docs 路径相对 repo 不变——**没有** `docs/_tmp/worktree/…` 这种第二套命名。
+不写死项目名。docs 路径相对 repo 不变，不存在 `docs/_tmp/worktree/…` 这种第二套命名。
 
-### 一个 Chat Session 一个 worktree（litemode / fullmode）
+### worktree（litemode / fullmode）
 
-- 进入时先 `git worktree list`：`../${REPO}-worktrees/<topic>` **不存在则创建，已存在则复用**；复用前 `git status --porcelain`，有未提交改动先报告。
-- 同 session 后续请求**默认复用**；**跨 session 继续同一 topic 也复用**——明天新开 chat 说「继续 topic fix-color」→ 直接用已存在的 `../ThkTree-worktrees/fix-color`，不新建、不报错。
-- agent 不得主动新建 worktree；仅用户明确说「新开 worktree / 新 topic」时，视为用户主动打破默认。
-- 想换 topic → 用户**新开 Chat Session**。
-- 开工必须报告：当前 topic、worktree 绝对路径、本次是**新建**还是**复用**。
+1. 进入时 `git worktree list`：不存在则创建，已存在则复用；复用前检查未提交改动
+2. 同 session / 跨 session 同一 topic **默认复用**；agent 不得主动新建
+3. 开工必须报告：topic、worktree 绝对路径、新建还是复用
 
-### go-gate 触发词
+### go-gate
 
-用户确认词：**「可以 / 开干 / go」**。litemode / fullmode 有双 gate（discuss 后 + plan 后）；微改可压缩为一句话确认，**不可省略**。未确认 → agent 停，不写业务代码（见红线）。
+用户确认词：**「可以 / 开干 / go」**。litemode / fullmode 双 gate；微改可压缩，不可省略。
 
-### 讨论轨 `_tmp`（跨 chat 的讨论暂存区）
+### 讨论轨 `_tmp`
 
-未定稿讨论写 `docs/_tmp/<topic>.md`；新 chat 说「继续 topic X」→ agent **先读该文件**恢复上下文，不靠聊天记录。litemode / fullmode **必须有**（无则先建最短稿）；定稿后结论迁入正式 docs（`docs/modules/` / FEATURES / ADR），再清理 `_tmp`。与测试无关：测试代码在 `integration_test/`，模块长期说明在 `docs/modules/<id>/`。细则 → `docs/_tmp/README.md`。
+跨 chat 的讨论暂存区：`docs/_tmp/<topic>.md`。litemode / fullmode 必须有（无则先建）；新 chat 说「继续 topic X」→ 先读该文件恢复上下文。定稿后迁入正式 docs，再清理。细则 → `docs/_tmp/README.md`。
 
-### 模块身份（防双人起两名）
+### 模块身份
 
-- 模块 id 可由 LLM 提议，但**必须先查登记表** `docs/modules/README.md`；登记后 id 是唯一真源，禁止另起同义文件夹。
-- 新模块先登记（FEATURES 加行 + 定 slug + 建 `docs/modules/<slug>/`）再写码。
-- 发现疑似重复（同义不同名）→ **停**，列冲突，人定保留哪个；迁移用 `bash tools/migrate_module_slug.sh <old> <new>`。
-- ctsync 只认登记 id + `git diff`，确认后才改 doc。
+模块 id **必须先查登记表** `docs/modules/README.md`；登记后 id 是唯一真源。新模块先登记再写码；疑似同义不同名 → 停，人定。
 
 ### 原则
 
-1. **登记先于文件夹**：id 以登记表为准，LLM 起名也必须落进登记表。
-2. **diff 先于聊天**：范围以 git 为准。
-3. **确认先于写 doc**：ctsync 已如此。
-4. **闸门显式**：读不够 / 名冲突 / 验收不清 → **停并提问**，不假装做完。
+1. **登记先于文件夹**
+2. **diff 先于聊天**
+3. **闸门显式**：信息不足 → 停并提问
 
-### 断点表（哪一步容易断、怎么防）
+### 断点表
 
-| 断点                       | 症状                | 闸门 / 补救                                                                       |
-| ------------------------ | ----------------- | ----------------------------------------------------------------------------- |
-| 新 chat 无上文               | 重聊已定结论            | 必读 `_tmp/<topic>.md`；用户点名 topic                                               |
-| 没读模块 README              | 踩 SSE/存储等坑        | ARCHITECTURE 地图 + README 顶部必读；改前 cross-check                                  |
-| 双人新模块两名                  | `docs/modules` 分叉 | 登记表 + `migrate_module_slug.sh`                                                |
-| ctsync 乱改                | 写错模块 / 漏改         | 只认登记 id + diff；**确认后才写**                                                      |
-| 当 E2E 完成其实只是 integration | 假闭环               | 所有端：必须真壳启动（非 `flutter test integration_test/`）；测试进度参考 `docs/test/PROGRESS.md` |
-| litemode 未 merge         | 你在 dev 测不到        | litemode **强制** merge 进 dev                                                   |
-| freemode 实验进主线           | 脏历史               | freemode 不默认；要进 dev 先升 litemode/fullmode 收尾                                   |
-| 信息缺失仍开工                  | 半成品               | go-gate：验收不清 → 停下提问                                                           |
+常见断裂点及防护 → [`docs/_shared/breakpoint-table.md`](docs/_shared/breakpoint-table.md)
 
 ## 项目特化（换新项目时改这里）
 
