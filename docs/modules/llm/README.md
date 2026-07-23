@@ -76,12 +76,14 @@ enum WebSearchSupport {
 }
 ```
 
-- **`visibleProviderTypes`**：设置页显示 KIMI、MiniMax、MIMO（含 **MIMO Token Plan** 预置）、DeepSeek、豆包、**xAI Grok**、**腾讯 TokenHub**（OpenAI / Anthropic / Gemini / 自定义暂不发布）
-- **`webSearchSupportMap`**：硬编码各提供商联网支持状态（新模型接入时更新此映射）。**MiniMax / TokenHub 为 `unsupported`**（MiniMax：官方联网需 Anthropic Messages 服务端工具 `web_search_20250305`，当前 OpenAI 兼容路径未实现；TokenHub：无独立原生联网映射，暂不暴露 UI）
+- **`visibleProviderTypes`**：设置页显示 **OpenAI**、**Anthropic（Claude）**、KIMI、MiniMax、MIMO（含 **MIMO Token Plan** 预置）、DeepSeek、豆包、**xAI Grok**、**腾讯 TokenHub**（Gemini / 自定义暂不发布）
+- **`webSearchSupportMap`**：硬编码各提供商联网支持状态（新模型接入时更新此映射）。**OpenAI / MiniMax / TokenHub 为 `unsupported`**（OpenAI：当前 Chat Completions 路径无服务端 web_search 映射；MiniMax：官方联网需 Anthropic Messages 服务端工具 `web_search_20250305`；TokenHub：无独立原生联网映射）
 - **`isModelWebSearchUnsupported(modelId)`**：模型级联网判断——豆包 `doubao-seed-2-0-pro` 无日期后缀返回 `true`（legacy Chat Completions 不支持联网），有后缀（如 `-260215`）返回 `false`（走 Responses API 支持联网）
 
 | 提供商 | 联网搜索 | 实现方式 |
 |--------|---------|---------|
+| OpenAI | ❌ | `preset_openai`（`api.openai.com/v1`）；Chat Completions 路径暂不暴露联网 UI |
+| Anthropic（Claude） | ✅ | `preset_anthropic`；`ClaudeClient` + Messages API 服务端工具 `web_search_20260209` |
 | KIMI | ✅ | Chat Completions API + `builtin_function.$web_search` + tool_calls 多轮 |
 | MiniMax | ❌ | UI / 发送侧均不启用；真实现需 Anthropic 兼容端点 + `web_search_20250305` 服务端工具（见 platform Server Tools 文档） |
 | MIMO | ✅ | Chat Completions API + `web_search` 工具声明；预置含按量 `preset_mimo`（`api.xiaomimimo.com/v1`）与 **Token Plan** `preset_mimo_token_plan`（`token-plan-cn.xiaomimimo.com/v1`，type 均为 `mimo`） |
@@ -151,6 +153,7 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 - 2026-06-20：Provider 列表页改为填满 body 的 pane 式设置子页，subtitle 改为模型数量
 - 2026-06-24：统一 LLM 错误处理与重试（LlmError + LlmErrorCard + 4 场景接入 + 5 个集成测试）
 - 2026-07：联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）
+- 2026-07-23：设置页开放 **OpenAI** / **Anthropic（Claude）**（加入 `visibleProviderTypes`；Claude 联网 supported，OpenAI 暂 unsupported）
 - 2026-07-23：MIMO Token Plan 预置（`preset_mimo_token_plan`，中国集群）+ **腾讯 TokenHub**（`LlmProviderType.tokenhub` / `preset_tokenhub`，Hy3 白名单，deepThinking）；见 [CHANGELOG](../CHANGELOG/2026-07-23-mimo-token-plan-tokenhub.md)
 - 2026-07-17：MiniMax 联网止血——`webSearchSupportMap[minimax]` 改为 `unsupported`（UI 与发送侧不再启用假 function `web_search`）；真实现仍欠 Anthropic 服务端工具路径
 - 2026-07-17：接入 **xAI Grok**（`LlmProviderType.xai` / `preset_xai`，API Key，OpenAI 兼容）；白名单 Grok 4.5/4.3；vision + deepThinking；联网 `search_parameters`

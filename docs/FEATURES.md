@@ -59,6 +59,7 @@
 | xAI Grok 提供商 | llm | ✅ 完成 | 2026-07-17 | [README](modules/llm/README.md) | — | `preset_providers.dart` + `model_fetcher.dart` + `llm_client.dart` | `LlmProviderType.xai` / `preset_xai`，`https://api.x.ai/v1` OpenAI 兼容 API Key；白名单 grok-4.5/4.3；vision + deepThinking；联网 `search_parameters` |
 | MIMO Token Plan 预置 | llm | ✅ 完成 | 2026-07-23 | [README](modules/llm/README.md) | — | `preset_providers.dart` | `preset_mimo_token_plan`，`https://token-plan-cn.xiaomimimo.com/v1`；type 仍为 `mimo`，与按量 `preset_mimo` 并存；老用户 `migrateMissingPresets` 补齐 |
 | 腾讯 TokenHub（Hy3） | llm | ✅ 完成 | 2026-07-23 | [README](modules/llm/README.md) | — | `preset_providers.dart` + `model_fetcher.dart` + `llm_client.dart` + `model_capabilities.dart` | `LlmProviderType.tokenhub` / `preset_tokenhub`，`https://tokenhub.tencentmaas.com/v1`；白名单 hy3 / hy3-preview；deepThinking `thinking.type`；联网暂 unsupported |
+| OpenAI / Anthropic 设置页开放 | llm | ✅ 完成 | 2026-07-23 | [README](modules/llm/README.md) | — | `llm_provider_config.dart`（`visibleProviderTypes`） | 预置本已存在；加入可见列表；Claude 联网 supported，OpenAI 联网暂 unsupported |
 | session.md 缺失自愈 | chat | ✅ 完成 | 2026-07-17 | [README](modules/chat/README.md) | — | `node_store.dart` + `app_services.dart` | 有 `node.meta.json`、无 `session.md` 时（如导出跳过 streaming）自动补最小空会话；历史消息无法恢复 |
 | 图片上传 | chat | ✅ 完成 | 2026-07-05 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/chat_composer.dart` + `lib/ui/features/chat/chat_screen.dart` + `lib/ui/features/chat/chat_controller.dart` | 聊天输入框底部图片按钮，支持拍照/相册选择，image_picker 集成；vision 模型自动检测；只发图片不写文字时自动填充默认提示；豆包 Responses API 使用 `input_image` 格式（区别于 OpenAI `image_url`） |
 | 消息时间戳 | chat | ✅ 完成 | 2026-07-04 | [README](modules/chat/README.md) | — | `lib/ui/core/shared/message_bubble.dart` | assistant 消息气泡上方显示人类可读时间（今天 HH:mm / 昨天 / 月日 / 跨年） |
@@ -157,6 +158,7 @@ KIMI、MIMO、DeepSeek、豆包（模型级）、**xAI Grok** 支持原生联网
 
 > 倒序排列，最新在上。
 
+- **2026-07-23** — 设置页开放 OpenAI / Anthropic（Claude）：`visibleProviderTypes` 加入 `openai`、`anthropic`；Claude 联网 `web_search_20260209` supported，OpenAI Chat Completions 路径联网暂 unsupported。见 [llm README](modules/llm/README.md)。
 - **2026-07-23** — MIMO Token Plan + 腾讯 TokenHub（Hy3）：(1) `preset_mimo_token_plan`（`token-plan-cn.xiaomimimo.com/v1`，type=`mimo`）与按量 MIMO 并存；(2) `LlmProviderType.tokenhub` / `preset_tokenhub`（`tokenhub.tencentmaas.com/v1`），白名单 hy3 / hy3-preview，深度思考 `thinking.type`，联网暂 unsupported。详见 [CHANGELOG](CHANGELOG/2026-07-23-mimo-token-plan-tokenhub.md) / [llm README](modules/llm/README.md)。
 - **2026-07-17** — xAI Grok 提供商 + session.md 自愈：(1) `LlmProviderType.xai` / `preset_xai`（`api.x.ai/v1` API Key）；白名单 grok-4.5/4.3；联网 `search_parameters`、思考 `reasoning_effort`；(2) 有 `node.meta.json`、无 `session.md` 时 `ensureSessionMarkdownIfMissing` 自动补最小空会话（日志 `get_session_path.auto_healed`）；历史消息不可恢复。见 [llm README](modules/llm/README.md) / [chat README](modules/chat/README.md)。
 - **2026-07-17** — MiniMax 联网止血：`webSearchSupportMap[minimax]` → `unsupported`；UI 与发送侧不再启用假 function `web_search`。真实现仍欠 Anthropic 服务端工具 `web_search_20250305`（见 [TECH-DEBT](TECH-DEBT.md) / [llm README](modules/llm/README.md)）。

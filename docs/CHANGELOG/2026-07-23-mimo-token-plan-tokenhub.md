@@ -1,8 +1,8 @@
-# 2026-07-23 — MIMO Token Plan + 腾讯 TokenHub（Hy3）
+# 2026-07-23 — MIMO Token Plan + 腾讯 TokenHub（Hy3）+ OpenAI/Claude 开放
 
 ## 摘要
 
-大模型提供商列表新增两项预置：小米 MIMO **Token Plan**（中国集群）与腾讯 **TokenHub**（Hy3 系列）。
+大模型提供商列表新增两项预置：小米 MIMO **Token Plan**（中国集群）与腾讯 **TokenHub**（Hy3 系列）；随后将 **OpenAI** 与 **Anthropic（Claude）** 加入设置页可见列表。
 
 ## 变更
 
@@ -22,6 +22,11 @@
 - 深度思考：`thinking: {type: "enabled"}`（opt-in；默认 off，关时省略参数）
 - 联网搜索：`webSearchSupportMap` 标 `unsupported`（暂不暴露 UI）
 - 加入 `visibleProviderTypes`
+
+### OpenAI / Anthropic 设置页开放
+
+- `visibleProviderTypes` 加入 `openai`、`anthropic`（预置 `preset_openai` / `preset_anthropic` 本已存在）
+- `webSearchSupportMap`：`anthropic` → supported（ClaudeClient `web_search_20260209`）；`openai` → unsupported（当前 Chat Completions 路径）
 
 ## 代码
 
