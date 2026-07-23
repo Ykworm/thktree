@@ -28,7 +28,9 @@
 | 子孙视图过滤 | themes | 🔨 进行中 | — | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `lib/ui/features/themes/theme_detail_*` | ThemeDetailScreen 有基础树，过滤功能未完整 |
 | 汇总预览 | themes | ❌ 取消 | 2026-06-22 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | — | 产品决策取消 |
 | 祖先上下文总结 | themes | 🔨 部分实现 | — | [README](modules/themes/README.md) | — | `lib/data/services/` | context-summary.md 写入存在，注入对话未完成 |
-| 主题详情 overflow menu | themes | ✅ 完成 | 2026-07-04 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/theme_detail_screen.dart` | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
+| 主题详情 overflow menu | themes | ✅ 完成 | 2026-07-23 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/theme_detail_screen.dart` | `⋯`：刷新 / 折叠·展开全部 / 管理 Trees / 合并创建 |
+| 折叠状态持久化 | themes | ✅ 完成 | 2026-07-23 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `theme_ui_prefs_store.dart` + `theme_ui_prefs_controller.dart` | 按 themeId 持久化 collapsedIds，重进不丢 |
+| Root tree 隐藏 | themes | ✅ 完成 | 2026-07-23 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `manage_trees_screen.dart` + `theme_detail_screen.dart` | 仅 root；左滑隐藏 + 管理页眼睛；主列表过滤 |
 | 合并 & 创建新 Chat | themes | ✅ 完成 | 2026-07-09 | [README](modules/themes/README.md) | — | `lib/ui/features/themes/merge_chat_confirm_screen.dart` 等 | 选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree 范围（chat 页入口限当前树，tree 页入口可跨树），详见 [spec](modules/themes/specs/merge-chat.md) |
 | 树页节点标题搜索 | themes | ✅ 完成 | 2026-07-17 | [README](modules/themes/README.md) | [theme-detail-design](modules/themes/visual/theme-detail-design.md) | `theme_detail_screen.dart` + `tree_title_filter.dart` | 仅当前主题树、只匹配节点 title；命中 + 祖先路径；非 FTS |
 

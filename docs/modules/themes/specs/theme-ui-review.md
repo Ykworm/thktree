@@ -366,8 +366,8 @@ CupertinoDialogAction(
 | 递归 _TreeRowView 改拍平 | 降级：加 4 层深度上限 | 当前方案够用，超过 4 层的节点不渲染子节点 | TECH-DEBT.md |
 | _withLastMessagePreviews 串行改并行 | 暂不做 | 当前只有进入详情页时加载，且 preview 数据本身就不急需 | TECH-DEBT.md |
 | RepaintBoundary | 暂不做 | 4 层深度上限后 widget 数量可控 | TECH-DEBT.md |
-| 折叠状态持久化 | 暂不做 | 需要跨 session 存储，优先级低 | TECH-DEBT.md |
-| expand/collapse all | 暂不做 | 可以后续迭代 | TECH-DEBT.md |
+| 折叠状态持久化 | ✅ 已做 | `theme_ui_prefs.json` 按 themeId 持久化（2026-07-23） | TECH-DEBT.md |
+| expand/collapse all | ✅ 已做 | overflow menu 全部折叠/展开 | TECH-DEBT.md |
 | ThemeListScreen 改进 | 暂不做 | 用户不认为这是重要页面 | - |
 
 ---

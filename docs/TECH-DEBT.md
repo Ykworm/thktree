@@ -29,8 +29,8 @@
 | 暖色调主题与节点色风格冲突 | 改用清新调色板（见 docs/CHANGELOG/2026-06-06-warm-minimal-redesign.md） | 2026-06-06 |
 | 递归 _TreeRowView 改拍平 | 低 | 当前用递归 Column 渲染子节点，深嵌套时 widget 树膨胀。降级方案：加 4 层深度上限。彻底方案：拍平成 List<FlatNode> + ListView.builder | 2026-06-11 |
 | _withLastMessagePreviews 串行读文件 | 低 | ThemeDetailController._load() 中逐个节点读 session.md，O(n) 次文件 IO。改为 Future.wait 并行读取或 compute isolate | 2026-06-11 |
-| 折叠状态不持久化 | 低 | _collapsedIds 仅存 State，每次进入详情页重置为全部展开。后续可用 SharedPreferences 持久化 | 2026-06-11 |
-| 缺少 expand all / collapse all | 低 | 复杂树结构无批量折叠/展开操作。可在 NavBar trailing 加按钮或长按弹 action sheet | 2026-06-11 |
+| 折叠状态不持久化 | 已完成 | `ThemeUiPrefsStore` / `theme_ui_prefs.json` 按 themeId 持久化 collapsedIds（2026-07-23） | 2026-07-23 |
+| 缺少 expand all / collapse all | 已完成 | ThemeDetailScreen overflow menu 已有全部折叠/展开（更早落地；2026-07-23 与持久化一并写回 prefs） | 2026-07-23 |
 | RepaintBoundary 隔离 | 低 | 每个 _TreeRowView 都是 DragTarget，hover 时 setState 触发整棵树重绘。4 层深度上限后 widget 数量可控，暂不处理 | 2026-06-11 |
 | `getSessionPathForNode` 全量 reindex 导致嵌套事务崩溃 | 统一 disk-first 写入顺序 + 启动轻量 syncFromDisk（见 [DECISIONS.md ADR-014](DECISIONS.md#adr-014-db-一致性保障统一-disk-first-写入顺序--启动轻量同步)） | 2026-06-22 |
 | BiometricService + AuthGate 已完成 | AuthGate 已接线 main.dart，Face ID 验证功能正常运行 | 2026-07-07 |

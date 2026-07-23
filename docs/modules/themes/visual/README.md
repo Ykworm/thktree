@@ -253,7 +253,7 @@
 ## Assumptions
 
 - `uses-material-design: false` 保持不变
-- 折叠状态（`_collapsedIds`）不持久化，每次进入主题详情页默认全部展开
+- 折叠状态按 themeId 持久化于 `theme_ui_prefs.json`；root 可隐藏（管理页眼睛 / 左滑隐藏）
 - `AppColors.colorForTheme(themeId)` 和 `_NodePalette` 互不耦合：主题色用于"容器层"（列表/拖拽/swipe），节点色用于"内容层"（卡片视觉）
 - 节点拖拽**不允许跨父级**（不实现 move-to-parent），仅支持同父级重排
 - `LongPressDraggable` 400ms 延迟是手感调试结果，不要轻易改

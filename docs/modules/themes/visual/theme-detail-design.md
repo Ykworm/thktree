@@ -20,8 +20,9 @@
 | 节点卡片布局 | 56px 固定行高 + leading 圆圈 + title/subtitle + 拖拽手柄 | 单行不换行 |
 | 拖拽触发 | 拖拽手柄 LongPress 400ms | 整行不直接拖拽，避免误操作 |
 | 拖拽范围 | 仅同父级重排 | 跨父级拖拽被 onWillAcceptWithDetails 拒绝 |
-| 折叠状态 | 不持久化，存 `_collapsedIds: Set<String>` | 每次进入全部展开 |
-| Swipe 行为 | 左滑删除 / 右滑分支 | 与节点卡片共用 `SwipeableRow` |
+| 折叠状态 | 按 themeId 持久化 `collapsedIds`（`theme_ui_prefs.json`） | 重进主题详情恢复；搜索态强制展开 |
+| Root 隐藏 | 仅 root；`hiddenRootIds` 同文件 | 主列表过滤；管理页眼睛切换 |
+| Swipe 行为 | 非 root：左滑删除；root：左滑 隐藏\|删除；右滑分支 | `SwipeableRow` 支持左滑第二按钮 |
 | 删除确认 | 子树提示 + 同标题节点二次确认 | 防止误删 |
 | 标题搜索 | 顶部常驻 `CupertinoSearchTextField` | 只匹配 `NodeEntity.title`；命中 ∪ 祖先；见第 7.1 节 |
 
@@ -280,7 +281,7 @@ Tree tab 顶部常驻一行工具行：搜索框 + 两个操作按钮（操作�
 | 展示 | 滤树：只渲染 `visibleNodeIds`（命中 + 祖先）；保持缩进层级 |
 | 算法 | `visibleNodeIdsForTitleQuery`（`tree_title_filter.dart`）；空 query → `null`（不过滤） |
 | 触发 | `onChanged` live 过滤（本地过滤，无需显式提交；与笔记 tab 的显式搜索不同，见 `docs/_tmp/search-explicit-button.md`） |
-| 搜索态 | 强制展开（忽略 `_collapsedIds`）；`reorderEnabled=false`（无拖拽手柄 / DragTarget） |
+| 搜索态 | 强制展开（忽略持久化 collapsedIds）；`reorderEnabled=false`（无拖拽手柄 / DragTarget）；含 hidden root 以便找回 |
 | 仍可用 | 点进 chat、长按重命名、swipe 删除/分支 |
 | 无命中 | `l10n.treeTitleSearchNoResults`（「无匹配标题」） |
 | 占位 | `l10n.treeTitleSearchHint`（「搜索节点标题」） |
@@ -379,7 +380,8 @@ class ThemeDetailController extends AsyncNotifier<ThemeDetailState> {
 
 ## Assumptions
 
-- 折叠状态（`_collapsedIds`）不持久化，每次进入主题详情页默认全部展开
+- 折叠状态按 themeId 持久化（`ThemeUiPrefs.collapsedIds`）；无记录时默认全展开
+- Root 隐藏不删数据；非 root 不做隐藏；全树页 / Wiki 列表 v1 不筛 hiddenRootIds
 - 节点拖拽**不允许跨父级**，仅支持同父级重排
 - `LongPressDraggable` 400ms 延迟是手感调试结果，不要轻易改
 - 节点 `sourceType` 只有 4 个枚举值：`selectedText` / `conversation` / `summary` / `note`

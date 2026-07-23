@@ -171,6 +171,31 @@ chat 滚动位置记忆：每 nodeId 记录离开时的首条可见 msgId，重�
 - schema：固定 `scroll_anchors/v1`
 - anchors：Map<nodeId, {msgId, updatedAt}>
 
+### 3.5 theme_ui_prefs.json（2026-07-23 新增）
+
+路径：`<rootDir>/theme_ui_prefs.json`（应用根目录全局文件，与 `scroll_anchors.json` 同级）
+
+主题详情页 **UI 偏好**（非内容数据）：按 themeId 记折叠节点与隐藏的 root tree。隐藏不等于删除，只影响 `ThemeDetailScreen` 主列表渲染。
+
+```json
+{
+  "schema": "theme_ui_prefs/v1",
+  "updatedAt": "2026-07-23T12:00:00.000Z",
+  "themes": {
+    "thm_01J8Z...": {
+      "collapsedIds": ["nd_parent_..."],
+      "hiddenRootIds": ["nd_root_..."]
+    }
+  }
+}
+```
+
+字段：
+- schema：固定 `theme_ui_prefs/v1`
+- themes：Map<themeId, { collapsedIds: string[], hiddenRootIds: string[] }>
+- collapsedIds：有子节点且处于折叠的 nodeId 集合
+- hiddenRootIds：仅允许 root（`parentId == null`）的 nodeId；非 root 不得写入语义依赖
+
 ---
 
 ## 4. session.md（对话正文真相源）

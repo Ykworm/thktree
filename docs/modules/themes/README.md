@@ -29,10 +29,12 @@
 | 子孙视图过滤 | 🔨 进行中 | — | 基础树已有，过滤未完整 |
 | 汇总预览 | 📋 待开发 | — | 未实现 |
 | 祖先上下文总结 | 🔨 部分实现 | — | context-summary.md 写入存在 |
-| 主题详情 overflow menu | ✅ 完成 | 2026-07-04 | NavBar 刷新按钮改为 `⋯` overflow menu（CupertinoActionSheet），含刷新 + 折叠/展开全部 |
+| 主题详情 overflow menu | ✅ 完成 | 2026-07-23 | `⋯` overflow：刷新 / 折叠·展开全部 / **管理 Trees** / 合并创建（tree tab） |
+| 折叠状态持久化 | ✅ 完成 | 2026-07-23 | 按 themeId 写入 `theme_ui_prefs.json`；重进主题详情恢复折叠，非全展开 |
+| Root tree 隐藏 | ✅ 完成 | 2026-07-23 | 仅 `parentId == null`；左滑「隐藏」+ 管理页眼睛开关；主列表过滤，搜索态仍可见 |
 | 合并 & 创建新 Chat | ✅ 完成 | 2026-07-09 | 选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree 范围（chat 页入口限当前树，tree 页入口可跨树），详见 [spec](specs/merge-chat.md) |
 | 树页节点标题搜索 | ✅ 完成 | 2026-07-17 | `ThemeDetailScreen` 顶部按 `NodeEntity.title` 本地过滤；命中 + 祖先路径；搜索态禁拖拽、强制展开；纯函数 `tree_title_filter.dart` |
-| Tree/Wiki 双 tab | ✅ 完成 | 2026-07-19 | `ThemeDetailScreen` 导航栏 middle 放 Tree/Wiki segmented 切换；tree tab 顶部工具行从左到右为 `搜索框 / + 新建根节点 / docSplit 导入文档并拆分`；搜索框 Expanded，两个操作按钮共用白卡底衬（`AppColors.surface`，圆角 10，图标 20pt，accent 色）；overflow menu 按 tab 感知：tree tab 提供刷新 / 展开折叠 / 合并创建，wiki tab 提供生成 / 重新生成 / 导出 / 删除；Wiki tab 由 wiki 模块提供阅读器 |
+| Tree/Wiki 双 tab | ✅ 完成 | 2026-07-19 | `ThemeDetailScreen` 导航栏 middle 放 Tree/Wiki segmented 切换；tree tab 顶部工具行从左到右为 `搜索框 / + 新建根节点 / docSplit 导入文档并拆分`；搜索框 Expanded，两个操作按钮共用白卡底衬（`AppColors.surface`，圆角 10，图标 20pt，accent 色）；overflow menu 按 tab 感知：tree tab 提供刷新 / 展开折叠 / 管理 Trees / 合并创建，wiki tab 提供生成 / 重新生成 / 导出 / 删除；Wiki tab 由 wiki 模块提供阅读器 |
 
 ## 3. 代码文件
 
@@ -40,8 +42,10 @@
 lib/ui/features/themes/
 ├── theme_list_screen.dart          # 主题列表
 ├── theme_list_controller.dart      # AsyncNotifier<List<Theme>>
-├── theme_detail_screen.dart        # 树视图 + 标题搜索 + tree page 合并&创建入口
+├── theme_detail_screen.dart        # 树视图 + 标题搜索 + 折叠/隐藏 + tree page 合并&创建入口
 ├── theme_detail_controller.dart    # AsyncNotifier.family<ThemeDetailState, String>
+├── theme_ui_prefs_controller.dart  # 按 themeId 折叠 + root 隐藏偏好
+├── manage_trees_screen.dart        # 管理 root 显示/隐藏（眼睛 icon）
 ├── tree_title_filter.dart          # 标题过滤纯函数（命中 ∪ 祖先）
 ├── full_tree_screen.dart           # 整树全展开视图 + 多选合并模式（带 currentNodeId 进入时等节点数据就绪后滚动定位高亮行）
 ├── merge_chat_confirm_screen.dart  # 合并&创建 Step 2（标题 + 挂载位置）
@@ -51,6 +55,7 @@ lib/ui/features/themes/
 依赖：
 - `lib/data/stores/theme_store.dart`、`node_store.dart`
 - `lib/data/services/session_markdown.dart`（异步加载 lastMessagePreview）
+- `lib/data/services/theme_ui_prefs_store.dart`（`theme_ui_prefs.json`：折叠 + hiddenRootIds）
 - `lib/ui/core/widgets/`（ThkListTile、ThkNavBar、SwipeableRow）
 
 ## 4. 子文档
@@ -81,7 +86,8 @@ lib/ui/features/themes/
 
 - **层级表达**：纯缩进（`depth × 28px`），无连接线（Apple Notes 风格）。
 - **行高**：固定 56px，标题 `maxLines=1` + 省略号。
-- **折叠状态**：`_collapsedIds` 仅存 State，**不持久化**。
+- **折叠状态**：按 themeId 持久化于 `theme_ui_prefs.json`（`ThemeUiPrefsStore` / `themeUiPrefsControllerProvider`）；`⋯` 全部折叠/展开写回同一份。
+- **Root 隐藏**：仅 root（`parentId == null`）；左滑「隐藏 | 删除」；`⋯` → 管理 Trees 用眼睛切换；主列表过滤 hidden，标题搜索态仍包含隐藏 root 以便找回；全树页 / Wiki v1 不筛隐藏。
 - **跨父级拖拽**：`onWillAcceptWithDetails` 拒绝（仅同级重排）。
 - **删除二次确认**：同标题节点时弹 checkbox 二次确认。
 - **标题搜索**：列表顶部 `CupertinoSearchTextField`；只匹配 `title`（不搜消息/副标题）；命中节点保留祖先路径；有 query 时强制展开、禁用拖拽重排（swipe / 点进 chat / 长按重命名仍可用）。**不是**全局 FTS。
@@ -100,6 +106,7 @@ lib/ui/features/themes/
 
 ## 7. 相关历史
 
+- **2026-07-23** — 折叠持久化 + root 隐藏：`ThemeUiPrefsStore`（`theme_ui_prefs/v1`）、`ManageTreesScreen`、root 左滑双 action、`SwipeableRow` 支持左滑第二按钮；unit `test/theme_ui_prefs_store_test.dart`
 - **2026-07-17** — 树页节点标题搜索：`ThemeDetailScreen` 顶部按 title 本地过滤 + `tree_title_filter.dart` + `test/tree_title_filter_test.dart`
 - **2026-07-04** — ThemeDetailScreen NavBar 刷新按钮改为 overflow menu（`⋯` + CupertinoActionSheet：刷新 / 折叠全部 / 展开全部）
 - **2026-07-09** — 合并 & 创建新 Chat：选最多 3 个 chat 合并为新 chat；挂位置选择器按入口区分跨 tree（chat 页入口限当前树，tree 页入口可跨树）；新增 `merge_chat_tree_scope.dart` 纯函数 + `test/merge_chat_tree_scope_test.dart`（6 case）固定约束
