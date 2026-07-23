@@ -86,6 +86,23 @@ const List<Map<String, dynamic>> _xaiWhitelist = [
   },
 ];
 
+/// 腾讯 TokenHub 白名单模型
+///
+/// 平台 /models 会返回聚合的多家模型；当前只暴露混元 Hy3 系列。
+/// 文档：https://cloud.tencent.com/document/product/1823/132252
+const List<Map<String, dynamic>> _tokenhubWhitelist = [
+  {
+    'id': 'hy3',
+    'name': 'Hy3',
+    'contextWindow': 256000,
+  },
+  {
+    'id': 'hy3-preview',
+    'name': 'Hy3 Preview',
+    'contextWindow': 256000,
+  },
+];
+
 /// DeepSeek 白名单模型
 ///
 /// DeepSeek Anthropic 兼容 API 不提供 `/models` 列表端点，
@@ -151,6 +168,8 @@ class ModelFetcher {
         return _fetchMinimaxModels();
       case LlmProviderType.xai:
         return _fetchXaiModels();
+      case LlmProviderType.tokenhub:
+        return _fetchTokenhubModels();
       default:
         // OpenAI 兼容（openai, mimo, custom 等）
         return _fetchOpenAiCompatibleModels(baseUrl, apiKey);
@@ -252,6 +271,21 @@ class ModelFetcher {
   /// xAI 使用白名单模型列表（只保留 Grok 4.5 / 4.3 chat）。
   List<LlmModelConfig> _fetchXaiModels() {
     return _xaiWhitelist.map((m) {
+      final id = m['id'] as String;
+      return LlmModelConfig(
+        id: id,
+        name: m['name'] as String,
+        contextWindow: m['contextWindow'] as int,
+        capabilities: inferCapabilities(id),
+      );
+    }).toList();
+  }
+
+  // ─── 腾讯 TokenHub（白名单）────────────────────────────────────────
+
+  /// TokenHub 使用白名单模型列表（只保留 Hy3 / Hy3 Preview）。
+  List<LlmModelConfig> _fetchTokenhubModels() {
+    return _tokenhubWhitelist.map((m) {
       final id = m['id'] as String;
       return LlmModelConfig(
         id: id,

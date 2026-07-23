@@ -266,6 +266,13 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
 
     final isXai = providerName.toLowerCase().contains('xai') ||
         providerName.toLowerCase().contains('grok');
+    // 腾讯 TokenHub / Hy3：thinking.type = enabled|disabled（与 KIMI 同形）
+    final isTokenhub = providerName.toLowerCase().contains('tokenhub') ||
+        providerName.toLowerCase().contains('hy3') ||
+        model.toLowerCase().startsWith('hy3');
+    final isKimi = providerName.toLowerCase().contains('kimi') ||
+        providerName.toLowerCase().contains('moonshot');
+    final isMinimax = providerName.toLowerCase().contains('minimax');
 
     // 联网搜索可能触发多轮 tool_calls，最多循环 3 次
     // （xAI 用 search_parameters 服务端搜索，不走 tools 多轮）
@@ -288,10 +295,7 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
       final hasImage = _messagesContainImage(currentMessages);
 
       // KIMI 使用 $web_search 时必须禁用 thinking（且不能与图片同请求）
-      if (webSearch &&
-          !hasImage &&
-          (providerName.toLowerCase().contains('kimi') ||
-           providerName.toLowerCase().contains('moonshot'))) {
+      if (webSearch && !hasImage && isKimi) {
         body['thinking'] = {'type': 'disabled'};
       }
 
@@ -303,6 +307,8 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
       // - KIMI k2.5/k2.6: `thinking: {type: "enabled"/"disabled"}`（对象格式，
       //   与 DeepSeek Anthropic 兼容路径同构；注意 KIMI 默认也是 enabled！
       //   关时必须显式 disabled，否则开关「关不掉」——跟 DeepSeek 同款 bug）
+      // - 腾讯 TokenHub Hy3: 同 KIMI 形 `thinking: {type: "enabled"/"disabled"}`；
+      //   基础对话省略 thinking 时无推理（默认 off），开时须显式 enabled。
       // - xAI Grok-4.3: `reasoning_effort` = none|low|medium|high（文档标明
       //   仅 4.3 支持；其它 Grok 可能忽略。响应 reasoning_content 已解析）
       // - 豆包（火山方舟）：服务端默认开启，无法关闭，不发参数；
@@ -313,23 +319,20 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
       // 带图时开启 thinking 会 4xx 报错。故含图片时跳过 thinking 参数，
       // 图片请求走非思考模式（图片识别正常），避免报错。
       if (deepThinking && !hasImage) {
-        if (providerName.toLowerCase().contains('minimax')) {
+        if (isMinimax) {
           // M3 用对象格式；adaptive 即思考 on（无独立 enabled）。
           body['thinking'] = {'type': 'adaptive'};
-        } else if (providerName.toLowerCase().contains('kimi') ||
-            providerName.toLowerCase().contains('moonshot')) {
+        } else if (isKimi || isTokenhub) {
           body['thinking'] = {'type': 'enabled'};
         } else if (isXai) {
           body['reasoning_effort'] = 'high';
         }
-      } else if (!webSearch && !hasImage &&
-          (providerName.toLowerCase().contains('kimi') ||
-           providerName.toLowerCase().contains('moonshot') ||
-           providerName.toLowerCase().contains('minimax'))) {
+      } else if (!webSearch && !hasImage && (isKimi || isMinimax)) {
         // KIMI（k2.5/k2.6）/ MiniMax-M3 默认都开启思考；用户关掉开关时须显式 disabled，
         // 否则省略 thinking → 服务端默认 on → 开关「关不掉」。
         // （webSearch 场景已在上方单独处理：强制 disabled + 禁止同时 reasoning_effort）
         // 含图片时不进入此分支（避免 disabled + image 组合报错）。
+        // Hy3 默认 off，关时无需显式 disabled。
         final caps = inferCapabilities(model);
         if (caps.contains(ModelCapability.deepThinking)) {
           body['thinking'] = {'type': 'disabled'};

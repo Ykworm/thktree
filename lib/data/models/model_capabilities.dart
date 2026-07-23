@@ -54,6 +54,10 @@ const Map<String, Set<ModelCapability>> _modelCapabilityMap = {
   'mimo-v2.5': {ModelCapability.text, ModelCapability.vision},
   'mimo-v2-omni': {ModelCapability.text, ModelCapability.vision},
 
+  // 腾讯 TokenHub Hy3：OpenAI 兼容；thinking.type=enabled/disabled；
+  // 响应 reasoning_content。官方文档为文本/推理为主，不含 vision 声明。
+  'hy3': {ModelCapability.text, ModelCapability.deepThinking},
+
   // 豆包 (Doubao) Seed 系列 — 深度思考 + 多模态模型
   // 服务端默认开启 thinking，用户无法关闭；聊天页用只读 chip 提示默认状态。
   // 注意：不要加 deepThinking（用户可控 toggle），应只加 alwaysThinking。

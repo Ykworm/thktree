@@ -93,5 +93,15 @@ List<LlmProviderConfig> createPresetProviders() {
       defaultBaseUrl: 'https://api.x.ai/v1',
       isOpenAiCompatible: true,
     ),
+    LlmProviderConfig(
+      id: 'preset_tokenhub',
+      type: LlmProviderType.tokenhub,
+      name: '腾讯 TokenHub',
+      // OpenAI 兼容；完整 chat 端点为 …/v1/chat/completions（客户端自动拼接）
+      // 文档：https://cloud.tencent.com/document/product/1823/130078
+      baseUrl: 'https://tokenhub.tencentmaas.com/v1',
+      defaultBaseUrl: 'https://tokenhub.tencentmaas.com/v1',
+      isOpenAiCompatible: true,
+    ),
   ];
 }

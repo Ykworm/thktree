@@ -12,6 +12,8 @@ enum LlmProviderType {
   doubao,
   /// xAI Grok（SuperGrok / 控制台 API Key；OpenAI 兼容 `api.x.ai/v1`）
   xai,
+  /// 腾讯 TokenHub（Hy3 等；OpenAI 兼容 `tokenhub.tencentmaas.com/v1`）
+  tokenhub,
   custom;
 
   String get displayName {
@@ -34,6 +36,8 @@ enum LlmProviderType {
         return '豆包';
       case LlmProviderType.xai:
         return 'xAI Grok';
+      case LlmProviderType.tokenhub:
+        return '腾讯 TokenHub';
       case LlmProviderType.custom:
         return '自定义';
     }
@@ -57,6 +61,7 @@ const Set<LlmProviderType> visibleProviderTypes = {
   LlmProviderType.deepseek,
   LlmProviderType.doubao,
   LlmProviderType.xai,
+  LlmProviderType.tokenhub,
 };
 
 /// 各提供商的联网搜索支持状态
@@ -75,6 +80,8 @@ const Map<LlmProviderType, WebSearchSupport> webSearchSupportMap = {
   LlmProviderType.doubao: WebSearchSupport.supported,
   // xAI：Chat Completions 用 search_parameters.mode（服务端搜索），非 function tools
   LlmProviderType.xai: WebSearchSupport.supported,
+  // TokenHub：平台支持 tools/function calling，无独立原生联网搜索协议映射
+  LlmProviderType.tokenhub: WebSearchSupport.unsupported,
 };
 
 /// 某些具体模型虽属于「支持联网」的提供商，但该模型自身走 legacy 路径，
