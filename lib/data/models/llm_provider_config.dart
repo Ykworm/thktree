@@ -55,6 +55,8 @@ enum WebSearchSupport {
 
 /// APP 当前支持在设置页面显示的提供商类型
 const Set<LlmProviderType> visibleProviderTypes = {
+  LlmProviderType.openai,
+  LlmProviderType.anthropic,
   LlmProviderType.kimi,
   LlmProviderType.minimax,
   LlmProviderType.mimo,
@@ -73,6 +75,10 @@ const Set<LlmProviderType> visibleProviderTypes = {
 /// 当前客户端仍走 OpenAI 兼容 Chat Completions + 假 function `web_search`，
 /// 无真实搜索执行。暂标 unsupported，避免 UI 误导；真实现前勿改回 supported。
 const Map<LlmProviderType, WebSearchSupport> webSearchSupportMap = {
+  // OpenAI：Chat Completions 路径无服务端 web_search 映射，暂不暴露联网 UI
+  LlmProviderType.openai: WebSearchSupport.unsupported,
+  // Anthropic Claude：ClaudeClient 使用 web_search_20260209 服务端工具
+  LlmProviderType.anthropic: WebSearchSupport.supported,
   LlmProviderType.kimi: WebSearchSupport.supported,
   LlmProviderType.minimax: WebSearchSupport.unsupported,
   LlmProviderType.mimo: WebSearchSupport.supported,
