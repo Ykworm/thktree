@@ -61,8 +61,19 @@ List<LlmProviderConfig> createPresetProviders() {
       id: 'preset_mimo',
       type: LlmProviderType.mimo,
       name: 'MIMO',
+      // 按量计费开放平台 API
       baseUrl: 'https://api.xiaomimimo.com/v1',
       defaultBaseUrl: 'https://api.xiaomimimo.com/v1',
+      isOpenAiCompatible: true,
+    ),
+    LlmProviderConfig(
+      id: 'preset_mimo_token_plan',
+      type: LlmProviderType.mimo,
+      name: 'MIMO Token Plan',
+      // Token Plan 中国集群（订阅套餐专属端点 + tp-xxxxx Key）
+      // 文档：https://mimo.mi.com/docs/zh-CN/tokenplan/Token%20Plan/subscription
+      baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+      defaultBaseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
       isOpenAiCompatible: true,
     ),
     LlmProviderConfig(
