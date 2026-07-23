@@ -50,6 +50,8 @@
 - **Pin 对照栏**（2026-07-21，同日二轮改版）：气泡 action row 右端 **Pin** / **Note** 文字按钮 + 长按气泡标题行弹消息级菜单（手势不干扰 SelectionArea）；Pin 按钮双态——已 Pin 显示 Unpin + pin-slash 图标，再点取消（`PinStorage.removeByAnchor`，状态源 `pinAnchorKeysProvider`）；Pin 数据存 `pins.json`（`PinStorage`，上限 5 条**满员拦截**抛 StateError + 同锚点去重，kind = message | note）；右缘把手 `PinEdgeHandle` 挂 **shell 层**（Themes / Notes tab 常驻，分支内 push 页面盖不住；可上下拖动；`_pinPanelOpen` 防重入），面板 push 到 root navigator 全屏覆盖（含 tab bar）：居上大卡片（宽 92%，底边贴近关闭按钮）+ 深色 scrim + 底部圆形关闭按钮，横向 PageView 滑动切换（页码圆点生效），预览卡 `GptMarkdown` 渲染；动作 = Source（同 chat 就地滚——ChatScreen 注册 `pinJumpContextProvider` / 跨 chat `pendingScrollMsgIdProvider` + push / note 打开编辑器）/ To Note（`NoteSelectScreen`）/ Remove（删空自动关面板）；提示走 `ThkToast` 暖白卡片（成功 ✓ / 取消 pin-slash / 满员警告图标）
 - **滚动位置记忆**（2026-07-21）：`ScrollAnchorStore`（scroll_anchors.json）按 nodeId 持久化首条可见 msgId；`ChatListView` 新增 `firstVisibleMsgId` getter 与 `initialAnchorMsgId` 恢复模式（恢复时跳过吸底）；离开 chat 落盘（在底部则删锚点），查看树/搜索跳回不丢位置
 - **查看树入口入 composer**（2026-07-21）：`ChatComposer.onViewTree`，工具行最右 icon-only chip；`showTools` 条件包含它，保证常驻；与 more 菜单原入口并存
+- **Context Usage Bar 暂时屏蔽**（2026-07-23）：`_ContextUsageBar` 曾在 composer 上方画 1px token 占用条；无名细线用户无法理解、低占用像脏像素。现恒返回 `SizedBox.shrink()`，调用处与构造签名保留，待可读警示设计后再开
+- **Composer 白瓷壳无描边**（2026-07-23）：`_ComposerGlassShell` 去掉 `Border.all`，轮廓只靠双层极淡阴影，避免 hair 边在真机像矩形框/残线
 
 ## 代码文件
 
@@ -62,7 +64,7 @@
 | `lib/data/services/chat_task_service.dart` | 服务层调度器：串行重发 queue + generation token + bridge.begin/end 包裹 + resumeInterrupted / cancelResumeQueue 入口 | 新增 |
 | `lib/data/services/background_task_bridge.dart` | iOS `beginBackgroundTask` MethodChannel 客户端（`begin()` / `end(taskId)`），可注入 | 新增 |
 | `ios/Runner/BackgroundTaskHandler.swift` | Swift MethodChannel handler + `UIApplication.beginBackgroundTask` 调用 + `expirationHandler` 释放 | 新增 |
-| `lib/ui/core/shared/chat_composer.dart` | 双条毛玻璃底栏：输入 pill（+ / 文本）+ 右侧圆钮（碎片/发送）+ 工具 pill（联网/深度思考） | - |
+| `lib/ui/core/shared/chat_composer.dart` | 悬浮白瓷底栏：输入区（+ / 文本）+ 右侧圆钮（碎片/发送）+ 工具行（联网/深度思考）；壳无 hair 描边 | - |
 | `lib/ui/core/shared/chat_list_view.dart` | 消息列表；不铺实心 pageBg；`bottomContentInset` 给浮层 composer 留白 | - |
 | `lib/ui/core/shared/message_bubble.dart` | 消息气泡（user + assistant，GptMarkdown 渲染 + LaTeX 注入 + 每张表格独立工具栏：复制/全屏按钮） | 388 |
 | `lib/ui/features/chat/widgets/chat_markdown_sheet.dart` | 查看原始 Markdown 底部 sheet（展示 session.md 内容 + 复制按钮） | 135 |
@@ -105,9 +107,10 @@
 - 改 chat_screen 布局前必读 [notes 模块 README](../notes/README.md)，两者 UI 风格共用 Large Title + slivers
 - **键盘与底栏空隙（2026-07-16）**：iOS `_MainShell` / Android `AndroidNavigationShell` 在键盘弹起时**隐藏底部 tab**，让 shell 内页面用真实 `viewInsets` 贴键盘。**禁止**在 `ChatScreen` 里用 `View.viewInsets` 覆盖恢复完整键盘高度——Chat 在 shell `Expanded` 内时会与 tab 占位叠加，在联网搜索等工具行下方挤出 tab 高空白。详见 [CHANGELOG/2026-07-16](../../CHANGELOG/2026-07-16-ios-chat-keyboard-gap.md)。
 - **输入区域 (ChatComposer) 视觉规范**：
-  - **质感**：放弃容易叠加显脏的毛玻璃 (BackdropFilter)，采用“悬浮白瓷” (Solid Ceramic) 质感。外壳为不透明的纯白 (`AppColors.surface`)，配合 2% ~ 4% 透明度的极淡双层投影。
+  - **质感**：放弃容易叠加显脏的毛玻璃 (BackdropFilter)，采用“悬浮白瓷” (Solid Ceramic) 质感。外壳为不透明的纯白 (`AppColors.surface`)，配合 2% ~ 4% 透明度的极淡双层投影；**无 hair 描边**（`Border.all` 已去掉，轮廓只靠阴影）。
   - **按钮**：右侧的操作圆钮取消一切交互底块，仅保留图标变色以维持极致干净。
   - **工具开关**：联网搜索、深度思考等辅助开关采用纯文字呈现（无图标），以维持横向胶囊的极简观感。
+  - **ContextUsageBar**：暂时不渲染（见功能列表）；禁止再挂无名 1px 进度条。
 - 新增 LLM provider 时，模型选择 panel 会自动出现（无需改 chat 代码），但要在 llm 模块注册 provider
 - 流式断网/超时处理：参考 `integration_test/chat_streaming_test.dart` 的边界用例
 - 注意 `autoTriggerReply` 启动参数与 notes 模块的"从笔记续聊"按钮联动
@@ -130,3 +133,4 @@
 - 2026-07-17：Warm Paper Glass 壳层 + 双条毛玻璃 composer（P2）——见 [CHANGELOG/2026-07-17-warm-paper-glass.md](../../CHANGELOG/2026-07-17-warm-paper-glass.md)。
 - 2026-07-17：分享图片超长分片拼接——`ShareService` 单次 `toImage` 超 GPU 纹理上限（4096px）时自动纵向分片 + `OffsetLayer.toImage(rect)` + `package:image` 软件拼接；清晰度下限从 0.2 提升到 1.5，最终输出长边上限 24576px 防 OOM。详见 `lib/data/services/share_service.dart`。
 - 2026-07-17：session.md 缺失自愈——`ensureSessionMarkdownIfMissing` + `getSessionPathForNode`；meta 在、session 丢时补空会话（见上文维护要点）。
+- 2026-07-23：Context Usage Bar 暂时屏蔽 + composer 白瓷壳去描边——`_ContextUsageBar` 恒 `shrink`；`_ComposerGlassShell` 无 `Border.all`。

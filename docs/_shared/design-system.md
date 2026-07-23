@@ -11,7 +11,7 @@
 |----|------|-------------|
 | L0 纸 | `pageBg` 暖米色画布 | `AppColors.pageBg` / `surfaceMuted` |
 | L1–L2 卡 | 白卡 + hair + 轻影 | `AppColors.surface` + `AppSurfaces.contentCard` |
-| L3 玻 | nav/tab/sheet/composer 壳层磨砂 | `AppGlass` + `ThkGlassBar`；composer 见 `ChatComposer` |
+| L3 玻 | nav/tab/sheet 壳层磨砂；composer 为白瓷特例 | `AppGlass` + `ThkGlassBar`；composer 见 `ChatComposer`（白瓷无描边） |
 | L0 光 | 页级静态 soft radial（主题列表 / 搜索） | `AppAtmosphere` + `ThkPageAtmosphere` |
 
 ### 颜色气质（light）
@@ -27,13 +27,13 @@
 
 | 规则 | 说明 |
 |------|------|
-| 用途 | 底 tab、sheet 头、composer 外框等 **壳层**；**禁止**列表 cell / 助手长文 / 树节点行每行 blur |
+| 用途 | 底 tab、sheet 头等 **壳层**；**禁止**列表 cell / 助手长文 / 树节点行每行 blur |
 | iOS | `BackdropFilter` + 半透 fill（约 55% 暖白量级，`AppGlass.fill`） |
 | Android | **不透明** `fillOpaque` paper-warm（无 blur，防脏与性能） |
 | 叠层 | 底 tab **必须 Stack 叠在内容上方**，Column 并排无法磨到页面像素 |
 | 顶栏 | `ThkNavBar` = 不透明 `pageBg`（顶栏属底座纸色，非白卡），且 `automaticBackgroundVisibility: false`：静止与滚动同色，滚动不变色；特例：TTS 播放器页显式透明让自定义背景透出 |
 
-Composer 专用：比 chrome 更透的双条毛玻璃（输入 pill + 工具 pill），工具字必须落在玻璃上，禁止裸叠气泡正文。背后必须是消息列表像素（`ChatListView` 不铺实心 `pageBg`，用 `bottomContentInset`）。
+Composer（`ChatComposer` / `_ComposerGlassShell`）：**悬浮白瓷**——不透明 `AppColors.surface` + 极淡双层阴影，**无 hair 描边**；工具 chip 与输入同壳，禁止裸叠气泡正文。背后必须是消息列表像素（`ChatListView` 不铺实心 `pageBg`，用 `bottomContentInset`）。`AppGlass.composerFill` 等 token 仍保留，当前壳未走 blur 路径。
 
 ### 氛围光（`AppAtmosphere` + `ThkPageAtmosphere`）
 

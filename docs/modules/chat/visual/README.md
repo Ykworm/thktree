@@ -83,7 +83,7 @@ CupertinoPageScaffold(
 )
 ```
 
-**Composer 视觉（Warm Paper P2）：** 输入 pill 更透毛玻璃；工具行独立 pill；碎片/发送为右侧圆钮。工具标签禁止裸叠气泡。详见 [design-system](../../../_shared/design-system.md)。
+**Composer 视觉（2026-07-23）：** 悬浮白瓷单壳（`AppColors.surface` + 极淡双层阴影，**无 hair 描边**）；工具 chip 与输入同壳；碎片/发送为右侧圆钮。工具标签禁止裸叠气泡。详见 [design-system](../../../_shared/design-system.md) 与 [chat README](../README.md) 维护要点。
 
 ### NavBar
 
@@ -95,7 +95,7 @@ CupertinoPageScaffold(
 
 ### ContextUsageBar
 
-当对话有上下文长度信息时，NavBar 下方显示进度条指示 context 使用量。
+**暂时屏蔽（2026-07-23）。** 原实现：composer 上方全宽 1px token 占用条（accent 填充）。因无名细线用户无法理解、低占用像脏像素，`_ContextUsageBar.build` 现恒 `SizedBox.shrink()`；调用签名保留，待带文案的可读警示后再开。
 
 ---
 
