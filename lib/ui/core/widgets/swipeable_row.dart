@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_sficon/flutter_sficon.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 
 /// iOS Mail 风格的滑动操作行：左滑/右滑露出按钮，点击按钮触发对应回调。
@@ -9,8 +10,10 @@ import 'package:thk_tree/ui/core/theme/app_colors.dart';
 /// 行为规范：
 /// - 单侧单按钮固定宽度 80pt（参考 [修复左滑删除按钮宽度无限增加问题]）
 /// - 左滑可配置第二按钮 [onSwipeLeftSecondary]（再 +80pt），顺序：次要 | 主（靠右）
+/// - 按钮始终满宽满高；靠内容位移 + ClipRect 露出
+/// - icon 用 [SFIcon] + 固定宽槽，与下方 label 共用同一水平中心
 /// - 拖动超过 60pt 阈值后松手，自动展开；否则回弹
-/// - 点击按钮后先回弹，再触发回调，确保后续弹窗干净显示
+/// - 点击按钮后先回弹，再触发回调
 class SwipeableRow extends StatefulWidget {
   const SwipeableRow({
     super.key,
@@ -32,17 +35,15 @@ class SwipeableRow extends StatefulWidget {
   final Widget child;
 
   /// 用户点击左滑露出的**主**按钮时触发（靠右，通常为删除）。
-  /// `null` 表示禁用左滑（若 secondary 也 null）。
   final VoidCallback? onSwipeLeft;
 
-  /// 用户点击右滑露出的按钮时触发。`null` 表示禁用右滑操作。
+  /// 用户点击右滑露出的按钮时触发。
   final VoidCallback? onSwipeRight;
 
   final String? leftActionLabel;
   final IconData? leftActionIcon;
   final Color? leftActionColor;
 
-  /// 左滑第二按钮（靠左，通常为隐藏等软操作）。需与主按钮配套。
   final VoidCallback? onSwipeLeftSecondary;
   final String? leftSecondaryActionLabel;
   final IconData? leftSecondaryActionIcon;
@@ -62,6 +63,8 @@ class _SwipeableRowState extends State<SwipeableRow>
   double _dragExtent = 0;
   static const _kThreshold = 60.0;
   static const _kButtonWidth = 80.0;
+  static const _kIconSlot = 28.0;
+  static const _kIconSize = 20.0;
 
   bool get _hasPrimaryLeft => widget.onSwipeLeft != null;
   bool get _hasSecondaryLeft => widget.onSwipeLeftSecondary != null;
@@ -141,48 +144,55 @@ class _SwipeableRowState extends State<SwipeableRow>
   Widget build(BuildContext context) {
     final absExtent = _dragExtent.abs();
     final isLeft = _dragExtent < 0;
-    final leftVisible = isLeft ? absExtent.clamp(0.0, _maxLeftExtent) : 0.0;
-    final rightVisible = !isLeft ? absExtent.clamp(0.0, _maxRightExtent) : 0.0;
 
     return ClipRect(
       child: Stack(
         children: [
           if (absExtent > 0)
             Positioned.fill(
-              child: Row(
-                children: [
-                  if (!isLeft && _canSwipeRight)
-                    _buildAction(
-                      icon: widget.rightActionIcon!,
-                      label: widget.rightActionLabel!,
-                      color: widget.rightActionColor!,
-                      alignment: Alignment.center,
-                      width: rightVisible,
-                      onTap: widget.onSwipeRight!,
-                    ),
-                  const Spacer(),
-                  if (isLeft && _canSwipeLeft) ...[
-                    if (_hasSecondaryLeft)
-                      _buildAction(
-                        icon: widget.leftSecondaryActionIcon!,
-                        label: widget.leftSecondaryActionLabel!,
-                        color: widget.leftSecondaryActionColor!,
-                        alignment: Alignment.center,
-                        width: (leftVisible - _kButtonWidth)
-                            .clamp(0.0, _kButtonWidth),
-                        onTap: widget.onSwipeLeftSecondary!,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final h = constraints.maxHeight;
+                  if (isLeft && _canSwipeLeft) {
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_hasSecondaryLeft)
+                            _buildAction(
+                              height: h,
+                              icon: widget.leftSecondaryActionIcon!,
+                              label: widget.leftSecondaryActionLabel!,
+                              color: widget.leftSecondaryActionColor!,
+                              onTap: widget.onSwipeLeftSecondary!,
+                            ),
+                          if (_hasPrimaryLeft)
+                            _buildAction(
+                              height: h,
+                              icon: widget.leftActionIcon!,
+                              label: widget.leftActionLabel!,
+                              color: widget.leftActionColor!,
+                              onTap: widget.onSwipeLeft!,
+                            ),
+                        ],
                       ),
-                    if (_hasPrimaryLeft)
-                      _buildAction(
-                        icon: widget.leftActionIcon!,
-                        label: widget.leftActionLabel!,
-                        color: widget.leftActionColor!,
-                        alignment: Alignment.center,
-                        width: leftVisible.clamp(0.0, _kButtonWidth),
-                        onTap: widget.onSwipeLeft!,
+                    );
+                  }
+                  if (!isLeft && _canSwipeRight) {
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildAction(
+                        height: h,
+                        icon: widget.rightActionIcon!,
+                        label: widget.rightActionLabel!,
+                        color: widget.rightActionColor!,
+                        onTap: widget.onSwipeRight!,
                       ),
-                  ],
-                ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             ),
           Transform.translate(
@@ -203,44 +213,58 @@ class _SwipeableRowState extends State<SwipeableRow>
   }
 
   Widget _buildAction({
+    required double height,
     required IconData icon,
     required String label,
     required Color color,
-    required Alignment alignment,
-    required double width,
     required VoidCallback onTap,
   }) {
+    // icon 与 label 共用同一内容宽，水平中心一致。
+    const contentWidth = _kButtonWidth;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         _snapBack();
         onTap();
       },
       child: Container(
-        width: width,
+        width: _kButtonWidth,
+        height: height,
         color: color,
-        alignment: alignment,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: width < 24
-            ? const SizedBox.shrink()
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: AppColors.white, size: 20),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.clip,
-                    style: const TextStyle(
-                      color: AppColors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: contentWidth,
+              height: _kIconSlot,
+              child: Center(
+                child: SFIcon(
+                  icon,
+                  fontSize: _kIconSize,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.white,
+                ),
               ),
+            ),
+            const SizedBox(height: 2),
+            SizedBox(
+              width: contentWidth,
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.clip,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  height: 1.0,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
