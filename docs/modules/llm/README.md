@@ -55,7 +55,7 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
   - **DeepSeek** → 走 `ClaudeClient`（Anthropic 兼容 Messages API），端点直接使用 `config.baseUrl`（preset 已是 `https://api.deepseek.com/anthropic/v1`），认证改用 `x-api-key`
   - **Anthropic** → `ClaudeClient.withBaseUrl(config.baseUrl)`
   - **Gemini** → `GeminiClient.withBaseUrl(config.baseUrl)`
-  - **其他 provider**（OpenAI / KIMI / MiniMax / MIMO / 豆包 / 自定义）→ 继续走 `ConfigBasedOpenAiCompatibleClient`（OpenAI 兼容 Chat Completions API）
+  - **其他 provider**（OpenAI / KIMI / MiniMax / MIMO / 豆包 / xAI / 腾讯 TokenHub / 自定义）→ 继续走 `ConfigBasedOpenAiCompatibleClient`（OpenAI 兼容 Chat Completions API）
 
 > DeepSeek 自 2026-07 起**全量**走 Anthropic 兼容协议（不仅 web search）。决策详见 [DECISIONS.md ADR-020](../../DECISIONS.md#adr-020-deepseek-全量切换到-anthropic-兼容协议)。
 
@@ -76,18 +76,19 @@ enum WebSearchSupport {
 }
 ```
 
-- **`visibleProviderTypes`**：设置页显示 KIMI、MiniMax、MIMO、DeepSeek、豆包、**xAI Grok**（OpenAI / Anthropic / Gemini / 自定义暂不发布）
-- **`webSearchSupportMap`**：硬编码各提供商联网支持状态（新模型接入时更新此映射）。**MiniMax 为 `unsupported`**（2026-07-17 止血：官方联网需 Anthropic Messages 服务端工具 `web_search_20250305`，当前 OpenAI 兼容路径未实现，避免 UI 误导）
+- **`visibleProviderTypes`**：设置页显示 KIMI、MiniMax、MIMO（含 **MIMO Token Plan** 预置）、DeepSeek、豆包、**xAI Grok**、**腾讯 TokenHub**（OpenAI / Anthropic / Gemini / 自定义暂不发布）
+- **`webSearchSupportMap`**：硬编码各提供商联网支持状态（新模型接入时更新此映射）。**MiniMax / TokenHub 为 `unsupported`**（MiniMax：官方联网需 Anthropic Messages 服务端工具 `web_search_20250305`，当前 OpenAI 兼容路径未实现；TokenHub：无独立原生联网映射，暂不暴露 UI）
 - **`isModelWebSearchUnsupported(modelId)`**：模型级联网判断——豆包 `doubao-seed-2-0-pro` 无日期后缀返回 `true`（legacy Chat Completions 不支持联网），有后缀（如 `-260215`）返回 `false`（走 Responses API 支持联网）
 
 | 提供商 | 联网搜索 | 实现方式 |
 |--------|---------|---------|
 | KIMI | ✅ | Chat Completions API + `builtin_function.$web_search` + tool_calls 多轮 |
 | MiniMax | ❌ | UI / 发送侧均不启用；真实现需 Anthropic 兼容端点 + `web_search_20250305` 服务端工具（见 platform Server Tools 文档） |
-| MIMO | ✅ | Chat Completions API + `web_search` 工具声明 |
+| MIMO | ✅ | Chat Completions API + `web_search` 工具声明；预置含按量 `preset_mimo`（`api.xiaomimimo.com/v1`）与 **Token Plan** `preset_mimo_token_plan`（`token-plan-cn.xiaomimimo.com/v1`，type 均为 `mimo`） |
 | DeepSeek | ✅ | Anthropic 兼容 Messages API + `web_search_20260209` 工具（**全量**走 Anthropic 协议，不仅 web search） |
 | 豆包 | ✅（模型级） | Responses API 内置 `web_search`（仅 250615+ 版本模型）；`isModelWebSearchUnsupported` 屏蔽无后缀旧模型 |
 | xAI Grok | ✅ | OpenAI 兼容 `https://api.x.ai/v1`；联网用 `search_parameters.mode` on/off（非 function tools）；深度思考 `reasoning_effort`；白名单 `grok-4.5` / `grok-4.3` |
+| 腾讯 TokenHub | ❌ | OpenAI 兼容 `https://tokenhub.tencentmaas.com/v1`（`preset_tokenhub`）；白名单 `hy3` / `hy3-preview`；深度思考 `thinking.type` enabled；联网 UI 暂不启用 |
 
 ## 深度思考支持（per-session toggle，2026-07-06）
 
@@ -99,7 +100,8 @@ enum WebSearchSupport {
 |---|---|---|---|
 | DeepSeek V4-Pro / V4-Flash / `deepseek-reasoner` | opt-in（user 可 toggle） | ClaudeClient（Anthropic 兼容路径） | 开：`thinking: {type: 'enabled'}`；**关：显式 `thinking: {type: 'disabled'}`**（DeepSeek 服务端默认 enabled，不传字段等于开，故关闭必须显式 disabled） |
 | KIMI k2.6 / k2.5 | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | 开：`thinking: {type: 'enabled'}`；关：`thinking: {type: 'disabled'}` |
-| MiniMax-M3 | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | 开：`thinking: true`（**布尔**，字符串"true"会 400）；**含图片时自动放弃 thinking（`!hasImage` 守卫）** |
+| MiniMax-M3 | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | 开：`thinking: {type: 'adaptive'}`；关：`thinking: {type: 'disabled'}`（对象格式，非布尔）；**含图片时自动放弃 thinking（`!hasImage` 守卫）** |
+| 腾讯 TokenHub Hy3 / Hy3 Preview | opt-in（user 可 toggle） | `ConfigBasedOpenAiCompatibleClient` | 开：`thinking: {type: 'enabled'}`；关：省略（服务端默认 off）；响应 `reasoning_content` |
 | 豆包 Seed 2.1-pro / 2.1-turbo | 服务端锁定默认开 | `ConfigBasedOpenAiCompatibleClient` | 服务端默认开，**不**传参数 |
 | 其他（gpt-4o / claude-3 / claude-3.5 / mimo / gemini / custom） | 不支持 | — | 不发 `thinking` 参数；chip 不显示 |
 
@@ -149,6 +151,7 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 - 2026-06-20：Provider 列表页改为填满 body 的 pane 式设置子页，subtitle 改为模型数量
 - 2026-06-24：统一 LLM 错误处理与重试（LlmError + LlmErrorCard + 4 场景接入 + 5 个集成测试）
 - 2026-07：联网搜索支持（KIMI / MIMO / DeepSeek 已实现，MiniMax 待定）
+- 2026-07-23：MIMO Token Plan 预置（`preset_mimo_token_plan`，中国集群）+ **腾讯 TokenHub**（`LlmProviderType.tokenhub` / `preset_tokenhub`，Hy3 白名单，deepThinking）；见 [CHANGELOG](../CHANGELOG/2026-07-23-mimo-token-plan-tokenhub.md)
 - 2026-07-17：MiniMax 联网止血——`webSearchSupportMap[minimax]` 改为 `unsupported`（UI 与发送侧不再启用假 function `web_search`）；真实现仍欠 Anthropic 服务端工具路径
 - 2026-07-17：接入 **xAI Grok**（`LlmProviderType.xai` / `preset_xai`，API Key，OpenAI 兼容）；白名单 Grok 4.5/4.3；vision + deepThinking；联网 `search_parameters`
 - 2026-07-05：豆包模型白名单（`_fetchDoubaoModels` + `_doubaoWhitelist`，只返回 3 个 Seed 系列模型，不再走 /models API）+ Seed 模型 vision 能力精确映射

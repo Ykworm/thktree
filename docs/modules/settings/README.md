@@ -15,8 +15,8 @@
 - 外观：主题模式（浅色/深色/跟随系统）、字体大小、节点配色方案
 - 语言：i18n 切换（中/英）
 - 语音播放：TTS 引擎选择、语速（播放器内循环切换 0.75× / 1× / 1.5× / 2×）、试听
-- 大模型：从设置页进入独立的"大模型"子页，再进入"模型提供商"（显示 KIMI、MiniMax、MIMO、DeepSeek、豆包、**xAI Grok**，通过 `visibleProviderTypes` 常量过滤）和"默认模型配置"。深层页面顶部有面包屑导航（`ThkBreadcrumbRow`），点击祖先段可快速跳回任意上层。
-- 联网搜索偏好：`web_search_enabled_{providerType}` key 持久化，支持 KIMI、MIMO、DeepSeek、豆包、xAI 等 `webSearchSupportMap.supported` 提供商
+- 大模型：从设置页进入独立的"大模型"子页，再进入"模型提供商"（显示 KIMI、MiniMax、MIMO / MIMO Token Plan、DeepSeek、豆包、**xAI Grok**、**腾讯 TokenHub**，通过 `visibleProviderTypes` 常量过滤）和"默认模型配置"。深层页面顶部有面包屑导航（`ThkBreadcrumbRow`），点击祖先段可快速跳回任意上层。
+- 联网搜索偏好：`web_search_enabled_{providerType}` key 持久化，支持 KIMI、MIMO、DeepSeek、豆包、xAI 等 `webSearchSupportMap.supported` 提供商（TokenHub / MiniMax 为 unsupported）
 - 默认模型配置：集中设置聊天 / 标题生成 / 对话总结 3 个默认模型，点选后进入独立模型选择页
 - 数据：**备份与恢复**（自动备份 / 手动备份并分享 / 从 zip 恢复 / 分享提醒）
 - 关于：版本号、开源许可、隐私政策
