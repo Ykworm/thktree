@@ -1,14 +1,10 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
-import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
-import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/widgets/widgets.dart';
 import 'package:thk_tree/ui/features/chat/widgets/clips_sheet.dart';
 
@@ -606,14 +602,11 @@ class _ComposerGlassShell extends StatelessWidget {
     // 放弃容易显脏的毛玻璃，采用 "悬浮白瓷" (Solid Ceramic) 质感。
     // 在高明度雅白 (0xFFFAF9F6) 的背景上，纯白 (0xFFFFFFFF) 的悬浮胶囊配合柔和阴影，
     // 视觉上最干净、最通透，不会受到底层内容滚动或阴影自身叠加的污染。
+    // 无 hair 描边：轮廓只靠阴影，避免白瓷胶囊出现可见矩形边 / 真机边缘残线。
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.surface, // 纯白
         borderRadius: borderRadius,
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.8), // 极细边框勾勒轮廓
-          width: AppSp.dividerThickness,
-        ),
         boxShadow: [
           // 专属的悬浮弥散阴影，让白瓷胶囊轻盈浮起
           BoxShadow(

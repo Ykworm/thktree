@@ -20,7 +20,6 @@ import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/ui/features/chat/widgets/model_selector_panel.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
-import 'package:thk_tree/data/services/llm_provider.dart' show estimateTokens;
 import 'package:thk_tree/ui/core/shared/chat_composer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:thk_tree/ui/core/shared/chat_list_view.dart';
@@ -1756,41 +1755,19 @@ class _MoreActionsOverlayItem extends StatelessWidget {
   }
 }
 
+/// Context token 使用率条（composer 上方）。
+///
+/// **暂时屏蔽**：原先 1px 无名进度条用户无法理解（像脏线）；
+/// 待做成带文案的可读警示后再实现。调用处仍保留，便于接线。
 class _ContextUsageBar extends StatelessWidget {
   const _ContextUsageBar({required this.messages, required this.contextWindow});
 
+  // 参数保留：恢复功能时无需改调用处签名。
+  // ignore: unused_field
   final List<SessionMessage> messages;
+  // ignore: unused_field
   final int contextWindow;
 
   @override
-  Widget build(BuildContext context) {
-    final used = _estimateTotalTokens(messages);
-    final total = contextWindow;
-    final ratio = total > 0 ? (used / total).clamp(0.0, 1.0) : 0.0;
-    final color = ratio > 0.85
-        ? AppColors.destructive
-        : ratio > 0.6
-        ? AppColors.accent
-        : AppColors.accent;
-
-    return Container(
-      height: 1,
-      color: AppColors.border.withValues(alpha: 0.15),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: FractionallySizedBox(
-          widthFactor: ratio,
-          child: Container(color: color),
-        ),
-      ),
-    );
-  }
-
-  int _estimateTotalTokens(List<SessionMessage> messages) {
-    var total = 0;
-    for (final m in messages) {
-      total += estimateTokens(m.body);
-    }
-    return total;
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
