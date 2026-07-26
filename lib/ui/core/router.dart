@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
+import 'package:thk_tree/ui/core/theme/palette_rebuild_scope.dart';
 import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 import 'package:thk_tree/ui/core/widgets/thk_glass_bar.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
@@ -23,6 +24,7 @@ import 'package:thk_tree/ui/features/lab/keyword_ranking/keyword_detail_screen.d
 import 'package:thk_tree/ui/features/lab/thinking_collision/thinking_collision_screen.dart';
 import 'package:thk_tree/ui/features/lab/user_input_summary/user_input_summary_screen.dart';
 import 'package:thk_tree/ui/features/settings/settings_screen.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/features/settings/keyword_score_prompt_screen.dart';
 import 'package:thk_tree/ui/features/llm/llm_providers_screen.dart';
 import 'package:thk_tree/ui/features/notes/note_browse_screen.dart';
@@ -55,7 +57,7 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/search',
               pageBuilder: (context, state) => CupertinoPage(
-                child: const SearchScreen(),
+                child: paletteAware(() => SearchScreen()),
               ),
             ),
           ],
@@ -67,7 +69,7 @@ final appRouter = GoRouter(
               path: '/',
               pageBuilder: (context, state) => CupertinoPage(
                 name: 'themes-list',
-                child: ThemeListScreen(),
+                child: paletteAware(() => ThemeListScreen()),
               ),
             ),
             GoRoute(
@@ -78,10 +80,12 @@ final appRouter = GoRouter(
                 final searchPrefill = state.uri.queryParameters['searchPrefill'];
                 return CupertinoPage(
                   name: 'theme-tree-$themeId',
-                  child: ThemeDetailScreen(
-                    themeId: themeId,
-                    scrollToNodeId: scrollToNodeId,
-                    searchPrefill: searchPrefill,
+                  child: paletteAware(
+                    () => ThemeDetailScreen(
+                      themeId: themeId,
+                      scrollToNodeId: scrollToNodeId,
+                      searchPrefill: searchPrefill,
+                    ),
                   ),
                 );
               },
@@ -102,12 +106,14 @@ final appRouter = GoRouter(
                           );
                 return CupertinoPage(
                   name: 'chat-$nodeId',
-                  child: ChatScreen(
-                    themeId: themeId,
-                    nodeId: nodeId,
-                    title: params.title,
-                    autoTriggerReply: params.autoTriggerReply,
-                    isDocSplit: params.isDocSplit,
+                  child: paletteAware(
+                    () => ChatScreen(
+                      themeId: themeId,
+                      nodeId: nodeId,
+                      title: params.title,
+                      autoTriggerReply: params.autoTriggerReply,
+                      isDocSplit: params.isDocSplit,
+                    ),
                   ),
                 );
               },
@@ -121,10 +127,12 @@ final appRouter = GoRouter(
                 final multiSelect =
                     state.uri.queryParameters['multiSelect'] == 'true';
                 return CupertinoPage(
-                  child: FullTreeScreen(
-                    themeId: themeId,
-                    currentNodeId: currentNodeId,
-                    initialMultiSelect: multiSelect,
+                  child: paletteAware(
+                    () => FullTreeScreen(
+                      themeId: themeId,
+                      currentNodeId: currentNodeId,
+                      initialMultiSelect: multiSelect,
+                    ),
                   ),
                 );
               },
@@ -135,7 +143,9 @@ final appRouter = GoRouter(
                 final themeId = state.pathParameters['themeId']!;
                 return CupertinoPage(
                   name: 'manage-trees-$themeId',
-                  child: ManageTreesScreen(themeId: themeId),
+                  child: paletteAware(
+                    () => ManageTreesScreen(themeId: themeId),
+                  ),
                 );
               },
             ),
@@ -149,10 +159,12 @@ final appRouter = GoRouter(
                 final crossTree =
                     state.uri.queryParameters['crossTree'] == 'true';
                 return CupertinoPage(
-                  child: MergeChatConfirmScreen(
-                    themeId: themeId,
-                    selectedNodes: selectedNodes,
-                    crossTree: crossTree,
+                  child: paletteAware(
+                    () => MergeChatConfirmScreen(
+                      themeId: themeId,
+                      selectedNodes: selectedNodes,
+                      crossTree: crossTree,
+                    ),
                   ),
                 );
               },
@@ -165,7 +177,7 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/notes',
               pageBuilder: (context, state) => CupertinoPage(
-                child: NoteBrowseScreen(),
+                child: paletteAware(() => NoteBrowseScreen()),
               ),
             ),
           ],
@@ -176,26 +188,28 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/lab',
               pageBuilder: (context, state) => CupertinoPage(
-                child: const LabPlaceholderScreen(),
+                child: paletteAware(() => LabPlaceholderScreen()),
               ),
             ),
             GoRoute(
               path: '/lab/keyword-ranking',
               pageBuilder: (context, state) => CupertinoPage(
-                child: const KeywordRankingScreen(),
+                child: paletteAware(() => KeywordRankingScreen()),
               ),
             ),
             GoRoute(
               path: '/lab/keyword-ranking/select-theme',
               pageBuilder: (context, state) => CupertinoPage(
-                child: const ThemeSelectionScreen(),
+                child: paletteAware(() => ThemeSelectionScreen()),
               ),
             ),
             GoRoute(
               path: '/lab/keyword-ranking/select-leaves',
               pageBuilder: (context, state) => CupertinoPage(
-                child: LeafSelectionScreen(
-                  themeId: state.uri.queryParameters['themeId'],
+                child: paletteAware(
+                  () => LeafSelectionScreen(
+                    themeId: state.uri.queryParameters['themeId'],
+                  ),
                 ),
               ),
             ),
@@ -204,20 +218,22 @@ final appRouter = GoRouter(
               pageBuilder: (context, state) {
                 final keyword = state.pathParameters['keyword'] ?? '';
                 return CupertinoPage(
-                  child: KeywordDetailScreen(keyword: keyword),
+                  child: paletteAware(
+                    () => KeywordDetailScreen(keyword: keyword),
+                  ),
                 );
               },
             ),
             GoRoute(
               path: '/lab/user-input-summary',
               pageBuilder: (context, state) => CupertinoPage(
-                child: const UserInputSummaryScreen(),
+                child: paletteAware(() => UserInputSummaryScreen()),
               ),
             ),
             GoRoute(
               path: '/lab/thinking-collision',
               pageBuilder: (context, state) => CupertinoPage(
-                child: const ThinkingCollisionScreen(),
+                child: paletteAware(() => ThinkingCollisionScreen()),
               ),
             ),
           ],
@@ -229,28 +245,28 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       pageBuilder: (context, state) => CupertinoPage(
         name: 'settings',
-        child: const SettingsScreen(),
+        child: paletteAware(() => SettingsScreen()),
       ),
     ),
     GoRoute(
       path: '/settings/keyword-score-prompt',
       parentNavigatorKey: _rootNavigatorKey,
       pageBuilder: (context, state) => CupertinoPage(
-        child: const KeywordScorePromptScreen(),
+        child: paletteAware(() => KeywordScorePromptScreen()),
       ),
     ),
     GoRoute(
       path: '/llm-providers',
       parentNavigatorKey: _rootNavigatorKey,
       pageBuilder: (context, state) => CupertinoPage(
-        child: LlmProvidersScreen(),
+        child: paletteAware(() => LlmProvidersScreen()),
       ),
     ),
     GoRoute(
       path: '/about',
       parentNavigatorKey: _rootNavigatorKey,
       pageBuilder: (context, state) => CupertinoPage(
-        child: const AboutScreen(),
+        child: paletteAware(() => AboutScreen()),
       ),
     ),
   ],
@@ -268,6 +284,8 @@ class _MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(paletteProvider);
+    ref.watch(brightnessProvider);
     // Android 底部导航/导航栏壳；其余平台沿用移动端 Cupertino tab bar 壳。
     if (Platform.isAndroid) {
       return LlmSetupOnboardingHost(

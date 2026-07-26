@@ -630,8 +630,6 @@ class _BackupReminderDebugEntry extends ConsumerWidget {
   }
 }
 
-}
-
 class _ResetFirstLaunchEntry extends ConsumerWidget {
   const _ResetFirstLaunchEntry();
 
