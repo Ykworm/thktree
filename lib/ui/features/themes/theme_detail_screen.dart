@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -276,28 +277,10 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
       final detail = ref.read(themeDetailControllerProvider(widget.themeId)).value;
       if (detail == null) return;
 
-      const systemPrompt = '''
-你是一个文档结构分析助手。用户会提供一段文档文本，你需要：
-1. 分析文档内容，提出 2-3 种不同的拆分维度（如按主题、按逻辑结构、按时间线等）
-2. 每种维度展示完整的树结构
-3. 树结构使用以下 Markdown 格式输出：
-
-## 维度A：[维度名称]
-[维度说明]
-
-- **[节点标题]**
-  [节点内容：该节点的详细说明，2-4句话概括核心信息]
-  - **[子节点标题]**
-    [子节点内容]
-  - **[子节点标题]**
-    [子节点内容]
-- **[节点标题]**
-  [节点内容]
-
-4. 每个维度之间用分隔线（---）隔开
-5. 节点标题用加粗（**标题**），内容紧跟标题后（不加粗，缩进对齐）
-6. 缩进表示层级关系（2空格 = 一级子节点）
-''';
+      final languageCode = LlmPromptLocale.resolve(
+        savedLanguageCode: ref.read(localeProvider)?.languageCode,
+      );
+      final systemPrompt = LlmPrompts.docSplitSystemPrompt(languageCode);
 
       final previewNode = await nodeStore.createChatNode(
         themeId: widget.themeId,

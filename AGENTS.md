@@ -8,7 +8,7 @@
 
 | 模式           | 一句话                                         | skill                  |
 | ------------ | ------------------------------------------- | ---------------------- |
-| **litemode** | 默认日常微改；不开发 integration/e2e 测试脚本；ctsync 先问用户 | `yk-frontend-litemode` |
+| **litemode** | 默认日常微改；不开发 integration/e2e 测试脚本；ctsync 先问用户； merge 后必问是否 cleanup-docs-tmp | `yk-frontend-litemode` |
 | **fullmode** | 完整闭环；开发 integration/e2e 测试脚本；ctsync 必做      | `yk-frontend-fullmode` |
 | **freemode** | 全自由实验；不强制 worktree / `_tmp` / merge         | `yk-frontend-freemode` |
 | **newmode**  | 用户自定义节点组合，行为由组合的节点列表决定                      | `yk-frontend-newmode`  |

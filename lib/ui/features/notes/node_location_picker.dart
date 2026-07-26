@@ -9,6 +9,14 @@ import 'package:thk_tree/ui/core/theme/app_icons.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/core/widgets/thk_alert.dart';
 
+/// Stable on-disk title for the default catch-all theme; display via [_localizedThemeTitle].
+const _kUncategorizedThemeTitle = '未分类';
+
+String _localizedThemeTitle(AppLocalizations l10n, String title) {
+  if (title == _kUncategorizedThemeTitle) return l10n.uncategorized;
+  return title;
+}
+
 class NodeLocationResult {
   final String themeId;
   final String themePath;
@@ -305,7 +313,7 @@ class _NodeLocationPickerContentState
                   itemBuilder: (context, index) {
                     final theme = themes[index];
                     return CupertinoListTile(
-                      title: Text(theme.title),
+                      title: Text(_localizedThemeTitle(l10n, theme.title)),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -587,7 +595,7 @@ class _ThemePickerContentState extends ConsumerState<_ThemePickerContent> {
               itemBuilder: (context, index) {
                 final theme = (_themes ?? [])[index];
                 return CupertinoListTile(
-                  title: Text(theme.title),
+                  title: Text(_localizedThemeTitle(l10n, theme.title)),
                   onTap: () => _selectTheme(theme),
                 );
               },

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:yaml/yaml.dart';
 
+import 'package:thk_tree/data/services/llm_prompts.dart';
+
 enum SessionRole {
   user,
   assistant,
@@ -85,10 +87,15 @@ class SessionDocument {
   /// 对话关联的模型 ID（可为 null，兼容旧文件）
   String? get modelId => frontmatter['modelId'] as String?;
 
-  /// 对话的自定义 system prompt（可为 null，兼容旧文件，fallback 到默认值）
-  String get systemPrompt =>
-      (frontmatter['systemPrompt'] as String?) ??
-          'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.';
+  /// 对话的自定义 system prompt（可为 null，兼容旧文件）
+  String? get customSystemPrompt => frontmatter['systemPrompt'] as String?;
+
+  /// 对话的 system prompt，未自定义时按 [languageCode] 返回默认模板。
+  String systemPromptFor(String languageCode) =>
+      customSystemPrompt ?? LlmPrompts.defaultChatSystemPrompt(languageCode);
+
+  /// 兼容旧调用：未传 locale 时回退英文默认 prompt。
+  String get systemPrompt => systemPromptFor('en');
 }
 
 final _messageHeader = RegExp(

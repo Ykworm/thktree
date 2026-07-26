@@ -1617,6 +1617,62 @@
   "@chatDefaultModel": {
     "description": "Default model config page - chat default model title"
   },
+  "llmSetupOnboardingTitle": "Set Up LLM Models",
+  "@llmSetupOnboardingTitle": {
+    "description": "First-launch dialog title guiding user to LLM settings"
+  },
+  "llmSetupOnboardingMessage": "ThkTree uses large language models for chat, title generation, and summarization. Start in Settings → LLM by adding model providers and choosing default models.",
+  "@llmSetupOnboardingMessage": {
+    "description": "First-launch dialog body explaining why LLM setup is needed"
+  },
+  "llmSetupOnboardingAction": "Go to LLM Settings",
+  "@llmSetupOnboardingAction": {
+    "description": "First-launch dialog primary action"
+  },
+  "llmSetupOnboardingLater": "Later",
+  "@llmSetupOnboardingLater": {
+    "description": "First-launch dialog dismiss action"
+  },
+  "llmProvidersBannerSummary": "Model Providers — connect API keys and fetch models",
+  "@llmProvidersBannerSummary": {
+    "description": "LLM settings page banner summary for providers section"
+  },
+  "llmProvidersBannerDetail": "Add providers such as OpenAI or Anthropic, enter your API key, and fetch the available model list. At least one configured provider is required before chat and other AI features work.",
+  "@llmProvidersBannerDetail": {
+    "description": "LLM settings page banner detail for providers section"
+  },
+  "defaultModelConfigBannerSummary": "Default Model Config — assign a model to each task",
+  "@defaultModelConfigBannerSummary": {
+    "description": "LLM settings page banner summary for default model config section"
+  },
+  "defaultModelConfigBannerDetail": "After providers are set up, choose default models for chat, title generation, and conversation summarization. You can change these anytime.",
+  "@defaultModelConfigBannerDetail": {
+    "description": "LLM settings page banner detail for default model config section"
+  },
+  "chatDefaultModelBannerSummary": "Chat default model — used for new conversations",
+  "@chatDefaultModelBannerSummary": {
+    "description": "Default model config page banner summary for chat default model"
+  },
+  "chatDefaultModelBannerDetail": "Used when you start a new chat or open a conversation that has not selected its own model yet.",
+  "@chatDefaultModelBannerDetail": {
+    "description": "Default model config page banner detail for chat default model"
+  },
+  "titleModelBannerSummary": "Title generation model — used when auto-generating titles",
+  "@titleModelBannerSummary": {
+    "description": "Default model config page banner summary for title model"
+  },
+  "titleModelBannerDetail": "Used when generating titles for notes, branches, or chat sessions.",
+  "@titleModelBannerDetail": {
+    "description": "Default model config page banner detail for title model"
+  },
+  "summaryModelBannerSummary": "Summary model — used when summarizing conversations",
+  "@summaryModelBannerSummary": {
+    "description": "Default model config page banner summary for summary model"
+  },
+  "summaryModelBannerDetail": "Used when summarizing chats to create branch context, session summaries, or note content.",
+  "@summaryModelBannerDetail": {
+    "description": "Default model config page banner detail for summary model"
+  },
   "notSet": "Not set",
   "@notSet": {
     "description": "Generic - not set state"

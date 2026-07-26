@@ -36,49 +36,53 @@ class LlmSettingsScreen extends StatelessWidget {
             ThkBreadcrumbRow(crumbs: _crumbs(l10n)),
             Expanded(
               child: ThkFillCardPageBody(
-                child: ListView.separated(
+                child: ListView(
                   padding: EdgeInsets.zero,
-                  itemCount: 2,
-                  separatorBuilder: (context, index) => Container(
-                    height: 0.5,
-                    margin: const EdgeInsetsDirectional.only(start: 16),
-                    color: AppColors.border,
-                  ),
-                  itemBuilder: (context, index) {
-                    switch (index) {
-                      case 0:
-                        return ThkListTile(
-                          title: l10n.llmProvidersTitle,
-                          backgroundColor: AppColors.surface,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              CupertinoPageRoute(
-                                settings: const RouteSettings(name: 'providers-list'),
-                                builder: (context) => LlmProvidersScreen(
-                                  parentCrumbs: _crumbs(l10n),
-                                ),
-                              ),
-                            );
-                          },
+                  children: [
+                    ThkInfoBanner(
+                      icon: CupertinoIcons.cloud,
+                      summary: l10n.llmProvidersBannerSummary,
+                      details: [l10n.llmProvidersBannerDetail],
+                    ),
+                    ThkListTile(
+                      title: l10n.llmProvidersTitle,
+                      backgroundColor: AppColors.surface,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            settings: const RouteSettings(name: 'providers-list'),
+                            builder: (context) => LlmProvidersScreen(
+                              parentCrumbs: _crumbs(l10n),
+                            ),
+                          ),
                         );
-                      case 1:
-                        return ThkListTile(
-                          title: l10n.defaultModelConfig,
-                          backgroundColor: AppColors.surface,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              CupertinoPageRoute(
-                                settings: const RouteSettings(name: 'default-model-config'),
-                                builder: (context) => DefaultModelConfigScreen(
-                                  parentCrumbs: _crumbs(l10n),
-                                ),
-                              ),
-                            );
-                          },
+                      },
+                    ),
+                    Container(
+                      height: 0.5,
+                      margin: const EdgeInsetsDirectional.only(start: 16),
+                      color: AppColors.border,
+                    ),
+                    ThkInfoBanner(
+                      icon: CupertinoIcons.slider_horizontal_3,
+                      summary: l10n.defaultModelConfigBannerSummary,
+                      details: [l10n.defaultModelConfigBannerDetail],
+                    ),
+                    ThkListTile(
+                      title: l10n.defaultModelConfig,
+                      backgroundColor: AppColors.surface,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            settings: const RouteSettings(name: 'default-model-config'),
+                            builder: (context) => DefaultModelConfigScreen(
+                              parentCrumbs: _crumbs(l10n),
+                            ),
+                          ),
                         );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),

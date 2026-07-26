@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 
 /// 标题命名 / 对话总结服务。
 ///
@@ -9,29 +10,6 @@ import 'package:thk_tree/data/services/llm_client.dart';
 /// 返回完整文本结果。两个方法都是纯函数式，不持有任何状态。
 class TitleSuggestionService {
   TitleSuggestionService._();
-
-  static const _titleSystemPrompt = '''
-你是一个标题命名助手。你的任务是分析用户提供的对话内容，提取其中的核心讨论主题和关键问题，然后生成适合作为新对话标题的候选列表。
-
-分析要求：
-1. 重点关注用户在对话中提出的核心问题、讨论的主要话题、以及对话的目标或方向。
-2. 识别对话中的关键概念、技术术语、或决策点。
-3. 标题应该能让用户快速回忆起这段对话的核心内容。
-
-输出要求：
-1. 候选数量由你根据内容复杂度自行判断（1~20 个），内容越丰富/分支越多可以多给几个。
-2. 每个标题必须控制在 30 个字符以内（中文按字数、英文按字符数）。
-3. 标题要简洁、聚焦、信息密度高，能让用户一眼看出新对话的主题或切入角度。
-4. 严格按"每行一个标题"输出，不要带编号、不要带引号、不要带任何额外说明文字。
-5. 输出语言与用户给定的内容保持一致。''';
-
-  static const _summarySystemPrompt = '''
-你是一个对话总结助手。给定一段用户与助手的完整对话，请生成一段简洁的总结，
-作为新对话的上下文起点。要求：
-1. 保留对话中讨论的关键事实、结论、术语、决定。
-2. 控制在合理篇幅（一般 300~800 字），语言简洁清晰，不要冗长。
-3. 不要添加原对话中没有的信息，不要替用户做判断。
-4. 使用与对话相同的语言输出。''';
 
   /// 估算文本的 token 数量
   ///
@@ -84,7 +62,11 @@ class TitleSuggestionService {
   /// 2. 否则从尾部按消息边界向前裁剪，直到总 token 落在 90% 内
   /// 3. 如果裁完仍超（单条消息本身过长），直接砍掉最早 20% 的消息
   /// 4. 裁剪后在开头插入标记
-  static String _truncateByMessages(String transcript, int contextWindow) {
+  static String _truncateByMessages(
+    String transcript,
+    int contextWindow,
+    String languageCode,
+  ) {
     if (transcript.isEmpty) return transcript;
 
     // 如果 context window 未知（0），使用保守默认值 32K
@@ -99,7 +81,7 @@ class TitleSuggestionService {
     // 按消息边界分割（## user 或 ## assistant）
     final messagePattern = RegExp(r'^## (user|assistant) ·', multiLine: true);
     final messageBoundaries = <int>[];
-    
+
     for (final match in messagePattern.allMatches(transcript)) {
       messageBoundaries.add(match.start);
     }
@@ -107,21 +89,21 @@ class TitleSuggestionService {
     // 如果找不到消息边界，直接截断尾部
     if (messageBoundaries.isEmpty) {
       final truncatedLength = (transcript.length * maxTokens / totalTokens).round();
-      return '${transcript.substring(0, truncatedLength)}\n\n[...content truncated due to length...]';
+      return '${transcript.substring(0, truncatedLength)}${LlmPrompts.truncatedContentSuffix(languageCode)}';
     }
 
     // 从尾部向前裁剪消息
     int currentEnd = transcript.length;
     int currentTokens = totalTokens;
-    
+
     for (int i = messageBoundaries.length - 1; i >= 0 && currentTokens > maxTokens; i--) {
       final messageStart = messageBoundaries[i];
-      final messageEnd = (i < messageBoundaries.length - 1) 
-          ? messageBoundaries[i + 1] 
+      final messageEnd = (i < messageBoundaries.length - 1)
+          ? messageBoundaries[i + 1]
           : transcript.length;
       final messageContent = transcript.substring(messageStart, messageEnd);
       final messageTokens = _estimateTokens(messageContent);
-      
+
       currentTokens -= messageTokens;
       currentEnd = messageStart;
     }
@@ -136,17 +118,19 @@ class TitleSuggestionService {
       }
     }
 
-    return '[Earlier messages omitted due to length]\n\n$truncated';
+    return '${LlmPrompts.truncatedTranscriptPrefix(languageCode)}$truncated';
   }
 
   /// 生成 1-20 个候选 title。
   ///
   /// [content] 是用于生成标题的原始内容（选中文本 / 笔记 / 对话总结等）。
   /// [direction] 是可选的方向引导，例如"更聚焦技术实现"。
+  /// [languageCode] 决定 system/user prompt 语言（`en` / `zh`）。
   /// 关闭 stream 后按行解析，filter 空行 / 超长行，上限 20 个。
   static Future<List<String>> generateTitles({
     required String content,
     String? direction,
+    required String languageCode,
     required LlmProviderConfig provider,
     required String modelId,
     required String apiKey,
@@ -154,15 +138,19 @@ class TitleSuggestionService {
     CancelToken? cancelToken,
   }) async {
     final client = LlmClient.forConfig(provider, model: modelId);
-    
+
     // 对内容应用截断（如果超长）
-    final truncatedContent = _truncateByMessages(content, contextWindow);
-    
+    final truncatedContent = _truncateByMessages(content, contextWindow, languageCode);
+
     final messages = <Map<String, Object?>>[
-      {'role': 'system', 'content': _titleSystemPrompt},
+      {'role': 'system', 'content': LlmPrompts.titleSystemPrompt(languageCode)},
       {
         'role': 'user',
-        'content': _buildTitleUserPrompt(content: truncatedContent, direction: direction),
+        'content': LlmPrompts.titleUserPrompt(
+          languageCode: languageCode,
+          content: truncatedContent,
+          direction: direction,
+        ),
       },
     ];
 
@@ -186,6 +174,7 @@ class TitleSuggestionService {
   /// 新 child chat node 的首条 user 消息。
   static Future<String> summarizeContent({
     required String transcript,
+    required String languageCode,
     required LlmProviderConfig provider,
     required String modelId,
     required String apiKey,
@@ -193,15 +182,22 @@ class TitleSuggestionService {
     CancelToken? cancelToken,
   }) async {
     final client = LlmClient.forConfig(provider, model: modelId);
-    
+
     // 对对话内容应用截断（如果超长）
-    final truncatedTranscript = _truncateByMessages(transcript, contextWindow);
-    
+    final truncatedTranscript =
+        _truncateByMessages(transcript, contextWindow, languageCode);
+
     final messages = <Map<String, Object?>>[
-      {'role': 'system', 'content': _summarySystemPrompt},
+      {
+        'role': 'system',
+        'content': LlmPrompts.conversationSummarySystemPrompt(languageCode),
+      },
       {
         'role': 'user',
-        'content': '请总结以下对话：\n\n---\n$truncatedTranscript',
+        'content': LlmPrompts.conversationSummaryUserPrompt(
+          languageCode: languageCode,
+          transcript: truncatedTranscript,
+        ),
       },
     ];
 
@@ -250,22 +246,5 @@ class TitleSuggestionService {
       if (result.length >= 20) break;
     }
     return result;
-  }
-
-  static String _buildTitleUserPrompt({
-    required String content,
-    String? direction,
-  }) {
-    final buf = StringBuffer();
-    buf.writeln('请基于以下内容生成候选标题：');
-    buf.writeln();
-    buf.writeln('---');
-    buf.writeln(content);
-    buf.writeln('---');
-    if (direction != null && direction.trim().isNotEmpty) {
-      buf.writeln();
-      buf.writeln('方向引导：${direction.trim()}');
-    }
-    return buf.toString();
   }
 }

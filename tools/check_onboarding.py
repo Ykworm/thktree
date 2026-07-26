@@ -57,7 +57,7 @@ def run_cmd(cmd, capture=True):
 
 
 def check_skills_lock():
-    """检查 skills-lock.json 中声明的技能是否已同步到 .qoder/skills/"""
+    """检查 skills-lock.json 中声明的技能是否已通过 ykskill 链接到 .agents/skills/"""
     print_header("技能配置检查")
 
     lock_path = Path("skills-lock.json")
@@ -77,22 +77,53 @@ def check_skills_lock():
         print_warn("skills-lock.json 中没有声明任何技能")
         return True
 
-    qoder_skills_dir = Path(".qoder/skills")
+    agents_skills_dir = Path(".agents/skills")
+    ykskill_root = os.environ.get(
+        "YKSKILL_ROOT",
+        lock_data.get("ykskillRoot", "/Users/yuweikang/dev/ykcode/ykskill"),
+    )
     all_ok = True
 
     for skill_name, skill_info in skills.items():
-        source = skill_info.get("source", "")
+        if isinstance(skill_info, dict) and skill_info.get("local"):
+            skill_file = agents_skills_dir / skill_name / "SKILL.md"
+            if skill_file.exists():
+                print_ok(f"本地技能: {skill_name}")
+            else:
+                print_fail(
+                    f"本地技能缺失: {skill_name}",
+                    f"请在 .agents/skills/{skill_name}/ 添加 SKILL.md",
+                )
+                all_ok = False
+            continue
 
-        # 检查 .qoder/skills/ 下是否存在
-        skill_file = qoder_skills_dir / skill_name / "SKILL.md"
+        skill_link = agents_skills_dir / skill_name
+        skill_file = skill_link / "SKILL.md"
 
         if skill_file.exists():
-            print_ok(f"技能已同步: {skill_name}")
+            if skill_link.is_symlink():
+                target = os.path.realpath(skill_link)
+                if target.startswith(ykskill_root):
+                    print_ok(f"技能已链接: {skill_name}")
+                else:
+                    print_warn(
+                        f"技能已链接但源不在 ykskill: {skill_name}",
+                        f"当前指向 {target}",
+                    )
+            else:
+                print_warn(
+                    f"技能存在但未链接到 ykskill: {skill_name}",
+                    "建议运行: bash /Users/yuweikang/dev/ykcode/ykskill/tools/link-skills.sh . --force",
+                )
         else:
+            tier = skill_info if isinstance(skill_info, str) else skill_info.get("tier", "shared")
+            expected = os.path.join(ykskill_root, tier, skill_name)
             print_fail(
-                f"技能未同步: {skill_name}",
-                f"请从 {source} 复制到 .qoder/skills/{skill_name}/"
+                f"技能未链接: {skill_name}",
+                f"运行: bash /Users/yuweikang/dev/ykcode/ykskill/tools/link-skills.sh . --force",
             )
+            if not os.path.isdir(expected):
+                print_warn(f"ykskill 源也不存在: {expected}")
             all_ok = False
 
     return all_ok

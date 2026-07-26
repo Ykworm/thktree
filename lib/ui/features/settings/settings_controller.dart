@@ -99,6 +99,19 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     state = AsyncData(await store.load());
   }
 
+  Future<void> markLlmSetupOnboardingShown() async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveLlmSetupOnboardingShown(true);
+    state = AsyncData(await store.load());
+  }
+
+  /// Dev 调试：重置首次 LLM 引导，模拟第一次打开 App
+  Future<void> resetFirstLaunchOnboarding() async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveLlmSetupOnboardingShown(false);
+    state = AsyncData(await store.load());
+  }
+
   /// Dev 调试：将下次提醒日期设为昨天，方便测试横幅显示
   Future<void> triggerBackupReminderDebug() async {
     final store = ref.read(settingsStoreProvider);

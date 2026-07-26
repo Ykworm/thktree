@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/title_suggestion_service.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
@@ -221,6 +222,7 @@ class AutoTitleController extends AsyncNotifier<AutoTitleState> {
     final candidates = await TitleSuggestionService.generateTitles(
       content: transcript,
       direction: null,
+      languageCode: ref.llmLanguageCode,
       provider: provider,
       modelId: modelId,
       apiKey: apiKey,

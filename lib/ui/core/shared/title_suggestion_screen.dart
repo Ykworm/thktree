@@ -12,6 +12,7 @@ import 'package:thk_tree/data/models/llm_error.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/services/title_suggestion_service.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/ui/core/app_logger.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/shared/llm_setup_check.dart';
@@ -291,6 +292,7 @@ class _TitleSuggestionScreenState extends ConsumerState<TitleSuggestionScreen> {
       final candidates = await TitleSuggestionService.generateTitles(
         content: widget.request.sourceContent,
         direction: direction,
+        languageCode: ref.llmLanguageCode,
         provider: provider,
         modelId: modelId,
         apiKey: apiKey,
@@ -1261,6 +1263,9 @@ Future<String?> _summarizeWithLifecycleAndRetry({
         message: l10n.summarizing,
         action: () => TitleSuggestionService.summarizeContent(
           transcript: transcript,
+          languageCode: LlmPromptLocale.resolve(
+            savedLanguageCode: Localizations.localeOf(context).languageCode,
+          ),
           provider: provider,
           modelId: modelId,
           apiKey: apiKey,

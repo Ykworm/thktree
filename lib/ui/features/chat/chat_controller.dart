@@ -13,6 +13,7 @@ import 'package:thk_tree/data/models/model_capabilities.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 import 'package:thk_tree/data/services/chat_task_service.dart';
 import 'package:thk_tree/data/services/image_service.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 class ChatControllerParams {
@@ -50,8 +51,8 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
   // 当前对话的深度思考开关（per-session in-memory，默认关）
   bool _deepThinkingEnabled = false;
 
-  /// 缓存当前对话的 system prompt
-  String _systemPrompt = 'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.';
+  /// 缓存当前对话的 system prompt（[_loadSessionModel] 会按 locale 刷新）
+  String _systemPrompt = LlmPrompts.defaultChatSystemPrompt('en');
 
   /// 当前对话关联的 providerId（可为 null 表示使用全局设置）
   String? get providerId => _providerId;
@@ -157,7 +158,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       final doc = await store.readSession(nodeId);
       _providerId = doc.providerId;
       _modelId = doc.modelId;
-      _systemPrompt = doc.systemPrompt;
+      _systemPrompt = doc.systemPromptFor(ref.llmLanguageCode);
       // 加载提供商类型
       if (_providerId != null) {
         final configStore = ref.read(llmConfigStoreProvider);
@@ -171,7 +172,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
       _providerId = null;
       _modelId = null;
       _providerType = null;
-      _systemPrompt = 'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.';
+      _systemPrompt = LlmPrompts.defaultChatSystemPrompt(ref.llmLanguageCode);
     }
   }
 

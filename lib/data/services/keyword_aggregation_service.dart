@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 
 /// Prompt B 输入：程序预计算的某个 unique keyword 的跨域统计字段。
 ///
@@ -59,41 +60,6 @@ class KeywordAggregationException implements Exception {
 class KeywordAggregationService {
   KeywordAggregationService();
 
-  /// Prompt B system prompt 前缀（注入用户 score prompt 之前）。
-  static const String _systemPrefix = '''
-[SYSTEM - 固定]
-你是关键词聚合评分助手。输入是一组 unique keywords 及其跨域统计。
-
-[TASK - 固定]
-对每个 keyword：
-1. 统计字段（cross_theme_count / cross_leaf_count / depth_avg / stale_ratio）必须原样输出输入值，不得修改
-2. score 字段根据下方"用户模板"计算（0.0-1.0 浮点）
-
-[USER_TEMPLATE - 用户可编辑]
-''';
-
-  /// Prompt B system prompt 后缀（注入用户 score prompt 之后）。
-  static const String _systemSuffix = '''
-
-[OUTPUT_FORMAT - 固定]
-严格 JSON 数组，每个元素含字段：
-keyword (string), cross_theme_count (int), cross_leaf_count (int), depth_avg (number), stale_ratio (number 0-1), score (number 0-1)
-
-字段顺序固定，类型严格。
-
-[CONSTRAINT - 固定]
-- 统计字段（除 score 外）必须等于输入值：
-  - cross_theme_count (int)：严格整数比较
-  - cross_leaf_count (int)：严格整数比较
-  - depth_avg (number)：浮点容差比较（abs(a - b) < 1e-6）
-  - stale_ratio (number)：浮点容差比较（abs(a - b) < 1e-6）
-  - 重要：浮点字段原样复制，不要四舍五入或截断
-- score ∈ [0.0, 1.0]
-- keyword 必须来自输入数据
-- 不得新增、删除、修改 keyword
-- 输出 JSON 数组，不要 markdown 代码块包裹
-''';
-
   /// 聚合 unique keywords 并计算每个的 score。
   ///
   /// [inputs] 必填且非空；[scorePrompt] 用作 LLM 评判 score 的逻辑。
@@ -102,6 +68,7 @@ keyword (string), cross_theme_count (int), cross_leaf_count (int), depth_avg (nu
   Future<List<GlobalKeywordEntry>> aggregate({
     required List<ScoreAggregationInput> inputs,
     required String scorePrompt,
+    required String languageCode,
     required LlmProviderConfig provider,
     required String modelId,
     required String apiKey,
@@ -111,14 +78,19 @@ keyword (string), cross_theme_count (int), cross_leaf_count (int), depth_avg (nu
     if (inputs.isEmpty) return const [];
 
     final client = LlmClient.forConfig(provider, model: modelId);
-    final systemPrompt = _systemPrefix + scorePrompt + _systemSuffix;
+    final systemPrompt = LlmPrompts.keywordAggregationSystemPrefix(languageCode) +
+        scorePrompt +
+        LlmPrompts.keywordAggregationSystemSuffix(languageCode);
     final inputJson = jsonEncode(inputs.map((i) => i.toJson()).toList());
 
     final messages = <Map<String, Object?>>[
       {'role': 'system', 'content': systemPrompt},
       {
         'role': 'user',
-        'content': '输入数据（JSON）：\n$inputJson\n\n输出：',
+        'content': LlmPrompts.keywordAggregationUserPrompt(
+          languageCode: languageCode,
+          inputJson: inputJson,
+        ),
       },
     ];
 

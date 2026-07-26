@@ -579,4 +579,9 @@ class _InMemorySettingsStore implements SettingsStore {
   Future<void> saveBackupReminderIntervalDays(int days) async {
     _settings = _settings.copyWith(backupReminderIntervalDays: days);
   }
+
+  @override
+  Future<void> saveLlmSetupOnboardingShown(bool shown) async {
+    _settings = _settings.copyWith(llmSetupOnboardingShown: shown);
+  }
 }

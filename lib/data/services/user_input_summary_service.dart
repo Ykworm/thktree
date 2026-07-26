@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/data/services/session_markdown.dart';
 
 /// 扫描到的单条 user input 记录。
@@ -31,21 +32,6 @@ class UserInputRecord {
 /// 3. 收集 user role 消息，调用 LLM 分类总结
 class UserInputSummaryService {
   const UserInputSummaryService._();
-
-  static const _summarySystemPrompt = '''
-你是一个用户输入分析助手。给定用户在过去一段时间内的所有输入内容，请完成以下任务：
-
-1. 将这些输入按主题/领域归类（自动判断类别，不需要预定义）
-2. 每个类别用一行标题 + 若干要点概括用户的主要关注点
-3. 要点应忠实反映用户的原始输入，不要添加用户没有提到的信息
-4. 使用与用户输入相同的语言输出
-5. 如果用户输入很少（少于 3 条），直接逐条列出，不需要归类
-
-输出格式要求（严格遵守）：
-- 每个类别以 "类别名称相关内容：" 开头
-- 每个要点以 "  * " 开头（两个空格 + 星号 + 空格）
-- 不要输出其他格式化内容（不要标题、不要编号、不要分隔线）
-- 不要输出 ``` 代码块标记''';
 
   /// 扫描指定天数内的所有 user inputs。
   ///
@@ -113,24 +99,12 @@ class UserInputSummaryService {
     return results;
   }
 
-  /// 将 user inputs 拼接为 LLM 输入文本。
-  static String _buildUserPrompt(List<UserInputRecord> inputs) {
-    final buf = StringBuffer();
-    buf.writeln('以下是用户在过去一段时间内的所有输入（共 ${inputs.length} 条）：');
-    buf.writeln();
-    for (var i = 0; i < inputs.length; i++) {
-      final input = inputs[i];
-      final dateStr = input.timestamp.toLocal().toString().substring(0, 16);
-      buf.writeln('[$dateStr] ${input.content}');
-    }
-    return buf.toString();
-  }
-
   /// 调用 LLM 生成分类总结报告。
   ///
   /// 返回 Markdown 格式的报告文本。
   static Future<String> generateReport({
     required List<UserInputRecord> inputs,
+    required String languageCode,
     required LlmProviderConfig provider,
     required String modelId,
     required String apiKey,
@@ -140,10 +114,19 @@ class UserInputSummaryService {
     final client = LlmClient.forConfig(provider, model: modelId);
 
     final messages = <Map<String, Object?>>[
-      {'role': 'system', 'content': _summarySystemPrompt},
+      {
+        'role': 'system',
+        'content': LlmPrompts.userInputSummarySystemPrompt(languageCode),
+      },
       {
         'role': 'user',
-        'content': _buildUserPrompt(inputs),
+        'content': LlmPrompts.userInputSummaryUserPrompt(
+          languageCode: languageCode,
+          inputs: [
+            for (final input in inputs)
+              (timestamp: input.timestamp, content: input.content),
+          ],
+        ),
       },
     ];
 

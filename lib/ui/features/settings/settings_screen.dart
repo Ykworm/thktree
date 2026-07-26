@@ -21,6 +21,7 @@ import 'package:thk_tree/ui/features/settings/keyword_score_prompt_screen.dart';
 import 'package:thk_tree/ui/features/settings/tts_settings_screen.dart';
 import 'package:thk_tree/data/services/export_service.dart';
 import 'package:thk_tree/ui/features/settings/clean_images_screen.dart';
+import 'package:thk_tree/ui/features/settings/llm_setup_onboarding.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:thk_tree/data/services/import_service.dart';
@@ -83,6 +84,8 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               _DarkModeToggle(),
               _BackupReminderDebugEntry(),
+              _ResetFirstLaunchEntry(),
+              _ClearAllThemesAndNotesEntry(),
             ],
           ),
         ],
@@ -487,6 +490,136 @@ class _BackupReminderDebugEntry extends ConsumerWidget {
       onTap: () {
         ref.read(settingsControllerProvider.notifier).triggerBackupReminderDebug();
       },
+    );
+  }
+}
+
+class _ResetFirstLaunchEntry extends ConsumerWidget {
+  const _ResetFirstLaunchEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ThkListTile(
+      leading: const Icon(CupertinoIcons.arrow_counterclockwise),
+      title: 'Reset First-Launch Onboarding',
+      subtitle: 'Show LLM setup prompt again (like first open)',
+      onTap: () async {
+        await ref
+            .read(settingsControllerProvider.notifier)
+            .resetFirstLaunchOnboarding();
+        ref.read(llmSetupOnboardingRecheckProvider.notifier).bump();
+        if (!context.mounted) return;
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: const Text('First launch reset'),
+            content: const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Switch to the Search tab to see the LLM setup prompt again.',
+              ),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ClearAllThemesAndNotesEntry extends ConsumerWidget {
+  const _ClearAllThemesAndNotesEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return ThkListTile(
+      leading: Icon(CupertinoIcons.trash, color: AppColors.destructive),
+      title: 'Clear All Themes & Notes',
+      subtitle: 'Delete every theme and note, keep settings',
+      onTap: () => _confirmClear(context, ref, l10n),
+    );
+  }
+
+  void _confirmClear(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('Clear All Themes & Notes'),
+        content: const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            'This will permanently delete all themes and notes on this device. '
+            'Settings, LLM config, and pins are not affected.',
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              if (!context.mounted) return;
+
+              final navigator = Navigator.of(context, rootNavigator: true);
+              unawaited(
+                showCupertinoDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const CupertinoAlertDialog(
+                    content: Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: CupertinoActivityIndicator(),
+                    ),
+                  ),
+                ).then((_) {}).catchError((_) {}),
+              );
+
+              Object? error;
+              try {
+                await ref
+                    .read(themeListControllerProvider.notifier)
+                    .clearAllThemesAndNotes();
+              } catch (e) {
+                error = e;
+              } finally {
+                if (navigator.canPop()) {
+                  navigator.pop();
+                }
+              }
+
+              if (!context.mounted) return;
+              showCupertinoDialog<void>(
+                context: context,
+                builder: (ctx) => CupertinoAlertDialog(
+                  title: Text(error == null ? l10n.success : l10n.error),
+                  content: error == null
+                      ? const Text('All themes and notes have been cleared.')
+                      : Text(error.toString()),
+                  actions: [
+                    CupertinoDialogAction(
+                      isDefaultAction: true,
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text(l10n.ok),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1167,6 +1167,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatDefaultModel => '聊天默认模型';
 
   @override
+  String get llmSetupOnboardingTitle => '配置大模型';
+
+  @override
+  String get llmSetupOnboardingMessage =>
+      'ThkTree 的聊天、标题生成和对话总结都需要大模型。请先在「设置 → 大模型」中添加模型提供商并配置默认模型。';
+
+  @override
+  String get llmSetupOnboardingAction => '前往大模型设置';
+
+  @override
+  String get llmSetupOnboardingLater => '稍后再说';
+
+  @override
+  String get llmProvidersBannerSummary => '模型提供商：连接 API Key 并获取可用模型';
+
+  @override
+  String get llmProvidersBannerDetail =>
+      '添加 OpenAI、Anthropic 等提供商，填写 API Key 后拉取模型列表。至少配置好一个提供商，聊天等 AI 功能才能使用。';
+
+  @override
+  String get defaultModelConfigBannerSummary => '默认模型配置：为不同任务指定默认模型';
+
+  @override
+  String get defaultModelConfigBannerDetail =>
+      '提供商配置完成后，在这里为聊天、标题生成、对话总结分别选择默认模型。之后随时可改。';
+
+  @override
+  String get chatDefaultModelBannerSummary => '聊天默认模型：新对话或未指定模型时使用';
+
+  @override
+  String get chatDefaultModelBannerDetail => '打开新对话、或当前会话没有单独选过模型时，会使用这里设置的模型。';
+
+  @override
+  String get titleModelBannerSummary => '标题生成模型：自动生成标题时使用';
+
+  @override
+  String get titleModelBannerDetail => '为笔记、分支或对话生成标题时调用此模型。';
+
+  @override
+  String get summaryModelBannerSummary => '对话总结模型：总结对话内容时使用';
+
+  @override
+  String get summaryModelBannerDetail => '创建分支、生成上下文摘要或把对话写入笔记时会调用此模型。';
+
+  @override
   String get notSet => '未设置';
 
   @override

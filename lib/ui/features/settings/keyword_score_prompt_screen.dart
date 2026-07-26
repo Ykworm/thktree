@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
@@ -47,7 +48,10 @@ class _KeywordScorePromptScreenState
       final globalStorage =
           ref.read(keywordGlobalStorageProvider).requireValue;
       final file = await globalStorage.loadOrInit();
-      _controller.text = file.scorePrompt ?? KeywordGlobalFile.defaultScorePrompt;
+      final languageCode = ref.llmLanguageCode;
+      final defaultPrompt = KeywordGlobalFile.defaultScorePromptFor(languageCode);
+      _controller.text =
+          file.scorePromptIsDefault ? defaultPrompt : (file.scorePrompt ?? defaultPrompt);
       _isDefault = file.scorePromptIsDefault;
       if (mounted) {
         setState(() => _isLoading = false);
@@ -172,21 +176,23 @@ class _KeywordScorePromptScreenState
 
   void _resetToDefault() {
     setState(() {
-      _controller.text = KeywordGlobalFile.defaultScorePrompt;
+      _controller.text =
+          KeywordGlobalFile.defaultScorePromptFor(ref.llmLanguageCode);
       _isDefault = true;
     });
   }
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
+    final defaultPrompt =
+        KeywordGlobalFile.defaultScorePromptFor(ref.llmLanguageCode);
 
     try {
       final globalStorage =
           ref.read(keywordGlobalStorageProvider).requireValue;
       await globalStorage.updateAsync((current) {
         current.scorePrompt = _controller.text;
-        current.scorePromptIsDefault =
-            _controller.text == KeywordGlobalFile.defaultScorePrompt;
+        current.scorePromptIsDefault = _controller.text == defaultPrompt;
         return current;
       });
 

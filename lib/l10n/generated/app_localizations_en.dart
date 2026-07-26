@@ -1218,6 +1218,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatDefaultModel => 'Chat Default Model';
 
   @override
+  String get llmSetupOnboardingTitle => 'Set Up LLM Models';
+
+  @override
+  String get llmSetupOnboardingMessage =>
+      'ThkTree uses large language models for chat, title generation, and summarization. Start in Settings → LLM by adding model providers and choosing default models.';
+
+  @override
+  String get llmSetupOnboardingAction => 'Go to LLM Settings';
+
+  @override
+  String get llmSetupOnboardingLater => 'Later';
+
+  @override
+  String get llmProvidersBannerSummary =>
+      'Model Providers — connect API keys and fetch models';
+
+  @override
+  String get llmProvidersBannerDetail =>
+      'Add providers such as OpenAI or Anthropic, enter your API key, and fetch the available model list. At least one configured provider is required before chat and other AI features work.';
+
+  @override
+  String get defaultModelConfigBannerSummary =>
+      'Default Model Config — assign a model to each task';
+
+  @override
+  String get defaultModelConfigBannerDetail =>
+      'After providers are set up, choose default models for chat, title generation, and conversation summarization. You can change these anytime.';
+
+  @override
+  String get chatDefaultModelBannerSummary =>
+      'Chat default model — used for new conversations';
+
+  @override
+  String get chatDefaultModelBannerDetail =>
+      'Used when you start a new chat or open a conversation that has not selected its own model yet.';
+
+  @override
+  String get titleModelBannerSummary =>
+      'Title generation model — used when auto-generating titles';
+
+  @override
+  String get titleModelBannerDetail =>
+      'Used when generating titles for notes, branches, or chat sessions.';
+
+  @override
+  String get summaryModelBannerSummary =>
+      'Summary model — used when summarizing conversations';
+
+  @override
+  String get summaryModelBannerDetail =>
+      'Used when summarizing chats to create branch context, session summaries, or note content.';
+
+  @override
   String get notSet => 'Not set';
 
   @override

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:thk_tree/data/services/keyword_storage_utils.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 
 /// 反向索引中的一条记录：某个 keyword 在某个 leaf 中的关联。
 class KeywordLeafRef {
@@ -87,13 +88,18 @@ class KeywordGlobalFile {
 
   /// 默认 score 计算逻辑（用户首次编辑前的内置 sample）。
   /// 与设计文档 § 4.2 默认模板完全对齐。
-  static const String defaultScorePrompt =
+  static const String defaultScorePrompt = defaultScorePromptZh;
+
+  static const String defaultScorePromptZh =
       '基于以下因素综合判断 0-1 分数：\n'
       '- 跨主题数 cross_theme_count：越多越重要（最高权重）\n'
       '- 总 leaf 数 cross_leaf_count：越多越重要\n'
       '- 涉及主题平均树深度 depth_avg：越深越说明用户在深度思考该主题\n'
       '- stale 占比 stale_ratio：stale 越多适当降权（说明内容频繁变化、未稳定）\n\n'
       '综合权衡，输出 0-1 浮点。';
+
+  static String defaultScorePromptFor(String languageCode) =>
+      LlmPrompts.defaultKeywordScorePrompt(languageCode);
 
   DateTime? updatedAt;
   String? scorePrompt;

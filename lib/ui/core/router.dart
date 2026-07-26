@@ -34,6 +34,7 @@ import 'package:thk_tree/ui/features/themes/merge_chat_confirm_screen.dart';
 import 'package:thk_tree/domain/node.dart';
 import 'package:thk_tree/ui/features/about/about_screen.dart';
 import 'package:thk_tree/ui/features/search/search_screen.dart';
+import 'package:thk_tree/ui/features/settings/llm_setup_onboarding.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _themesNavigatorKey = GlobalKey<NavigatorState>();
@@ -269,7 +270,10 @@ class _MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Android 底部导航/导航栏壳；其余平台沿用移动端 Cupertino tab bar 壳。
     if (Platform.isAndroid) {
-      return AndroidNavigationShell(navigationShell: navigationShell);
+      return LlmSetupOnboardingHost(
+        searchTabActive: navigationShell.currentIndex == 0,
+        child: AndroidNavigationShell(navigationShell: navigationShell),
+      );
     }
     final l10n = AppLocalizations.of(context)!;
     final mq = MediaQuery.of(context);
@@ -286,30 +290,33 @@ class _MainShell extends ConsumerWidget {
               bottom: mq.padding.bottom + AppGlass.tabBarContentHeight,
             ),
           );
-    return CupertinoPageScaffold(
-      backgroundColor: AppColors.pageBg,
-      resizeToAvoidBottomInset: false,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          MediaQuery(
-            data: contentMq,
-            child: navigationShell,
-          ),
-          // 对照栏把手：仅 Themes(1) / Notes(2) tab 显示；挂在 shell 层，
-          // 分支内 push 的页面（笔记编辑器、详情页等）也盖不住它
-          if (navigationShell.currentIndex == 1 ||
-              navigationShell.currentIndex == 2)
-            const ShellPinEdgeHandle(),
-          if (!keyboardOpen)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: tabOverlayHeight,
-              child: _buildTabBar(context, l10n),
+    return LlmSetupOnboardingHost(
+      searchTabActive: navigationShell.currentIndex == 0,
+      child: CupertinoPageScaffold(
+        backgroundColor: AppColors.pageBg,
+        resizeToAvoidBottomInset: false,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            MediaQuery(
+              data: contentMq,
+              child: navigationShell,
             ),
-        ],
+            // 对照栏把手：仅 Themes(1) / Notes(2) tab 显示；挂在 shell 层，
+            // 分支内 push 的页面（笔记编辑器、详情页等）也盖不住它
+            if (navigationShell.currentIndex == 1 ||
+                navigationShell.currentIndex == 2)
+              const ShellPinEdgeHandle(),
+            if (!keyboardOpen)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: tabOverlayHeight,
+                child: _buildTabBar(context, l10n),
+              ),
+          ],
+        ),
       ),
     );
   }

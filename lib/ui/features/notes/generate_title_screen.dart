@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/title_suggestion_service.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/data/stores/note_store.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -86,6 +87,7 @@ class _GenerateTitleScreenState extends ConsumerState<GenerateTitleScreen> {
     try {
       final candidates = await TitleSuggestionService.generateTitles(
         content: '${widget.currentTitle}\n\n${widget.body}',
+        languageCode: ref.llmLanguageCode,
         provider: provider,
         modelId: modelId,
         apiKey: apiKey,

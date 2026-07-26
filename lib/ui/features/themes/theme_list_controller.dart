@@ -88,6 +88,40 @@ class ThemeListController extends AsyncNotifier<List<ThemeEntity>> {
     await store.renameTheme(themeId: themeId, title: title);
     state = AsyncData(await _loadPreviews(await store.listThemes()));
   }
+
+  /// Dev-only: delete all themes (including notes on disk), clear related DB
+  /// tables, reset keyword index, and recreate the default "未分类" theme.
+  Future<void> clearAllThemesAndNotes() async {
+    final store = await ref.read(themeStoreProvider.future);
+    final paths = await ref.read(appPathsProvider.future);
+    final db = await ref.read(appDatabaseProvider.future);
+
+    try {
+      final globalStorage = await ref.read(keywordGlobalStorageProvider.future);
+      await globalStorage.updateAsync((current) {
+        current.keywords.clear();
+        current.keywordLeafMap.clear();
+        return current;
+      });
+    } catch (_) {}
+
+    if (await paths.themesDir.exists()) {
+      await paths.themesDir.delete(recursive: true);
+    }
+    await paths.themesDir.create(recursive: true);
+
+    await db.db.transaction((txn) async {
+      await txn.delete('search_index');
+      await txn.delete('nodes');
+      await txn.delete('themes');
+    });
+
+    await store.createTheme(title: '未分类');
+
+    ref.read(noteListVersionProvider.notifier).bump();
+    ref.invalidate(searchServiceProvider);
+    state = AsyncData(await _loadPreviews(await store.listThemes()));
+  }
 }
 
 final themeListControllerProvider =

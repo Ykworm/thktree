@@ -1,25 +1,35 @@
 {
-  "version": 1,
+  "version": 2,
+  "ykskillRoot": "/Users/yuweikang/dev/ykcode/ykskill",
   "skills": {
-    "flutter-dev": {
-      "source": "/Users/yuweikang/dev/ykcode/ThkTree/.agents/skills",
-      "sourceType": "local",
-      "computedHash": "placeholder"
-    },
-    "fullstack-dev": {
-      "source": "/Users/yuweikang/dev/ykcode/ThkTree/.agents/skills",
-      "sourceType": "local",
-      "computedHash": "placeholder"
-    },
-    "ios-application-dev": {
-      "source": "/Users/yuweikang/dev/ykcode/ThkTree/.agents/skills",
-      "sourceType": "local",
-      "computedHash": "placeholder"
-    },
-    "minimax-multimodal-toolkit": {
-      "source": "/Users/yuweikang/dev/ykcode/ThkTree/.agents/skills",
-      "sourceType": "local",
-      "computedHash": "placeholder"
-    }
+    "android-native-dev": "shared",
+    "chinese-code-review": "shared",
+    "chinese-commit-conventions": "shared",
+    "chinese-documentation": "shared",
+    "chinese-git-workflow": "shared",
+    "flutter-add-integration-test": "shared",
+    "flutter-add-widget-preview": "shared",
+    "flutter-add-widget-test": "shared",
+    "flutter-apply-architecture-best-practices": "shared",
+    "flutter-build-responsive-layout": "shared",
+    "flutter-dev": "shared",
+    "flutter-fix-layout-issues": "shared",
+    "flutter-implement-json-serialization": "shared",
+    "flutter-setup-declarative-routing": "shared",
+    "flutter-setup-localization": "shared",
+    "flutter-use-http-package": "shared",
+    "frontend-dev": "shared",
+    "fullstack-dev": "shared",
+    "ios-application-dev": "shared",
+    "yk-frontend-cleanup-docs-tmp": "harness",
+    "yk-frontend-context-sync": "harness",
+    "yk-frontend-ctsync": "harness",
+    "yk-frontend-freemode": "harness",
+    "yk-frontend-fullmode": "harness",
+    "yk-frontend-litemode": "harness",
+    "yk-frontend-merge": "harness",
+    "yk-frontend-newmode": "harness",
+    "yk-frontend-project-test": "harness",
+    "thktree-e2e-test": "projects"
   }
 }

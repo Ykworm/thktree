@@ -6,6 +6,7 @@ import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
 import 'package:thk_tree/data/services/keyword_category_storage.dart';
 import 'package:thk_tree/data/services/llm_client.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 
 /// Prompt A 抽取结果。
 ///
@@ -69,61 +70,6 @@ class KeywordExtractionException implements Exception {
 class KeywordExtractionService {
   KeywordExtractionService();
 
-  /// Prompt A 固定 system prompt（与设计文档 § 4.1 完全对齐）。
-  static const String _systemPrompt = '''
-你是一名 chat 内容分析助手。任务是从用户与 LLM 的对话中提取核心关键词。
-
-输入：
-- chat title
-- chat 内容（markdown 格式）
-- 现有分类 catalog
-
-任务：
-1. 抽取 1-5 个核心关键词（语义抽象层，不是词频统计；不要"地、得、的、吗"这类虚词）
-2. 给该 chat 打分类标签：
-   - 优先复用现有 catalog 的分类（用 id）
-   - 如果属于真正新领域（现有 catalog 无相似分类），可新增 1 个分类
-   - 一次分析最多新增 1 个，避免 catalog 爆炸
-   - 别名尽量贴合已有分类体系
-
-现有 catalog（JSON）：
-{{ category_catalog }}
-
-chat title：
-{{ chat_title }}
-
-chat 内容：
-{{ chat_content }}
-
-输出严格 JSON 格式：
-{
-  "keywords": [
-    {"keyword": "苏格拉底对话法", "category_id": "a1b2c3d4"}
-  ],
-  "new_category": null
-}
-
-如果需要新增分类（仅当真正新领域时）：
-{
-  "keywords": [...],
-  "new_category": {
-    "name": "语言学习",
-    "aliases": ["外语", "英语"]
-  }
-}
-
-new_category 说明：
-- 它是 Prompt A 输出的临时字段，存在内存中，用于**增量更新** catalog List
-- 不包含 id（id 由程序分配 8 位随机短 ID）
-- LLM 输出的 category_id 必须来自输入中给定的 catalog 的 id
-- 如果声明了 new_category，对应 keyword 的 category_id 填程序分配的新 id（后续写入阶段完成）
-
-约束：
-- keywords 数量 1-5
-- category_id 必须从现有 catalog 的 id 中选择
-- new_category 最多 1 个（null 表示不新增）
-''';
-
   /// Prompt 中 new_category 对应 keyword 的 category_id 占位值。
   ///
   /// 当 LLM 在 keywords 中某个条目的 category_id 写此值时，表示该 keyword 引用
@@ -145,6 +91,7 @@ new_category 说明：
     required String chatTitle,
     required String chatContent,
     required KeywordCategoryCatalogFile catalog,
+    required String languageCode,
     required LlmProviderConfig provider,
     required String modelId,
     required String apiKey,
@@ -155,10 +102,14 @@ new_category 说明：
     final catalogJson = jsonEncode(_buildCatalogJson(catalog));
 
     final messages = <Map<String, Object?>>[
-      {'role': 'system', 'content': _systemPrompt},
+      {
+        'role': 'system',
+        'content': LlmPrompts.keywordExtractionSystemPrompt(languageCode),
+      },
       {
         'role': 'user',
-        'content': _buildUserPrompt(
+        'content': LlmPrompts.keywordExtractionUserPrompt(
+          languageCode: languageCode,
           catalogJson: catalogJson,
           chatTitle: chatTitle,
           chatContent: chatContent,
@@ -194,26 +145,7 @@ new_category 说明：
         .toList(growable: false);
   }
 
-  /// 构造 user prompt：catalog + title + content + 输出 schema 示例。
-  static String _buildUserPrompt({
-    required String catalogJson,
-    required String chatTitle,
-    required String chatContent,
-  }) {
-    final buf = StringBuffer()
-      ..writeln('现有 catalog（JSON）：')
-      ..writeln(catalogJson)
-      ..writeln()
-      ..writeln('chat title：')
-      ..writeln(chatTitle)
-      ..writeln()
-      ..writeln('chat 内容：')
-      ..writeln(chatContent)
-      ..writeln();
-    return buf.toString();
-  }
-
-  /// 解析 LLM 输出并执行 100% 合规校验。
+  /// 把 catalog 转成 LLM 友好的精简 JSON：只暴露 id / name / aliases。
   ///
   /// 清洗顺序：
   /// 1. 去除首尾空白

@@ -2223,6 +2223,90 @@ abstract class AppLocalizations {
   /// **'Chat Default Model'**
   String get chatDefaultModel;
 
+  /// First-launch dialog title guiding user to LLM settings
+  ///
+  /// In en, this message translates to:
+  /// **'Set Up LLM Models'**
+  String get llmSetupOnboardingTitle;
+
+  /// First-launch dialog body explaining why LLM setup is needed
+  ///
+  /// In en, this message translates to:
+  /// **'ThkTree uses large language models for chat, title generation, and summarization. Start in Settings → LLM by adding model providers and choosing default models.'**
+  String get llmSetupOnboardingMessage;
+
+  /// First-launch dialog primary action
+  ///
+  /// In en, this message translates to:
+  /// **'Go to LLM Settings'**
+  String get llmSetupOnboardingAction;
+
+  /// First-launch dialog dismiss action
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get llmSetupOnboardingLater;
+
+  /// LLM settings page banner summary for providers section
+  ///
+  /// In en, this message translates to:
+  /// **'Model Providers — connect API keys and fetch models'**
+  String get llmProvidersBannerSummary;
+
+  /// LLM settings page banner detail for providers section
+  ///
+  /// In en, this message translates to:
+  /// **'Add providers such as OpenAI or Anthropic, enter your API key, and fetch the available model list. At least one configured provider is required before chat and other AI features work.'**
+  String get llmProvidersBannerDetail;
+
+  /// LLM settings page banner summary for default model config section
+  ///
+  /// In en, this message translates to:
+  /// **'Default Model Config — assign a model to each task'**
+  String get defaultModelConfigBannerSummary;
+
+  /// LLM settings page banner detail for default model config section
+  ///
+  /// In en, this message translates to:
+  /// **'After providers are set up, choose default models for chat, title generation, and conversation summarization. You can change these anytime.'**
+  String get defaultModelConfigBannerDetail;
+
+  /// Default model config page banner summary for chat default model
+  ///
+  /// In en, this message translates to:
+  /// **'Chat default model — used for new conversations'**
+  String get chatDefaultModelBannerSummary;
+
+  /// Default model config page banner detail for chat default model
+  ///
+  /// In en, this message translates to:
+  /// **'Used when you start a new chat or open a conversation that has not selected its own model yet.'**
+  String get chatDefaultModelBannerDetail;
+
+  /// Default model config page banner summary for title model
+  ///
+  /// In en, this message translates to:
+  /// **'Title generation model — used when auto-generating titles'**
+  String get titleModelBannerSummary;
+
+  /// Default model config page banner detail for title model
+  ///
+  /// In en, this message translates to:
+  /// **'Used when generating titles for notes, branches, or chat sessions.'**
+  String get titleModelBannerDetail;
+
+  /// Default model config page banner summary for summary model
+  ///
+  /// In en, this message translates to:
+  /// **'Summary model — used when summarizing conversations'**
+  String get summaryModelBannerSummary;
+
+  /// Default model config page banner detail for summary model
+  ///
+  /// In en, this message translates to:
+  /// **'Used when summarizing chats to create branch context, session summaries, or note content.'**
+  String get summaryModelBannerDetail;
+
   /// Generic - not set state
   ///
   /// In en, this message translates to:

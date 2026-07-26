@@ -14,6 +14,7 @@ import 'package:thk_tree/data/services/keyword_analysis_storage.dart';
 import 'package:thk_tree/data/services/keyword_aggregation_service.dart';
 import 'package:thk_tree/data/services/keyword_extraction_service.dart';
 import 'package:thk_tree/data/services/keyword_global_storage.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
 /// 单个 theme 下的 leaf + 状态信息，供选择页展示。
@@ -297,6 +298,7 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
           chatTitle: leafInfo.title,
           chatContent: truncated,
           catalog: catalog,
+          languageCode: ref.llmLanguageCode,
           provider: provider,
           modelId: selectedModel.id,
           apiKey: apiKey,
@@ -396,11 +398,14 @@ class KeywordAnalysisController extends AsyncNotifier<AnalysisProgress> {
           completedLeaves: totalLeaves,
         ));
 
-        final scorePrompt =
-            globalFile.scorePrompt ?? KeywordGlobalFile.defaultScorePrompt;
+        final scorePrompt = globalFile.scorePromptIsDefault
+            ? KeywordGlobalFile.defaultScorePromptFor(ref.llmLanguageCode)
+            : (globalFile.scorePrompt ??
+                KeywordGlobalFile.defaultScorePromptFor(ref.llmLanguageCode));
         final scoredEntries = await aggregationService.aggregate(
           inputs: allKeywordInputs,
           scorePrompt: scorePrompt,
+          languageCode: ref.llmLanguageCode,
           provider: provider,
           modelId: selectedModel.id,
           apiKey: apiKey,

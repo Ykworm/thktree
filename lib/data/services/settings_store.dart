@@ -21,6 +21,7 @@ class AppSettings {
     this.nextBackupReminderDate,
     this.lastAutoBackupAt,
     this.backupReminderIntervalDays = 3,
+    this.llmSetupOnboardingShown = false,
   });
 
   final String? localeLanguageCode;
@@ -54,6 +55,9 @@ class AppSettings {
   /// 分享提醒周期（天），默认 3
   final int backupReminderIntervalDays;
 
+  /// 是否已展示过首次 LLM 设置引导（弹窗只出现一次）
+  final bool llmSetupOnboardingShown;
+
   AppSettings copyWith({
     String? localeLanguageCode,
     bool? faceIdEnabled,
@@ -73,6 +77,7 @@ class AppSettings {
     DateTime? nextBackupReminderDate,
     DateTime? lastAutoBackupAt,
     int? backupReminderIntervalDays,
+    bool? llmSetupOnboardingShown,
   }) {
     return AppSettings(
       localeLanguageCode: localeLanguageCode ?? this.localeLanguageCode,
@@ -93,6 +98,7 @@ class AppSettings {
       nextBackupReminderDate: nextBackupReminderDate ?? this.nextBackupReminderDate,
       lastAutoBackupAt: lastAutoBackupAt ?? this.lastAutoBackupAt,
       backupReminderIntervalDays: backupReminderIntervalDays ?? this.backupReminderIntervalDays,
+      llmSetupOnboardingShown: llmSetupOnboardingShown ?? this.llmSetupOnboardingShown,
     );
   }
 
@@ -131,6 +137,7 @@ class SettingsStore {
   static const _keyNextBackupReminderDate = 'next_backup_reminder_date';
   static const _keyLastAutoBackupAt = 'last_auto_backup_at';
   static const _keyBackupReminderIntervalDays = 'backup_reminder_interval_days';
+  static const _keyLlmSetupOnboardingShown = 'llm_setup_onboarding_shown';
   static const _keyWebSearchPrefix = 'web_search_enabled_';
   static final _webSearchKeys =
       webSearchSupportMap.keys.map((t) => t.name).toList();
@@ -176,6 +183,10 @@ class SettingsStore {
         ? 3
         : (int.tryParse(backupReminderIntervalDaysStr) ?? 3);
 
+    final llmSetupOnboardingShownStr =
+        await _secureStorage.read(key: _keyLlmSetupOnboardingShown);
+    final llmSetupOnboardingShown = llmSetupOnboardingShownStr == 'true';
+
     final webSearchMap = <String, bool>{};
     for (final key in _webSearchKeys) {
       final val = await _secureStorage.read(key: '$_keyWebSearchPrefix$key');
@@ -203,6 +214,7 @@ class SettingsStore {
       nextBackupReminderDate: nextBackupReminderDate,
       lastAutoBackupAt: lastAutoBackupAt,
       backupReminderIntervalDays: backupReminderIntervalDays,
+      llmSetupOnboardingShown: llmSetupOnboardingShown,
     );
   }
 
@@ -324,6 +336,14 @@ class SettingsStore {
     await _secureStorage.write(
       key: _keyBackupReminderIntervalDays,
       value: days.toString(),
+    );
+  }
+
+  /// 标记首次 LLM 设置引导已展示
+  Future<void> saveLlmSetupOnboardingShown(bool shown) async {
+    await _secureStorage.write(
+      key: _keyLlmSetupOnboardingShown,
+      value: shown.toString(),
     );
   }
 }

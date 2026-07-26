@@ -73,15 +73,26 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
                 Expanded(
                   child: ListView.separated(
                     padding: EdgeInsets.zero,
-                    itemCount: 3,
-                    separatorBuilder: (context, index) => Container(
-                      height: 0.5,
-                      margin: const EdgeInsetsDirectional.only(start: 16),
-                      color: AppColors.border,
-                    ),
+                    itemCount: 6,
+                    separatorBuilder: (context, index) {
+                      if (index == 1 || index == 3) {
+                        return const SizedBox.shrink();
+                      }
+                      return Container(
+                        height: 0.5,
+                        margin: const EdgeInsetsDirectional.only(start: 16),
+                        color: AppColors.border,
+                      );
+                    },
                     itemBuilder: (context, index) {
                       switch (index) {
                         case 0:
+                          return ThkInfoBanner(
+                            icon: CupertinoIcons.chat_bubble_2,
+                            summary: l10n.chatDefaultModelBannerSummary,
+                            details: [l10n.chatDefaultModelBannerDetail],
+                          );
+                        case 1:
                           return _buildModelTile(
                             context: context,
                             ref: ref,
@@ -94,7 +105,13 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
                                 .saveChatDefaultModel(
                                     providerId: providerId, modelId: modelId),
                           );
-                        case 1:
+                        case 2:
+                          return ThkInfoBanner(
+                            icon: CupertinoIcons.textformat,
+                            summary: l10n.titleModelBannerSummary,
+                            details: [l10n.titleModelBannerDetail],
+                          );
+                        case 3:
                           return _buildModelTile(
                             context: context,
                             ref: ref,
@@ -107,7 +124,13 @@ class _DefaultModelConfigScreenState extends ConsumerState<DefaultModelConfigScr
                                 .saveTitleModel(
                                     providerId: providerId, modelId: modelId),
                           );
-                        case 2:
+                        case 4:
+                          return ThkInfoBanner(
+                            icon: CupertinoIcons.doc_text,
+                            summary: l10n.summaryModelBannerSummary,
+                            details: [l10n.summaryModelBannerDetail],
+                          );
+                        case 5:
                           return _buildModelTile(
                             context: context,
                             ref: ref,

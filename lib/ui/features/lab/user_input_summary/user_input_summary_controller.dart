@@ -8,6 +8,7 @@ import 'package:thk_tree/data/models/llm_model_config.dart';
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/services/user_input_summary_service.dart';
 import 'package:thk_tree/data/services/user_input_summary_storage.dart';
+import 'package:thk_tree/data/services/llm_prompts.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 
 /// 用户输入总结页面的状态。
@@ -160,6 +161,7 @@ class UserInputSummaryController extends Notifier<UserInputSummaryState> {
 
       final report = await UserInputSummaryService.generateReport(
         inputs: inputs,
+        languageCode: ref.llmLanguageCode,
         provider: provider,
         modelId: selectedModel.id,
         apiKey: apiKey,
