@@ -100,6 +100,9 @@ class AppPaletteTokens {
 
 enum AppColorPalette { warmPaper, morandi }
 
+/// Default light palette for new installs and unset `color_palette` preference.
+const AppColorPalette kDefaultAppColorPalette = AppColorPalette.morandi;
+
 /// 皮肤注册表。slate = 深色模式（不进 Settings UI，不进 AppColorPalette）。
 class AppThemeRegistry {
   AppThemeRegistry._();

@@ -23,7 +23,7 @@ class AppColors {
   static Brightness get brightness => _brightness;
   static void setBrightness(Brightness b) => _brightness = b;
 
-  static AppColorPalette _palette = AppColorPalette.warmPaper;
+  static AppColorPalette _palette = kDefaultAppColorPalette;
   static AppColorPalette get palette => _palette;
   static void setPalette(AppColorPalette p) => _palette = p;
 

@@ -70,7 +70,7 @@ Future<void> main() async {
       : Brightness.light;
   final initialPalette =
       AppColorPalette.values.asNameMap()[savedSettings.colorPalette] ??
-      AppColorPalette.warmPaper;
+      kDefaultAppColorPalette;
 
   runApp(
     ProviderScope(

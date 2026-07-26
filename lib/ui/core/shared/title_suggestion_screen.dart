@@ -951,6 +951,9 @@ Future<String?> showBranchFlow({
       apiKey: apiKey,
       transcript: parentTranscript,
       contextWindow: contextWindow,
+      languageCode: LlmPromptLocale.resolve(
+        savedLanguageCode: container.read(localeProvider)?.languageCode,
+      ),
     );
 
     if (!context.mounted) return null;
@@ -1235,6 +1238,7 @@ Future<String?> _summarizeWithLifecycleAndRetry({
   required String apiKey,
   required String transcript,
   required int contextWindow,
+  required String languageCode,
 }) async {
   final l10n = AppLocalizations.of(context)!;
 
@@ -1263,9 +1267,7 @@ Future<String?> _summarizeWithLifecycleAndRetry({
         message: l10n.summarizing,
         action: () => TitleSuggestionService.summarizeContent(
           transcript: transcript,
-          languageCode: LlmPromptLocale.resolve(
-            savedLanguageCode: Localizations.localeOf(context).languageCode,
-          ),
+          languageCode: languageCode,
           provider: provider,
           modelId: modelId,
           apiKey: apiKey,

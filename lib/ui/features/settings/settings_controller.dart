@@ -182,7 +182,7 @@ final brightnessProvider = NotifierProvider<BrightnessNotifier, Brightness>(
 );
 
 final initialPaletteProvider = Provider<AppColorPalette>(
-  (ref) => AppColorPalette.warmPaper,
+  (ref) => kDefaultAppColorPalette,
 );
 
 class PaletteNotifier extends Notifier<AppColorPalette> {

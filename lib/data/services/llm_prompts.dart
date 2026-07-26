@@ -36,9 +36,11 @@ class LlmPrompts {
 
   static String defaultChatSystemPrompt(String languageCode) {
     if (LlmPromptLocale.isEnglish(languageCode)) {
-      return 'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.';
+      return 'You are a helpful assistant. Always respond using correct and well-structured Markdown format — use proper headings, lists, code fences, tables, and inline formatting as appropriate. Do not return raw text when Markdown syntax is applicable.\n'
+          'Respond in English by default; if the user explicitly requests another language, follow their request.';
     }
-    return '你是一个有帮助的助手。请始终使用正确且结构良好的 Markdown 格式回复——在合适时使用标题、列表、代码块、表格和行内格式，不要在该用 Markdown 时返回纯文本。';
+    return '你是一个有帮助的助手。请始终使用正确且结构良好的 Markdown 格式回复——在合适时使用标题、列表、代码块、表格和行内格式，不要在该用 Markdown 时返回纯文本。\n'
+        '默认使用中文回复；若用户明确要求使用其他语言，则按用户要求。';
   }
 
   static String titleSystemPrompt(String languageCode) {
@@ -56,7 +58,7 @@ Output requirements:
 2. Each title must be at most 30 characters.
 3. Titles should be concise, focused, and information-dense.
 4. Output strictly one title per line, without numbering, quotes, or extra explanation.
-5. Output titles in English.''';
+5. Output titles in English by default; if the user explicitly requests another language in the content or direction, follow their request.''';
     }
     return '''
 你是一个标题命名助手。你的任务是分析用户提供的对话内容，提取其中的核心讨论主题和关键问题，然后生成适合作为新对话标题的候选列表。
@@ -71,7 +73,7 @@ Output requirements:
 2. 每个标题必须控制在 30 个字符以内（中文按字数、英文按字符数）。
 3. 标题要简洁、聚焦、信息密度高，能让用户一眼看出新对话的主题或切入角度。
 4. 严格按"每行一个标题"输出，不要带编号、不要带引号、不要带任何额外说明文字。
-5. 输出中文标题。''';
+5. 默认使用中文输出标题；若用户在内容或方向引导中明确要求使用其他语言，则按用户要求。''';
   }
 
   static String titleUserPrompt({
@@ -109,7 +111,7 @@ Requirements:
 1. Preserve key facts, conclusions, terminology, and decisions from the conversation.
 2. Keep a reasonable length (generally 300–800 characters), concise and clear.
 3. Do not add information that was not in the original conversation, and do not make judgments for the user.
-4. Write the summary in English.''';
+4. Write the summary in English by default; if the user explicitly requested another language in the conversation, follow their request.''';
     }
     return '''
 你是一个对话总结助手。给定一段用户与助手的完整对话，请生成一段简洁的总结，
@@ -117,7 +119,7 @@ Requirements:
 1. 保留对话中讨论的关键事实、结论、术语、决定。
 2. 控制在合理篇幅（一般 300~800 字），语言简洁清晰，不要冗长。
 3. 不要添加原对话中没有的信息，不要替用户做判断。
-4. 使用中文输出。''';
+4. 默认使用中文输出总结；若对话中用户明确要求使用其他语言，则按用户要求。''';
   }
 
   static String conversationSummaryUserPrompt({

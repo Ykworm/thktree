@@ -2,11 +2,17 @@ import 'dart:ui' show Brightness;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_palette_tokens.dart';
+
+import 'palette_test_helpers.dart';
 
 /// P0 Warm Paper Glass：断言 light 语义色真源（shipped AppColors），非硬编码旁路。
 void main() {
-  setUp(() => AppColors.setBrightness(Brightness.light));
-  tearDown(() => AppColors.setBrightness(Brightness.light));
+  setUp(() {
+    AppColors.setBrightness(Brightness.light);
+    AppColors.setPalette(AppColorPalette.warmPaper);
+  });
+  tearDown(resetAppColorsForTest);
 
   test('paper / paper-warm / white card', () {
     expect(AppColors.pageBg.toARGB32(), 0xFFFAF9F6); // 雅白

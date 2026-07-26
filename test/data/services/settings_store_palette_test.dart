@@ -58,7 +58,7 @@ void main() {
     store = SettingsStore(secureStorage: _MemSecureStorage());
   });
 
-  test('defaults to warmPaper when unset', () async {
+  test('colorPalette is null when unset in storage', () async {
     final settings = await store.load();
     expect(settings.colorPalette, isNull);
   });
@@ -69,7 +69,7 @@ void main() {
     expect(settings.colorPalette, 'morandi');
   });
 
-  test('invalid value falls back to warmPaper on parse', () async {
+  test('invalid palette string is stored as-is (resolved at app startup)', () async {
     await store.saveColorPalette('not-a-palette');
     final settings = await store.load();
     expect(settings.colorPalette, 'not-a-palette');
