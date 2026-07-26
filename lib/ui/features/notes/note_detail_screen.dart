@@ -146,7 +146,9 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         // Get theme title from themeStore
         final themeStore = await ref.read(themeStoreProvider.future);
         final themes = await themeStore.listThemes();
-        final theme = themes.where((t) => t.themeId == meta.themeId).firstOrNull;
+        final theme = themes
+            .where((t) => t.themeId == meta.themeId)
+            .firstOrNull;
         final themeTitle = theme?.title ?? '';
 
         await searchIndex.upsertNote(
@@ -184,9 +186,13 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       final pinStorage = await ref.read(pinStorageProvider.future);
       // 已 Pin → 再点取消（不需要动笔记内容）
       if (await pinStorage.isPinned(
-          kind: PinKind.note, noteId: widget.noteId)) {
+        kind: PinKind.note,
+        noteId: widget.noteId,
+      )) {
         await pinStorage.removeByAnchor(
-            kind: PinKind.note, noteId: widget.noteId);
+          kind: PinKind.note,
+          noteId: widget.noteId,
+        );
         ref.read(pinListVersionProvider.notifier).bump();
         if (!mounted) return;
         ThkToast.show(
@@ -199,7 +205,9 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       }
       // 满员拦截：不淘汰旧条目，提示先移除
       if (await pinStorage.isFullFor(
-          kind: PinKind.note, noteId: widget.noteId)) {
+        kind: PinKind.note,
+        noteId: widget.noteId,
+      )) {
         if (!mounted) return;
         ThkToast.show(
           context,
@@ -237,11 +245,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       );
       ref.read(pinListVersionProvider.notifier).bump();
       if (!mounted) return;
-      ThkToast.show(
-        context,
-        l10n.pinnedToast,
-        icon: AppIcons.checkCircle,
-      );
+      ThkToast.show(context, l10n.pinnedToast, icon: AppIcons.checkCircle);
     } catch (e) {
       if (!mounted) return;
       ThkAlert.show(
@@ -255,7 +259,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   Future<void> _renameNote() async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: _title);
-    
+
     final newTitle = await showCupertinoDialog<String>(
       context: context,
       builder: (context) {
@@ -379,7 +383,9 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
     try {
       final paths = await ref.read(appPathsProvider.future);
-      final targetNotesDir = Directory('${paths.themesDir.path}/${themeResult.themeId}/notes');
+      final targetNotesDir = Directory(
+        '${paths.themesDir.path}/${themeResult.themeId}/notes',
+      );
 
       await _store.moveNote(
         noteId: widget.noteId,
@@ -467,7 +473,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
     // 1. 选位置
     final location = await showNodeLocationPicker(
-      context, 
+      context,
       ref,
       onThemeCreated: () {
         // 刷新主题列表
@@ -544,10 +550,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       // 跳转到对话页面
       context.push(
         '/themes/${location.themeId}/nodes/${childNode.nodeId}',
-        extra: ChatScreenLaunchParams(
-          title: _title,
-          autoTriggerReply: true,
-        ),
+        extra: ChatScreenLaunchParams(title: _title, autoTriggerReply: true),
       );
     } catch (e) {
       if (!mounted) return;
@@ -555,10 +558,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       final message = e is MaxNodeDepthExceededException
           ? l10n.maxNodeDepthReached(kMaxNodeDepth)
           : l10n.branchFailed(e.toString());
-      ThkAlert.show(
-        context: context,
-        message: message,
-      );
+      ThkAlert.show(context: context, message: message);
     }
   }
 
@@ -604,10 +604,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       ),
       child: Stack(
         fit: StackFit.expand,
-        children: [
-          _buildBody(l10n),
-          _buildPinFab(),
-        ],
+        children: [_buildBody(l10n), _buildPinFab()],
       ),
     );
   }
@@ -619,7 +616,8 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   /// 按住拖动随意摆放。已 Pin 时变绿色 slash 图标。
   Widget _buildPinFab() {
     const fabSize = 44.0;
-    final pinned = ref
+    final pinned =
+        ref
             .watch(pinAnchorKeysProvider)
             .value
             ?.contains('n:${widget.noteId}') ??
@@ -700,9 +698,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
                   color: AppColors.textPrimary,
                 ),
                 enableInteractiveSelection: true,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                ),
+                decoration: BoxDecoration(color: AppColors.surface),
               ),
             ),
             MarkdownToolbar(controller: _controller),
@@ -977,7 +973,7 @@ class _ThemeNoteListScreenState extends ConsumerState<ThemeNoteListScreen> {
 </svg>''',
               width: 64,
               height: 64,
-              colorFilter: const ColorFilter.mode(
+              colorFilter: ColorFilter.mode(
                 AppColors.matteGold,
                 BlendMode.srcIn,
               ),

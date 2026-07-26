@@ -32,6 +32,26 @@
   "@chinese": {
     "description": "Chinese language name"
   },
+  "appearanceSection": "Appearance",
+  "@appearanceSection": {
+    "description": "Appearance settings section header"
+  },
+  "paletteWarmPaperTitle": "Default · Warm Paper",
+  "@paletteWarmPaperTitle": {
+    "description": "Warm Paper color palette display name"
+  },
+  "paletteWarmPaperSubtitle": "Quiet study · warm paper glass",
+  "@paletteWarmPaperSubtitle": {
+    "description": "Warm Paper color palette subtitle"
+  },
+  "paletteMorandiTitle": "Morandi",
+  "@paletteMorandiTitle": {
+    "description": "Morandi color palette display name"
+  },
+  "paletteMorandiSubtitle": "Low-saturation gray study",
+  "@paletteMorandiSubtitle": {
+    "description": "Morandi color palette subtitle"
+  },
   "noThemesYet": "Start your first knowledge theme",
   "@noThemesYet": {
     "description": "Empty state for theme list"

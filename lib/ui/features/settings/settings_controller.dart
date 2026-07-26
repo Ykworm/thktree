@@ -3,6 +3,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
+import 'package:thk_tree/ui/core/theme/app_palette_tokens.dart';
 
 class SettingsController extends AsyncNotifier<AppSettings> {
   @override
@@ -14,8 +15,9 @@ class SettingsController extends AsyncNotifier<AppSettings> {
   Future<void> saveLocale(String? languageCode) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveLocale(languageCode);
-    ref.read(localeProvider.notifier).updateLocale(
-        languageCode == null ? null : Locale(languageCode));
+    ref
+        .read(localeProvider.notifier)
+        .updateLocale(languageCode == null ? null : Locale(languageCode));
     state = AsyncData(await store.load());
   }
 
@@ -31,6 +33,13 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     state = AsyncData(await store.load());
   }
 
+  Future<void> saveColorPalette(AppColorPalette palette) async {
+    final store = ref.read(settingsStoreProvider);
+    await store.saveColorPalette(palette.name);
+    ref.read(paletteProvider.notifier).setPalette(palette);
+    state = AsyncData(await store.load());
+  }
+
   Future<void> saveTitleModel({String? providerId, String? modelId}) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveTitleModel(providerId: providerId, modelId: modelId);
@@ -43,13 +52,19 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     state = AsyncData(await store.load());
   }
 
-  Future<void> saveChatDefaultModel({String? providerId, String? modelId}) async {
+  Future<void> saveChatDefaultModel({
+    String? providerId,
+    String? modelId,
+  }) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveChatDefaultModel(providerId: providerId, modelId: modelId);
     state = AsyncData(await store.load());
   }
 
-  Future<void> saveLastUsedChatModel({String? providerId, String? modelId}) async {
+  Future<void> saveLastUsedChatModel({
+    String? providerId,
+    String? modelId,
+  }) async {
     final store = ref.read(settingsStoreProvider);
     await store.saveLastUsedChatModel(providerId: providerId, modelId: modelId);
     state = AsyncData(await store.load());
@@ -122,7 +137,9 @@ class SettingsController extends AsyncNotifier<AppSettings> {
 }
 
 final settingsControllerProvider =
-    AsyncNotifierProvider<SettingsController, AppSettings>(SettingsController.new);
+    AsyncNotifierProvider<SettingsController, AppSettings>(
+      SettingsController.new,
+    );
 
 class LocaleNotifier extends Notifier<Locale?> {
   LocaleNotifier(this._initialLocale);
@@ -137,9 +154,13 @@ class LocaleNotifier extends Notifier<Locale?> {
   }
 }
 
-final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(() => LocaleNotifier(null));
+final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(
+  () => LocaleNotifier(null),
+);
 
-final initialBrightnessProvider = Provider<Brightness>((ref) => Brightness.light);
+final initialBrightnessProvider = Provider<Brightness>(
+  (ref) => Brightness.light,
+);
 
 class BrightnessNotifier extends Notifier<Brightness> {
   @override
@@ -152,11 +173,25 @@ class BrightnessNotifier extends Notifier<Brightness> {
   }
 
   void toggle() {
-    state = state == Brightness.light
-        ? Brightness.dark
-        : Brightness.light;
+    state = state == Brightness.light ? Brightness.dark : Brightness.light;
   }
 }
 
-final brightnessProvider =
-    NotifierProvider<BrightnessNotifier, Brightness>(BrightnessNotifier.new);
+final brightnessProvider = NotifierProvider<BrightnessNotifier, Brightness>(
+  BrightnessNotifier.new,
+);
+
+final initialPaletteProvider = Provider<AppColorPalette>(
+  (ref) => AppColorPalette.warmPaper,
+);
+
+class PaletteNotifier extends Notifier<AppColorPalette> {
+  @override
+  AppColorPalette build() => ref.watch(initialPaletteProvider);
+
+  void setPalette(AppColorPalette p) => state = p;
+}
+
+final paletteProvider = NotifierProvider<PaletteNotifier, AppColorPalette>(
+  PaletteNotifier.new,
+);

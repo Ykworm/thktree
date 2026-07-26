@@ -6,6 +6,7 @@ class AppSettings {
     required this.localeLanguageCode,
     required this.faceIdEnabled,
     required this.darkMode,
+    this.colorPalette,
     this.titleModelProviderId,
     this.titleModelModelId,
     this.summaryModelProviderId,
@@ -27,6 +28,7 @@ class AppSettings {
   final String? localeLanguageCode;
   final bool faceIdEnabled;
   final bool darkMode;
+  final String? colorPalette;
   final String? titleModelProviderId;
   final String? titleModelModelId;
   final String? summaryModelProviderId;
@@ -62,6 +64,7 @@ class AppSettings {
     String? localeLanguageCode,
     bool? faceIdEnabled,
     bool? darkMode,
+    String? colorPalette,
     String? titleModelProviderId,
     String? titleModelModelId,
     String? summaryModelProviderId,
@@ -83,22 +86,30 @@ class AppSettings {
       localeLanguageCode: localeLanguageCode ?? this.localeLanguageCode,
       faceIdEnabled: faceIdEnabled ?? this.faceIdEnabled,
       darkMode: darkMode ?? this.darkMode,
+      colorPalette: colorPalette ?? this.colorPalette,
       titleModelProviderId: titleModelProviderId ?? this.titleModelProviderId,
       titleModelModelId: titleModelModelId ?? this.titleModelModelId,
-      summaryModelProviderId: summaryModelProviderId ?? this.summaryModelProviderId,
+      summaryModelProviderId:
+          summaryModelProviderId ?? this.summaryModelProviderId,
       summaryModelModelId: summaryModelModelId ?? this.summaryModelModelId,
-      chatDefaultProviderId: chatDefaultProviderId ?? this.chatDefaultProviderId,
+      chatDefaultProviderId:
+          chatDefaultProviderId ?? this.chatDefaultProviderId,
       chatDefaultModelId: chatDefaultModelId ?? this.chatDefaultModelId,
-      lastUsedChatProviderId: lastUsedChatProviderId ?? this.lastUsedChatProviderId,
+      lastUsedChatProviderId:
+          lastUsedChatProviderId ?? this.lastUsedChatProviderId,
       lastUsedChatModelId: lastUsedChatModelId ?? this.lastUsedChatModelId,
       ttsVoiceId: ttsVoiceId ?? this.ttsVoiceId,
       webSearchEnabledMap: webSearchEnabledMap ?? this.webSearchEnabledMap,
       autoBackupEnabled: autoBackupEnabled ?? this.autoBackupEnabled,
-      backupReminderEnabled: backupReminderEnabled ?? this.backupReminderEnabled,
-      nextBackupReminderDate: nextBackupReminderDate ?? this.nextBackupReminderDate,
+      backupReminderEnabled:
+          backupReminderEnabled ?? this.backupReminderEnabled,
+      nextBackupReminderDate:
+          nextBackupReminderDate ?? this.nextBackupReminderDate,
       lastAutoBackupAt: lastAutoBackupAt ?? this.lastAutoBackupAt,
-      backupReminderIntervalDays: backupReminderIntervalDays ?? this.backupReminderIntervalDays,
-      llmSetupOnboardingShown: llmSetupOnboardingShown ?? this.llmSetupOnboardingShown,
+      backupReminderIntervalDays:
+          backupReminderIntervalDays ?? this.backupReminderIntervalDays,
+      llmSetupOnboardingShown:
+          llmSetupOnboardingShown ?? this.llmSetupOnboardingShown,
     );
   }
 
@@ -123,6 +134,7 @@ class SettingsStore {
   static const _keyLocale = 'locale_language_code';
   static const _keyFaceIdEnabled = 'face_id_enabled';
   static const _keyDarkMode = 'dark_mode';
+  static const _keyColorPalette = 'color_palette';
   static const _keyTitleModelProviderId = 'title_model_provider_id';
   static const _keyTitleModelModelId = 'title_model_model_id';
   static const _keySummaryModelProviderId = 'summary_model_provider_id';
@@ -139,8 +151,9 @@ class SettingsStore {
   static const _keyBackupReminderIntervalDays = 'backup_reminder_interval_days';
   static const _keyLlmSetupOnboardingShown = 'llm_setup_onboarding_shown';
   static const _keyWebSearchPrefix = 'web_search_enabled_';
-  static final _webSearchKeys =
-      webSearchSupportMap.keys.map((t) => t.name).toList();
+  static final _webSearchKeys = webSearchSupportMap.keys
+      .map((t) => t.name)
+      .toList();
 
   Future<AppSettings> load() async {
     final locale = await _secureStorage.read(key: _keyLocale);
@@ -151,34 +164,66 @@ class SettingsStore {
     final darkModeStr = await _secureStorage.read(key: _keyDarkMode);
     final darkMode = darkModeStr == 'true';
 
-    final titleModelProviderId = await _secureStorage.read(key: _keyTitleModelProviderId);
-    final titleModelModelId = await _secureStorage.read(key: _keyTitleModelModelId);
-    final summaryModelProviderId = await _secureStorage.read(key: _keySummaryModelProviderId);
-    final summaryModelModelId = await _secureStorage.read(key: _keySummaryModelModelId);
-    final chatDefaultProviderId = await _secureStorage.read(key: _keyChatDefaultProviderId);
-    final chatDefaultModelId = await _secureStorage.read(key: _keyChatDefaultModelId);
-    final lastUsedChatProviderId = await _secureStorage.read(key: _keyLastUsedChatProviderId);
-    final lastUsedChatModelId = await _secureStorage.read(key: _keyLastUsedChatModelId);
+    final colorPalette = await _secureStorage.read(key: _keyColorPalette);
+
+    final titleModelProviderId = await _secureStorage.read(
+      key: _keyTitleModelProviderId,
+    );
+    final titleModelModelId = await _secureStorage.read(
+      key: _keyTitleModelModelId,
+    );
+    final summaryModelProviderId = await _secureStorage.read(
+      key: _keySummaryModelProviderId,
+    );
+    final summaryModelModelId = await _secureStorage.read(
+      key: _keySummaryModelModelId,
+    );
+    final chatDefaultProviderId = await _secureStorage.read(
+      key: _keyChatDefaultProviderId,
+    );
+    final chatDefaultModelId = await _secureStorage.read(
+      key: _keyChatDefaultModelId,
+    );
+    final lastUsedChatProviderId = await _secureStorage.read(
+      key: _keyLastUsedChatProviderId,
+    );
+    final lastUsedChatModelId = await _secureStorage.read(
+      key: _keyLastUsedChatModelId,
+    );
     final ttsVoiceId = await _secureStorage.read(key: _keyTtsVoiceId);
 
-    final autoBackupEnabledStr = await _secureStorage.read(key: _keyAutoBackupEnabled);
-    final autoBackupEnabled = autoBackupEnabledStr == null ? true : autoBackupEnabledStr == 'true';
+    final autoBackupEnabledStr = await _secureStorage.read(
+      key: _keyAutoBackupEnabled,
+    );
+    final autoBackupEnabled = autoBackupEnabledStr == null
+        ? true
+        : autoBackupEnabledStr == 'true';
 
-    final backupReminderEnabledStr = await _secureStorage.read(key: _keyBackupReminderEnabled);
+    final backupReminderEnabledStr = await _secureStorage.read(
+      key: _keyBackupReminderEnabled,
+    );
     // Default: true (backup reminder ON by default)
-    final backupReminderEnabled = backupReminderEnabledStr == null ? true : backupReminderEnabledStr == 'true';
+    final backupReminderEnabled = backupReminderEnabledStr == null
+        ? true
+        : backupReminderEnabledStr == 'true';
 
-    final nextBackupReminderDateStr = await _secureStorage.read(key: _keyNextBackupReminderDate);
+    final nextBackupReminderDateStr = await _secureStorage.read(
+      key: _keyNextBackupReminderDate,
+    );
     final nextBackupReminderDate = nextBackupReminderDateStr == null
         ? null
         : DateTime.tryParse(nextBackupReminderDateStr);
 
-    final lastAutoBackupAtStr = await _secureStorage.read(key: _keyLastAutoBackupAt);
+    final lastAutoBackupAtStr = await _secureStorage.read(
+      key: _keyLastAutoBackupAt,
+    );
     final lastAutoBackupAt = lastAutoBackupAtStr == null
         ? null
         : DateTime.tryParse(lastAutoBackupAtStr);
 
-    final backupReminderIntervalDaysStr = await _secureStorage.read(key: _keyBackupReminderIntervalDays);
+    final backupReminderIntervalDaysStr = await _secureStorage.read(
+      key: _keyBackupReminderIntervalDays,
+    );
     final backupReminderIntervalDays = backupReminderIntervalDaysStr == null
         ? 3
         : (int.tryParse(backupReminderIntervalDaysStr) ?? 3);
@@ -199,6 +244,7 @@ class SettingsStore {
       localeLanguageCode: locale,
       faceIdEnabled: faceIdEnabled,
       darkMode: darkMode,
+      colorPalette: colorPalette,
       titleModelProviderId: titleModelProviderId,
       titleModelModelId: titleModelModelId,
       summaryModelProviderId: summaryModelProviderId,
@@ -227,11 +273,22 @@ class SettingsStore {
   }
 
   Future<void> saveFaceIdEnabled(bool enabled) async {
-    await _secureStorage.write(key: _keyFaceIdEnabled, value: enabled.toString());
+    await _secureStorage.write(
+      key: _keyFaceIdEnabled,
+      value: enabled.toString(),
+    );
   }
 
   Future<void> saveDarkMode(bool dark) async {
     await _secureStorage.write(key: _keyDarkMode, value: dark.toString());
+  }
+
+  Future<void> saveColorPalette(String? value) async {
+    if (value == null || value.isEmpty) {
+      await _secureStorage.delete(key: _keyColorPalette);
+    } else {
+      await _secureStorage.write(key: _keyColorPalette, value: value);
+    }
   }
 
   Future<void> saveTitleModel({String? providerId, String? modelId}) async {
@@ -239,7 +296,10 @@ class SettingsStore {
       await _secureStorage.delete(key: _keyTitleModelProviderId);
       await _secureStorage.delete(key: _keyTitleModelModelId);
     } else {
-      await _secureStorage.write(key: _keyTitleModelProviderId, value: providerId);
+      await _secureStorage.write(
+        key: _keyTitleModelProviderId,
+        value: providerId,
+      );
       await _secureStorage.write(key: _keyTitleModelModelId, value: modelId);
     }
   }
@@ -249,27 +309,42 @@ class SettingsStore {
       await _secureStorage.delete(key: _keySummaryModelProviderId);
       await _secureStorage.delete(key: _keySummaryModelModelId);
     } else {
-      await _secureStorage.write(key: _keySummaryModelProviderId, value: providerId);
+      await _secureStorage.write(
+        key: _keySummaryModelProviderId,
+        value: providerId,
+      );
       await _secureStorage.write(key: _keySummaryModelModelId, value: modelId);
     }
   }
 
-  Future<void> saveChatDefaultModel({String? providerId, String? modelId}) async {
+  Future<void> saveChatDefaultModel({
+    String? providerId,
+    String? modelId,
+  }) async {
     if (providerId == null || modelId == null) {
       await _secureStorage.delete(key: _keyChatDefaultProviderId);
       await _secureStorage.delete(key: _keyChatDefaultModelId);
     } else {
-      await _secureStorage.write(key: _keyChatDefaultProviderId, value: providerId);
+      await _secureStorage.write(
+        key: _keyChatDefaultProviderId,
+        value: providerId,
+      );
       await _secureStorage.write(key: _keyChatDefaultModelId, value: modelId);
     }
   }
 
-  Future<void> saveLastUsedChatModel({String? providerId, String? modelId}) async {
+  Future<void> saveLastUsedChatModel({
+    String? providerId,
+    String? modelId,
+  }) async {
     if (providerId == null || modelId == null) {
       await _secureStorage.delete(key: _keyLastUsedChatProviderId);
       await _secureStorage.delete(key: _keyLastUsedChatModelId);
     } else {
-      await _secureStorage.write(key: _keyLastUsedChatProviderId, value: providerId);
+      await _secureStorage.write(
+        key: _keyLastUsedChatProviderId,
+        value: providerId,
+      );
       await _secureStorage.write(key: _keyLastUsedChatModelId, value: modelId);
     }
   }

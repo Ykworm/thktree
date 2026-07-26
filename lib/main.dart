@@ -12,6 +12,7 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/auth_gate.dart';
 import 'package:thk_tree/ui/core/router.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_palette_tokens.dart';
 import 'package:thk_tree/ui/core/theme/app_theme.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
@@ -46,7 +47,9 @@ Future<void> main() async {
     if (count <= maxSameError) {
       FlutterError.presentError(details);
       if (count == maxSameError) {
-        debugPrint('[FlutterError] Suppressing further instances of: ${key.length > 80 ? key.substring(0, 80) : key}...');
+        debugPrint(
+          '[FlutterError] Suppressing further instances of: ${key.length > 80 ? key.substring(0, 80) : key}...',
+        );
       }
     }
   };
@@ -62,8 +65,12 @@ Future<void> main() async {
   final initialLocale = savedSettings.localeLanguageCode == null
       ? null
       : Locale(savedSettings.localeLanguageCode!);
-  final initialBrightness =
-      savedSettings.darkMode ? Brightness.dark : Brightness.light;
+  final initialBrightness = savedSettings.darkMode
+      ? Brightness.dark
+      : Brightness.light;
+  final initialPalette =
+      AppColorPalette.values.asNameMap()[savedSettings.colorPalette] ??
+      AppColorPalette.warmPaper;
 
   runApp(
     ProviderScope(
@@ -72,14 +79,13 @@ Future<void> main() async {
         appLoggerProvider.overrideWithValue(AsyncData(logger)),
         localeProvider.overrideWith(() => LocaleNotifier(initialLocale)),
         initialBrightnessProvider.overrideWithValue(initialBrightness),
+        initialPaletteProvider.overrideWithValue(initialPalette),
       ],
       child: const AuthGate(
-          child: ChatTaskServiceInitializer(
-            child: AppLifecycleObserver(
-              child: ThkTreeApp(),
-            ),
-          ),
+        child: ChatTaskServiceInitializer(
+          child: AppLifecycleObserver(child: ThkTreeApp()),
         ),
+      ),
     ),
   );
 }
@@ -96,7 +102,6 @@ class ChatTaskServiceInitializer extends ConsumerStatefulWidget {
 
 class _ChatTaskServiceInitializerState
     extends ConsumerState<ChatTaskServiceInitializer> {
-
   @override
   void initState() {
     super.initState();
@@ -114,9 +119,7 @@ class _ChatTaskServiceInitializerState
             nodeStore: nodeStore,
           );
       // 冷启动后扫描一次磁盘中断（满足「杀进程 → 重启 APP」场景）
-      unawaited(
-        ref.read(chatTaskServiceProvider.notifier).resumeInterrupted(),
-      );
+      unawaited(ref.read(chatTaskServiceProvider.notifier).resumeInterrupted());
     } catch (e) {
       // 如果初始化失败，继续运行，搜索索引功能会在后续处理
     }
@@ -160,9 +163,7 @@ class _AppLifecycleObserverState extends ConsumerState<AppLifecycleObserver>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       // 切回前台：触发重发扫描（fire-and-forget，不 await）
-      unawaited(
-        ref.read(chatTaskServiceProvider.notifier).resumeInterrupted(),
-      );
+      unawaited(ref.read(chatTaskServiceProvider.notifier).resumeInterrupted());
     }
   }
 
@@ -177,7 +178,9 @@ class ThkTreeApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
     final brightness = ref.watch(brightnessProvider);
+    final palette = ref.watch(paletteProvider);
     AppColors.setBrightness(brightness);
+    AppColors.setPalette(palette);
     return CupertinoApp.router(
       locale: locale,
       localeResolutionCallback: (locale, supportedLocales) {

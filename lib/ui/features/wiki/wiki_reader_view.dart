@@ -769,7 +769,7 @@ class _EmptyWikiView extends StatelessWidget {
                 width: 136,
                 height: 136,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [AppColors.matteGoldLight, AppColors.matteGoldBg],
@@ -788,7 +788,7 @@ class _EmptyWikiView extends StatelessWidget {
               </svg>''',
                     width: 76,
                     height: 76,
-                    colorFilter: const ColorFilter.mode(
+                    colorFilter: ColorFilter.mode(
                       AppColors.matteGold,
                       BlendMode.srcIn,
                     ),

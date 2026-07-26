@@ -46,45 +46,45 @@ class ThkAlert {
       context: context,
       barrierDismissible: barrierDismissible,
       builder: (dialogContext) => Theme(
-          data: ThemeData(
-            cupertinoOverrideTheme: const CupertinoThemeData(
-              primaryColor: AppColors.matteGold, // 默认按钮改为高级暖沙金
-            ),
-          ),
-          child: CupertinoAlertDialog(
-            title: title != null ? Text(title) : null,
-            content: message != null ? Text(message) : null,
-            actions: [
-              if (destructiveAction != null)
-                CupertinoDialogAction(
-                  isDestructiveAction: true,
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                    onDestructive?.call();
-                  },
-                  child: Text(destructiveAction),
-                ),
-              if (defaultAction != null)
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                    onDefault?.call();
-                  },
-                  child: Text(defaultAction),
-                ),
-              if (cancelAction != null)
-                CupertinoDialogAction(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                    onCancel?.call();
-                  },
-                  child: Text(cancelAction),
-                ),
-            ],
+        data: ThemeData(
+          cupertinoOverrideTheme: CupertinoThemeData(
+            primaryColor: AppColors.matteGold,
           ),
         ),
-      );
+        child: CupertinoAlertDialog(
+          title: title != null ? Text(title) : null,
+          content: message != null ? Text(message) : null,
+          actions: [
+            if (destructiveAction != null)
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  onDestructive?.call();
+                },
+                child: Text(destructiveAction),
+              ),
+            if (defaultAction != null)
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  onDefault?.call();
+                },
+                child: Text(defaultAction),
+              ),
+            if (cancelAction != null)
+              CupertinoDialogAction(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  onCancel?.call();
+                },
+                child: Text(cancelAction),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// 显示一个确认/取消双按钮对话框。
@@ -105,8 +105,8 @@ class ThkAlert {
       barrierDismissible: barrierDismissible,
       builder: (dialogContext) => Theme(
         data: ThemeData(
-          cupertinoOverrideTheme: const CupertinoThemeData(
-            primaryColor: AppColors.matteGold, // 默认按钮改为高级暖沙金
+          cupertinoOverrideTheme: CupertinoThemeData(
+            primaryColor: AppColors.matteGold,
           ),
         ),
         child: CupertinoAlertDialog(

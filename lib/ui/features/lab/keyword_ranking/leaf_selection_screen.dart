@@ -85,8 +85,8 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
         child: _isLoading
             ? const Center(child: CupertinoActivityIndicator())
             : _loadError != null
-                ? _buildError(l10n)
-                : _buildContent(context, l10n, controller, analysisState),
+            ? _buildError(l10n)
+            : _buildContent(context, l10n, controller, analysisState),
       ),
     );
   }
@@ -107,10 +107,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
             Text(
               _loadError!,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
             CupertinoButton.filled(
@@ -153,10 +150,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
               Text(
                 l10n.keywordRankingNoThemes,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -165,8 +159,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
     }
 
     final analyzing = _isAnalyzing(analysisState);
-    final canStart =
-        controller.selectedLeafIds.isNotEmpty && !analyzing;
+    final canStart = controller.selectedLeafIds.isNotEmpty && !analyzing;
 
     return Column(
       children: [
@@ -233,10 +226,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
           padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 8),
           child: Text(
             l10n.keywordRankingSelectLeavesHint,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         ),
 
@@ -247,10 +237,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
             l10n.keywordRankingSelectLeavesSelected(
               controller.selectedLeafIds.length,
             ),
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textTertiary,
-            ),
+            style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
           ),
         ),
 
@@ -262,8 +249,12 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                 // Theme 标题
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      16,
+                      20,
+                      8,
+                    ),
                     child: Row(
                       children: [
                         Icon(
@@ -293,24 +284,26 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                                     .where((l) => l.status != LeafStatus.fresh)
                                     .toList();
                                 final allSelected = selectable.every(
-                                    (l) =>
-                                        controller.selectedLeafIds
-                                            .contains(l.nodeId));
+                                  (l) => controller.selectedLeafIds.contains(
+                                    l.nodeId,
+                                  ),
+                                );
                                 if (allSelected) {
-                                  controller
-                                      .deselectAllForTheme(theme.themeId);
+                                  controller.deselectAllForTheme(theme.themeId);
                                 } else {
-                                  controller
-                                      .selectAllForTheme(theme.themeId);
+                                  controller.selectAllForTheme(theme.themeId);
                                 }
                               });
                             },
                             child: Text(
                               theme.leaves
-                                      .where((l) => l.status != LeafStatus.fresh)
-                                      .every((l) =>
-                                          controller.selectedLeafIds
-                                              .contains(l.nodeId))
+                                      .where(
+                                        (l) => l.status != LeafStatus.fresh,
+                                      )
+                                      .every(
+                                        (l) => controller.selectedLeafIds
+                                            .contains(l.nodeId),
+                                      )
                                   ? l10n.keywordRankingDeselectAll
                                   : l10n.keywordRankingSelectAll,
                               style: TextStyle(
@@ -330,8 +323,9 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                     for (final leaf in theme.leaves)
                       _LeafTile(
                         leaf: leaf,
-                        isSelected: controller.selectedLeafIds
-                            .contains(leaf.nodeId),
+                        isSelected: controller.selectedLeafIds.contains(
+                          leaf.nodeId,
+                        ),
                         onToggle: analyzing
                             ? () {}
                             : () {
@@ -343,9 +337,7 @@ class _LeafSelectionScreenState extends ConsumerState<LeafSelectionScreen> {
                   ]),
                 ),
               ],
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 24),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
         ),
@@ -482,9 +474,18 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      LeafStatus.pending => (l10n.keywordRankingLeafStatusPending, AppColors.textTertiary),
-      LeafStatus.fresh => (l10n.keywordRankingLeafStatusFresh, AppColors.accent),
-      LeafStatus.stale => (l10n.keywordRankingLeafStatusStale, AppColors.destructive),
+      LeafStatus.pending => (
+        l10n.keywordRankingLeafStatusPending,
+        AppColors.textTertiary,
+      ),
+      LeafStatus.fresh => (
+        l10n.keywordRankingLeafStatusFresh,
+        AppColors.accent,
+      ),
+      LeafStatus.stale => (
+        l10n.keywordRankingLeafStatusStale,
+        AppColors.destructive,
+      ),
     };
 
     return Container(
@@ -507,10 +508,7 @@ class _StatusBadge extends StatelessWidget {
 
 /// 分析进度卡：高对比 accent 底 + 粗进度条 + 入场滑入。
 class _ProgressBanner extends StatelessWidget {
-  const _ProgressBanner({
-    required this.progress,
-    required this.onCancel,
-  });
+  const _ProgressBanner({required this.progress, required this.onCancel});
 
   final AnalysisProgress progress;
   final VoidCallback onCancel;
@@ -560,7 +558,7 @@ class _ProgressBanner extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const CupertinoActivityIndicator(
+                  CupertinoActivityIndicator(
                     radius: 11,
                     color: AppColors.accent,
                   ),
@@ -569,7 +567,7 @@ class _ProgressBanner extends StatelessWidget {
                     child: Text(
                       isExtracting
                           ? '${l10n.keywordRankingAnalyzing} '
-                              '${progress.completedLeaves}/${progress.totalLeaves}'
+                                '${progress.completedLeaves}/${progress.totalLeaves}'
                           : l10n.keywordRankingAnalyzing,
                       style: TextStyle(
                         fontSize: 16,
@@ -620,15 +618,17 @@ class _ProgressBanner extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: progress.progress.clamp(0.0, 1.0)),
+                  tween: Tween(
+                    begin: 0,
+                    end: progress.progress.clamp(0.0, 1.0),
+                  ),
                   duration: AppDur.listScroll,
                   curve: AppDur.listScrollCurve,
                   builder: (context, value, _) {
                     return material.LinearProgressIndicator(
                       value: value,
-                      backgroundColor:
-                          AppColors.accent.withValues(alpha: 0.15),
-                      valueColor: const material.AlwaysStoppedAnimation<Color>(
+                      backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                      valueColor: material.AlwaysStoppedAnimation<Color>(
                         AppColors.accent,
                       ),
                       minHeight: 10,
@@ -663,15 +663,15 @@ class _DoneBannerState extends State<_DoneBanner>
   void initState() {
     super.initState();
     final reduce = WidgetsBinding
-            .instance.platformDispatcher.accessibilityFeatures.reduceMotion;
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .reduceMotion;
     _ctrl = AnimationController(
       vsync: this,
       duration: reduce ? Duration.zero : AppDur.modal,
     );
-    _scale = CurvedAnimation(
-      parent: _ctrl,
-      curve: Curves.elasticOut,
-    );
+    _scale = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
     _ctrl.forward();
   }
 

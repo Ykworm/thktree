@@ -48,9 +48,11 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
       final service = ImageCleanupService(themesDir: paths.themesDir);
       final report = await service.scanAndReport();
       if (!mounted) return;
-      log('[CleanImages] scan done: themesDir=${paths.themesDir.path} '
-          'sessions=${report.sessionFiles} images=${report.imageFiles} '
-          'orphans=${report.orphans.length}');
+      log(
+        '[CleanImages] scan done: themesDir=${paths.themesDir.path} '
+        'sessions=${report.sessionFiles} images=${report.imageFiles} '
+        'orphans=${report.orphans.length}',
+      );
       setState(() {
         _images = report.images;
         _report = report;
@@ -73,8 +75,9 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
   String? get _diagnostics {
     final r = _report;
     if (r == null) return null;
-    final status =
-        r.themesExists ? l10n.cleanImagesDirExists : l10n.cleanImagesDirMissing;
+    final status = r.themesExists
+        ? l10n.cleanImagesDirExists
+        : l10n.cleanImagesDirMissing;
     return l10n.cleanImagesDiagnostics(
       status,
       r.sessionFiles,
@@ -112,12 +115,14 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
     // 删除任意选中的图片（含"使用中"），是否允许由教育栏 + 二次确认把关
     final toDelete = _images
         .where((e) => _selected.contains(e.path))
-        .map((e) => ImageEntry(
-              path: e.path,
-              nodeId: e.nodeId,
-              sizeBytes: e.sizeBytes,
-              isOrphan: e.isOrphan,
-            ))
+        .map(
+          (e) => ImageEntry(
+            path: e.path,
+            nodeId: e.nodeId,
+            sizeBytes: e.sizeBytes,
+            isOrphan: e.isOrphan,
+          ),
+        )
         .toList();
     if (toDelete.isEmpty) return;
     final size = toDelete.fold(0, (s, e) => s + e.sizeBytes);
@@ -126,12 +131,17 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
-        title: Text(inUseCount > 0 ? l10n.cleanImagesWarnTitle : l10n.cleanImagesEntry),
+        title: Text(
+          inUseCount > 0 ? l10n.cleanImagesWarnTitle : l10n.cleanImagesEntry,
+        ),
         content: Text(
           inUseCount > 0
               ? '${l10n.cleanImagesConfirmDelete(toDelete.length, _formatSize(size))}\n\n'
-                  '${l10n.cleanImagesConfirmInUse(inUseCount)}'
-              : l10n.cleanImagesConfirmDelete(toDelete.length, _formatSize(size)),
+                    '${l10n.cleanImagesConfirmInUse(inUseCount)}'
+              : l10n.cleanImagesConfirmDelete(
+                  toDelete.length,
+                  _formatSize(size),
+                ),
         ),
         actions: [
           CupertinoDialogAction(
@@ -160,16 +170,24 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
         _deleting = false;
       });
       final logger = await ref.read(appLoggerProvider.future);
-      unawaited(logger.info(
-        'image_cleanup.done',
-        attrs: {'count': deletedCount, 'freedBytes': freed, 'inUse': inUseCount},
-      ));
+      unawaited(
+        logger.info(
+          'image_cleanup.done',
+          attrs: {
+            'count': deletedCount,
+            'freedBytes': freed,
+            'inUse': inUseCount,
+          },
+        ),
+      );
       if (context.mounted) {
         await showCupertinoDialog<void>(
           context: context,
           builder: (ctx) => CupertinoAlertDialog(
             title: Text(l10n.cleanImagesEntry),
-            content: Text(l10n.cleanImagesDone(deletedCount, _formatSize(freed))),
+            content: Text(
+              l10n.cleanImagesDone(deletedCount, _formatSize(freed)),
+            ),
             actions: [
               CupertinoDialogAction(
                 isDefaultAction: true,
@@ -218,7 +236,9 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
                 padding: EdgeInsets.zero,
                 onPressed: _toggleAll,
                 child: Text(
-                  allSelected ? l10n.cleanImagesDeselectAll : l10n.cleanImagesSelectAll,
+                  allSelected
+                      ? l10n.cleanImagesDeselectAll
+                      : l10n.cleanImagesSelectAll,
                 ),
               ),
       ),
@@ -257,7 +277,10 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
               const SizedBox(height: 12),
               if (_report != null)
                 Text(
-                  l10n.cleanImagesScanStats(_report!.sessionFiles, _report!.imageFiles),
+                  l10n.cleanImagesScanStats(
+                    _report!.sessionFiles,
+                    _report!.imageFiles,
+                  ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -310,75 +333,74 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
               crossAxisSpacing: 6,
               mainAxisSpacing: 6,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, i) {
-                final e = _images[i];
-                final selected = _selected.contains(e.path);
-                final inUse = !e.isOrphan;
-                return GestureDetector(
-                  onTap: () => _toggle(e.path),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.file(
-                        File(e.path),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          color: AppColors.surfaceMuted,
-                          child: Center(
-                            child: Icon(
-                              CupertinoIcons.exclamationmark_triangle,
-                              color: AppColors.textTertiary,
+            delegate: SliverChildBuilderDelegate((context, i) {
+              final e = _images[i];
+              final selected = _selected.contains(e.path);
+              final inUse = !e.isOrphan;
+              return GestureDetector(
+                onTap: () => _toggle(e.path),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(
+                      File(e.path),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        color: AppColors.surfaceMuted,
+                        child: Center(
+                          child: Icon(
+                            CupertinoIcons.exclamationmark_triangle,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      // 选中勾：实底 accent 圆 + 白勾，靠它作选中标识（不再加遮罩，保持图片原貌）
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: Container(
+                          margin: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(2),
+                          child: const Icon(
+                            CupertinoIcons.check_mark,
+                            color: AppColors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    if (!selected && inUse)
+                      // 在用小标：中性深底白字（不引入 app 无对应 token 的橙色），仅提示、不阻止选择
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Container(
+                          margin: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.scrim,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            l10n.cleanImagesInUse,
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
-                      if (selected)
-                        // 选中勾：实底 accent 圆 + 白勾，靠它作选中标识（不再加遮罩，保持图片原貌）
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: Container(
-                            margin: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: AppColors.accent,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(2),
-                            child: const Icon(
-                              CupertinoIcons.check_mark,
-                              color: AppColors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      if (!selected && inUse)
-                        // 在用小标：中性深底白字（不引入 app 无对应 token 的橙色），仅提示、不阻止选择
-                        Align(
-                          alignment: Alignment.topLeft,
-                          child: Container(
-                            margin: const EdgeInsets.all(6),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.scrim,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              l10n.cleanImagesInUse,
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-              childCount: _images.length,
-            ),
+                  ],
+                ),
+              );
+            }, childCount: _images.length),
           ),
         ),
       ],
@@ -401,8 +423,11 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(CupertinoIcons.exclamationmark_triangle,
-                    color: AppColors.destructive, size: 16),
+                Icon(
+                  CupertinoIcons.exclamationmark_triangle,
+                  color: AppColors.destructive,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -464,10 +489,7 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
             child: Text(
               _diagnostics!,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textTertiary,
-              ),
+              style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
             ),
           ),
       ],
@@ -478,9 +500,7 @@ class _CleanImagesScreenState extends ConsumerState<CleanImagesScreen> {
     final count = _selected.length;
     return Container(
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.border),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border)),
         color: CupertinoTheme.of(context).barBackgroundColor,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

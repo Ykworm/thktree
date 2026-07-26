@@ -2,9 +2,14 @@
 // Warm Paper Glass（安静书房）light 真源：docs/_tmp/warm-paper-tokens.md
 
 import 'dart:ui';
+
 import 'package:flutter/painting.dart';
 
-/// Warm Paper Glass 色彩系统（light 为暖米色；dark 暂保持 slate 深色，另 topic）。
+import 'app_palette_tokens.dart';
+
+export 'app_palette_tokens.dart' show AppColorPalette, NodePalette;
+
+/// 语义色系统：light 下用户可选 warmPaper / morandi；dark 下统一 slate。
 ///
 /// 设计哲学：
 /// - 纸做底座：pageBg / surfaceMuted 暖纸，内容 surface 白卡
@@ -14,86 +19,50 @@ import 'package:flutter/painting.dart';
 class AppColors {
   AppColors._();
 
-  // ── 亮度控制（深色模式）──────────────────────────────────────────
   static Brightness _brightness = Brightness.light;
   static Brightness get brightness => _brightness;
   static void setBrightness(Brightness b) => _brightness = b;
 
-  // ── 五色系统（分类 + 主题 tile；与 accent 同族 blue）──────────────
-  /// 主线蓝（与 [accent] 同色）
-  static const paletteBlue = Color(0xFF4A7AB5);
-  static const paletteSage = Color(0xFF5A9E7F);
-  static const paletteClay = Color(0xFFC47856);
-  static const paletteGold = Color(0xFFC9A24E);
-  static const palettePlum = Color(0xFF8B6AAE);
+  static AppColorPalette _palette = AppColorPalette.warmPaper;
+  static AppColorPalette get palette => _palette;
+  static void setPalette(AppColorPalette p) => _palette = p;
 
-  // ── 节点配色系统（themes 模块）──────────────────────────────────
-  /// 节点卡片：圆圈用五色实色；标题/副标题用 ink 系，白卡上可读。
-  static const nodePalettes = [
-    NodePalette(
-      paletteBlue, // circle: blue
-      Color(0xFF1F2933), // title: ink
-      Color(0xFF4A5568), // subtitle: ink-2
-    ),
-    NodePalette(
-      paletteSage,
-      Color(0xFF1F2933),
-      Color(0xFF4A5568),
-    ),
-    NodePalette(
-      paletteClay,
-      Color(0xFF1F2933),
-      Color(0xFF4A5568),
-    ),
-    NodePalette(
-      paletteGold,
-      Color(0xFF1F2933),
-      Color(0xFF4A5568),
-    ),
-    NodePalette(
-      palettePlum,
-      Color(0xFF1F2933),
-      Color(0xFF4A5568),
-    ),
-  ];
+  static AppPaletteTokens get _current => _brightness == Brightness.dark
+      ? AppThemeRegistry.slate
+      : AppThemeRegistry.of(_palette);
 
-  /// 根据 nodeId 生成稳定的节点配色。
+  static Color get paletteBlue => _current.paletteBlue;
+  static Color get paletteSage => _current.paletteSage;
+  static Color get paletteClay => _current.paletteClay;
+  static Color get paletteGold => _current.paletteGold;
+  static Color get palettePlum => _current.palettePlum;
+
+  static List<NodePalette> get nodePalettes => _current.nodePalettes;
+
   static NodePalette paletteForNode(String nodeId) {
     return nodePalettes[nodeId.hashCode.abs() % nodePalettes.length];
   }
 
-  // ── 典雅暖调原语（低饱和，供装饰/兼容引用）──────────────────────
-  static const champagneGold = Color(0xFFC4A77D); // 香槟金
-  static const warmGray = Color(0xFF8E8B82); // 烟灰
-  static const dustyRose = Color(0xFFA89090); // 玫瑰灰
-  static const sageGray = Color(0xFF8B9080); // 橄榄灰
-  static const slateBlue = Color(0xFF6B7B8E); // 深蓝灰
+  static Color get champagneGold => _current.champagneGold;
+  static Color get warmGray => _current.warmGray;
+  static Color get dustyRose => _current.dustyRose;
+  static Color get sageGray => _current.sageGray;
+  static Color get slateBlue => _current.slateBlue;
 
-  // ── 哑光渐变/高级强调 (Matte Gradient & Gold) ───────────────────
-  static const matteGoldLight = Color(0xFFFFFDF5); // 非常淡的暖金色
-  static const matteGoldBg = Color(0xFFF9F7F1); // 极淡的暖灰/米色
-  static const matteGoldBorder = Color(0xFFF2EADC); // 极细的暖沙色边框
-  static const textMatteGoldDark = Color(0xFF5C544D); // 带有暖灰调的深色文字
-  static const matteGold = Color(0xFFD4A373); // 高级哑光金/暖沙金
+  static Color get matteGoldLight => _current.matteGoldLight;
+  static Color get matteGoldBg => _current.matteGoldBg;
+  static Color get matteGoldBorder => _current.matteGoldBorder;
+  static Color get textMatteGoldDark => _current.textMatteGoldDark;
+  static Color get matteGold => _current.matteGold;
 
-  // ── Lab/特定冷灰背景 ──────────────────────────────────────
-  static const labCoolBg = Color(0xFFF2F4F7); // 极其扁平的淡银灰底色
+  static const labCoolBg = Color(0xFFF2F4F7);
 
-  /// 主题色列表，与 [themeTileColors] / 五色系统对齐。
-  static const themeColors = [
-    paletteBlue, // blue
-    paletteSage, // sage
-    paletteClay, // clay
-    paletteGold, // gold
-    palettePlum, // plum
-  ];
+  static List<Color> get themeColors => _current.themeColors;
 
-  /// 根据 themeId 生成稳定的主题色（hash 取模）。
   static Color colorForTheme(String themeId) {
     return themeColors[themeId.hashCode.abs() % themeColors.length];
   }
 
-  /// 主题色对应的浅 tint（用于背景、leading icon 背景）。
   static Color tintForTheme(String themeId) {
     final c = colorForTheme(themeId);
     return Color.from(
@@ -104,82 +73,40 @@ class AppColors {
     );
   }
 
-  // ── 主题网格色盘（与 themeColors 同一套五色）────────────────────
-  static const themeTileColors = [
-    paletteBlue,
-    paletteSage,
-    paletteClay,
-    paletteGold,
-    palettePlum,
-  ];
+  static List<Color> get themeTileColors => _current.themeTileColors;
 
-  /// 根据 themeId 生成稳定的网格色（hash 取模）。
   static Color themeTileColorFor(String themeId) {
     return themeTileColors[themeId.hashCode.abs() % themeTileColors.length];
   }
 
-  // ── 通用交互色（雾蓝；全局固定）────────────────────────────────
-  static const accent = Color(0xFF4A7AB5); // paper blue — 唯一主交互
-  static Color get accentLight => _brightness == Brightness.light
-      ? const Color(0xFFEDF2F8) // blue soft 叠白 ≈ rgba(74,122,181,0.10)
-      : const Color(0xFF1E3A5F); // 深蓝底（dark 另 topic，暂保留）
-  static const accentDeep = Color(0xFF3D6A9E); // pressed
+  static Color get accent => _current.accent;
+  static Color get accentLight => _current.accentLight;
+  static Color get accentDeep => _current.accentDeep;
 
-  // ── Surface（暖纸 + 白卡）──────────────────────────────────────
-  static Color get pageBg => _brightness == Brightness.light
-      ? const Color(0xFFFAF9F6) // 高明度雅白 (亮纸色)
-      : const Color(0xFF020617); // Slate 950（dark 未改）
-  static Color get surface => _brightness == Brightness.light
-      ? const Color(0xFFFFFFFF) // 白卡
-      : const Color(0xFF0F172A); // Slate 900
-  static Color get surfaceMuted => _brightness == Brightness.light
-      ? const Color(0xFFF2EFEA) // 柔和暖白灰
-      : const Color(0xFF1E293B); // Slate 800
+  static Color get pageBg => _current.pageBg;
+  static Color get surface => _current.surface;
+  static Color get surfaceMuted => _current.surfaceMuted;
 
-  // ── Text（ink 系）──────────────────────────────────────────────
-  static Color get textPrimary => _brightness == Brightness.light
-      ? const Color(0xFF1F2933) // ink
-      : const Color(0xFFF1F5F9);
-  static Color get textSecondary => _brightness == Brightness.light
-      ? const Color(0xFF4A5568) // ink-2
-      : const Color(0xFF94A3B8);
-  static Color get textTertiary => _brightness == Brightness.light
-      ? const Color(0xFF8492A6) // ink-3
-      : const Color(0xFF64748B);
-  /// ink-4：弱标签 / 禁用装饰（勿作正文）
-  static Color get textQuaternary => _brightness == Brightness.light
-      ? const Color(0xFFB8C2CC)
-      : const Color(0xFF475569);
+  static Color get textPrimary => _current.textPrimary;
+  static Color get textSecondary => _current.textSecondary;
+  static Color get textTertiary => _current.textTertiary;
+  static Color get textQuaternary => _current.textQuaternary;
 
-  // ── Structure ────────────────────────────────────────────────────
-  /// 暖 hair 实色近似（控件更稳；语义对齐 rgba(31,41,51,0.07)）
-  static Color get border => _brightness == Brightness.light
-      ? const Color(0xFFE8E4DC)
-      : const Color(0xFF334155);
-  /// hair-2 近似
-  static Color get borderStrong => _brightness == Brightness.light
-      ? const Color(0xFFD9D3C8)
-      : const Color(0xFF475569);
+  static Color get border => _current.border;
+  static Color get borderStrong => _current.borderStrong;
 
-  // ── Destructive / Semantic ───────────────────────────────────────
-  static const destructive = Color(0xFFDC2626); // 硬红保留
-  static const success = Color(0xFF5A9E7F); // sage
+  static const destructive = Color(0xFFDC2626);
+  static Color get success => _current.success;
   static const onSurface = Color(0xFFFFFFFF);
 
-  /// 草稿 / 软警告（非硬删）
-  static const clay = paletteClay;
-  /// pin / 附属
-  static const gold = paletteGold;
-  /// 收集 / 合并 / 多选
-  static const plum = palettePlum;
+  static Color get clay => _current.clay;
+  static Color get gold => _current.gold;
+  static Color get plum => _current.plum;
 
-  // ── Chat / Sheet overlay ────────────────────────────────────────
   static const scrim = Color(0x80000000);
 
-  /// 浮层阴影：暖 ink 系 ~10%
-  static Color get elevationShadow => const Color(0x1A1F2933);
+  static Color get elevationShadow => _current.elevationShadow;
 
-  // ── 中性原语 ─────────────────────────────────────────────────────
   static const white = Color(0xFFFFFFFF);
   static const black = Color(0xFF000000);
   static const transparent = Color(0x00000000);
@@ -188,7 +115,6 @@ class AppColors {
   static const scrimMid = Color(0x61000000);
   static const scrimSoft = Color(0x0D000000);
 
-  // ── Lab / 波形（豁免书房换肤）────────────────────────────────────
   static const labBg = Color(0xFF0F1035);
   static const labAccentBlue = Color(0xFF3B82F6);
   static const labAccentOrange = Color(0xFFF97316);
@@ -203,14 +129,8 @@ class AppColors {
   static Color get assistantBubbleBg => surface;
   static Color get assistantBubbleBorder => border;
 
-  /// 问题来源标签（accent 50% 透明）
-  static const questionSourceTag = Color(0x804A7AB5);
-}
+  static Color get questionSourceTag => _current.questionSourceTag;
 
-/// 节点卡片配色方案（圆圈 + 标题 + 副标题）。
-class NodePalette {
-  const NodePalette(this.circle, this.title, this.subtitle);
-  final Color circle;
-  final Color title;
-  final Color subtitle;
+  static Color get glassFill => _current.glassFill;
+  static Color get glassFillOpaque => _current.glassFillOpaque;
 }

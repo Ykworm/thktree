@@ -947,7 +947,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             }
                           },
                           // 「查看整棵树」常驻入口，与 more 菜单同一跳转
-                          onViewTree: () => context.go(
+                          onViewTree: () => context.push(
                             '/themes/${widget.themeId}/full-tree?currentNodeId=${widget.nodeId}',
                           ),
                         ),
@@ -1249,7 +1249,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             label: l10n.viewTree,
             icon: AppIcons.accountTree,
             color: AppColors.accent,
-            onPressed: () => context.go(
+            onPressed: () => context.push(
               '/themes/${widget.themeId}/full-tree?currentNodeId=${widget.nodeId}',
             ),
           ),

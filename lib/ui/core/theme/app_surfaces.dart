@@ -14,13 +14,13 @@ class AppSurfaces {
 
   /// 极柔 card shadow（对齐暖纸 shadow-sm 意图）
   static List<BoxShadow> get cardShadowSm => const [
-        BoxShadow(
-          color: Color(0x1A1F2933),
-          blurRadius: 14,
-          offset: Offset(0, 4),
-          spreadRadius: -4,
-        ),
-      ];
+    BoxShadow(
+      color: Color(0x1A1F2933),
+      blurRadius: 14,
+      offset: Offset(0, 4),
+      spreadRadius: -4,
+    ),
+  ];
 
   /// 主内容白卡：列表行卡、消息气泡、设置分组壳。
   static BoxDecoration contentCard({
@@ -43,13 +43,10 @@ class AppSurfaces {
   /// 助手消息：白卡 + 边 + 轻影
   static BoxDecoration assistantBubble({
     double radius = AppSp.chatBubbleRadius,
-  }) =>
-      contentCard(radius: radius);
+  }) => contentCard(radius: radius);
 
   /// 用户消息：accentLight 底 + 轻边（可无影，避免糊）
-  static BoxDecoration userBubble({
-    double radius = AppSp.chatBubbleRadius,
-  }) =>
+  static BoxDecoration userBubble({double radius = AppSp.chatBubbleRadius}) =>
       contentCard(
         color: AppColors.accentLight,
         radius: radius,
@@ -66,10 +63,10 @@ class AppGlass {
   AppGlass._();
 
   /// 暖白半透 ~55%（blur 路径；再高会像实心白块）
-  static const fill = Color(0x8CFFFFFF);
+  static Color get fill => AppColors.glassFill;
 
   /// Android / 降级：不透明 paper-warm
-  static const fillOpaque = Color(0xFFF3EFE8);
+  static Color get fillOpaque => AppColors.glassFillOpaque;
 
   /// Composer 统一大胶囊毛玻璃 fill（~20% 纯白，大幅降低不透明度，靠 blur 保可读，液态玻璃感）
   static const composerFill = Color(0x33FFFFFF);
@@ -110,12 +107,10 @@ class AppAtmosphere {
   static bool enabled = true;
 
   /// 自 title bar 释出的 blue（核心约 10%，径向淡出）
-  static Color get blueGlow =>
-      AppColors.accent.withValues(alpha: 0.10);
+  static Color get blueGlow => AppColors.accent.withValues(alpha: 0.10);
 
   /// 左下 sage（约 8%，更弱，只托底）
-  static Color get sageGlow =>
-      AppColors.paletteSage.withValues(alpha: 0.08);
+  static Color get sageGlow => AppColors.paletteSage.withValues(alpha: 0.08);
 
   /// 光斑参考直径（painter 会按屏宽再 clamp）
   static const blobSize = 380.0;

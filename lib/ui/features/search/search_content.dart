@@ -60,7 +60,10 @@ class SearchResultItem extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     result.entityTitle,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -103,15 +106,19 @@ TextSpan _buildSnippetSpan(String snippet, TextStyle baseStyle) {
 
   for (final match in regex.allMatches(snippet)) {
     if (match.start > lastIndex) {
-      spans.add(TextSpan(
-        text: snippet.substring(lastIndex, match.start),
-        style: baseStyle,
-      ));
+      spans.add(
+        TextSpan(
+          text: snippet.substring(lastIndex, match.start),
+          style: baseStyle,
+        ),
+      );
     }
-    spans.add(TextSpan(
-      text: match.group(1),
-      style: baseStyle.copyWith(fontWeight: FontWeight.w600),
-    ));
+    spans.add(
+      TextSpan(
+        text: match.group(1),
+        style: baseStyle.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
     lastIndex = match.end;
   }
 
@@ -192,6 +199,7 @@ class SearchBox extends StatefulWidget {
   final String? placeholder;
   final TextEditingController? controller;
   final FocusNode? focusNode;
+
   /// Called when the user explicitly triggers a search (keyboard search/return
   /// key, or an external search button). When non-null, live typing no longer
   /// drives searching on its own — callers wire an explicit trigger.
@@ -386,12 +394,16 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
       final themeStore = await ref.read(themeStoreProvider.future);
       final paths = await ref.read(appPathsProvider.future);
       final themes = await themeStore.listThemes();
-      final scanItems = themes.map((t) => ThemeScanItem(
-        themeId: t.themeId,
-        title: t.title,
-        notesDir: Directory('${paths.themesDir.path}/${t.themeId}/notes'),
-        nodesDir: Directory('${paths.themesDir.path}/${t.themeId}/nodes'),
-      )).toList();
+      final scanItems = themes
+          .map(
+            (t) => ThemeScanItem(
+              themeId: t.themeId,
+              title: t.title,
+              notesDir: Directory('${paths.themesDir.path}/${t.themeId}/notes'),
+              nodesDir: Directory('${paths.themesDir.path}/${t.themeId}/nodes'),
+            ),
+          )
+          .toList();
       await svc.rebuildAll(scanItems);
       if (mounted) {
         setState(() {
@@ -419,7 +431,9 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = AppLocalizations.of(context)!.searchRepairFailed(e.toString());
+          _error = AppLocalizations.of(
+            context,
+          )!.searchRepairFailed(e.toString());
         });
       }
     }
@@ -448,10 +462,16 @@ class _SearchResultsState extends ConsumerState<SearchResults> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(CupertinoIcons.search, size: 40, color: AppColors.textTertiary),
+            Icon(
+              CupertinoIcons.search,
+              size: 40,
+              color: AppColors.textTertiary,
+            ),
             const SizedBox(height: 12),
             Text(
-              widget.queryNotifier.value.isEmpty ? l10n.searchEmpty : l10n.searchNoResults,
+              widget.queryNotifier.value.isEmpty
+                  ? l10n.searchEmpty
+                  : l10n.searchNoResults,
               style: TextStyle(color: AppColors.textSecondary),
             ),
           ],
@@ -617,7 +637,8 @@ class _BackupReminderBanner extends ConsumerStatefulWidget {
   const _BackupReminderBanner();
 
   @override
-  ConsumerState<_BackupReminderBanner> createState() => _BackupReminderBannerState();
+  ConsumerState<_BackupReminderBanner> createState() =>
+      _BackupReminderBannerState();
 }
 
 class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
@@ -645,38 +666,32 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.matteGoldLight, // 非常淡的暖金色（几乎是泛着金光的白）
-            AppColors.matteGoldBg, // 极淡的暖灰/米色，收敛粉色感
-          ],
+          colors: [AppColors.matteGoldLight, AppColors.matteGoldBg],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.matteGoldBorder, // 极细的暖沙色边框
-          width: 0.5,
-        ),
+        border: Border.all(color: AppColors.matteGoldBorder, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 CupertinoIcons.archivebox,
                 size: 18,
-                color: AppColors.matteGold, // 克制的高级哑光金/暖沙金
+                color: AppColors.matteGold,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   l10n.searchBackupSuggestion(backupCount),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textMatteGoldDark, // 带有暖灰调的深色文字
+                    color: AppColors.textMatteGoldDark,
                   ),
                 ),
               ),
@@ -696,7 +711,10 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
           Row(
             children: [
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 minimumSize: Size.zero,
                 color: AppColors.accent,
                 borderRadius: BorderRadius.circular(8),
@@ -712,7 +730,10 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
               ),
               const SizedBox(width: 8),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 minimumSize: Size.zero,
                 onPressed: _onDismiss,
                 child: Text(
@@ -738,24 +759,25 @@ class _BackupReminderBannerState extends ConsumerState<_BackupReminderBanner> {
 
   void _onDismiss() {
     final nextDate = _computeNextDate();
-    ref.read(settingsControllerProvider.notifier).saveNextBackupReminderDate(nextDate);
+    ref
+        .read(settingsControllerProvider.notifier)
+        .saveNextBackupReminderDate(nextDate);
     setState(() => _dismissed = true);
   }
 
   DateTime _computeNextDate() {
-    final settings =
-        ref.read(settingsControllerProvider).whenOrNull(data: (s) => s);
+    final settings = ref
+        .read(settingsControllerProvider)
+        .whenOrNull(data: (s) => s);
     final days = settings?.backupReminderIntervalDays ?? 3;
     return DateTime.now().add(Duration(days: days));
   }
 
   Future<void> _onBackup(BuildContext context, AppLocalizations l10n) async {
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (_) => const BackupRestoreScreen(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(CupertinoPageRoute(builder: (_) => const BackupRestoreScreen()));
   }
 }
 
@@ -810,10 +832,7 @@ Future<void> clearRecentSearches() async {
 
 /// Tag cloud of recent searches. Shown when search box is empty.
 class RecentSearchTags extends StatelessWidget {
-  const RecentSearchTags({
-    super.key,
-    required this.onTagTap,
-  });
+  const RecentSearchTags({super.key, required this.onTagTap});
 
   final ValueChanged<String> onTagTap;
 
@@ -835,7 +854,11 @@ class RecentSearchTags extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(CupertinoIcons.search, size: 40, color: AppColors.textTertiary),
+                Icon(
+                  CupertinoIcons.search,
+                  size: 40,
+                  color: AppColors.textTertiary,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   l10n.searchEmpty,
@@ -846,20 +869,14 @@ class RecentSearchTags extends StatelessWidget {
           );
         }
 
-        return _RecentSearchTagsBody(
-          tags: tags,
-          onTagTap: onTagTap,
-        );
+        return _RecentSearchTagsBody(tags: tags, onTagTap: onTagTap);
       },
     );
   }
 }
 
 class _RecentSearchTagsBody extends StatefulWidget {
-  const _RecentSearchTagsBody({
-    required this.tags,
-    required this.onTagTap,
-  });
+  const _RecentSearchTagsBody({required this.tags, required this.onTagTap});
 
   final List<String> tags;
   final ValueChanged<String> onTagTap;
@@ -929,10 +946,7 @@ class _RecentSearchTagsBodyState extends State<_RecentSearchTagsBody> {
               onPressed: _clearAll,
               child: Text(
                 l10n.searchClearAll,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.destructive,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.destructive),
               ),
             ),
           ],
@@ -980,10 +994,7 @@ class _RecentSearchTag extends StatelessWidget {
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 0, 6),
-              child: Text(
-                label,
-                style: const TextStyle(fontSize: 14),
-              ),
+              child: Text(label, style: const TextStyle(fontSize: 14)),
             ),
           ),
           CupertinoButton(

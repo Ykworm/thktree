@@ -29,13 +29,7 @@ void main() {
   });
 
   test('five-color theme + tile + node palettes aligned', () {
-    const five = [
-      0xFF4A7AB5,
-      0xFF5A9E7F,
-      0xFFC47856,
-      0xFFC9A24E,
-      0xFF8B6AAE,
-    ];
+    const five = [0xFF4A7AB5, 0xFF5A9E7F, 0xFFC47856, 0xFFC9A24E, 0xFF8B6AAE];
     expect(AppColors.themeColors.map((c) => c.toARGB32()), five);
     expect(AppColors.themeTileColors.map((c) => c.toARGB32()), five);
     expect(

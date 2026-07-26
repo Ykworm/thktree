@@ -20,7 +20,8 @@ import 'package:thk_tree/ui/features/themes/theme_detail_controller.dart';
 import 'package:thk_tree/ui/features/themes/theme_ui_prefs_controller.dart';
 import 'package:thk_tree/ui/features/themes/tree_title_filter.dart';
 import 'package:thk_tree/data/services/theme_ui_prefs_store.dart';
-import 'package:thk_tree/ui/core/shared/llm_setup_check.dart' show resolveChatModel;
+import 'package:thk_tree/ui/core/shared/llm_setup_check.dart'
+    show resolveChatModel;
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/shared/title_suggestion_screen.dart';
 import 'package:thk_tree/ui/features/chat/chat_screen_launch_params.dart';
@@ -91,9 +92,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
             Navigator.of(context, rootNavigator: true).pop();
             collapsedIds.isEmpty ? _collapseAll() : _expandAll();
           },
-          child: Text(
-            collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll,
-          ),
+          child: Text(collapsedIds.isEmpty ? l10n.collapseAll : l10n.expandAll),
         ),
         CupertinoActionSheetAction(
           onPressed: () {
@@ -113,7 +112,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         ),
       ]);
     } else {
-      final wikiState = ref.read(wikiReaderControllerProvider(widget.themeId)).value;
+      final wikiState = ref
+          .read(wikiReaderControllerProvider(widget.themeId))
+          .value;
       final selected = wikiState?.selectedTree;
       if (selected != null) {
         final rootNodeId = selected.rootNode.nodeId;
@@ -177,24 +178,22 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     try {
       final paths = await ref.read(appPathsProvider.future);
-      final wikiDir = Directory(p.join(
-        paths.themesDir.path,
-        widget.themeId,
-        'wiki',
-        rootNodeId,
-      ));
-      final themeTitle = ref
-          .read(themeDetailControllerProvider(widget.themeId))
-          .value
-          ?.themeTitle ?? '';
+      final wikiDir = Directory(
+        p.join(paths.themesDir.path, widget.themeId, 'wiki', rootNodeId),
+      );
+      final themeTitle =
+          ref
+              .read(themeDetailControllerProvider(widget.themeId))
+              .value
+              ?.themeTitle ??
+          '';
       final zipFile = await const WikiExportService().exportWiki(
         wikiDir: wikiDir,
         themeTitle: themeTitle,
       );
-      await Share.shareXFiles(
-        [XFile(zipFile.path)],
-        sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
-      );
+      await Share.shareXFiles([
+        XFile(zipFile.path),
+      ], sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1));
     } catch (e) {
       if (!mounted) return;
       showCupertinoDialog<void>(
@@ -240,8 +239,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   }
 
   void _collapseAll() {
-    final detail =
-        ref.read(themeDetailControllerProvider(widget.themeId)).value;
+    final detail = ref
+        .read(themeDetailControllerProvider(widget.themeId))
+        .value;
     if (detail == null) return;
     final nodes = detail.nodes;
     // Build parent→children index to find non-leaf nodes.
@@ -264,9 +264,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     final mdText = await Navigator.of(context).push<String>(
-      CupertinoPageRoute(
-        builder: (_) => const DocSplitInputScreen(),
-      ),
+      CupertinoPageRoute(builder: (_) => const DocSplitInputScreen()),
     );
     if (mdText == null || mdText.trim().isEmpty) return;
     if (!mounted) return;
@@ -274,7 +272,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     try {
       final nodeStore = await ref.read(nodeStoreProvider.future);
       final sessionStore = await ref.read(sessionStoreProvider.future);
-      final detail = ref.read(themeDetailControllerProvider(widget.themeId)).value;
+      final detail = ref
+          .read(themeDetailControllerProvider(widget.themeId))
+          .value;
       if (detail == null) return;
 
       final languageCode = LlmPromptLocale.resolve(
@@ -296,7 +296,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
       );
 
       final trimmed = mdText.trim();
-      final sourceExcerpt = trimmed.length <= 80 ? trimmed : '${trimmed.substring(0, 80)}...';
+      final sourceExcerpt = trimmed.length <= 80
+          ? trimmed
+          : '${trimmed.substring(0, 80)}...';
       await nodeStore.updateNodeSourceInfo(
         nodeId: previewNode.nodeId,
         sourceExcerpt: sourceExcerpt,
@@ -314,7 +316,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
         ),
       );
 
-      ref.read(themeDetailControllerProvider(widget.themeId).notifier).refresh();
+      ref
+          .read(themeDetailControllerProvider(widget.themeId).notifier)
+          .refresh();
     } catch (e) {
       if (!mounted) return;
       ThkAlert.show(context: context, message: e.toString());
@@ -324,8 +328,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final detailAsync =
-        ref.watch(themeDetailControllerProvider(widget.themeId));
+    final detailAsync = ref.watch(
+      themeDetailControllerProvider(widget.themeId),
+    );
     return detailAsync.when(
       data: (data) {
         return CupertinoPageScaffold(
@@ -390,7 +395,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               child: Container(
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: _selectedTab == _DetailTab.tree ? AppColors.surface : Colors.transparent,
+                  color: _selectedTab == _DetailTab.tree
+                      ? AppColors.surface
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   boxShadow: _selectedTab == _DetailTab.tree
                       ? [
@@ -398,7 +405,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                             color: AppColors.black.withValues(alpha: 0.04),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -407,8 +414,12 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   l10n.treeTabLabel,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: _selectedTab == _DetailTab.tree ? FontWeight.w600 : FontWeight.w500,
-                    color: _selectedTab == _DetailTab.tree ? AppColors.textPrimary : AppColors.textSecondary,
+                    fontWeight: _selectedTab == _DetailTab.tree
+                        ? FontWeight.w600
+                        : FontWeight.w500,
+                    color: _selectedTab == _DetailTab.tree
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -423,7 +434,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
               child: Container(
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: _selectedTab == _DetailTab.wiki ? AppColors.surface : Colors.transparent,
+                  color: _selectedTab == _DetailTab.wiki
+                      ? AppColors.surface
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   boxShadow: _selectedTab == _DetailTab.wiki
                       ? [
@@ -431,7 +444,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                             color: AppColors.black.withValues(alpha: 0.04),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -440,8 +453,12 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                   l10n.wikiTabLabel,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: _selectedTab == _DetailTab.wiki ? FontWeight.w600 : FontWeight.w500,
-                    color: _selectedTab == _DetailTab.wiki ? AppColors.textPrimary : AppColors.textSecondary,
+                    fontWeight: _selectedTab == _DetailTab.wiki
+                        ? FontWeight.w600
+                        : FontWeight.w500,
+                    color: _selectedTab == _DetailTab.wiki
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -481,7 +498,7 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
     // 订阅折叠/隐藏偏好，变更后重建列表。
     final prefs =
         ref.watch(themeUiPrefsControllerProvider(widget.themeId)).value ??
-            const ThemeUiPrefs();
+        const ThemeUiPrefs();
     final collapsedIds = prefs.collapsedIds;
     final hiddenRootIds = prefs.hiddenRootIds;
 
@@ -492,17 +509,16 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
 
     final visibleIds = visibleNodeIdsForTitleQuery(data.nodes, _titleQuery);
     final searchActive = visibleIds != null;
-    final effectiveCollapsed =
-        searchActive ? const <String>{} : collapsedIds;
+    final effectiveCollapsed = searchActive ? const <String>{} : collapsedIds;
 
     // 搜索态仍包含隐藏 root，便于找回；浏览态过滤 hidden。
     final roots = searchActive
         ? allRoots
-            .where((n) => visibleIds.contains(n.nodeId))
-            .toList(growable: false)
+              .where((n) => visibleIds.contains(n.nodeId))
+              .toList(growable: false)
         : allRoots
-            .where((n) => !hiddenRootIds.contains(n.nodeId))
-            .toList(growable: false);
+              .where((n) => !hiddenRootIds.contains(n.nodeId))
+              .toList(growable: false);
 
     final treeToolbar = Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -602,8 +618,8 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                               searchActive
                                   ? AppIcons.search
                                   : (hiddenRootIds.isNotEmpty
-                                      ? AppIcons.eyeSlash
-                                      : AppIcons.search),
+                                        ? AppIcons.eyeSlash
+                                        : AppIcons.search),
                               size: 40,
                               color: AppColors.textTertiary,
                             ),
@@ -612,14 +628,13 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                               searchActive
                                   ? l10n.treeTitleSearchNoResults
                                   : (hiddenRootIds.isNotEmpty
-                                      ? l10n.allTreesHidden
-                                      : l10n.treeTitleSearchNoResults),
+                                        ? l10n.allTreesHidden
+                                        : l10n.treeTitleSearchNoResults),
                               style: AppTheme.body.copyWith(
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            if (!searchActive &&
-                                hiddenRootIds.isNotEmpty) ...[
+                            if (!searchActive && hiddenRootIds.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Text(
                                 l10n.allTreesHiddenHint,
@@ -658,12 +673,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                         ),
                         children: [
                           DecoratedBox(
-                            decoration: AppSurfaces.contentCard(
-                              radius: 14,
-                            ),
+                            decoration: AppSurfaces.contentCard(radius: 14),
                             child: ClipRRect(
-                              borderRadius:
-                                  BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(14),
                               child: Column(
                                 children: [
                                   for (final root in roots)
@@ -672,12 +684,9 @@ class _ThemeDetailScreenState extends ConsumerState<ThemeDetailScreen> {
                                       node: root,
                                       allNodes: data.nodes,
                                       depth: 0,
-                                      collapsedIds:
-                                          effectiveCollapsed,
-                                      visibleNodeIds:
-                                          visibleIds,
-                                      reorderEnabled:
-                                          !searchActive,
+                                      collapsedIds: effectiveCollapsed,
+                                      visibleNodeIds: visibleIds,
+                                      reorderEnabled: !searchActive,
                                       onToggleCollapse: (id) {
                                         if (searchActive) {
                                           return;
@@ -724,11 +733,16 @@ int _compareNodes(NodeEntity a, NodeEntity b) {
 // _TreeRowView
 // ---------------------------------------------------------------------------
 
-
-void _showRenameDialog(BuildContext context, WidgetRef ref, NodeEntity node, String themeId, List<NodeEntity> allNodes) {
+void _showRenameDialog(
+  BuildContext context,
+  WidgetRef ref,
+  NodeEntity node,
+  String themeId,
+  List<NodeEntity> allNodes,
+) {
   final l10n = AppLocalizations.of(context)!;
   final controller = TextEditingController(text: node.title);
-  
+
   showCupertinoDialog(
     context: context,
     builder: (ctx) => CupertinoAlertDialog(
@@ -754,8 +768,13 @@ void _showRenameDialog(BuildContext context, WidgetRef ref, NodeEntity node, Str
             final newTitle = controller.text.trim();
             if (newTitle.isNotEmpty) {
               final store = await ref.read(nodeStoreProvider.future);
-              await store.updateNodeTitle(nodeId: node.nodeId, newTitle: newTitle);
-              ref.read(themeDetailControllerProvider(themeId).notifier).refresh();
+              await store.updateNodeTitle(
+                nodeId: node.nodeId,
+                newTitle: newTitle,
+              );
+              ref
+                  .read(themeDetailControllerProvider(themeId).notifier)
+                  .refresh();
             }
             if (context.mounted) Navigator.of(ctx).pop();
           },
@@ -800,8 +819,9 @@ class _TreeRowView extends ConsumerWidget {
   List<NodeEntity> _children() {
     final list = allNodes
         .where((n) => n.parentId == node.nodeId)
-        .where((n) =>
-            visibleNodeIds == null || visibleNodeIds!.contains(n.nodeId))
+        .where(
+          (n) => visibleNodeIds == null || visibleNodeIds!.contains(n.nodeId),
+        )
         .toList(growable: false);
     list.sort(_compareNodes);
     return list;
@@ -816,10 +836,10 @@ class _TreeRowView extends ConsumerWidget {
     // 已达最大嵌套深度（节点层级 4 层）时禁用「分支」入口：
     // SwipeableRow 在 onSwipeRight == null 时自动隐藏该 action。
     // 分支本质是在当前节点下创建子节点，再深一层就会超过 kMaxNodeDepth。
-    final atMaxDepth = computeNodeDepth(
-          {for (final n in allNodes) n.nodeId: n},
-          node.nodeId,
-        ) >=
+    final atMaxDepth =
+        computeNodeDepth({
+          for (final n in allNodes) n.nodeId: n,
+        }, node.nodeId) >=
         kMaxNodeDepth;
     final palette = AppColors.paletteForNode(node.nodeId);
     // ── Source type label ──
@@ -850,14 +870,11 @@ class _TreeRowView extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: hasChildren
                           ? (isCollapsed
-                              ? palette.circle
-                              : palette.circle.withValues(alpha: 0.18))
+                                ? palette.circle
+                                : palette.circle.withValues(alpha: 0.18))
                           : palette.circle.withValues(alpha: 0.18),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: palette.circle,
-                        width: 2,
-                      ),
+                      border: Border.all(color: palette.circle, width: 2),
                     ),
                   ),
                 ),
@@ -873,8 +890,7 @@ class _TreeRowView extends ConsumerWidget {
                     node.title,
                     style: AppTheme.body.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight:
-                          isRoot ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: isRoot ? FontWeight.w600 : FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -910,8 +926,7 @@ class _TreeRowView extends ConsumerWidget {
       onSwipeLeftSecondary: isRoot ? onHideRoot : null,
       leftSecondaryActionLabel: isRoot ? l10n.swipeHide : null,
       leftSecondaryActionIcon: isRoot ? AppIcons.eyeSlash : null,
-      leftSecondaryActionColor:
-          isRoot ? AppColors.textSecondary : null,
+      leftSecondaryActionColor: isRoot ? AppColors.textSecondary : null,
       onSwipeRight: atMaxDepth
           ? null
           : () => _onCreateBranchFromMenu(context, ref, node: node),
@@ -944,7 +959,8 @@ class _TreeRowView extends ConsumerWidget {
             details.data.nodeId != node.nodeId,
         onAcceptWithDetails: (details) async {
           debugPrint(
-              '[REORDER] onAccept fired: ${details.data.title} -> target=${node.title}');
+            '[REORDER] onAccept fired: ${details.data.title} -> target=${node.title}',
+          );
           try {
             await _handleReorder(
               ref,
@@ -965,25 +981,14 @@ class _TreeRowView extends ConsumerWidget {
         builder: (context, candidateData, rejectedData) {
           final isHovering = candidateData.isNotEmpty;
           // Is this node the last sibling? If so, show bottom blue line.
-          final siblings = allNodes
-              .where((n) => n.parentId == node.parentId)
-              .toList()
-            ..sort(_compareNodes);
-          final isLastChild = siblings.isNotEmpty &&
-              siblings.last.nodeId == node.nodeId;
+          final siblings =
+              allNodes.where((n) => n.parentId == node.parentId).toList()
+                ..sort(_compareNodes);
+          final isLastChild =
+              siblings.isNotEmpty && siblings.last.nodeId == node.nodeId;
           final indicatorSide = isLastChild
-              ? const Border(
-                  bottom: BorderSide(
-                    color: AppColors.accent,
-                    width: 2.5,
-                  ),
-                )
-              : const Border(
-                  top: BorderSide(
-                    color: AppColors.accent,
-                    width: 2.5,
-                  ),
-                );
+              ? Border(bottom: BorderSide(color: AppColors.accent, width: 2.5))
+              : Border(top: BorderSide(color: AppColors.accent, width: 2.5));
           return Container(
             decoration: isHovering
                 ? BoxDecoration(
@@ -1061,9 +1066,10 @@ class _DragHandleState extends State<_DragHandle>
       vsync: this,
       duration: const Duration(milliseconds: 120),
     );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeOut),
-    );
+    _scaleAnim = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeOut));
   }
 
   @override
@@ -1091,10 +1097,7 @@ class _DragHandleState extends State<_DragHandle>
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: AppSurfaces.contentCard(radius: 12),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1130,10 +1133,8 @@ class _DragHandleState extends State<_DragHandle>
         ),
         child: AnimatedBuilder(
           animation: _scaleAnim,
-          builder: (context, child) => Transform.scale(
-            scale: _scaleAnim.value,
-            child: child,
-          ),
+          builder: (context, child) =>
+              Transform.scale(scale: _scaleAnim.value, child: child),
           child: SizedBox(
             width: AppSp.dragHandle,
             height: AppSp.dragHandle,
@@ -1166,8 +1167,9 @@ Future<void> _handleDelete(
   final subtreeNodes = _collectSubtreeNodes(node, allNodes);
   final subtreeIds = subtreeNodes.map((item) => item.nodeId).toSet();
   final sameTitleNodesOutside = allNodes
-      .where((item) =>
-          item.title == node.title && !subtreeIds.contains(item.nodeId))
+      .where(
+        (item) => item.title == node.title && !subtreeIds.contains(item.nodeId),
+      )
       .toList(growable: false);
   final confirmed = await _confirmDeleteNode(
     context,
@@ -1196,31 +1198,38 @@ Future<void> _handleReorder(
   required List<NodeEntity> allNodes,
 }) async {
   try {
-    debugPrint('[REORDER] START dragged=${draggedNode.title} target=${targetNode.title}');
+    debugPrint(
+      '[REORDER] START dragged=${draggedNode.title} target=${targetNode.title}',
+    );
     final nodeStore = await ref.read(nodeStoreProvider.future);
     final parentId = targetNode.parentId;
 
-    final siblings = allNodes
-        .where((n) => n.parentId == parentId)
-        .toList()
+    final siblings = allNodes.where((n) => n.parentId == parentId).toList()
       ..sort(_compareNodes);
 
-    debugPrint('[REORDER] siblings before: ${siblings.map((s) => '${s.title}(${s.sortOrder})').toList()}');
+    debugPrint(
+      '[REORDER] siblings before: ${siblings.map((s) => '${s.title}(${s.sortOrder})').toList()}',
+    );
 
     // Determine direction: dragging down means insert AFTER target
-    final draggedIdx = siblings.indexWhere((n) => n.nodeId == draggedNode.nodeId);
-    final targetOriginalIdx = siblings.indexWhere((n) => n.nodeId == targetNode.nodeId);
+    final draggedIdx = siblings.indexWhere(
+      (n) => n.nodeId == draggedNode.nodeId,
+    );
+    final targetOriginalIdx = siblings.indexWhere(
+      (n) => n.nodeId == targetNode.nodeId,
+    );
     final draggingDown = draggedIdx < targetOriginalIdx;
 
     siblings.removeWhere((n) => n.nodeId == draggedNode.nodeId);
     debugPrint('[REORDER] after remove, count=${siblings.length}');
 
-    final targetIdx =
-        siblings.indexWhere((n) => n.nodeId == targetNode.nodeId);
+    final targetIdx = siblings.indexWhere((n) => n.nodeId == targetNode.nodeId);
     debugPrint('[REORDER] targetIdx=$targetIdx draggingDown=$draggingDown');
 
     siblings.insert(draggingDown ? targetIdx + 1 : targetIdx, draggedNode);
-    debugPrint('[REORDER] siblings after: ${siblings.map((s) => s.title).toList()}');
+    debugPrint(
+      '[REORDER] siblings after: ${siblings.map((s) => s.title).toList()}',
+    );
 
     final now = DateTime.now().toUtc().millisecondsSinceEpoch;
     for (int i = 0; i < siblings.length; i++) {
@@ -1229,7 +1238,9 @@ Future<void> _handleReorder(
         newSortOrder: now + i,
       );
     }
-    debugPrint('[REORDER] DONE wrote ${siblings.length} nodes, sortOrder starts at $now');
+    debugPrint(
+      '[REORDER] DONE wrote ${siblings.length} nodes, sortOrder starts at $now',
+    );
   } catch (e, st) {
     debugPrint('[REORDER] ERROR: $e');
     debugPrint('[REORDER] STACK: $st');
@@ -1269,7 +1280,9 @@ void _showAlert(BuildContext context, String message) {
 }
 
 List<NodeEntity> _collectSubtreeNodes(
-    NodeEntity root, List<NodeEntity> allNodes) {
+  NodeEntity root,
+  List<NodeEntity> allNodes,
+) {
   final childrenByParent = <String?, List<NodeEntity>>{};
   for (final item in allNodes) {
     childrenByParent.putIfAbsent(item.parentId, () => []).add(item);
@@ -1372,8 +1385,9 @@ Future<bool?> _confirmDeleteNode(
     builder: (context) {
       final l10n = AppLocalizations.of(context)!;
       final descendantCount = subtreeNodes.length - 1;
-      final keptNodeIds =
-          sameTitleNodesOutside.map((item) => item.nodeId).join('\n');
+      final keptNodeIds = sameTitleNodesOutside
+          .map((item) => item.nodeId)
+          .join('\n');
       final needsAck = sameTitleNodesOutside.isNotEmpty;
       bool acknowledged = false;
       return StatefulBuilder(
@@ -1407,8 +1421,7 @@ Future<bool?> _confirmDeleteNode(
                     Text(keptNodeIds),
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () =>
-                          setState(() => acknowledged = !acknowledged),
+                      onTap: () => setState(() => acknowledged = !acknowledged),
                       behavior: HitTestBehavior.opaque,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1486,8 +1499,9 @@ Future<String?> _promptRootTitle(BuildContext context) async {
             onSubmitted: (value) {
               final composing = controller.value.composing;
               if (composing.isValid && !composing.isCollapsed) return;
-              Navigator.of(context)
-                  .pop(value.trim().isEmpty ? null : value.trim());
+              Navigator.of(
+                context,
+              ).pop(value.trim().isEmpty ? null : value.trim());
             },
           ),
         ),

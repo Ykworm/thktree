@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_palette_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -39,44 +40,27 @@ class SettingsScreen extends ConsumerWidget {
     return ThkLargeTitlePage(
       title: l10n.settingsTitle,
       children: [
+        ThkListSection(header: l10n.language, children: [_LanguageTile()]),
         ThkListSection(
-          header: l10n.language,
-          children: [
-            _LanguageTile(),
-          ],
+          header: l10n.appearanceSection,
+          children: [_PalettePicker()],
         ),
-        ThkListSection(
-          children: [
-            _LlmSettingsEntry(),
-          ],
-        ),
-        ThkListSection(
-          children: [
-            _TtsEntry(),
-          ],
-        ),
+        ThkListSection(children: [_LlmSettingsEntry()]),
+        ThkListSection(children: [_TtsEntry()]),
         // 屏蔽 keyword score prompt 入口
         // ThkListSection(
         //   children: [
         //     _KeywordScorePromptEntry(),
         //   ],
         // ),
-        ThkListSection(
-          children: [
-            _FaceIdToggle(),
-          ],
-        ),
+        ThkListSection(children: [_FaceIdToggle()]),
         ThkListSection(
           header: l10n.backupAndRestore,
-          children: [
-            _BackupRestoreEntry(),
-          ],
+          children: [_BackupRestoreEntry()],
         ),
         ThkListSection(
           header: l10n.storageSection,
-          children: [
-            _CleanImagesEntry(),
-          ],
+          children: [_CleanImagesEntry()],
         ),
         if (kDebugMode) ...[
           ThkListSection(
@@ -91,14 +75,15 @@ class SettingsScreen extends ConsumerWidget {
         ],
         if (kDebugMode) ...[
           loggerAsync.when(
-            data: (logger) => ThkListSection(
-              children: _buildLogTiles(context, logger, l10n),
-            ),
+            data: (logger) =>
+                ThkListSection(children: _buildLogTiles(context, logger, l10n)),
             error: (e, st) => ThkListSection(
               children: [ThkListTile(title: e.toString(), trailing: null)],
             ),
             loading: () => ThkListSection(
-              children: [ThkListTile(title: l10n.loadingLogger, trailing: null)],
+              children: [
+                ThkListTile(title: l10n.loadingLogger, trailing: null),
+              ],
             ),
           ),
         ],
@@ -123,7 +108,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildLogTiles(BuildContext context, AppLogger logger, AppLocalizations l10n) {
+  List<Widget> _buildLogTiles(
+    BuildContext context,
+    AppLogger logger,
+    AppLocalizations l10n,
+  ) {
     return [
       ThkListTile(
         title: l10n.logFile,
@@ -141,11 +130,15 @@ class SettingsScreen extends ConsumerWidget {
         subtitle: logger.hasRemoteLogging
             ? '${l10n.enabled}\n${logger.remoteLogUrl}'
             : l10n.disabled,
-        leading: Icon(logger.hasRemoteLogging ? AppIcons.cloudFill : AppIcons.cloud),
+        leading: Icon(
+          logger.hasRemoteLogging ? AppIcons.cloudFill : AppIcons.cloud,
+        ),
         trailing: null,
         onTap: logger.hasRemoteLogging
             ? () async {
-                await Clipboard.setData(ClipboardData(text: logger.remoteLogUrl));
+                await Clipboard.setData(
+                  ClipboardData(text: logger.remoteLogUrl),
+                );
                 if (!context.mounted) return;
                 _showCopiedToast(context, l10n.copied);
               }
@@ -168,13 +161,15 @@ class SettingsScreen extends ConsumerWidget {
     showCupertinoDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => CupertinoAlertDialog(
-        content: Text(message),
-      ),
+      builder: (_) => CupertinoAlertDialog(content: Text(message)),
     );
   }
 
-  void _showLogsDialog(BuildContext context, AppLocalizations l10n, String pretty) {
+  void _showLogsDialog(
+    BuildContext context,
+    AppLocalizations l10n,
+    String pretty,
+  ) {
     showCupertinoDialog<void>(
       context: context,
       builder: (context) {
@@ -187,10 +182,7 @@ class SettingsScreen extends ConsumerWidget {
               child: SingleChildScrollView(
                 child: Text(
                   pretty.isEmpty ? l10n.emptyLogs : pretty,
-                  style: TextStyle(
-                    fontFamily: 'Menlo',
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(fontFamily: 'Menlo', fontSize: 12),
                 ),
               ),
             ),
@@ -217,18 +209,14 @@ class _DarkModeToggle extends ConsumerWidget {
     final isDark = brightness == Brightness.dark;
 
     return ThkListTile(
-      leading: Icon(isDark
-          ? AppIcons.moonFill
-          : AppIcons.sunMaxFill),
+      leading: Icon(isDark ? AppIcons.moonFill : AppIcons.sunMaxFill),
       title: 'Dark Mode',
       subtitle: isDark ? 'Dark' : 'Light',
       trailing: CupertinoSwitch(
         value: isDark,
         onChanged: (_) {
           ref.read(brightnessProvider.notifier).toggle();
-          ref
-              .read(settingsControllerProvider.notifier)
-              .saveDarkMode(!isDark);
+          ref.read(settingsControllerProvider.notifier).saveDarkMode(!isDark);
         },
       ),
     );
@@ -291,7 +279,12 @@ class _LlmSettingsEntry extends ConsumerWidget {
           CupertinoPageRoute(
             settings: const RouteSettings(name: 'llm-settings'),
             builder: (_) => LlmSettingsScreen(
-              parentCrumbs: [BreadcrumbSegment(label: l10n.settingsTabLabel, routeName: 'settings')],
+              parentCrumbs: [
+                BreadcrumbSegment(
+                  label: l10n.settingsTabLabel,
+                  routeName: 'settings',
+                ),
+              ],
             ),
           ),
         );
@@ -350,9 +343,13 @@ class _LanguageTile extends ConsumerWidget {
                 children: [
                   Text(l10n.systemDefault),
                   if (currentLocale == null)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Icon(AppIcons.check, size: 18, color: AppColors.accent),
+                      child: Icon(
+                        AppIcons.check,
+                        size: 18,
+                        color: AppColors.accent,
+                      ),
                     ),
                 ],
               ),
@@ -367,9 +364,13 @@ class _LanguageTile extends ConsumerWidget {
                 children: [
                   Text(l10n.english),
                   if (currentLocale?.languageCode == 'en')
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Icon(AppIcons.check, size: 18, color: AppColors.accent),
+                      child: Icon(
+                        AppIcons.check,
+                        size: 18,
+                        color: AppColors.accent,
+                      ),
                     ),
                 ],
               ),
@@ -384,9 +385,13 @@ class _LanguageTile extends ConsumerWidget {
                 children: [
                   Text(l10n.chinese),
                   if (currentLocale?.languageCode == 'zh')
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Icon(AppIcons.check, size: 18, color: AppColors.accent),
+                      child: Icon(
+                        AppIcons.check,
+                        size: 18,
+                        color: AppColors.accent,
+                      ),
                     ),
                 ],
               ),
@@ -403,6 +408,131 @@ class _LanguageTile extends ConsumerWidget {
   }
 }
 
+class _PalettePicker extends ConsumerWidget {
+  const _PalettePicker();
+
+  static List<Color> _previewFor(AppColorPalette palette) {
+    return AppThemeRegistry.of(palette).themeColors;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final current = ref.watch(paletteProvider);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Column(
+        children: [
+          for (final palette in AppColorPalette.values)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _PaletteOptionCard(
+                selected: current == palette,
+                title: palette == AppColorPalette.warmPaper
+                    ? l10n.paletteWarmPaperTitle
+                    : l10n.paletteMorandiTitle,
+                subtitle: palette == AppColorPalette.warmPaper
+                    ? l10n.paletteWarmPaperSubtitle
+                    : l10n.paletteMorandiSubtitle,
+                previewColors: _previewFor(palette),
+                onTap: () {
+                  if (current == palette) return;
+                  ref
+                      .read(settingsControllerProvider.notifier)
+                      .saveColorPalette(palette);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaletteOptionCard extends StatelessWidget {
+  const _PaletteOptionCard({
+    required this.selected,
+    required this.title,
+    required this.subtitle,
+    required this.previewColors,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String title;
+  final String subtitle;
+  final List<Color> previewColors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.accent : AppColors.border,
+            width: selected ? 1.5 : 0.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final c in previewColors)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.border, width: 0.5),
+                      ),
+                    ),
+                  ),
+                if (selected) ...[
+                  const SizedBox(width: 8),
+                  Icon(AppIcons.check, size: 18, color: AppColors.accent),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _FaceIdToggle extends ConsumerWidget {
   const _FaceIdToggle();
@@ -411,7 +541,8 @@ class _FaceIdToggle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final settingsAsync = ref.watch(settingsControllerProvider);
-    final enabled = settingsAsync.whenOrNull(data: (s) => s.faceIdEnabled) ?? true;
+    final enabled =
+        settingsAsync.whenOrNull(data: (s) => s.faceIdEnabled) ?? true;
 
     return ThkListTile(
       leading: const Padding(
@@ -423,7 +554,9 @@ class _FaceIdToggle extends ConsumerWidget {
       trailing: CupertinoSwitch(
         value: enabled,
         onChanged: (value) {
-          ref.read(settingsControllerProvider.notifier).saveFaceIdEnabled(value);
+          ref
+              .read(settingsControllerProvider.notifier)
+              .saveFaceIdEnabled(value);
         },
       ),
     );
@@ -442,11 +575,9 @@ class _BackupRestoreEntry extends ConsumerWidget {
       subtitle: l10n.settingsBackupRestoreSubtitle,
       trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
       onTap: () {
-        Navigator.of(context).push(
-          CupertinoPageRoute(
-            builder: (_) => const BackupRestoreScreen(),
-          ),
-        );
+        Navigator.of(
+          context,
+        ).push(CupertinoPageRoute(builder: (_) => const BackupRestoreScreen()));
       },
     );
   }
@@ -459,7 +590,8 @@ class _BackupReminderToggle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final settingsAsync = ref.watch(settingsControllerProvider);
-    final enabled = settingsAsync.whenOrNull(data: (s) => s.backupReminderEnabled) ?? true;
+    final enabled =
+        settingsAsync.whenOrNull(data: (s) => s.backupReminderEnabled) ?? true;
 
     return ThkListTile(
       leading: const Padding(
@@ -471,7 +603,9 @@ class _BackupReminderToggle extends ConsumerWidget {
       trailing: CupertinoSwitch(
         value: enabled,
         onChanged: (value) {
-          ref.read(settingsControllerProvider.notifier).saveBackupReminderEnabled(value);
+          ref
+              .read(settingsControllerProvider.notifier)
+              .saveBackupReminderEnabled(value);
         },
       ),
     );
@@ -488,10 +622,14 @@ class _BackupReminderDebugEntry extends ConsumerWidget {
       title: 'Trigger Backup Reminder',
       subtitle: 'Set next reminder to yesterday',
       onTap: () {
-        ref.read(settingsControllerProvider.notifier).triggerBackupReminderDebug();
+        ref
+            .read(settingsControllerProvider.notifier)
+            .triggerBackupReminderDebug();
       },
     );
   }
+}
+
 }
 
 class _ResetFirstLaunchEntry extends ConsumerWidget {
@@ -624,7 +762,6 @@ class _ClearAllThemesAndNotesEntry extends ConsumerWidget {
   }
 }
 
-
 class _KeywordScorePromptEntry extends ConsumerWidget {
   const _KeywordScorePromptEntry();
 
@@ -640,9 +777,7 @@ class _KeywordScorePromptEntry extends ConsumerWidget {
       subtitle: l10n.keywordScorePromptEntrySubtitle,
       onTap: () {
         Navigator.of(context).push(
-          CupertinoPageRoute(
-            builder: (_) => const KeywordScorePromptScreen(),
-          ),
+          CupertinoPageRoute(builder: (_) => const KeywordScorePromptScreen()),
         );
       },
     );
@@ -663,9 +798,9 @@ class _TtsEntry extends ConsumerWidget {
       title: l10n.ttsVoiceSettings,
       subtitle: l10n.ttsVoiceSettingsSubtitle,
       onTap: () {
-        Navigator.of(context).push(
-          CupertinoPageRoute(builder: (_) => const TtsSettingsScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(CupertinoPageRoute(builder: (_) => const TtsSettingsScreen()));
       },
     );
   }
@@ -678,7 +813,7 @@ class _BackupEntry extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final pathsAsync = ref.watch(appPathsProvider);
-    
+
     return ThkListTile(
       title: l10n.backupData,
       leading: const Padding(
@@ -749,10 +884,9 @@ class _BackupEntry extends ConsumerWidget {
         }
 
         // 弹系统分享面板，期间 Flutter 可能进入 inactive；不再操作 Navigator。
-        await Share.shareXFiles(
-          [XFile(zipFile!.path)],
-          sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
-        );
+        await Share.shareXFiles([
+          XFile(zipFile!.path),
+        ], sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1));
 
         // 手动备份（分享出去）成功后刷新下次提醒日期
         // （修复原 bug：手动备份完不刷新，提醒该来还来）
@@ -779,7 +913,7 @@ class _RestoreEntry extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final pathsAsync = ref.watch(appPathsProvider);
-    
+
     return ThkListTile(
       title: l10n.restoreData,
       leading: const Padding(
@@ -820,8 +954,7 @@ class _RestoreEntry extends ConsumerWidget {
               actions: [
                 CupertinoDialogAction(
                   child: Text(l10n.restoreOverwrite),
-                  onPressed: () =>
-                      Navigator.of(ctx).pop(ImportMode.overwrite),
+                  onPressed: () => Navigator.of(ctx).pop(ImportMode.overwrite),
                 ),
                 CupertinoDialogAction(
                   child: Text(l10n.restoreMerge),
@@ -949,11 +1082,9 @@ class _CleanImagesEntry extends ConsumerWidget {
       title: l10n.cleanImagesEntry,
       subtitle: l10n.cleanImagesSubtitle,
       trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
-      onTap: () => Navigator.of(context).push(
-        CupertinoPageRoute(builder: (_) => const CleanImagesScreen()),
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).push(CupertinoPageRoute(builder: (_) => const CleanImagesScreen())),
     );
   }
-
 }
-

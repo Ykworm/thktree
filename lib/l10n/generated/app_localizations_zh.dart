@@ -32,6 +32,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chinese => '中文';
 
   @override
+  String get appearanceSection => '外观';
+
+  @override
+  String get paletteWarmPaperTitle => '默认 · Warm Paper';
+
+  @override
+  String get paletteWarmPaperSubtitle => '安静书房 · 暖纸玻璃';
+
+  @override
+  String get paletteMorandiTitle => '莫兰迪 · Morandi';
+
+  @override
+  String get paletteMorandiSubtitle => '低饱和灰调书房';
+
+  @override
   String get noThemesYet => '开始你的第一个知识主题';
 
   @override

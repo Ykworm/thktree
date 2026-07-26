@@ -34,7 +34,12 @@ class ChatComposer extends ConsumerStatefulWidget {
   final String hintText;
   final bool isStreaming;
   final bool enabled;
-  final Future<void> Function(String text, {Uint8List? imageData, String? imageMimeType}) onSend;
+  final Future<void> Function(
+    String text, {
+    Uint8List? imageData,
+    String? imageMimeType,
+  })
+  onSend;
   final Future<void> Function() onStopStreaming;
 
   /// 联网搜索是否开启
@@ -105,13 +110,16 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
 
   @override
   Widget build(BuildContext context) {
-    final showTools = widget.onWebSearchToggle != null ||
+    final showTools =
+        widget.onWebSearchToggle != null ||
         widget.onDeepThinkingToggle != null ||
         widget.alwaysThinking ||
         widget.onViewTree != null;
 
     final attachEnabled =
-        widget.onImagePick != null && widget.imageSupported && !widget.isStreaming;
+        widget.onImagePick != null &&
+        widget.imageSupported &&
+        !widget.isStreaming;
 
     final showThinkingTool =
         widget.alwaysThinking || widget.onDeepThinkingToggle != null;
@@ -146,7 +154,8 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                           return KeyEventResult.ignored;
                         }
                         if (event.logicalKey != LogicalKeyboardKey.enter &&
-                            event.logicalKey != LogicalKeyboardKey.numpadEnter) {
+                            event.logicalKey !=
+                                LogicalKeyboardKey.numpadEnter) {
                           return KeyEventResult.ignored;
                         }
                         final composing = _controller.value.composing;
@@ -192,8 +201,9 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                                   right: 8,
                                 ),
                                 minimumSize: const Size(36, 36),
-                                onPressed:
-                                    attachEnabled ? widget.onImagePick : null,
+                                onPressed: attachEnabled
+                                    ? widget.onImagePick
+                                    : null,
                                 child: Icon(
                                   AppIcons.add,
                                   size: 22,
@@ -239,8 +249,8 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                     icon: widget.isStreaming ? AppIcons.stop : AppIcons.send,
                     onPressed: widget.enabled
                         ? widget.isStreaming
-                            ? _stopStreaming
-                            : _send
+                              ? _stopStreaming
+                              : _send
                         : null,
                   ),
                   const SizedBox(width: 10), // 右侧边距
@@ -250,7 +260,10 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
               if (showTools) ...[
                 const SizedBox(height: 2),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   child: Row(
                     children: [
                       if (widget.onWebSearchToggle != null)
@@ -325,10 +338,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
   }
 
   void _showError(String message) {
-    ThkAlert.show(
-      context: context,
-      message: message,
-    );
+    ThkAlert.show(context: context, message: message);
   }
 
   void _insertNewline() {
@@ -348,11 +358,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
 
 /// 输入行右侧圆钮（碎片 / 发送）：无毛玻璃底的图标按钮
 class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({
-    required this.icon,
-    this.onPressed,
-    this.buttonKey,
-  });
+  const _CircleIconButton({required this.icon, this.onPressed, this.buttonKey});
 
   final IconData icon;
   final VoidCallback? onPressed;
@@ -372,7 +378,9 @@ class _CircleIconButton extends StatelessWidget {
         child: Icon(
           icon,
           size: 22,
-          color: onPressed != null ? AppColors.accent : AppColors.textQuaternary,
+          color: onPressed != null
+              ? AppColors.accent
+              : AppColors.textQuaternary,
         ),
       ),
     );
@@ -403,8 +411,8 @@ class _ToolChip extends StatelessWidget {
     final Color fg = active
         ? AppColors.accent
         : onPressed != null
-            ? AppColors.textTertiary
-            : AppColors.textTertiary.withValues(alpha: 0.55);
+        ? AppColors.textTertiary
+        : AppColors.textTertiary.withValues(alpha: 0.55);
 
     return CupertinoButton(
       padding: EdgeInsets.zero,
@@ -455,11 +463,7 @@ class _ViewTreeEntry extends StatelessWidget {
       padding: EdgeInsets.zero,
       minimumSize: const Size(36, 36),
       onPressed: onTap,
-      child: const Icon(
-        AppIcons.accountTree,
-        size: 18,
-        color: AppColors.accent,
-      ),
+      child: Icon(AppIcons.accountTree, size: 18, color: AppColors.accent),
     );
   }
 }
@@ -535,10 +539,7 @@ class _DeepThinkingToggle extends StatelessWidget {
 
 /// 图片预览条（玻璃壳内顶部，透明底 + hair 分隔）
 class _ImagePreview extends StatelessWidget {
-  const _ImagePreview({
-    required this.imageData,
-    required this.onRemove,
-  });
+  const _ImagePreview({required this.imageData, required this.onRemove});
 
   final Uint8List imageData;
   final VoidCallback onRemove;
@@ -562,10 +563,7 @@ class _ImagePreview extends StatelessWidget {
           Expanded(
             child: Text(
               '图片已选择',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           ),
           CupertinoButton(
@@ -589,10 +587,7 @@ class _ImagePreview extends StatelessWidget {
 /// 背后必须是消息列表像素（chat_screen Stack 叠层）；
 /// 工具文字必须包在此壳内，禁止裸字叠气泡。
 class _ComposerGlassShell extends StatelessWidget {
-  const _ComposerGlassShell({
-    required this.child,
-    required this.borderRadius,
-  });
+  const _ComposerGlassShell({required this.child, required this.borderRadius});
 
   final Widget child;
   final BorderRadius borderRadius;
@@ -623,10 +618,7 @@ class _ComposerGlassShell extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: borderRadius,
-        child: child,
-      ),
+      child: ClipRRect(borderRadius: borderRadius, child: child),
     );
   }
 }

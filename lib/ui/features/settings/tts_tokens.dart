@@ -19,6 +19,7 @@ class TtsSpacing {
   // 底部毛玻璃控制面板
   static const double controlPanelRadius = 20.0;
   static const double controlPanelBlurSigma = 20.0;
+
   /// 表面 alpha：值越低，BackdropFilter 模糊越明显。0.5 对齐 iOS systemMaterial 视觉。
   static const double controlPanelSurfaceAlpha = 0.35;
   static const double controlPanelPaddingH = 20.0;
@@ -49,13 +50,13 @@ class TtsDimensions {
   static const double controlPanelHeight = 68.0;
 
   // player button — mini bar 尺寸
-  static const double playerButtonSize = 40;      // 圆形直径
-  static const double playerButtonIconSize = 18;  // 图标尺寸
-  static const double playerButtonRadius = 20;    // 圆形 = size/2
+  static const double playerButtonSize = 40; // 圆形直径
+  static const double playerButtonIconSize = 18; // 图标尺寸
+  static const double playerButtonRadius = 20; // 圆形 = size/2
 
   // 进度环（播放中）
   static const double progressRingWidth = 3;
-  static const double progressRingGap = 4;        // 环与按钮间距
+  static const double progressRingGap = 4; // 环与按钮间距
 
   // slider
   static const double sliderHeight = 28;
@@ -135,7 +136,7 @@ class TtsColors {
   static Color get divider => AppColors.border;
 
   // 交互态
-  static const Color actionActive = AppColors.accent;
+  static Color get actionActive => AppColors.accent;
   // Slate 500，与 AppColors.textSecondary (light mode) 保持一致
   static Color get actionIdle => AppColors.textSecondary;
   static Color get sliderTrack => AppColors.surfaceMuted;
@@ -148,5 +149,5 @@ class TtsColors {
 
   // 波形
   static Color get waveformIdle => AppColors.textTertiary;
-  static final Color waveformActive = actionActive;
+  static Color get waveformActive => actionActive;
 }

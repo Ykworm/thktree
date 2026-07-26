@@ -150,14 +150,7 @@ class _FullTreeScreenState extends ConsumerState<FullTreeScreen> {
       _exitMultiSelect();
       return;
     }
-    if (widget.currentNodeId != null) {
-      // 从 chat 页进入：go() 不会走回退，必须显式 go 回聊天页
-      context.go(
-        '/themes/${widget.themeId}/nodes/${widget.currentNodeId}',
-      );
-    } else {
-      context.pop();
-    }
+    context.pop();
   }
 
   @override

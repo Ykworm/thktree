@@ -36,11 +36,9 @@ class _DocSplitInputScreenState extends State<DocSplitInputScreen> {
   }
 
   Future<void> _openDetails() async {
-    await Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (_) => const _DocSplitDetailsScreen(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(CupertinoPageRoute(builder: (_) => const _DocSplitDetailsScreen()));
   }
 
   @override
@@ -81,15 +79,12 @@ class _DocSplitInputScreenState extends State<DocSplitInputScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.border,
-                    width: 0.5,
-                  ),
+                  border: Border.all(color: AppColors.border, width: 0.5),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 2),
                       child: Icon(
                         CupertinoIcons.sparkles,
@@ -127,7 +122,7 @@ class _DocSplitInputScreenState extends State<DocSplitInputScreen> {
                       onPressed: _openDetails,
                       child: Text(
                         l10n.docSplitViewDetails,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.accent,
                           fontWeight: FontWeight.w600,
                         ),
@@ -149,10 +144,7 @@ class _DocSplitInputScreenState extends State<DocSplitInputScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppColors.border,
-                        width: 0.5,
-                      ),
+                      border: Border.all(color: AppColors.border, width: 0.5),
                     ),
                     style: TextStyle(
                       fontSize: 15,
@@ -177,9 +169,7 @@ class _DocSplitDetailsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return CupertinoPageScaffold(
       backgroundColor: AppColors.pageBg,
-      navigationBar: ThkNavBar.inline(
-        title: l10n.docSplitDetailsTitle,
-      ),
+      navigationBar: ThkNavBar.inline(title: l10n.docSplitDetailsTitle),
       child: SafeArea(
         top: false,
         child: ListView(
@@ -235,10 +225,7 @@ class _DocSplitSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.border,
-          width: 0.5,
-        ),
+        border: Border.all(color: AppColors.border, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,7 +254,7 @@ class _DocSplitSection extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(top: 7),
                   child: Icon(
                     CupertinoIcons.circle_fill,

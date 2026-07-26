@@ -11,11 +11,7 @@ import 'package:thk_tree/ui/core/theme/app_spacing.dart';
 /// 用 [RepaintBoundary] 包裹后通过 `toImage()` 截图。
 /// 仅用于渲染，不展示在页面上。
 class ShareCardWidget extends StatelessWidget {
-  const ShareCardWidget({
-    super.key,
-    required this.messages,
-    this.cardWidth,
-  });
+  const ShareCardWidget({super.key, required this.messages, this.cardWidth});
 
   /// 按时间顺序排列的待分享消息（每条可携带本地图片字节）
   final List<ShareMessage> messages;
@@ -29,8 +25,8 @@ class ShareCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = cardWidth ??
-        MediaQuery.sizeOf(context).width.clamp(320.0, 420.0);
+    final width =
+        cardWidth ?? MediaQuery.sizeOf(context).width.clamp(320.0, 420.0);
     // 兜底：极端 MediaQuery 时仍有宽度
     final w = width.isFinite && width > 0 ? width : _fallbackWidth;
 
@@ -67,7 +63,7 @@ class ShareCardWidget extends StatelessWidget {
                   Container(
                     width: 6,
                     height: 6,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.accent,
                       shape: BoxShape.circle,
                     ),
@@ -98,10 +94,7 @@ class ShareCardWidget extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'Shared from ThkTree',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textTertiary,
-                ),
+                style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
               ),
             ],
           ),
@@ -166,10 +159,8 @@ class ShareCardWidget extends StatelessWidget {
           color: AppColors.textPrimary,
         ),
         codeBuilder: buildCodeBlock,
-        tableBuilder: (ctx, rows, style, cfg) => MarkdownTableView(
-          tableRows: rows,
-          textStyle: style,
-        ),
+        tableBuilder: (ctx, rows, style, cfg) =>
+            MarkdownTableView(tableRows: rows, textStyle: style),
         latexBuilder: buildLatex,
         useDollarSignsForLatex: true,
         onLinkTap: (url, _) => openMarkdownLink(context, url),

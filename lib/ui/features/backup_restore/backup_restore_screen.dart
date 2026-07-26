@@ -407,7 +407,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            const Icon(CupertinoIcons.doc, color: AppColors.accent),
+            Icon(CupertinoIcons.doc, color: AppColors.accent),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

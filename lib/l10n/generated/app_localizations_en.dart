@@ -32,6 +32,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chinese => '中文';
 
   @override
+  String get appearanceSection => 'Appearance';
+
+  @override
+  String get paletteWarmPaperTitle => 'Default · Warm Paper';
+
+  @override
+  String get paletteWarmPaperSubtitle => 'Quiet study · warm paper glass';
+
+  @override
+  String get paletteMorandiTitle => 'Morandi';
+
+  @override
+  String get paletteMorandiSubtitle => 'Low-saturation gray study';
+
+  @override
   String get noThemesYet => 'Start your first knowledge theme';
 
   @override

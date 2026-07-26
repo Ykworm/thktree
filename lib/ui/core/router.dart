@@ -354,7 +354,7 @@ class _MainShell extends ConsumerWidget {
       ),
     ];
     final selectedIndex = navigationShell.currentIndex;
-    const activeColor = AppColors.accent;
+    final activeColor = AppColors.accent;
     final inactiveColor = AppColors.textTertiary;
 
     // 壳层轻玻璃（iOS blur；Android 不透明 paper），锁在 tab 高度条带

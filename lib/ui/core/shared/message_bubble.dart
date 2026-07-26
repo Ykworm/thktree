@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart' show SelectionArea;
 import 'package:thk_tree/ui/core/shared/selection_state.dart';
 import 'package:thk_tree/ui/core/shared/clips_context_menu.dart';
@@ -156,8 +157,10 @@ String _sanitizeMarkdown(String text, {bool stripThinkTags = false}) {
     if (cur.isEmpty && i > 0 && i < normalizedLines.length - 1) {
       final prev = normalizedLines[i - 1].trim();
       final next = normalizedLines[i + 1].trim();
-      final prevIsTable = _tableRowPattern.hasMatch(prev) || _tableSepPattern.hasMatch(prev);
-      final nextIsTable = _tableRowPattern.hasMatch(next) || _tableSepPattern.hasMatch(next);
+      final prevIsTable =
+          _tableRowPattern.hasMatch(prev) || _tableSepPattern.hasMatch(prev);
+      final nextIsTable =
+          _tableRowPattern.hasMatch(next) || _tableSepPattern.hasMatch(next);
       if (prevIsTable && nextIsTable) continue;
     }
     cleaned.add(cur);
@@ -237,7 +240,11 @@ String _ensureRowPipes(String row) {
 }
 
 int _countColumns(String row) {
-  final parts = row.split('|').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  final parts = row
+      .split('|')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
   return parts.length;
 }
 
@@ -271,7 +278,9 @@ String _tableRowsToMarkdown(List<CustomTableRow> tableRows) {
 
 String _tableFieldsToMarkdownRow(List<CustomTableField> fields) {
   final cells = fields.map((field) {
-    final normalized = normalizeTableCellText(field.data).replaceAll('\n', '<br>');
+    final normalized = normalizeTableCellText(
+      field.data,
+    ).replaceAll('\n', '<br>');
     return _escapeMarkdownTableCell(normalized);
   }).toList();
   return '| ${cells.join(' | ')} |';
@@ -434,7 +443,8 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     setState(() => _sharing = true);
     try {
       Rect? origin;
-      final renderBox = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final renderBox =
+          _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
       if (renderBox != null && renderBox.hasSize) {
         final offset = renderBox.localToGlobal(Offset.zero);
         origin = offset & renderBox.size;
@@ -446,7 +456,8 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
       final answer = widget.message.body;
 
       final shareMessages = <ShareMessage>[];
-      final hasUser = (widget.userQuestion != null &&
+      final hasUser =
+          (widget.userQuestion != null &&
               widget.userQuestion!.trim().isNotEmpty) ||
           widget.userQuestionImage != null;
       if (hasUser) {
@@ -507,8 +518,9 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     final statusText = switch (widget.message.status) {
       SessionMessageStatus.done => null,
       SessionMessageStatus.streaming => l10n.streamingStatus,
-      SessionMessageStatus.error =>
-        l10n.errorStatus(widget.message.errorCode ?? l10n.errorUnknown),
+      SessionMessageStatus.error => l10n.errorStatus(
+        widget.message.errorCode ?? l10n.errorUnknown,
+      ),
     };
 
     // 解析模型显示名（仅 assistant 消息）
@@ -541,16 +553,14 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     final sanitizedBody = body;
     final reasoning = widget.message.reasoning?.trim();
     final shouldExpandReasoning =
-        _showReasoning || (reasoning != null && reasoning.isNotEmpty && widget.message.body.trim().isEmpty);
+        _showReasoning ||
+        (reasoning != null &&
+            reasoning.isNotEmpty &&
+            widget.message.body.trim().isEmpty);
     final hasTable = _hasMarkdownTable(sanitizedBody);
-    final maxWidth = hasTable
-        ? MediaQuery.of(context).size.width - 32
-        : 520.0;
+    final maxWidth = hasTable ? MediaQuery.of(context).size.width - 32 : 520.0;
 
-    final baseStyle = TextStyle(
-      fontSize: 17,
-      color: AppColors.textPrimary,
-    );
+    final baseStyle = TextStyle(fontSize: 17, color: AppColors.textPrimary);
 
     final timestampText = widget.showTimestamp
         ? formatMessageTime(widget.message.timestampUtcIso8601)
@@ -566,10 +576,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Text(
                 timestampText,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textTertiary,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
               ),
             ),
           Align(
@@ -636,8 +643,9 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                               _ReasoningSection(
                                 reasoning: reasoning,
                                 isExpanded: shouldExpandReasoning,
-                                onToggle: () =>
-                                    setState(() => _showReasoning = !_showReasoning),
+                                onToggle: () => setState(
+                                  () => _showReasoning = !_showReasoning,
+                                ),
                                 onExpandTable: _showExpanded,
                               ),
                             if (reasoning != null &&
@@ -652,12 +660,16 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                   onLinkTap: (url, _) =>
                                       openMarkdownLink(context, url),
                                   tableBuilder: (ctx, rows, style, cfg) {
-                                    final tableMarkdown = _tableRowsToMarkdown(rows);
+                                    final tableMarkdown = _tableRowsToMarkdown(
+                                      rows,
+                                    );
                                     return _TableWithActions(
                                       tableRows: rows,
                                       textStyle: style,
-                                      onCopy: () => _copyTextToClipboard(tableMarkdown),
-                                      onExpand: () => _showExpanded(ctx, tableMarkdown),
+                                      onCopy: () =>
+                                          _copyTextToClipboard(tableMarkdown),
+                                      onExpand: () =>
+                                          _showExpanded(ctx, tableMarkdown),
                                     );
                                   },
                                   codeBuilder: buildCodeBlock,
@@ -668,7 +680,8 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                           ],
                         ),
                       if (widget.message.role == SessionRole.assistant &&
-                          widget.message.status != SessionMessageStatus.streaming) ...[
+                          widget.message.status !=
+                              SessionMessageStatus.streaming) ...[
                         const SizedBox(height: 6),
                         Row(
                           mainAxisSize: MainAxisSize.max,
@@ -707,14 +720,21 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                             ),
                             if (widget.onRetry != null) ...[
                               const SizedBox(width: 12),
-                              if (widget.message.status == SessionMessageStatus.error)
+                              if (widget.message.status ==
+                                  SessionMessageStatus.error)
                                 CupertinoButton(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   color: AppColors.destructive,
                                   onPressed: widget.onRetry,
                                   child: Text(
                                     l10n.retry,
-                                    style: TextStyle(fontSize: 14, color: AppColors.white),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.white,
+                                    ),
                                   ),
                                 )
                               else
@@ -755,7 +775,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                                   widget.isPinned
                                       ? l10n.unpinAction
                                       : l10n.pinAction,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.success,
@@ -779,9 +799,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
 
   void _showExpanded(BuildContext context, String content) {
     Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (_) => _TableExpandedView(content: content),
-      ),
+      CupertinoPageRoute(builder: (_) => _TableExpandedView(content: content)),
     );
   }
 
@@ -811,7 +829,10 @@ class _ReasoningSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final sanitizedReasoning = _sanitizeMarkdown(reasoning, stripThinkTags: true);
+    final sanitizedReasoning = _sanitizeMarkdown(
+      reasoning,
+      stripThinkTags: true,
+    );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
@@ -840,7 +861,7 @@ class _ReasoningSection extends StatelessWidget {
                 onPressed: onToggle,
                 child: Text(
                   isExpanded ? l10n.hideReasoning : l10n.showReasoning,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent,
@@ -897,9 +918,9 @@ class _ReasoningSection extends StatelessWidget {
                       useDollarSignsForLatex: true,
                     ),
                   ),
-              ],
-            ],
-          ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -981,10 +1002,7 @@ class _TableWithActions extends StatelessWidget {
                   ],
                 ),
               ),
-              MarkdownTableView(
-                tableRows: tableRows,
-                textStyle: textStyle,
-              ),
+              MarkdownTableView(tableRows: tableRows, textStyle: textStyle),
             ],
           ),
         );
@@ -1000,10 +1018,7 @@ class _TableExpandedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = TextStyle(
-      fontSize: 17,
-      color: AppColors.textPrimary,
-    );
+    final baseStyle = TextStyle(fontSize: 17, color: AppColors.textPrimary);
 
     return CupertinoPageScaffold(
       navigationBar: ThkNavBar.inline(
@@ -1019,12 +1034,7 @@ class _TableExpandedView extends StatelessWidget {
             style: baseStyle,
             onLinkTap: (url, _) => openMarkdownLink(context, url),
             codeBuilder: buildCodeBlock,
-            tableBuilder: (
-              context,
-              tableRows,
-              textStyle,
-              config,
-            ) {
+            tableBuilder: (context, tableRows, textStyle, config) {
               return MarkdownTableView(
                 tableRows: tableRows,
                 textStyle: textStyle,
@@ -1056,8 +1066,9 @@ class _TtsPlayButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isThisPlaying = ref.watch(
-      ttsControllerProvider.select((s) =>
-          s.isSpeaking && s.playingMessageId == messageId),
+      ttsControllerProvider.select(
+        (s) => s.isSpeaking && s.playingMessageId == messageId,
+      ),
     );
 
     return CupertinoButton(
@@ -1068,19 +1079,15 @@ class _TtsPlayButton extends ConsumerWidget {
           : () {
               Navigator.of(context).push(
                 CupertinoPageRoute(
-                  builder: (_) => TtsPlayerScreen(
-                    messageId: messageId,
-                    text: text,
-                  ),
+                  builder: (_) =>
+                      TtsPlayerScreen(messageId: messageId, text: text),
                 ),
               );
             },
       child: Icon(
         isThisPlaying ? AppIcons.ttsPause : AppIcons.ttsSpeak,
         size: 18,
-        color: isThisPlaying
-            ? AppColors.accent
-            : AppColors.textSecondary,
+        color: isThisPlaying ? AppColors.accent : AppColors.textSecondary,
       ),
     );
   }
@@ -1088,10 +1095,7 @@ class _TtsPlayButton extends ConsumerWidget {
 
 /// 消息中的图片缩略图
 class _MessageImage extends StatelessWidget {
-  const _MessageImage({
-    required this.imageData,
-    required this.onTap,
-  });
+  const _MessageImage({required this.imageData, required this.onTap});
 
   final Uint8List imageData;
   final VoidCallback onTap;
@@ -1125,27 +1129,16 @@ class _ImageFullScreen extends StatelessWidget {
       backgroundColor: AppColors.black,
       navigationBar: CupertinoNavigationBar(
         backgroundColor: AppColors.black,
-        middle: Text(
-          '图片预览',
-          style: TextStyle(color: AppColors.white),
-        ),
+        middle: Text('图片预览', style: TextStyle(color: AppColors.white)),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
-          child: Icon(
-            CupertinoIcons.back,
-            color: AppColors.white,
-          ),
+          child: Icon(CupertinoIcons.back, color: AppColors.white),
         ),
       ),
       child: SafeArea(
-        child: Center(
-          child: InteractiveViewer(
-            child: Image.memory(imageData),
-          ),
-        ),
+        child: Center(child: InteractiveViewer(child: Image.memory(imageData))),
       ),
     );
   }
 }
-

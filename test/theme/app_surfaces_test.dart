@@ -2,9 +2,19 @@ import 'dart:ui' show Brightness;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
+import 'package:thk_tree/ui/core/theme/app_palette_tokens.dart';
 import 'package:thk_tree/ui/core/theme/app_surfaces.dart';
 
 void main() {
+  setUp(() {
+    AppColors.setBrightness(Brightness.light);
+    AppColors.setPalette(AppColorPalette.warmPaper);
+  });
+  tearDown(() {
+    AppColors.setBrightness(Brightness.light);
+    AppColors.setPalette(AppColorPalette.warmPaper);
+  });
+
   test('contentCard is white surface with border and soft shadow', () {
     final d = AppSurfaces.contentCard();
     expect(d.color, AppColors.surface);
@@ -26,7 +36,6 @@ void main() {
   });
 
   test('page canvas token is paper, not pure white', () {
-    AppColors.setBrightness(Brightness.light);
     expect(AppColors.pageBg, isNot(AppColors.surface));
     expect(AppColors.pageBg.toARGB32(), 0xFFFAF9F6); // Warm paper (雅白)
   });

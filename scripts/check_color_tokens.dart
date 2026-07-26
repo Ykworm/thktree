@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+
 // Step 4 · Tier 4 · check_color_tokens.dart
 // 防回归扫描：禁止 lib/ 内出现裸 CupertinoColors. / Color(0x…) / Color.from*。
 // 真源 app_colors.dart 与壳层 app_surfaces.dart（设计系统允许的玻璃/影 token）排除。
@@ -19,6 +20,7 @@ final patterns = [
 bool _isExcluded(String path) {
   final n = path.replaceAll('\\', '/');
   return n.endsWith('/lib/ui/core/theme/app_colors.dart') ||
+      n.endsWith('/lib/ui/core/theme/app_palette_tokens.dart') ||
       n.endsWith('/lib/ui/core/theme/app_surfaces.dart');
 }
 

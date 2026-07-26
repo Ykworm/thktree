@@ -1,4 +1,5 @@
 #!/usr/bin/bin/dart
+
 // Step 4 · Tier 2/4 · sync-design-tokens.dart
 // code-first 单向生成器：
 //  1) 从 lib/ui/core/theme/*.dart 生成 docs/_shared/design-tokens.yaml
@@ -10,37 +11,107 @@ import 'dart:io';
 // Repo root = parent of scripts/（worktree / 主仓均可，禁止写死绝对路径）
 final root = File(Platform.script.toFilePath()).parent.parent.path;
 final outPath = '$root/docs/_shared/design-tokens.yaml';
-final htmlPath =
-    '$root/docs/_shared/design-audit/thktree-design-spec.html';
+final htmlPath = '$root/docs/_shared/design-audit/thktree-design-spec.html';
 const htmlMarkerStart = '<!-- AUTOGEN_TOKEN_TABLE_START -->';
 const htmlMarkerEnd = '<!-- AUTOGEN_TOKEN_TABLE_END -->';
 
 final colorFile = '$root/lib/ui/core/theme/app_colors.dart';
+final paletteFile = '$root/lib/ui/core/theme/app_palette_tokens.dart';
 final spacingFile = '$root/lib/ui/core/theme/app_spacing.dart';
 final durationFile = '$root/lib/ui/core/theme/app_durations.dart';
 
 final hexRe = RegExp(r'0x([0-9A-Fa-f]{8})');
 
 final constRe = RegExp(
-    r'static const (\w+)\s*=\s*Color\((0x[0-9A-Fa-f]{8})\);[ \t]*(?://\s*(.*))?');
+  r'static const (\w+)\s*=\s*Color\((0x[0-9A-Fa-f]{8})\);[ \t]*(?://\s*(.*))?',
+);
 final getterRe = RegExp(
-    r'static Color get (\w+) =>\s*_brightness == Brightness\.light\s*\?\s*const Color\((0x[0-9A-Fa-f]{8})\)\s*(?://[^\n]*)?\s*:\s*const Color\((0x[0-9A-Fa-f]{8})\);');
+  r'static Color get (\w+) =>\s*_brightness == Brightness\.light\s*\?\s*const Color\((0x[0-9A-Fa-f]{8})\)\s*(?://[^\n]*)?\s*:\s*const Color\((0x[0-9A-Fa-f]{8})\);',
+);
 final singleGetterRe = RegExp(
-    r'static Color get (\w+) =>\s*const Color\((0x[0-9A-Fa-f]{8})\);');
+  r'static Color get (\w+) =>\s*const Color\((0x[0-9A-Fa-f]{8})\);',
+);
 final refGetterRe = RegExp(r'static Color get (\w+) =>\s*(\w+);');
 
-/// 解析 app_colors.dart → 返回 color 段 entries（按 primitive/semantic/decor 分组）
-Map<String, Map<String, String>> parseColors(String src) {
+Map<String, String> _parsePaletteAliases(String src) {
+  final out = <String, String>{};
+  final re = RegExp(r'static const (_\w+) = Color\((0x[0-9A-Fa-f]{8})\)');
+  for (final m in re.allMatches(src)) {
+    out[m.group(1)!] = m.group(2)!;
+  }
+  return out;
+}
+
+Map<String, String> _parsePaletteBlock(
+  String src,
+  String blockName,
+  Map<String, String> aliases,
+) {
+  final marker = 'static const $blockName = AppPaletteTokens(';
+  final start = src.indexOf(marker);
+  if (start < 0) return {};
+  var depth = 0;
+  var i = start + marker.length;
+  final buf = StringBuffer();
+  while (i < src.length) {
+    final ch = src[i];
+    if (ch == '(') depth++;
+    if (ch == ')') {
+      if (depth == 0) break;
+      depth--;
+    }
+    buf.write(ch);
+    i++;
+  }
+  final out = <String, String>{};
+  final fieldRe = RegExp(r'(\w+):\s*(?:Color\((0x[0-9A-Fa-f]{8})\)|(_\w+)),');
+  for (final m in fieldRe.allMatches(buf.toString())) {
+    final name = m.group(1)!;
+    if (name == 'nodePalettes') continue;
+    final hex = m.group(2) ?? aliases[m.group(3)!];
+    out[name] = hex!;
+  }
+  return out;
+}
+
+/// 解析 app_colors.dart + app_palette_tokens.dart → color 段 entries
+Map<String, Map<String, String>> parseColors(
+  String colorSrc,
+  String paletteSrc,
+) {
   final primitives = <String, String>{};
   final semantic = <String, String>{};
   final decor = <String, String>{};
 
-  for (final m in constRe.allMatches(src)) {
+  final aliases = _parsePaletteAliases(paletteSrc);
+  final warmPaper = _parsePaletteBlock(paletteSrc, 'warmPaper', aliases);
+  final slate = _parsePaletteBlock(paletteSrc, 'slate', aliases);
+
+  for (final name in warmPaper.keys) {
+    final light = warmPaper[name]!;
+    final dark = slate[name] ?? light;
+    final entry = light == dark
+        ? 'value: "$light"'
+        : 'light: "$light", dark: "$dark"';
+    if (_isPrimitive(name)) {
+      primitives[name] = entry.contains('light:') ? 'value: "$light"' : entry;
+    } else {
+      semantic[name] = entry;
+    }
+  }
+
+  semantic['success'] = 'value: "${warmPaper['paletteSage']!}"';
+  semantic['clay'] = 'ref: "paletteClay"';
+  semantic['gold'] = 'ref: "paletteGold"';
+  semantic['plum'] = 'ref: "palettePlum"';
+
+  for (final m in constRe.allMatches(colorSrc)) {
     final name = m.group(1)!;
     final hex = m.group(2)!;
     final label = m.group(3)?.trim() ?? '';
-    final entry =
-        label.isEmpty ? 'value: "$hex"' : 'value: "$hex", label: "$label"';
+    final entry = label.isEmpty
+        ? 'value: "$hex"'
+        : 'value: "$hex", label: "$label"';
     if (_isDecor(name)) {
       decor[name] = entry;
     } else if (_isPrimitive(name)) {
@@ -50,30 +121,34 @@ Map<String, Map<String, String>> parseColors(String src) {
     }
   }
 
-  for (final m in getterRe.allMatches(src)) {
-    final name = m.group(1)!;
-    final light = m.group(2)!;
-    final dark = m.group(3)!;
-    semantic[name] = 'light: "$light", dark: "$dark"';
-  }
-
-  for (final m in singleGetterRe.allMatches(src)) {
-    semantic[m.group(1)!] = 'value: "${m.group(2)!}"';
-  }
-
-  for (final m in refGetterRe.allMatches(src)) {
-    semantic[m.group(1)!] = 'ref: "${m.group(2)!}"';
+  for (final m in refGetterRe.allMatches(colorSrc)) {
+    final target = m.group(2)!;
+    if (target == '_current') continue;
+    semantic[m.group(1)!] = 'ref: "$target"';
   }
 
   return {'primitive': primitives, 'semantic': semantic, 'decor': decor};
 }
 
-bool _isPrimitive(String n) =>
-    ['white', 'black', 'transparent', 'champagneGold', 'warmGray', 'dustyRose', 'sageGray', 'slateBlue']
-        .contains(n);
-bool _isDecor(String n) =>
-    ['labBg', 'labAccentBlue', 'labAccentOrange', 'labAccentPurple', 'waveTeal', 'waveOrange', 'wavePurple']
-        .contains(n);
+bool _isPrimitive(String n) => [
+  'white',
+  'black',
+  'transparent',
+  'champagneGold',
+  'warmGray',
+  'dustyRose',
+  'sageGray',
+  'slateBlue',
+].contains(n);
+bool _isDecor(String n) => [
+  'labBg',
+  'labAccentBlue',
+  'labAccentOrange',
+  'labAccentPurple',
+  'waveTeal',
+  'waveOrange',
+  'wavePurple',
+].contains(n);
 
 /// 解析 AppSp → dimension 段
 Map<String, String> parseSpacing(String src) {
@@ -91,7 +166,9 @@ Map<String, String> parseSpacing(String src) {
 /// 解析 AppDur → time 段
 Map<String, String> parseDuration(String src) {
   final out = <String, String>{};
-  final durRe = RegExp(r'static const (\w+) = Duration\(milliseconds: (\d+)\);');
+  final durRe = RegExp(
+    r'static const (\w+) = Duration\(milliseconds: (\d+)\);',
+  );
   for (final m in durRe.allMatches(src)) {
     out[m.group(1)!] = 'value: ${m.group(2)}, unit: "ms"';
   }
@@ -102,7 +179,11 @@ Map<String, String> parseDuration(String src) {
   return out;
 }
 
-String emitGroup(String title, Map<String, String> map, {String indent = '  '}) {
+String emitGroup(
+  String title,
+  Map<String, String> map, {
+  String indent = '  ',
+}) {
   final buf = StringBuffer()..writeln('$indent$title:');
   final inner = '$indent  ';
   for (final e in map.entries) {
@@ -148,9 +229,11 @@ String _buildSemanticTable(Map<String, String> semantic) {
     final valueCell = refM != null
         ? 'ref → ${refM.group(1)}'
         : '$lightCss / $darkCss';
-    rows.add('<tr>${_td('<code>${e.key}</code>')}${_td(lightCss)}'
-        '${_td(darkCss)}${_td('${_swatch(lightCss)} $valueCell')}'
-        '${_td(label)}</tr>');
+    rows.add(
+      '<tr>${_td('<code>${e.key}</code>')}${_td(lightCss)}'
+      '${_td(darkCss)}${_td('${_swatch(lightCss)} $valueCell')}'
+      '${_td(label)}</tr>',
+    );
   }
   return '''
   <h3>语义 token（随亮度变化）</h3>
@@ -170,8 +253,10 @@ String _buildPrimDecorTable(String title, Map<String, String> group) {
     final labelM = RegExp(r'label:\s*"(.*?)"').firstMatch(v);
     final hex = valM != null ? _cssHex(valM.group(1)!) : '';
     final label = labelM?.group(1) ?? '';
-    rows.add('<tr>${_td('<code>${e.key}</code>')}${_td(hex)}'
-        '${_td('${_swatch(hex)} $hex')}${_td(label)}</tr>');
+    rows.add(
+      '<tr>${_td('<code>${e.key}</code>')}${_td(hex)}'
+      '${_td('${_swatch(hex)} $hex')}${_td(label)}</tr>',
+    );
   }
   return '''
   <h3 style="margin-top: 24px;">$title</h3>
@@ -194,22 +279,28 @@ void injectHtmlTokenTable(String generated) {
   }
   final before = html.substring(0, start + htmlMarkerStart.length);
   final after = html.substring(end);
-  File(htmlPath)
-      .writeAsStringSync('$before\n$generated\n  $after');
+  File(htmlPath).writeAsStringSync('$before\n$generated\n  $after');
   print('INJECTED 第 9 节 token table → $htmlPath');
 }
 
 void main() {
   final colorSrc = File(colorFile).readAsStringSync();
-  final colors = parseColors(colorSrc);
+  final paletteSrc = File(paletteFile).readAsStringSync();
+  final colors = parseColors(colorSrc, paletteSrc);
   final spacing = parseSpacing(File(spacingFile).readAsStringSync());
   final duration = parseDuration(File(durationFile).readAsStringSync());
 
   final buf = StringBuffer();
   buf.writeln('# ThkTree Design Tokens — 自动镜像（code-first 真源）');
-  buf.writeln('# 由 scripts/sync-design-tokens.dart 从 lib/ui/core/theme/*.dart 生成');
-  buf.writeln('# 不要手改本文件；改色请改 app_colors.dart 后重跑 `dart run scripts/sync-design-tokens.dart`。');
-  buf.writeln('# 真源：app_colors.dart (color) / app_spacing.dart (dimension) / app_durations.dart (time)');
+  buf.writeln(
+    '# 由 scripts/sync-design-tokens.dart 从 lib/ui/core/theme/*.dart 生成',
+  );
+  buf.writeln(
+    '# 不要手改本文件；改色请改 app_colors.dart 后重跑 `dart run scripts/sync-design-tokens.dart`。',
+  );
+  buf.writeln(
+    '# 真源：app_palette_tokens.dart (palette) / app_colors.dart (const) / app_spacing.dart (dimension) / app_durations.dart (time)',
+  );
   buf.writeln();
 
   buf.writeln('color:');
@@ -224,13 +315,17 @@ void main() {
 
   File(outPath).writeAsStringSync(buf.toString());
   print('WROTE $outPath');
-  print('colors: ${colors.values.expand((m) => m.keys).length} '
-      'spacing: ${spacing.length} duration: ${duration.length}');
+  print(
+    'colors: ${colors.values.expand((m) => m.keys).length} '
+    'spacing: ${spacing.length} duration: ${duration.length}',
+  );
 
   // ── HTML 第 9 节 注入（与 yaml 同源，永不漂）──
-  final generated = _buildSemanticTable(colors['semantic']!) +
-      _buildPrimDecorTable(
-          '原语 / scrim / 装饰 token',
-          {...colors['primitive']!, ...colors['decor']!});
+  final generated =
+      _buildSemanticTable(colors['semantic']!) +
+      _buildPrimDecorTable('原语 / scrim / 装饰 token', {
+        ...colors['primitive']!,
+        ...colors['decor']!,
+      });
   injectHtmlTokenTable(generated);
 }

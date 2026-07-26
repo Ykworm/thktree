@@ -140,6 +140,36 @@ abstract class AppLocalizations {
   /// **'中文'**
   String get chinese;
 
+  /// Appearance settings section header
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearanceSection;
+
+  /// Warm Paper color palette display name
+  ///
+  /// In en, this message translates to:
+  /// **'Default · Warm Paper'**
+  String get paletteWarmPaperTitle;
+
+  /// Warm Paper color palette subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet study · warm paper glass'**
+  String get paletteWarmPaperSubtitle;
+
+  /// Morandi color palette display name
+  ///
+  /// In en, this message translates to:
+  /// **'Morandi'**
+  String get paletteMorandiTitle;
+
+  /// Morandi color palette subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Low-saturation gray study'**
+  String get paletteMorandiSubtitle;
+
   /// Empty state for theme list
   ///
   /// In en, this message translates to:
