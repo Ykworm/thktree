@@ -1,41 +1,19 @@
 # ThkTree Design Tokens — 自动镜像（code-first 真源）
 # 由 scripts/sync-design-tokens.dart 从 lib/ui/core/theme/*.dart 生成
 # 不要手改本文件；改色请改 app_colors.dart 后重跑 `dart run scripts/sync-design-tokens.dart`。
-# 真源：app_colors.dart (color) / app_spacing.dart (dimension) / app_durations.dart (time)
+# 真源：app_palette_tokens.dart (palette) / app_colors.dart (const) / app_spacing.dart (dimension) / app_durations.dart (time)
 
 color:
   primitive:
-    champagneGold: { value: "0xFFC4A77D", label: "香槟金" }
-    warmGray: { value: "0xFF8E8B82", label: "烟灰" }
-    dustyRose: { value: "0xFFA89090", label: "玫瑰灰" }
-    sageGray: { value: "0xFF8B9080", label: "橄榄灰" }
-    slateBlue: { value: "0xFF6B7B8E", label: "深蓝灰" }
+    champagneGold: { value: "0xFFC4A77D" }
+    warmGray: { value: "0xFF8E8B82" }
+    dustyRose: { value: "0xFFA89090" }
+    sageGray: { value: "0xFF8B9080" }
+    slateBlue: { value: "0xFF6B7B8E" }
     white: { value: "0xFFFFFFFF" }
     black: { value: "0xFF000000" }
     transparent: { value: "0x00000000" }
   semantic:
-    paletteBlue: { value: "0xFF4A7AB5" }
-    paletteSage: { value: "0xFF5A9E7F" }
-    paletteClay: { value: "0xFFC47856" }
-    paletteGold: { value: "0xFFC9A24E" }
-    palettePlum: { value: "0xFF8B6AAE" }
-    matteGoldLight: { value: "0xFFFFFDF5", label: "非常淡的暖金色" }
-    matteGoldBg: { value: "0xFFF9F7F1", label: "极淡的暖灰/米色" }
-    matteGoldBorder: { value: "0xFFF2EADC", label: "极细的暖沙色边框" }
-    textMatteGoldDark: { value: "0xFF5C544D", label: "带有暖灰调的深色文字" }
-    matteGold: { value: "0xFFD4A373", label: "高级哑光金/暖沙金" }
-    labCoolBg: { value: "0xFFF2F4F7", label: "极其扁平的淡银灰底色" }
-    accent: { value: "0xFF4A7AB5", label: "paper blue — 唯一主交互" }
-    accentDeep: { value: "0xFF3D6A9E", label: "pressed" }
-    destructive: { value: "0xFFDC2626", label: "硬红保留" }
-    success: { value: "0xFF5A9E7F", label: "sage" }
-    onSurface: { value: "0xFFFFFFFF" }
-    scrim: { value: "0x80000000" }
-    scrimStrong: { value: "0xF0000000" }
-    scrimMid: { value: "0x61000000" }
-    scrimSoft: { value: "0x0D000000" }
-    questionSourceTag: { value: "0x804A7AB5" }
-    accentLight: { light: "0xFFEDF2F8", dark: "0xFF1E3A5F" }
     pageBg: { light: "0xFFFAF9F6", dark: "0xFF020617" }
     surface: { light: "0xFFFFFFFF", dark: "0xFF0F172A" }
     surfaceMuted: { light: "0xFFF2EFEA", dark: "0xFF1E293B" }
@@ -46,6 +24,33 @@ color:
     border: { light: "0xFFE8E4DC", dark: "0xFF334155" }
     borderStrong: { light: "0xFFD9D3C8", dark: "0xFF475569" }
     elevationShadow: { value: "0x1A1F2933" }
+    accent: { value: "0xFF4A7AB5" }
+    accentLight: { light: "0xFFEDF2F8", dark: "0xFF1E3A5F" }
+    accentDeep: { value: "0xFF3D6A9E" }
+    questionSourceTag: { value: "0x804A7AB5" }
+    paletteBlue: { value: "0xFF4A7AB5" }
+    paletteSage: { value: "0xFF5A9E7F" }
+    paletteClay: { value: "0xFFC47856" }
+    paletteGold: { value: "0xFFC9A24E" }
+    palettePlum: { value: "0xFF8B6AAE" }
+    matteGoldLight: { value: "0xFFFFFDF5" }
+    matteGoldBg: { value: "0xFFF9F7F1" }
+    matteGoldBorder: { value: "0xFFF2EADC" }
+    textMatteGoldDark: { value: "0xFF5C544D" }
+    matteGold: { value: "0xFFD4A373" }
+    glassFill: { value: "0x8CFFFFFF" }
+    glassFillOpaque: { value: "0xFFF3EFE8" }
+    success: { value: "0xFF5A9E7F" }
+    clay: { ref: "paletteClay" }
+    gold: { ref: "paletteGold" }
+    plum: { ref: "palettePlum" }
+    labCoolBg: { value: "0xFFF2F4F7" }
+    destructive: { value: "0xFFDC2626" }
+    onSurface: { value: "0xFFFFFFFF" }
+    scrim: { value: "0x80000000" }
+    scrimStrong: { value: "0xF0000000" }
+    scrimMid: { value: "0x61000000" }
+    scrimSoft: { value: "0x0D000000" }
     thinkingBg: { ref: "surfaceMuted" }
     markdownCodeBg: { ref: "pageBg" }
     userBubbleBg: { ref: "accentLight" }

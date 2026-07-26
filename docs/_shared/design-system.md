@@ -23,6 +23,18 @@
 - **独立冷灰空间 (Lab)：** 冷银灰 `#F2F4F7`（`AppColors.labCoolBg`）。用于 Lab 等需要与“暖纸”拉开材质区分、体现科技感与精密感的独立页面。
 - **success → sage**；Lab 霓虹色豁免书房换肤
 
+### 配色皮肤（2026-07-26）
+
+v1 在 **Settings → 外观** 提供 light 换肤：`warmPaper`（默认）与 `morandi`。Registry 内置第三套 `slate` = 现网 dark 色，由 Dev Tools 深色开关触发，**不进 Settings UI**。
+
+| 皮肤 id | 说明 |
+|---------|------|
+| `warmPaper` | 默认 Warm Paper Glass，行为与迁移前 pixel 一致 |
+| `morandi` | 低饱和灰调书房；节点圆点五色随皮肤变 |
+| `slate` | 内置 dark 表；`AppColors.setBrightness(dark)` 时选中 |
+
+运行时：`AppColors.setPalette` + `AppColors.setBrightness` → `_current` = dark ? slate : 用户 palette。持久化 key：`color_palette`（`warmPaper` \| `morandi`，缺省 warmPaper）。
+
 ### 玻璃（`AppGlass`，`lib/ui/core/theme/app_surfaces.dart`）
 
 | 规则 | 说明 |
@@ -71,7 +83,7 @@ Composer（`ChatComposer` / `_ComposerGlassShell`）：**悬浮白瓷**——不
 
 | 类别 | 真源文件 | 镜像字典 |
 |------|----------|----------|
-| 颜色 color | `lib/ui/core/theme/app_colors.dart` | `docs/_shared/design-tokens.yaml` → `color` |
+| 颜色 color | `lib/ui/core/theme/app_palette_tokens.dart`（三表 + registry）+ `lib/ui/core/theme/app_colors.dart`（delegate + Lab/scrim const） | `docs/_shared/design-tokens.yaml` → `color` |
 | 间距/圆角 dimension | `lib/ui/core/theme/app_spacing.dart` | `docs/_shared/design-tokens.yaml` → `dimension` |
 | 动效时长/曲线 time | `lib/ui/core/theme/app_durations.dart` | `docs/_shared/design-tokens.yaml` → `time` |
 | 内容卡 / 壳层玻璃 / 氛围光 | `lib/ui/core/theme/app_surfaces.dart`（`AppSurfaces` / `AppGlass` / `AppAtmosphere`） | 以代码为准；yaml 暂不镜像结构类 |
@@ -82,9 +94,9 @@ Composer（`ChatComposer` / `_ComposerGlassShell`）：**悬浮白瓷**——不
 
 ## 改色流程（必读）
 
-1. **改真源**：在 `app_colors.dart`（或 `app_spacing` / `app_durations`）增 / 改 token。
+1. **改真源**：在 `app_palette_tokens.dart` 增 / 改皮肤表，或在 `app_colors.dart` 增 Lab/scrim 等 const；间距/动效仍改 `app_spacing` / `app_durations`。
 2. **改 widget**：把裸色 `CupertinoColors.*` / `Color(0x…)` 改为 `AppColors.<token>`。
-   - 语义 token 是 **getter**（随 `AppColors.setBrightness` 变），不是编译期常量——
+   - 语义 token 是 **getter**（随 `AppColors.setPalette` / `setBrightness` 变），不是编译期常量——
      在 `const TextStyle / BoxDecoration / Icon` 里用时**去掉外层 `const`**。
    - `CupertinoColors.x.resolveFrom(context)` 直接换成 `AppColors.<token>`（getter 已随亮度变，无需 resolveFrom）。
 3. **同步文档**：`dart run scripts/sync-design-tokens.dart` → 重新生成 `design-tokens.yaml`。
@@ -121,3 +133,4 @@ Composer（`ChatComposer` / `_ComposerGlassShell`）：**悬浮白瓷**——不
 - Step 4（2026-07-11）：code-first 收敛。原 handoff 记录的「157 处」已漂移，以 lib/ 实测 92 处为准。
   新增中性原语 `white/black/transparent`、scrim 家族 `scrimStrong/scrimMid/scrimSoft`、装饰 token `lab*/wave*`。
 - Warm Paper Glass（2026-07-17）：P0 色板 → P1 内容卡 → P2 壳层玻璃（含 composer）→ P3 主题/搜索静光。见 CHANGELOG 同日条目。
+- Morandi 换肤（2026-07-26）：`app_palette_tokens.dart` registry + Settings 外观 picker。见 [CHANGELOG/2026-07-26-morandi-skin.md](../CHANGELOG/2026-07-26-morandi-skin.md)。

@@ -50,6 +50,7 @@
 - **Pin 对照栏**（2026-07-21，同日二轮改版）：气泡 action row 右端 **Pin** / **Note** 文字按钮 + 长按气泡标题行弹消息级菜单（手势不干扰 SelectionArea）；Pin 按钮双态——已 Pin 显示 Unpin + pin-slash 图标，再点取消（`PinStorage.removeByAnchor`，状态源 `pinAnchorKeysProvider`）；Pin 数据存 `pins.json`（`PinStorage`，上限 5 条**满员拦截**抛 StateError + 同锚点去重，kind = message | note）；右缘把手 `PinEdgeHandle` 挂 **shell 层**（Themes / Notes tab 常驻，分支内 push 页面盖不住；可上下拖动；`_pinPanelOpen` 防重入），面板 push 到 root navigator 全屏覆盖（含 tab bar）：居上大卡片（宽 92%，底边贴近关闭按钮）+ 深色 scrim + 底部圆形关闭按钮，横向 PageView 滑动切换（页码圆点生效），预览卡 `GptMarkdown` 渲染；动作 = Source（同 chat 就地滚——ChatScreen 注册 `pinJumpContextProvider` / 跨 chat `pendingScrollMsgIdProvider` + push / note 打开编辑器）/ To Note（`NoteSelectScreen`）/ Remove（删空自动关面板）；提示走 `ThkToast` 暖白卡片（成功 ✓ / 取消 pin-slash / 满员警告图标）
 - **滚动位置记忆**（2026-07-21）：`ScrollAnchorStore`（scroll_anchors.json）按 nodeId 持久化首条可见 msgId；`ChatListView` 新增 `firstVisibleMsgId` getter 与 `initialAnchorMsgId` 恢复模式（恢复时跳过吸底）；离开 chat 落盘（在底部则删锚点），查看树/搜索跳回不丢位置
 - **查看树入口入 composer**（2026-07-21）：`ChatComposer.onViewTree`，工具行最右 icon-only chip；`showTools` 条件包含它，保证常驻；与 more 菜单原入口并存
+- **查看树导航修复**（2026-07-26）：`onViewTree` 改 `context.push('/themes/:id/full-tree')`（原 `go` 会替换栈导致左缘 swipe 误退 App）；`FullTreeScreen._onBack` 统一 `context.pop()` 回到 chat
 - **Context Usage Bar 暂时屏蔽**（2026-07-23）：`_ContextUsageBar` 曾在 composer 上方画 1px token 占用条；无名细线用户无法理解、低占用像脏像素。现恒返回 `SizedBox.shrink()`，调用处与构造签名保留，待可读警示设计后再开
 - **Composer 白瓷壳无描边**（2026-07-23）：`_ComposerGlassShell` 去掉 `Border.all`，轮廓只靠双层极淡阴影，避免 hair 边在真机像矩形框/残线
 

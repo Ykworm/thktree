@@ -12,7 +12,7 @@
 
 ## 功能列表
 
-- 外观：主题模式（浅色/深色/跟随系统）、字体大小、节点配色方案
+- 外观：**配色皮肤**（Settings → 外观：`warmPaper` 默认 / `morandi`；Dev Tools 深色开关仍走内置 `slate`，不进 Settings UI）
 - 语言：i18n 切换（中/英）
 - 语音播放：TTS 引擎选择、语速（播放器内循环切换 0.75× / 1× / 1.5× / 2×）、试听
 - 大模型：从设置页进入独立的"大模型"子页，再进入"模型提供商"（显示 **OpenAI**、**Anthropic（Claude）**、KIMI、MiniMax、MIMO / MIMO Token Plan、DeepSeek、豆包、**xAI Grok**、**腾讯 TokenHub**，通过 `visibleProviderTypes` 常量过滤）和"默认模型配置"。深层页面顶部有面包屑导航（`ThkBreadcrumbRow`），点击祖先段可快速跳回任意上层。
@@ -74,7 +74,7 @@
 ## 关键设计原则
 
 - **设置 = 单例持久化**：`SettingsController` 整个 App 共享一份，写入后立即生效
-- **外观与节点色解耦**：主题色控制整体配色（见 [themes 模块](../themes/README.md)），节点色是节点身份标识（hash 决定）—— 两者独立
+- **外观与节点色**：配色皮肤（`AppColorPalette`）控制全局 semantic token；节点圆点五色随当前皮肤 `nodePalettes` 变（hash 稳定分配色位不变）。见 [design-system](../../_shared/design-system.md) 配色皮肤节。
 - **TTS 跨平台抽象**：TtsService 接口在 domain 层；iOS 实现走 AVSpeechSynthesizer（MethodChannel），Android/其他走 flutter_tts
 - **i18n 一致性**：所有设置项 key 必须在 `lib/l10n/app_*.arb` 双语完整
 - **危险操作二次确认**：清空缓存、删除数据等带 destructive 警示
@@ -91,6 +91,7 @@
 
 ## 相关历史
 
+- 2026-07-26：Settings 外观配色皮肤（warmPaper / morandi）+ `color_palette` 持久化
 - 2026-04：设置模块初版（外观 + 语言）
 - 2026-05：TTS 接入（iOS AVSpeechSynthesizer 优先）
 - 2026-05：LLM 入口从设置页跳转

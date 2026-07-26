@@ -110,6 +110,7 @@ KIMI、MIMO、DeepSeek、豆包（模型级）、**xAI Grok** 支持原生联网
 | Feature | 模块 | 状态 | 最后更新 | README | Visual | 代码路径 | 说明 |
 |---------|------|------|----------|--------|--------|----------|------|
 | 设置页 | settings | ✅ 完成 | 2026-06-28 | [README](modules/settings/README.md) | [README](modules/settings/visual/README.md) | `lib/ui/features/settings/settings_screen.dart` 等 | 大模型入口 + 默认模型配置页 + 独立模型选择页；**2026-06-28 起入口从底部 tab 移至搜索页顶栏右上角齿轮按钮**（详见 [CHANGELOG](CHANGELOG/2026-06-28-settings-out-of-tabbar.md)） |
+| 外观配色皮肤 | settings | ✅ 完成 | 2026-07-26 | [README](modules/settings/README.md) | [design-system](_shared/design-system.md) | `app_palette_tokens.dart` + `settings_screen.dart` `_PalettePicker` | warmPaper（默认）/ morandi；`color_palette` 持久化；dark = 内置 slate（Dev Tools） |
 | 生物认证（Face ID） | settings | ✅ 完成 | 2026-06-17 | [README](modules/settings/README.md) | — | `lib/data/services/biometric_service.dart` | BiometricService + AuthGate + WidgetsBindingObserver，进前台弹验证 |
 | 分享功能 | settings | ✅ 完成 | 2026-07-08 | [README](modules/settings/README.md) | — | `lib/data/services/share_service.dart` | ShareService.shareAsImage 将问答对渲染为 PNG 图片并调起系统分享面板（offscreen 渲染 → `Share.shareXFiles()`） |
 | 备份与恢复 | settings | ✅ 完成 | 2026-07-08 | [README](modules/settings/README.md) | — | `lib/ui/features/backup_restore/backup_restore_screen.dart` + `lib/data/services/auto_backup_service.dart` + `lib/data/services/export_service.dart` + `lib/data/services/import_service.dart` | 自动备份（24h 前台补偿，本地保留 7 份）；手动备份并分享；导入支持覆盖/合并；分享提醒独立周期（3/5/7/14 天可调），仅“分享出去”刷新提醒日期 |
@@ -158,6 +159,7 @@ KIMI、MIMO、DeepSeek、豆包（模型级）、**xAI Grok** 支持原生联网
 
 > 倒序排列，最新在上。
 
+- **2026-07-26** — Morandi 换肤 + 查看树返回修复：(1) `app_palette_tokens.dart` registry（warmPaper / morandi / slate）+ Settings 外观 picker + `color_palette` 持久化；Lab 色豁免；(2) Chat「查看树」改 `context.push`、FullTree `_onBack` 统一 `pop`，修复左缘返回误退 App。详见 [CHANGELOG](CHANGELOG/2026-07-26-morandi-skin.md) / [design-system](_shared/design-system.md)。
 - **2026-07-23** — 设置页开放 OpenAI / Anthropic（Claude）：`visibleProviderTypes` 加入 `openai`、`anthropic`；Claude 联网 `web_search_20260209` supported，OpenAI Chat Completions 路径联网暂 unsupported。见 [llm README](modules/llm/README.md)。
 - **2026-07-23** — MIMO Token Plan + 腾讯 TokenHub（Hy3）：(1) `preset_mimo_token_plan`（`token-plan-cn.xiaomimimo.com/v1`，type=`mimo`）与按量 MIMO 并存；(2) `LlmProviderType.tokenhub` / `preset_tokenhub`（`tokenhub.tencentmaas.com/v1`），白名单 hy3 / hy3-preview，深度思考 `thinking.type`，联网暂 unsupported。详见 [CHANGELOG](CHANGELOG/2026-07-23-mimo-token-plan-tokenhub.md) / [llm README](modules/llm/README.md)。
 - **2026-07-17** — xAI Grok 提供商 + session.md 自愈：(1) `LlmProviderType.xai` / `preset_xai`（`api.x.ai/v1` API Key）；白名单 grok-4.5/4.3；联网 `search_parameters`、思考 `reasoning_effort`；(2) 有 `node.meta.json`、无 `session.md` 时 `ensureSessionMarkdownIfMissing` 自动补最小空会话（日志 `get_session_path.auto_healed`）；历史消息不可恢复。见 [llm README](modules/llm/README.md) / [chat README](modules/chat/README.md)。
