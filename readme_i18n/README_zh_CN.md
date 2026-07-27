@@ -226,6 +226,7 @@ flutter run
 
 - 架构决策与文档地图：[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
 - 功能状态总表：[`docs/FEATURES.md`](../docs/FEATURES.md)
+- 安全与隐私说明：[`docs/SECURITY.md`](../docs/SECURITY.md)
 
 ## 开源协议
 

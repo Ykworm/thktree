@@ -219,6 +219,7 @@ Most tools flatten chats, notes, and sources into one stream. ThkTree’s answer
 
 - Architecture & doc map: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
 - Feature status: [`docs/FEATURES.md`](../docs/FEATURES.md)
+- Security & privacy notes: [`docs/SECURITY.md`](../docs/SECURITY.md)
 
 ## License
 
