@@ -12,7 +12,7 @@
 
 ThkTree 集成测试需要真实 LLM API Key 才能驱动聊天链路。2026-06-18 修复过一次 LLM 配置加载失败问题,把 Key 的物理位置从 `tool/test_llm_config.json` 迁移到 `assets/test_llm_config/test_llm_config.json`,通过 `pubspec.yaml` 的 `assets:` 声明把整个目录打进 Flutter bundle,集成测试进程通过 `rootBundle.loadString` 读取。
 
-但本次复盘发现一个**安全红线**:`pubspec.yaml` 中 `assets: - assets/test_llm_config/` 是对**整个目录**的声明,**任何 build mode(debug / profile / release)都会把含真实 Key 的 json 烤进 bundle**。当前仓库 `assets/test_llm_config/test_llm_config.json` 里持有 `sk-8a3e5b90d3574becacab2e14bf62f3a6` 这类真实 deepseek Key。一旦运行 `flutter build ipa --release`,Key 就以明文形式进入 `.app` bundle,可以轻易从 ipa 里 grep 出来。
+但本次复盘发现一个**安全红线**:`pubspec.yaml` 中 `assets: - assets/test_llm_config/` 是对**整个目录**的声明,**任何 build mode(debug / profile / release)都会把含真实 Key 的 json 烤进 bundle**。当前仓库 `assets/test_llm_config/test_llm_config.json` 里持有 `sk-xxxxxxxxxxxxxxxx` 这类真实 deepseek Key。一旦运行 `flutter build ipa --release`,Key 就以明文形式进入 `.app` bundle,可以轻易从 ipa 里 grep 出来。
 
 > **`.gitignore` 只解决"不提交",不解决"不进 release 包" —— 这是两个独立维度。**
 

@@ -3,6 +3,7 @@
   "ykskillRoot": "/Users/yuweikang/dev/ykcode/ykskill",
   "skills": {
     "android-native-dev": "shared",
+    "beautify-github-readme": "shared",
     "chinese-code-review": "shared",
     "chinese-commit-conventions": "shared",
     "chinese-documentation": "shared",

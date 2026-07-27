@@ -5,9 +5,10 @@ import 'package:flutter/widgets.dart';
 /// Opens in SFSafariViewController / Chrome Custom Tabs via [openMarkdownLink].
 abstract final class LegalLinks {
   static const _repoBase =
-      'https://github.com/Ykworm/thktree/blob/main/docs/legal';
+      'https://github.com/Ykworm/thktree/blob/master/docs/legal';
 
-  static const license = 'https://github.com/Ykworm/thktree/blob/main/LICENSE';
+  static const license =
+      'https://github.com/Ykworm/thktree/blob/master/LICENSE';
 
   /// Resolves `zh` vs `en` from saved app locale, then system locale.
   static String languageCode({Locale? savedLocale, required Locale systemLocale}) {
