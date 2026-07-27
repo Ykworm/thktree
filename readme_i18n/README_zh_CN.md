@@ -16,6 +16,10 @@ ThkTree 是一款 AI 知识树 App，把 LLM 对话组织成可嵌套、可检�
 
 **核心价值**：让人机协作地构建「长在自己身上的」结构化知识体系——像树一样有机生长，而不是被信息洪流淹没。
 
+### 简介
+
+<iframe src="//player.bilibili.com/player.html?bvid=BV1Lp3P6PE8k&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+
 ---
 
 > 在假期里面我想vide coding一个APP，不多想，选了一个心里面冒出来的第一个想法：树形对话 + Flutter。

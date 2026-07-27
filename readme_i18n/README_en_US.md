@@ -16,6 +16,10 @@ ThkTree is an AI knowledge-tree app that organizes LLM conversations into a nest
 
 **Core value**: Human–AI collaboration to build a structured knowledge system that grows *on you* — organic like a tree, not drowned in information overload.
 
+### Introduction
+
+<a href="https://youtu.be/7DeELqEsagA" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/7DeELqEsagA/hqdefault.jpg" alt="ThkTree introduction"></a>
+
 ---
 
 > During the holiday I wanted to vide code an app. I didn't overthink it—I went with the first idea that popped into my head: tree-shaped conversations + Flutter.
