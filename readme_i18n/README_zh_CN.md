@@ -18,7 +18,10 @@ ThkTree 是一款 AI 知识树 App，把 LLM 对话组织成可嵌套、可检�
 
 ### 简介
 
-<a href="https://www.bilibili.com/video/BV1Lp3P6PE8k" target="_blank" rel="noopener noreferrer"><img src="https://i1.hdslb.com/bfs/archive/4b8d799d166863703a8bd721a7f3624d7a8c908d.jpg" alt="ThkTree 简介"></a>
+<p align="center">
+  <a href="https://www.bilibili.com/video/BV1Lp3P6PE8k" target="_blank" rel="noopener noreferrer"><img src="https://i1.hdslb.com/bfs/archive/4b8d799d166863703a8bd721a7f3624d7a8c908d.jpg" alt="ThkTree 简介 — Bilibili"></a>
+</p>
+<p align="center"><sub>简介视频在 <a href="https://www.bilibili.com/video/BV1Lp3P6PE8k" target="_blank" rel="noopener noreferrer">Bilibili（哔哩哔哩）</a> · 点击在新标签页打开</sub></p>
 
 ---
 

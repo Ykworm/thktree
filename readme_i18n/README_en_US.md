@@ -18,7 +18,10 @@ ThkTree is an AI knowledge-tree app that organizes LLM conversations into a nest
 
 ### Introduction
 
-<a href="https://youtu.be/7DeELqEsagA" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/7DeELqEsagA/hqdefault.jpg" alt="ThkTree introduction"></a>
+<p align="center">
+  <a href="https://youtu.be/7DeELqEsagA" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/7DeELqEsagA/hqdefault.jpg" alt="ThkTree introduction — YouTube"></a>
+</p>
+<p align="center"><sub>Intro video on <a href="https://youtu.be/7DeELqEsagA" target="_blank" rel="noopener noreferrer">YouTube</a> · opens in a new tab</sub></p>
 
 ---
 
