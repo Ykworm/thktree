@@ -25,6 +25,8 @@ Future<void> main() async {
   final paths = await AppPaths.load();
   await paths.ensureCreated();
 
+  // 仅开发用的远程日志回传（见 AppLogger 构造函数注释）：
+  // release / 上架构建禁止传 THKTREE_LOG_URL；不传则远程上传完全不启用。
   final remoteLogUrl = const String.fromEnvironment('THKTREE_LOG_URL');
   final logger = AppLogger(paths: paths, remoteLogUrl: remoteLogUrl);
   await logger.init();

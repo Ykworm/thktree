@@ -63,6 +63,13 @@ class LogRecord {
 }
 
 class AppLogger {
+  /// [remoteLogUrl] 来自编译期 define `THKTREE_LOG_URL`，是**仅开发用**的
+  /// 远程日志回传通道（配套接收端是明文 HTTP 的 tools/host_log_server.py，
+  /// 无鉴权，日志行可能含会话标题与本地绝对路径）。
+  ///
+  /// 红线：release / 上架构建**禁止**传 `--dart-define=THKTREE_LOG_URL=...`；
+  /// 开发使用时应指向 https 或本机地址。不传 define 时该通道完全关闭
+  /// （_remoteUri 为 null，_sendRemote / _backfillRemote 均不执行）。
   AppLogger({required this.paths, String remoteLogUrl = ''}) : _remoteUri = Uri.tryParse(remoteLogUrl.trim());
 
   final AppPaths paths;

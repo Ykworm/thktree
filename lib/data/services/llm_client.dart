@@ -4,6 +4,7 @@ import 'dart:developer' as dev;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 import 'package:thk_tree/data/models/llm_provider_config.dart';
 import 'package:thk_tree/data/models/llm_model_config.dart';
@@ -493,12 +494,15 @@ class ConfigBasedOpenAiCompatibleClient extends LlmClient {
         name: 'llm_client',
       );
 
-      // DEBUG: stream 结束（这一轮 LLM 输出完），一次性 log 累积的 raw data
-      // ignore: avoid_print
-      print(
-        '[RAW-DATA-OAI round=$round] event_count=${rawDataLog.length}\n'
-        '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
-      );
+      // DEBUG: stream 结束（这一轮 LLM 输出完），一次性 log 累积的 raw data。
+      // 内容含完整对话明文，仅限 debug 构建输出；release 下禁止落入 logcat/os_log。
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print(
+          '[RAW-DATA-OAI round=$round] event_count=${rawDataLog.length}\n'
+          '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
+        );
+      }
 
       // 如果没有 tool_calls，结束循环
       if (finishReason != 'tool_calls' || toolCallsMap.isEmpty) {
@@ -814,12 +818,15 @@ class ClaudeClient extends LlmClient {
     }
     pendingDeltas.clear();
 
-    // DEBUG: stream 结束（LLM 输出完），一次性 log 累积的 raw data
-    // ignore: avoid_print
-    print(
-      '[RAW-DATA-CLAUDE] event_count=${rawDataLog.length}\n'
-      '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
-    );
+    // DEBUG: stream 结束（LLM 输出完），一次性 log 累积的 raw data。
+    // 内容含完整对话明文，仅限 debug 构建输出；release 下禁止落入 logcat/os_log。
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print(
+        '[RAW-DATA-CLAUDE] event_count=${rawDataLog.length}\n'
+        '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
+      );
+    }
   }
 }
 
@@ -993,12 +1000,15 @@ class GeminiClient extends LlmClient {
     }
     pendingDeltas.clear();
 
-    // DEBUG: stream 结束（LLM 输出完），一次性 log 累积的 raw data
-    // ignore: avoid_print
-    print(
-      '[RAW-DATA-GEMINI] event_count=${rawDataLog.length}\n'
-      '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
-    );
+    // DEBUG: stream 结束（LLM 输出完），一次性 log 累积的 raw data。
+    // 内容含完整对话明文，仅限 debug 构建输出；release 下禁止落入 logcat/os_log。
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print(
+        '[RAW-DATA-GEMINI] event_count=${rawDataLog.length}\n'
+        '${rawDataLog.map((d) => d.length > 300 ? '${d.substring(0, 300)}...' : d).join("\n---\n")}',
+      );
+    }
   }
 }
 
@@ -1194,12 +1204,15 @@ class DoubaoResponsesClient extends LlmClient {
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       final responseData = e.response?.data;
-      // ignore: avoid_print
-      print('[DOUBAO-ERROR] DioException: ${e.message}');
-      // ignore: avoid_print
-      print('[DOUBAO-ERROR] statusCode=$statusCode');
-      // ignore: avoid_print
-      print('[DOUBAO-ERROR] response.data=$responseData');
+      // 错误详情可能含服务商返回的请求内容，仅限 debug 构建输出。
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[DOUBAO-ERROR] DioException: ${e.message}');
+        // ignore: avoid_print
+        print('[DOUBAO-ERROR] statusCode=$statusCode');
+        // ignore: avoid_print
+        print('[DOUBAO-ERROR] response.data=$responseData');
+      }
       dev.log(
         'DoubaoResponses request failed: ${e.message}, '
         'statusCode=$statusCode, data=$responseData',
