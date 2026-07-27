@@ -43,6 +43,7 @@ migrate_working_dir/
 /build/
 /coverage/
 /dist/
+/video-intro/
 
 # Symbolication related
 app.*.symbols
