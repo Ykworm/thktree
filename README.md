@@ -33,6 +33,8 @@ ThkTree is an AI knowledge-tree app that organizes LLM conversations into a nest
 >
 > **About Lab:** it's the entry point for experimental features, aimed at developers
 >
+> **About the default palette:** Just before release I noticed the Morandi palette looked a lot like the colors I'd picked when I first started the app—it felt comfortable on the eyes—so I had AI set it as the default.
+>
 > **Why Flutter?**
 > 1. It was a tech stack choice I once recommended to a team
 > 2. While reading about 3D, I came across Toyota's Fluorite—a project that supports console-grade 3D rendering
