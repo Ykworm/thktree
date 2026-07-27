@@ -1,0 +1,9 @@
+# Copy to android/key.properties (gitignored) before release builds.
+# Generate keystore once:
+#   keytool -genkey -v -keystore ~/thktree-release.keystore -alias thktree \
+#     -keyalg RSA -keysize 2048 -validity 10000
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=thktree
+storeFile=/absolute/path/to/thktree-release.keystore

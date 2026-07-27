@@ -3,6 +3,11 @@
 .env.*
 !.env.example
 
+# Android release signing (GitHub APK only — never commit keystore)
+/android/key.properties
+*.keystore
+*.jks
+
 # Miscellaneous
 *.class
 *.log
@@ -37,6 +42,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/dist/
 
 # Symbolication related
 app.*.symbols
