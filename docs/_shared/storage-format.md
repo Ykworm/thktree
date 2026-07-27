@@ -267,6 +267,14 @@ updatedAt: "2026-05-25T12:01:00.000Z"
 
 **与错误态区分**：仅 `<!-- streaming -->` 是"未完成 / 可恢复"，`<!-- error: <code> -->` 属于"已结束 / 不可恢复"，不进入 `findInterrupted()` 扫描结果。
 
+**中断终态（2026-07-27 起）**：流已停止且有可读 partial 时，将 `<!-- streaming -->` 替换为：
+
+```
+<!-- interrupted -->
+```
+
+解析器视该块 `status=interrupted`。该标记表示「已结束但可能不完整」，**不**进入 `findInterrupted()`；UI 提示用户可重试。详见 [ADR-029](../decisions/ADR-029-Android-Chat-流式-FGS-与-interrupted-语义.md)。
+
 ### 4.4.1 推理内容（reasoning，2026-07-06 起支持）
 
 当 assistant 消息来自支持深度思考的模型（详见 [ADR-022](../DECISIONS.md#adr-022-per-session-深度思考开关--双-modelcapability-区分)），且产生了可读的推理 / 思维链内容时，正文按以下结构组织：

@@ -671,6 +671,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get networkInterrupted => 'Network interrupted. Please retry.';
 
   @override
+  String get replyInterrupted =>
+      'Reply incomplete — content may be truncated.';
+
+  @override
+  String get replyInterruptedHint =>
+      'Generation was interrupted. Tap retry to regenerate.';
+
+  @override
+  String get replyInterruptedStatus => 'incomplete';
+
+  @override
   String get branchRetry => 'Retry';
 
   @override

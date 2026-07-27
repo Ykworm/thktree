@@ -638,6 +638,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get networkInterrupted => '网络中断，请重试';
 
   @override
+  String get replyInterrupted => '回复未完成，内容可能不完整';
+
+  @override
+  String get replyInterruptedHint => '生成被中断。可点重试重新生成。';
+
+  @override
+  String get replyInterruptedStatus => '未完成';
+
+  @override
   String get branchRetry => '重试';
 
   @override

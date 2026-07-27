@@ -14,6 +14,7 @@ enum SessionMessageStatus {
   done,
   streaming,
   error,
+  interrupted,
 }
 
 class SessionMessage {
@@ -246,6 +247,12 @@ List<SessionMessage> _parseMessages(
     trimmedTrailingEmpty.removeLast();
     final (reasoning, bodyLines) = _extractReasoningAndBody(trimmedTrailingEmpty);
     return (SessionMessageStatus.streaming, null, reasoning, bodyLines);
+  }
+
+  if (lastLine == '<!-- interrupted -->') {
+    trimmedTrailingEmpty.removeLast();
+    final (reasoning, bodyLines) = _extractReasoningAndBody(trimmedTrailingEmpty);
+    return (SessionMessageStatus.interrupted, null, reasoning, bodyLines);
   }
 
   final errorMatch = RegExp(r'^<!-- error: ([a-z]+) -->$').firstMatch(lastLine);

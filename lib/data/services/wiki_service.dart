@@ -157,6 +157,7 @@ class WikiService {
       if (m.role == SessionRole.assistant) {
         if (m.status == SessionMessageStatus.streaming) return false;
         if (m.status == SessionMessageStatus.error) return false;
+        if (m.status == SessionMessageStatus.interrupted) return false;
       }
       return true;
     }).map((m) {

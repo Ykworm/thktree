@@ -16,6 +16,7 @@ class SessionStore {
   final FileWriteQueue _queue = FileWriteQueue();
   static const _streamingMarker = '\n<!-- streaming -->\n';
   static const _legacyStreamingMarker = '<!-- streaming -->\n';
+  static const _interruptedMarker = '\n<!-- interrupted -->\n';
 
   /// 扫描文档目录下所有 `session.md`，找出含 `<!-- streaming -->` 标记的中断消息。
   ///
@@ -314,6 +315,20 @@ class SessionStore {
         return;
       }
       final updated = '${withoutMarker.trimRight()}\n';
+      await _atomicWriteString(path, updated);
+    });
+  }
+
+  /// 将 streaming 中的 assistant 消息落为 interrupted，保留已写入的 partial body。
+  Future<void> interruptAssistant({required AssistantStreamHandle handle}) async {
+    await _queue.run(handle.nodeId, () async {
+      final path = await getSessionPathForNode(handle.nodeId);
+      final file = File(path);
+      final content = await file.readAsString();
+      final streamingIdx = content.lastIndexOf(_streamingMarker);
+      if (streamingIdx < 0) return;
+      final before = content.substring(0, streamingIdx);
+      final updated = '${before.trimRight()}$_interruptedMarker';
       await _atomicWriteString(path, updated);
     });
   }

@@ -244,7 +244,7 @@ class ChatController extends AsyncNotifier<List<SessionMessage>> {
               timestampUtcIso8601: m.timestampUtcIso8601,
               msgId: m.msgId,
               body: m.body,
-              status: SessionMessageStatus.done,
+              status: SessionMessageStatus.interrupted,
               reasoning: m.reasoning,
               modelId: m.modelId,
             );

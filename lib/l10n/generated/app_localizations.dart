@@ -1256,6 +1256,24 @@ abstract class AppLocalizations {
   /// **'Network interrupted. Please retry.'**
   String get networkInterrupted;
 
+  /// Banner when an assistant message was interrupted mid-stream
+  ///
+  /// In en, this message translates to:
+  /// **'Reply incomplete — content may be truncated.'**
+  String get replyInterrupted;
+
+  /// Secondary hint for interrupted assistant messages
+  ///
+  /// In en, this message translates to:
+  /// **'Generation was interrupted. Tap retry to regenerate.'**
+  String get replyInterruptedHint;
+
+  /// Status label shown in assistant message title bar
+  ///
+  /// In en, this message translates to:
+  /// **'incomplete'**
+  String get replyInterruptedStatus;
+
   /// Action button to retry the failed LLM summary call
   ///
   /// In en, this message translates to:

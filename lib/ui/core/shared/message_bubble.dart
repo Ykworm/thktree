@@ -518,6 +518,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
     final statusText = switch (widget.message.status) {
       SessionMessageStatus.done => null,
       SessionMessageStatus.streaming => l10n.streamingStatus,
+      SessionMessageStatus.interrupted => l10n.replyInterruptedStatus,
       SessionMessageStatus.error => l10n.errorStatus(
         widget.message.errorCode ?? l10n.errorUnknown,
       ),
@@ -624,6 +625,76 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                           ),
                           onRetry: widget.onRetry ?? () {},
                           onCancel: () {},
+                        )
+                      else if (widget.message.status ==
+                          SessionMessageStatus.interrupted)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (widget.message.body.trim().isNotEmpty)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (reasoning != null &&
+                                      reasoning.isNotEmpty)
+                                    _ReasoningSection(
+                                      reasoning: reasoning,
+                                      isExpanded: shouldExpandReasoning,
+                                      onToggle: () => setState(
+                                        () => _showReasoning = !_showReasoning,
+                                      ),
+                                      onExpandTable: _showExpanded,
+                                    ),
+                                  if (reasoning != null &&
+                                      reasoning.isNotEmpty &&
+                                      widget.message.body.trim().isNotEmpty)
+                                    const SizedBox(height: 8),
+                                  _buildSelectionAware(
+                                    child: GptMarkdown(
+                                      sanitizedBody,
+                                      style: baseStyle,
+                                      onLinkTap: (url, _) =>
+                                          openMarkdownLink(context, url),
+                                      tableBuilder: (ctx, rows, style, cfg) {
+                                        final tableMarkdown =
+                                            _tableRowsToMarkdown(rows);
+                                        return _TableWithActions(
+                                          tableRows: rows,
+                                          textStyle: style,
+                                          onCopy: () => _copyTextToClipboard(
+                                            tableMarkdown,
+                                          ),
+                                          onExpand: () => _showExpanded(
+                                            ctx,
+                                            tableMarkdown,
+                                          ),
+                                        );
+                                      },
+                                      codeBuilder: buildCodeBlock,
+                                      latexBuilder: buildLatex,
+                                      useDollarSignsForLatex: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.replyInterrupted,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            if (widget.onRetry != null) ...[
+                              const SizedBox(height: 6),
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                onPressed: widget.onRetry,
+                                child: Text(l10n.retry),
+                              ),
+                            ],
+                          ],
                         )
                       else
                         Column(

@@ -863,6 +863,18 @@
   "@networkInterrupted": {
     "description": "Friendly message when a streaming LLM request is interrupted by app backgrounding"
   },
+  "replyInterrupted": "Reply incomplete — content may be truncated.",
+  "@replyInterrupted": {
+    "description": "Banner when an assistant message was interrupted mid-stream"
+  },
+  "replyInterruptedHint": "Generation was interrupted. Tap retry to regenerate.",
+  "@replyInterruptedHint": {
+    "description": "Secondary hint for interrupted assistant messages"
+  },
+  "replyInterruptedStatus": "incomplete",
+  "@replyInterruptedStatus": {
+    "description": "Status label shown in assistant message title bar"
+  },
   "branchRetry": "Retry",
   "@branchRetry": {
     "description": "Action button to retry the failed LLM summary call"

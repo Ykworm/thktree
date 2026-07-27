@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -16,6 +15,9 @@ import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/features/chat/chat_controller.dart';
 import 'package:thk_tree/data/stores/node_store.dart';
 import 'package:thk_tree/data/services/search_service.dart';
+
+/// partial 达到此长度时，中断落盘为 [SessionMessageStatus.interrupted] 而非自动重发。
+const kMinPartialCharsForInterrupted = 32;
 
 class ChatTask {
   ChatTask({
@@ -49,7 +51,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
   SearchService? _searchService;
   NodeStore? _nodeStore;
 
-  /// iOS 后台 task 桥接（短回复 < 30s 时保活；详见 [BackgroundTaskBridge]）。
+  /// iOS/Android 后台保活桥接（iOS ~30s；Android FGS 至流结束）。
   ///
   /// 测试可通过构造参数注入 mock bridge 以计数 begin/end 调用。
   final BackgroundTaskBridge _bridge;
@@ -102,7 +104,7 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
       await stopTask(nodeId);
     }
 
-    // 申请 iOS 后台 task（短回复 < 30s 时保活；非 iOS 平台 / 失败返回 null，不阻塞主流程）
+    // 申请后台保活（流开始时立即 begin；Android 12+ 须在前台启动 FGS）
     unawaited(_bridge.begin());
 
     final cancelToken = CancelToken();
@@ -141,7 +143,16 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
           hint: 'ChatTask.streamError',
           attrs: {'nodeId': nodeId},
         );
-        if (!err.isRetriable) return; // cancelled: 不显示错误态
+        if (!err.isRetriable) {
+          await _interruptIfPartial(
+            nodeId: nodeId,
+            handle: handle,
+            sessionStore: sessionStore,
+          );
+          unawaited(_bridge.end());
+          _removeTask(nodeId);
+          return;
+        }
         try {
           await sessionStore.failAssistant(handle: handle, code: err.kind.codeName);
         } catch (_) {}
@@ -234,23 +245,17 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
   bool hasTask(String nodeId) => state.containsKey(nodeId);
 
   // ─────────────────────────────────────────────────────────────────────
-  //  iOS 后台中断恢复（Task 6 + 7）
+  //  后台中断恢复（iOS + Android）
   // ─────────────────────────────────────────────────────────────────────
 
-  /// 扫描磁盘中断消息，串行排队重发。
+  /// 扫描磁盘中断消息：有 partial 落 interrupted；空 partial 串行自动重发。
   ///
   /// 流程：
   /// 1. 调 [SessionStore.findInterrupted] 拿 [(nodeId, sessionPath), ...]
   /// 2. 过滤：当前 [hasTask]（流还活着）和已在 [_resumeQueue]（避免重复入队）
-  /// 3. 调 [SessionStore.finishStreamingMessage] 清掉磁盘上的 `<!-- streaming -->` 标记
-  /// 4. 入队；串行从队首取一个调 [ChatController.retryLastMessage]
-  ///
-  /// 串行执行在 [_resumeLoop] 私有方法里；新调用 [resumeInterrupted] 不重启 loop。
-  ///
-  /// 仅 iOS 平台：Android 走自然恢复。
+  /// 3. partial ≥ [kMinPartialCharsForInterrupted] → [SessionStore.interruptAssistant]
+  /// 4. 否则清 streaming 标记并入队 [ChatController.retryLastMessage]
   Future<void> resumeInterrupted() async {
-    if (!Platform.isIOS) return;
-
     final SessionStore sessionStore;
     try {
       sessionStore = await ref.read(sessionStoreProvider.future);
@@ -262,7 +267,6 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
     final interrupted = await SessionStore.findInterrupted();
     if (interrupted.isEmpty) return;
 
-    // 去重 + 过滤活跃任务
     final newItems = interrupted
         .where((item) => !hasTask(item.nodeId))
         .where((item) => !_resumeQueue.contains(item.nodeId))
@@ -270,24 +274,57 @@ class ChatTaskService extends Notifier<Map<String, ChatTask>> {
 
     if (newItems.isEmpty) return;
 
-    // 清掉磁盘上的 `<!-- streaming -->` 标记（避免下次 _read 误判为 streaming 状态）
     for (final item in newItems) {
       try {
+        final doc = await sessionStore.readSession(item.nodeId);
+        final lastAssistant = doc.messages
+            .where((m) => m.role == SessionRole.assistant)
+            .lastOrNull;
+        final partialLen = lastAssistant?.body.trim().length ?? 0;
+        if (partialLen >= kMinPartialCharsForInterrupted &&
+            lastAssistant != null) {
+          await sessionStore.interruptAssistant(
+            handle: AssistantStreamHandle(
+              nodeId: item.nodeId,
+              msgId: lastAssistant.msgId,
+            ),
+          );
+          continue;
+        }
         await sessionStore.finishStreamingMessage(nodeId: item.nodeId);
+        _resumeQueue.add(item.nodeId);
       } catch (e, st) {
         await _logError(e, st,
-            hint: 'resumeInterrupted.finishStreamingMessage',
+            hint: 'resumeInterrupted.handleItem',
             attrs: {'nodeId': item.nodeId});
       }
-      _resumeQueue.add(item.nodeId);
     }
 
-    await _logInfo('resumeInterrupted: enqueued ${newItems.length} node(s)');
+    if (_resumeQueue.isEmpty) return;
+
+    await _logInfo('resumeInterrupted: enqueued ${_resumeQueue.length} node(s)');
 
     if (!_isResuming) {
       _isResuming = true;
       unawaited(_resumeLoop());
     }
+  }
+
+  Future<void> _interruptIfPartial({
+    required String nodeId,
+    required AssistantStreamHandle handle,
+    required SessionStore sessionStore,
+  }) async {
+    try {
+      final doc = await sessionStore.readSession(nodeId);
+      final lastAssistant = doc.messages
+          .where((m) => m.role == SessionRole.assistant)
+          .lastOrNull;
+      if (lastAssistant == null) return;
+      if (lastAssistant.body.trim().length >= kMinPartialCharsForInterrupted) {
+        await sessionStore.interruptAssistant(handle: handle);
+      }
+    } catch (_) {}
   }
 
   /// 用户主动取消：清空队列 + 递增 generation 让正在跑的 loop 退出。

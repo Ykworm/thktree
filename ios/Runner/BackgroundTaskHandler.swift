@@ -9,11 +9,12 @@ import UIKit
 ///     - "end"      args: null -> Bool     // 释放后台任务；未 begin 时返回 false
 ///     - "isActive" args: null -> Bool     // 当前是否有 active 后台任务
 ///
-/// 多次 "begin" 安全：内部会先释放旧的 task，避免 identifier 泄漏。
+/// 引用计数：Dart 侧多路并发流时，仅首个 begin 申请 OS task，末个 end 释放。
 public class BackgroundTaskHandler: NSObject, FlutterPlugin {
   private static let methodChannelName = "thktree/background_task"
 
   private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+  private var activeCount = 0
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let instance = BackgroundTaskHandler()
@@ -31,7 +32,7 @@ public class BackgroundTaskHandler: NSObject, FlutterPlugin {
     case "end":
       result(endBackgroundTask())
     case "isActive":
-      result(backgroundTask != .invalid)
+      result(activeCount > 0 || backgroundTask != .invalid)
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -39,36 +40,49 @@ public class BackgroundTaskHandler: NSObject, FlutterPlugin {
 
   // MARK: - Background task lifecycle
 
-  /// 申请后台任务。多次调用安全：先释放旧的。
+  /// 申请后台任务。引用计数 > 1 时复用已有 identifier。
   /// - Returns: task identifier 字符串；OS 拒绝分配时返回 nil。
   private func beginBackgroundTask() -> String? {
-    // 多次 begin：先释放旧的，避免 identifier 泄漏
+    activeCount += 1
     if backgroundTask != .invalid {
-      endBackgroundTask()
+      return "\(backgroundTask.rawValue)"
     }
 
     let identifier = UIApplication.shared.beginBackgroundTask(
       withName: "thktree_llm_stream"
     ) { [weak self] in
-      // OS 即将终止时的 expiration handler：自动释放
-      self?.endBackgroundTask()
+      self?.forceEndBackgroundTask()
     }
     if identifier == .invalid {
+      activeCount = max(0, activeCount - 1)
       return nil
     }
     backgroundTask = identifier
     return "\(identifier.rawValue)"
   }
 
-  /// 释放后台任务。多次调用安全。
-  /// - Returns: 是否确实释放了一个 active task。
+  /// 释放后台任务。引用计数归零时才 end OS task。
+  /// - Returns: 是否处理了 end 请求。
   @discardableResult
   private func endBackgroundTask() -> Bool {
+    if activeCount <= 0 {
+      return false
+    }
+    activeCount -= 1
+    if activeCount > 0 {
+      return true
+    }
+    return forceEndBackgroundTask()
+  }
+
+  @discardableResult
+  private func forceEndBackgroundTask() -> Bool {
     if backgroundTask == .invalid {
       return false
     }
     UIApplication.shared.endBackgroundTask(backgroundTask)
     backgroundTask = .invalid
+    activeCount = 0
     return true
   }
 }
