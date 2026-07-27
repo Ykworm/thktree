@@ -24,7 +24,7 @@ ThkTree is an iOS-first AI knowledge-tree app that organizes LLM conversations i
 > Typical LLM chats are mostly ephemeral, and this app is no exception! It's just a way to organize your thinking. There's no server, which means data is less likely to leak. As you build the tree, your understanding of the information deepens. The app's output is wiki—you can export wiki to your PC and use whatever tools you like to consolidate and analyze, for learning and reinforcement—e.g. Claude Code, Grok build, Codex, Kimi Code, WorkBuddy ...
 >
 > **Biggest problem today:**
-> As a solo developer it's hard to make every feature solid—and on iOS in particular, if the app goes to the background you may not receive the full LLM response.
+> As a solo developer it's hard to make every feature solid—and on iOS in particular, if the app goes to the background you may not receive the full LLM response. Compatibility testing across different device models hasn't been done yet.
 >
 > **Plan:**
 > 1.x is a simple tool
@@ -77,7 +77,7 @@ Think about how a tree *grows*: when you create a branch, parent and child may r
 - **Streaming**: SSE streaming, Markdown / LaTeX rendering, image upload and vision models
 - **Branch**: Branch instantly from any message or selection to compare ideas
 
-  [![Branch demo](https://img.youtube.com/vi/ek68qDjBKrw/hqdefault.jpg)](https://youtube.com/shorts/ek68qDjBKrw?feature=share)
+  <a href="https://youtube.com/shorts/ek68qDjBKrw?feature=share" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/ek68qDjBKrw/hqdefault.jpg" alt="Branch demo"></a>
 
 - **Web search**: Native search on KIMI / MIMO / DeepSeek / Doubao / xAI Grok, etc.
 - **Deep thinking toggle**: Per-session (DeepSeek, MiniMax, etc.); some models lock server-side
@@ -85,7 +85,7 @@ Think about how a tree *grows*: when you create a branch, parent and child may r
 
   Pin important messages or notes (up to 5). Tap the right-edge handle to open the panel and reference them across branches and tabs—jump to source, save as a note, or unpin anytime.
 
-  [![Pin panel demo](https://img.youtube.com/vi/cnm61xIWyK8/hqdefault.jpg)](https://youtube.com/shorts/cnm61xIWyK8?feature=share)
+  <a href="https://youtube.com/shorts/cnm61xIWyK8?feature=share" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/cnm61xIWyK8/hqdefault.jpg" alt="Pin panel demo"></a>
 
 - **iOS background recovery**: ~30s grace when backgrounded; auto-resend on foreground if killed mid-stream
 
@@ -177,7 +177,7 @@ flutter run
 
 > **First launch**: **ThkTree** shows a one-time prompt guiding you to **Settings → LLM** to add model providers and set default models. ThkTree uses LLMs for chat, title generation, and summarization—you can tap **Later** and configure anytime in Settings.
 
-[![LLM setup demo](https://img.youtube.com/vi/vckfravPXek/hqdefault.jpg)](https://youtube.com/shorts/vckfravPXek?feature=share)
+<a href="https://youtube.com/shorts/vckfravPXek?feature=share" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/vckfravPXek/hqdefault.jpg" alt="LLM setup demo"></a>
 
 > Environment, skills, and architecture: [`docs/PROJECT.md`](../docs/PROJECT.md), [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md), [`docs/FEATURES.md`](../docs/FEATURES.md).
 

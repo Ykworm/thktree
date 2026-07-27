@@ -24,7 +24,7 @@ ThkTree 是一款 iOS 优先的 AI 知识树 App，把 LLM 对话组织成可嵌
 > 典型的LLM对话基本都是临时的，而这个APP也不例外！它只是方便组织思想而已，而且没有服务端，意味着数据不容易泄露；在构建tree的过程中用户对信息的理解会加深；而APP的输出是wiki，wiki可以导出到PC，用用户喜欢的工具去沉底和分析，进行学习巩固，例如claude code，Grok build， codex， kimi code ， WorkBuddy ...
 >
 > 现存最大的问题：
-> 由于个人开发难以保证每个功能都good，而且尤其在iOS端，APP切换后台后可能就无法完整接收完LLM的输出
+> 由于个人开发难以保证每个功能都good，而且尤其在iOS端，APP切换后台后可能就无法完整接收完LLM的输出；也没有做不同机型的兼容性测试
 >
 > Plan：
 > 
@@ -84,7 +84,7 @@ ThkTree 是一款 iOS 优先的 AI 知识树 App，把 LLM 对话组织成可嵌
 - **流式对话**：SSE 流式回复，Markdown / LaTeX 渲染，图片上传与视觉模型
 - **分支（Branch）**：从任意消息或一段选区即时开一个分支，对比不同思路
 
-  [![创建分支演示](https://img.youtube.com/vi/ek68qDjBKrw/hqdefault.jpg)](https://youtube.com/shorts/ek68qDjBKrw?feature=share)
+  <a href="https://youtube.com/shorts/ek68qDjBKrw?feature=share" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/ek68qDjBKrw/hqdefault.jpg" alt="创建分支演示"></a>
 
 - **联网搜索**：KIMI / MIMO / DeepSeek / 豆包 / xAI Grok 等原生联网
 - **深度思考开关**：Per-session 切换（DeepSeek、MiniMax 等），部分模型服务端锁定
@@ -92,7 +92,7 @@ ThkTree 是一款 iOS 优先的 AI 知识树 App，把 LLM 对话组织成可嵌
 
   在对话或笔记中 Pin 关键内容（最多 5 条），点屏幕右缘把手展开对照面板，跨分支、跨 Tab 并排参考；可跳回原文、存为笔记或取消 Pin。
 
-  [![Pin 对照栏演示](https://img.youtube.com/vi/cnm61xIWyK8/hqdefault.jpg)](https://youtube.com/shorts/cnm61xIWyK8?feature=share)
+  <a href="https://youtube.com/shorts/cnm61xIWyK8?feature=share" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/cnm61xIWyK8/hqdefault.jpg" alt="Pin 对照栏演示"></a>
 
 - **iOS 后台中断恢复**：切后台续命 30s、回前台自动重发，防止长回复被系统杀掉
 
@@ -184,7 +184,7 @@ flutter run
 
 > **首次使用**：打开 **ThkTree** 会弹出一次性引导，提示你在「设置 → 大模型」中添加模型提供商并配置默认模型。ThkTree 的聊天、标题生成与对话总结都需要 LLM；可选择「稍后再说」，随时在设置中补配。
 
-[![配置大模型演示](https://img.youtube.com/vi/vckfravPXek/hqdefault.jpg)](https://youtube.com/shorts/vckfravPXek?feature=share)
+<a href="https://youtube.com/shorts/vckfravPXek?feature=share" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/vckfravPXek/hqdefault.jpg" alt="配置大模型演示"></a>
 
 > 详细环境要求、技能配置说明和项目架构见 [`docs/PROJECT.md`](../docs/PROJECT.md)、[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) 与 [`docs/FEATURES.md`](../docs/FEATURES.md)。
 
