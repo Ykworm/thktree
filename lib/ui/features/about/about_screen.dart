@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/app_version.dart';
 import 'package:thk_tree/ui/core/shared/link_launcher.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/widgets/thk_list_tile.dart';
@@ -63,15 +63,15 @@ class AboutScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
             FutureBuilder<PackageInfo>(
-              future: PackageInfo.fromPlatform(),
+              future: loadPackageInfo(),
               builder: (context, snapshot) {
-                final version = snapshot.data?.version;
-                if (version == null) return const SizedBox.shrink();
+                final info = snapshot.data;
+                if (info == null) return const SizedBox.shrink();
                 return _buildSection(
                   children: [
                     ThkListTile(
                       title: l10n.aboutVersion,
-                      additionalInfo: version,
+                      additionalInfo: formatVersionLabel(l10n, info.version),
                       trailing: null,
                     ),
                   ],
@@ -108,10 +108,11 @@ class AboutScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _buildSection(
               children: [
-                _ContactTile(
-                  icon: CupertinoIcons.mail,
-                  title: l10n.aboutContactEmail,
-                  value: '897210868@qq.com',
+                _LinkTile(
+                  icon: CupertinoIcons.link,
+                  title: l10n.aboutContactGitHub,
+                  subtitle: 'Ykworm/thktree',
+                  url: LegalLinks.contact,
                 ),
               ],
             ),
@@ -153,42 +154,6 @@ class _LinkTile extends StatelessWidget {
       title: title,
       subtitle: subtitle,
       onTap: () => openMarkdownLink(context, url, title),
-    );
-  }
-}
-
-class _ContactTile extends StatelessWidget {
-  const _ContactTile({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return GestureDetector(
-      onTap: () async {
-        await Clipboard.setData(ClipboardData(text: value));
-        if (!context.mounted) return;
-        showCupertinoDialog<void>(
-          context: context,
-          barrierDismissible: true,
-          builder: (_) => CupertinoAlertDialog(
-            content: Text(l10n.copied),
-          ),
-        );
-      },
-      child: ThkListTile(
-        leading: Icon(icon, color: AppColors.textSecondary),
-        title: title,
-        subtitle: value,
-        trailing: null,
-      ),
     );
   }
 }

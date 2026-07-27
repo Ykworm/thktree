@@ -207,9 +207,11 @@ Most tools flatten chats, notes, and sources into one stream. ThkTree’s answer
 | Dimension | Stance |
 |-----------|--------|
 | Platform | iOS (TTS, background recovery are native iOS capabilities) |
-| Data | Local-first, privacy; API keys not stored in plain text |
+| Data | Local-first, no ThkTree server; on iOS, `Documents/thktree/` is included in **iCloud Backup** when enabled; API keys not stored in plain text |
 | Models | Your provider and model, not vendor lock-in |
 | Character | “Quiet, reliable architect” — restrained, ordered, human |
+
+**iOS backup:** App data lives under `Documents/thktree/`. With iCloud Backup turned on, it is backed up to **your** iCloud account (not to ThkTree). See [Privacy Policy](./docs/legal/privacy-policy-en.md).
 
 ---
 

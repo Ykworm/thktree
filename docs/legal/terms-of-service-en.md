@@ -100,9 +100,9 @@ These Terms shall be governed by the laws of the People's Republic of China, wit
 
 ## 10. Contact
 
-If you have questions about these Terms, contact:
+If you have questions about these Terms, contact us on GitHub:
 
-**Email:** 897210868@qq.com
+**GitHub:** https://github.com/Ykworm/thktree
 
 ---
 

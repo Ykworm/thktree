@@ -2655,17 +2655,23 @@ abstract class AppLocalizations {
   /// **'About'**
   String get aboutTitle;
 
-  /// About page contact email label
+  /// About page link to GitHub repository for contact
   ///
   /// In en, this message translates to:
-  /// **'Contact Email'**
-  String get aboutContactEmail;
+  /// **'Contact on GitHub'**
+  String get aboutContactGitHub;
 
   /// About page version label
   ///
   /// In en, this message translates to:
   /// **'Version'**
   String get aboutVersion;
+
+  /// Public beta suffix shown after version number on About page
+  ///
+  /// In en, this message translates to:
+  /// **'(Beta)'**
+  String get aboutVersionBeta;
 
   /// About page link to privacy policy
   ///

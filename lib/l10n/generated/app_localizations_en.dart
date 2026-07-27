@@ -1464,10 +1464,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutTitle => 'About';
 
   @override
-  String get aboutContactEmail => 'Contact Email';
+  String get aboutContactGitHub => 'Contact on GitHub';
 
   @override
   String get aboutVersion => 'Version';
+
+  @override
+  String get aboutVersionBeta => '(Beta)';
 
   @override
   String get aboutPrivacyPolicy => 'Privacy Policy';

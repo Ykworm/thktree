@@ -1925,13 +1925,17 @@
   "@aboutTitle": {
     "description": "About page title"
   },
-  "aboutContactEmail": "Contact Email",
-  "@aboutContactEmail": {
-    "description": "About page contact email label"
+  "aboutContactGitHub": "Contact on GitHub",
+  "@aboutContactGitHub": {
+    "description": "About page link to GitHub repository for contact"
   },
   "aboutVersion": "Version",
   "@aboutVersion": {
     "description": "About page version label"
+  },
+  "aboutVersionBeta": "(Beta)",
+  "@aboutVersionBeta": {
+    "description": "Public beta suffix shown after version number on About page"
   },
   "aboutPrivacyPolicy": "Privacy Policy",
   "@aboutPrivacyPolicy": {

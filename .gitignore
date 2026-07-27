@@ -52,6 +52,12 @@ app.*.map.json
 # Codegraph index
 .codegraph/
 
+# AI IDE / agent local state (session data, tokens, node_modules — never commit)
+.mimocode/
+.qoder/
+.trae/
+.claude/
+
 # IDE runtime
 .project/
 ui-ux-pro-max-skill/

@@ -1395,10 +1395,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutTitle => '关于';
 
   @override
-  String get aboutContactEmail => '联系邮箱';
+  String get aboutContactGitHub => 'GitHub 联系';
 
   @override
   String get aboutVersion => '版本';
+
+  @override
+  String get aboutVersionBeta => '（公测）';
 
   @override
   String get aboutPrivacyPolicy => '隐私政策';

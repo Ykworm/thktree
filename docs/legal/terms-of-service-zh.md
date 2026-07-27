@@ -100,9 +100,9 @@ ThkTree 及其原创内容、功能和特性由 Yk 所有，受适用的知识�
 
 ## 10. 联系方式
 
-如对本条款有疑问，请联系：
+如对本条款有疑问，请通过 GitHub 联系我们：
 
-**邮箱：** 897210868@qq.com
+**GitHub：** https://github.com/Ykworm/thktree
 
 ---
 

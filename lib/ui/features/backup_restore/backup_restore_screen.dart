@@ -11,6 +11,7 @@ import 'package:thk_tree/data/services/restore_reconcile.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/app_version.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
@@ -106,7 +107,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
 
     try {
       final zipFile = await ExportService(rootDir: paths.rootDir)
-          .exportFull(appVersion: '1.0.0');
+          .exportFull(appVersion: await loadAppVersionString());
       if (navigator.canPop()) navigator.pop();
       await Share.shareXFiles(
         [XFile(zipFile.path)],

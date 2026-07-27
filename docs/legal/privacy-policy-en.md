@@ -31,6 +31,17 @@ We recommend reviewing the privacy policies of any LLM provider you use, for exa
 - OpenAI: https://openai.com/privacy
 - DeepSeek: https://chat.deepseek.com/downloads/privacy
 
+### 1.3 iCloud and Device Backup (iOS)
+
+On iOS, ThkTree stores app data under `Documents/thktree/` (notes, conversations, knowledge trees, local backup files, logs, and related files). **If iCloud Backup is enabled on your device, this data is included in your iCloud backup by default.**
+
+- Backup data is stored in **your** iCloud account — ThkTree does not operate servers that receive this data
+- We cannot access, read, or delete your iCloud backups
+- You can manage or remove iCloud backups in **Settings → [your name] → iCloud → Manage Account Storage** (or device backup settings)
+- API keys are stored in the platform secure store (e.g. iOS Keychain) and follow Apple's Keychain / iCloud Keychain policies separately from app documents
+
+On Android, app data follows your device's system backup settings (e.g. Google backup). ThkTree does not upload your content to its own servers.
+
 ---
 
 ## 2. Data We Do NOT Collect
@@ -44,7 +55,9 @@ We recommend reviewing the privacy policies of any LLM provider you use, for exa
 
 ## 3. Data Deletion
 
-All App data is stored locally on your device. You can delete it by uninstalling the App. When you uninstall, associated local data is permanently removed. We do not maintain server-side copies of your content.
+All App data is stored locally on your device. You can delete it by uninstalling the App. When you uninstall, associated local data on the device is permanently removed. We do not maintain server-side copies of your content.
+
+**Note:** Copies in **iCloud Backup** (or other device backups you enabled) may remain until you delete those backups in your Apple ID / device settings. Uninstalling the App does not automatically erase historical iCloud backup snapshots.
 
 ---
 
@@ -62,10 +75,10 @@ We may update this Privacy Policy from time to time. Changes will be reflected i
 
 ## 6. Contact
 
-If you have questions about this Privacy Policy, contact:
+If you have questions about this Privacy Policy, contact us on GitHub:
 
-**Email:** 897210868@qq.com
+**GitHub:** https://github.com/Ykworm/thktree
 
 ---
 
-*Last updated: July 7, 2026*
+*Last updated: July 27, 2026*

@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
 import 'package:thk_tree/ui/core/app_logger.dart';
+import 'package:thk_tree/ui/core/app_version.dart';
 
 import 'package:thk_tree/ui/core/app_services.dart';
 import 'package:thk_tree/ui/core/theme/app_icons.dart';
@@ -849,7 +850,7 @@ class _BackupEntry extends ConsumerWidget {
         try {
           final exportService = ExportService(rootDir: paths.rootDir);
           zipFile = await exportService.exportFull(
-            appVersion: '1.0.0', // TODO: 从 package_info 获取
+            appVersion: await loadAppVersionString(),
           );
         } catch (e) {
           exportError = e;

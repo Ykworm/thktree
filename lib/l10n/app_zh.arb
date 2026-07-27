@@ -919,13 +919,17 @@
   "@aboutTitle": {
     "description": "关于页面标题"
   },
-  "aboutContactEmail": "联系邮箱",
-  "@aboutContactEmail": {
-    "description": "关于页面联系邮箱标签"
+  "aboutContactGitHub": "GitHub 联系",
+  "@aboutContactGitHub": {
+    "description": "关于页面 GitHub 仓库联系链接"
   },
   "aboutVersion": "版本",
   "@aboutVersion": {
     "description": "关于页面版本号标签"
+  },
+  "aboutVersionBeta": "（公测）",
+  "@aboutVersionBeta": {
+    "description": "关于页面版本号后的公测标识"
   },
   "aboutPrivacyPolicy": "隐私政策",
   "@aboutPrivacyPolicy": {

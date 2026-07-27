@@ -10,6 +10,8 @@ abstract final class LegalLinks {
   static const license =
       'https://github.com/Ykworm/thktree/blob/master/LICENSE';
 
+  static const contact = 'https://github.com/Ykworm/thktree';
+
   /// Resolves `zh` vs `en` from saved app locale, then system locale.
   static String languageCode({Locale? savedLocale, required Locale systemLocale}) {
     final code = savedLocale?.languageCode ?? systemLocale.languageCode;

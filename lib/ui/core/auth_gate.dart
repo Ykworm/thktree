@@ -6,6 +6,7 @@ import 'package:thk_tree/data/services/auto_backup_service.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
+import 'package:thk_tree/ui/core/app_version.dart';
 import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 /// Wraps the app and shows a lock screen when biometric auth is required.
@@ -99,7 +100,7 @@ class _AuthGateState extends ConsumerState<AuthGate> with WidgetsBindingObserver
     final service = AutoBackupService(paths: paths);
     final didBackup = await service.maybeBackup(
       settings: settings,
-      appVersion: '1.0.0', // TODO: package_info
+      appVersion: await loadAppVersionString(),
     );
     if (didBackup) {
       await ref

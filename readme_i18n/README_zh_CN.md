@@ -214,9 +214,11 @@ flutter run
 | 维度 | 立场 |
 |------|------|
 | 平台 | iOS（语音播放、后台中断恢复为 iOS 原生能力） |
-| 数据 | 本地优先 + 隐私安全，API Key 不落明文 |
+| 数据 | 本地优先、无 ThkTree 服务端；iOS 上 `Documents/thktree/` 在开启 iCloud 备份时会纳入 **iCloud 设备备份**；API Key 不落明文 |
 | 模型 | 你自选 Provider 与模型，而非绑定某一家 |
 | 人格 | 「安静但可靠的建筑师」——克制、有序、有人味 |
+
+**iOS 备份：** 应用数据位于 `Documents/thktree/`。开启 iCloud 备份后，数据会备份到**您自己的** iCloud 账户（而非 ThkTree 服务器）。详见[隐私政策](../docs/legal/privacy-policy-zh.md)。
 
 ---
 
