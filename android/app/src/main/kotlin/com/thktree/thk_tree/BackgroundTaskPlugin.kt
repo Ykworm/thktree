@@ -14,13 +14,13 @@ class BackgroundTaskPlugin private constructor(
   companion object {
     private const val CHANNEL = "thktree/background_task"
 
-    fun registerWith(flutterEngine: FlutterEngine) {
+    fun registerWith(context: Context, flutterEngine: FlutterEngine) {
       val channel = MethodChannel(
         flutterEngine.dartExecutor.binaryMessenger,
         CHANNEL,
       )
       channel.setMethodCallHandler(
-        BackgroundTaskPlugin(flutterEngine.applicationContext),
+        BackgroundTaskPlugin(context.applicationContext),
       )
     }
   }
