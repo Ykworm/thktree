@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="120" viewBox="0 0 1200 120"
+     role="img" aria-labelledby="section-tech-stack-title">
+  <title id="section-tech-stack-title">技术栈</title>
+  
+  <rect width="1200" height="120" rx="16" fill="#F8F9FA"/>
+  
+  <g transform="translate(80 40)">
+    <!-- 图标 -->
+    <rect x="0" y="0" width="40" height="40" rx="8" fill="#795548" opacity="0.1"/>
+    <text x="20" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+          font-size="20" fill="#795548" text-anchor="middle">⚙️</text>
+    
+    <!-- 标题 -->
+    <text x="60" y="30" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+          font-size="32" fill="#1A1A1A" font-weight="700">技术栈</text>
+    
+    <!-- 装饰线 -->
+    <line x1="60" y1="45" x2="200" y2="45" stroke="#795548" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  
+  <!-- 右侧装饰 -->
+  <g transform="translate(1100 40)">
+    <rect x="0" y="10" width="30" height="20" rx="4" fill="#795548" opacity="0.2"/>
+    <rect x="40" y="10" width="30" height="20" rx="4" fill="#795548" opacity="0.15"/>
+    <rect x="80" y="10" width="30" height="20" rx="4" fill="#795548" opacity="0.1"/>
+  </g>
+</svg>

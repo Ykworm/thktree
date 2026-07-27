@@ -1,16 +1,16 @@
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%"
+  <a href="../README.md">简体中文</a> ·
+  <a href="./README_en_US.md">English</a>
+</p>
+
+<p align="center">
+  <img src="../assets/readme/hero.svg" width="100%"
        alt="ThkTree - 让思考，长成一棵树，把 LLM 对话组织成可嵌套、可检索、本地生长的树">
 </p>
 
 <p align="center">
-  <img src="./assets/readme/badges.svg" width="100%"
+  <img src="../assets/readme/badges.svg" width="100%"
        alt="Flutter, iOS 优先, AI 驱动, 隐私优先, 开源">
-</p>
-
-<p align="center">
-  <strong>简体中文</strong> ·
-  <a href="./readme_i18n/README_en_US.md">English</a>
 </p>
 
 ---
@@ -24,7 +24,7 @@ ThkTree 是一款 iOS 优先的 AI 知识树 App，把 LLM 对话组织成可嵌
 ---
 
 <p align="center">
-  <img src="./assets/readme/section-features.svg" width="100%"
+  <img src="../assets/readme/section-features.svg" width="100%"
        alt="功能特性">
 </p>
 
@@ -65,7 +65,7 @@ ThkTree 是一款 iOS 优先的 AI 知识树 App，把 LLM 对话组织成可嵌
 ---
 
 <p align="center">
-  <img src="./assets/readme/section-tech-stack.svg" width="100%"
+  <img src="../assets/readme/section-tech-stack.svg" width="100%"
        alt="技术栈">
 </p>
 
@@ -100,7 +100,7 @@ lib/
 ---
 
 <p align="center">
-  <img src="./assets/readme/section-quickstart.svg" width="100%"
+  <img src="../assets/readme/section-quickstart.svg" width="100%"
        alt="快速开始">
 </p>
 
@@ -120,7 +120,7 @@ cd ios && pod install && cd ..
 flutter run
 ```
 
-> 详细环境要求、技能配置说明和项目架构见 [`docs/PROJECT.md`](docs/PROJECT.md)、[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 与 [`docs/FEATURES.md`](docs/FEATURES.md)。
+> 详细环境要求、技能配置说明和项目架构见 [`docs/PROJECT.md`](../docs/PROJECT.md)、[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) 与 [`docs/FEATURES.md`](../docs/FEATURES.md)。
 
 ---
 
@@ -152,13 +152,13 @@ flutter run
 
 ## 品牌与文档
 
-- 架构决策与文档地图：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- 功能状态总表：[`docs/FEATURES.md`](docs/FEATURES.md)
+- 架构决策与文档地图：[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+- 功能状态总表：[`docs/FEATURES.md`](../docs/FEATURES.md)
 
 > 命名强制为 **ThkTree**（大驼峰），禁止 `thk_tree` / `thktree` / `Thk Tree` 等写法。
 
 ---
 
 <p align="center">
-  <a href="https://github.com/oil-oil/beautify-github-readme"><img src="./assets/readme/made-with-beautify.svg" width="300" alt="README made with beautify-github-readme"></a>
+  <a href="https://github.com/oil-oil/beautify-github-readme"><img src="../assets/readme/made-with-beautify.svg" width="300" alt="README made with beautify-github-readme"></a>
 </p>

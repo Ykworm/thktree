@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="80" viewBox="0 0 1200 80"
+     role="img" aria-labelledby="badges-title">
+  <title id="badges-title">项目徽章</title>
+  
+  <rect width="1200" height="80" rx="12" fill="#F8F9FA"/>
+  
+  <g transform="translate(80 20)">
+    <!-- Flutter 徽章 -->
+    <g transform="translate(0 0)">
+      <rect x="0" y="0" width="160" height="40" rx="20" fill="#2E7D32"/>
+      <text x="80" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+            font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="600">Flutter</text>
+    </g>
+    
+    <!-- iOS 徽章 -->
+    <g transform="translate(180 0)">
+      <rect x="0" y="0" width="160" height="40" rx="20" fill="#007AFF"/>
+      <text x="80" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+            font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="600">iOS 优先</text>
+    </g>
+    
+    <!-- AI 徽章 -->
+    <g transform="translate(360 0)">
+      <rect x="0" y="0" width="160" height="40" rx="20" fill="#9C27B0"/>
+      <text x="80" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+            font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="600">AI 驱动</text>
+    </g>
+    
+    <!-- 隐私徽章 -->
+    <g transform="translate(540 0)">
+      <rect x="0" y="0" width="160" height="40" rx="20" fill="#FF9800"/>
+      <text x="80" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+            font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="600">隐私优先</text>
+    </g>
+    
+    <!-- 开源徽章 -->
+    <g transform="translate(720 0)">
+      <rect x="0" y="0" width="160" height="40" rx="20" fill="#607D8B"/>
+      <text x="80" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+            font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="600">开源</text>
+    </g>
+  </g>
+</svg>
