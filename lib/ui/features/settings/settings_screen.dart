@@ -26,6 +26,7 @@ import 'package:thk_tree/ui/features/settings/llm_setup_onboarding.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:thk_tree/data/services/import_service.dart';
+import 'package:thk_tree/data/services/restore_reconcile.dart';
 import 'package:thk_tree/ui/features/themes/theme_list_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -1030,9 +1031,7 @@ class _RestoreEntry extends ConsumerWidget {
           // 复制到非空局部变量，避免嵌套 if 内 Dart type promotion 失效
           final result = importResult;
           if (result.status == ImportResultStatus.success) {
-            // 刷新页面
-            ref.invalidate(appPathsProvider);
-            ref.invalidate(themeListControllerProvider);
+            await reconcileAndRefreshAfterRestore(ref, mode: mode);
 
             showCupertinoDialog(
               context: context,

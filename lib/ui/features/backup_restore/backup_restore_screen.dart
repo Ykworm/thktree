@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:thk_tree/data/services/auto_backup_service.dart';
 import 'package:thk_tree/data/services/export_service.dart';
 import 'package:thk_tree/data/services/import_service.dart';
+import 'package:thk_tree/data/services/restore_reconcile.dart';
 import 'package:thk_tree/data/services/settings_store.dart';
 import 'package:thk_tree/ui/core/app_paths.dart';
 import 'package:thk_tree/ui/core/app_services.dart';
@@ -194,7 +195,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       _showAlert(AppLocalizations.of(context)!.error, error.toString());
     } else if (result != null) {
       if (result.status == ImportResultStatus.success) {
-        ref.invalidate(appPathsProvider);
+        await reconcileAndRefreshAfterRestore(ref, mode: mode);
         _refreshBackups();
         _showAlert(AppLocalizations.of(context)!.success, AppLocalizations.of(context)!.backupRestoreSuccess);
       } else {
