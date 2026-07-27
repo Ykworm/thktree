@@ -2661,6 +2661,30 @@ abstract class AppLocalizations {
   /// **'Contact Email'**
   String get aboutContactEmail;
 
+  /// About page version label
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get aboutVersion;
+
+  /// About page link to privacy policy
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get aboutPrivacyPolicy;
+
+  /// About page link to terms of service
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get aboutTermsOfService;
+
+  /// About page link to MIT license
+  ///
+  /// In en, this message translates to:
+  /// **'Open Source License'**
+  String get aboutOpenSourceLicense;
+
   /// Settings option in the search page menu
   ///
   /// In en, this message translates to:

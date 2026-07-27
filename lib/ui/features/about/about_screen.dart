@@ -1,18 +1,26 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:thk_tree/l10n/generated/app_localizations.dart';
+import 'package:thk_tree/ui/core/shared/link_launcher.dart';
 import 'package:thk_tree/ui/core/theme/app_colors.dart';
 import 'package:thk_tree/ui/core/widgets/thk_list_tile.dart';
+import 'package:thk_tree/ui/features/about/legal_links.dart';
+import 'package:thk_tree/ui/features/settings/settings_controller.dart';
 
 /// 关于页面。
 ///
-/// 展示 App 名称、版本号、开发者联系方式。
-class AboutScreen extends StatelessWidget {
+/// 展示 App 名称、版本号、法律文档链接与开发者联系方式。
+class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final savedLocale = ref.watch(localeProvider);
+    final systemLocale = Localizations.localeOf(context);
+
     return CupertinoPageScaffold(
       backgroundColor: AppColors.surface,
       navigationBar: CupertinoNavigationBar(
@@ -22,7 +30,6 @@ class AboutScreen extends StatelessWidget {
         child: ListView(
           children: [
             const SizedBox(height: 40),
-            // App 图标 + 名称
             Center(
               child: Column(
                 children: [
@@ -55,10 +62,53 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            // 联系方式
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final version = snapshot.data?.version;
+                if (version == null) return const SizedBox.shrink();
+                return _buildSection(
+                  children: [
+                    ThkListTile(
+                      title: l10n.aboutVersion,
+                      additionalInfo: version,
+                      trailing: null,
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             _buildSection(
               children: [
-                _buildContactTile(
+                _LinkTile(
+                  icon: CupertinoIcons.doc_text,
+                  title: l10n.aboutPrivacyPolicy,
+                  url: LegalLinks.privacyPolicy(
+                    savedLocale: savedLocale,
+                    systemLocale: systemLocale,
+                  ),
+                ),
+                _LinkTile(
+                  icon: CupertinoIcons.doc_plaintext,
+                  title: l10n.aboutTermsOfService,
+                  url: LegalLinks.termsOfService(
+                    savedLocale: savedLocale,
+                    systemLocale: systemLocale,
+                  ),
+                ),
+                _LinkTile(
+                  icon: CupertinoIcons.book,
+                  title: l10n.aboutOpenSourceLicense,
+                  subtitle: 'MIT',
+                  url: LegalLinks.license,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              children: [
+                _ContactTile(
                   icon: CupertinoIcons.mail,
                   title: l10n.aboutContactEmail,
                   value: '897210868@qq.com',
@@ -81,22 +131,34 @@ class AboutScreen extends StatelessWidget {
       child: Column(children: children),
     );
   }
+}
 
-  Widget _buildContactTile({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    return _AboutTile(
-      icon: icon,
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({
+    required this.icon,
+    required this.title,
+    required this.url,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String url;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return ThkListTile(
+      leading: Icon(icon, color: AppColors.textSecondary),
       title: title,
-      value: value,
+      subtitle: subtitle,
+      onTap: () => openMarkdownLink(context, url, title),
     );
   }
 }
 
-class _AboutTile extends StatelessWidget {
-  const _AboutTile({
+class _ContactTile extends StatelessWidget {
+  const _ContactTile({
     required this.icon,
     required this.title,
     required this.value,

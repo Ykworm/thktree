@@ -1398,6 +1398,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutContactEmail => '联系邮箱';
 
   @override
+  String get aboutVersion => '版本';
+
+  @override
+  String get aboutPrivacyPolicy => '隐私政策';
+
+  @override
+  String get aboutTermsOfService => '用户服务协议';
+
+  @override
+  String get aboutOpenSourceLicense => '开源许可';
+
+  @override
   String get menuSettings => '设置';
 
   @override

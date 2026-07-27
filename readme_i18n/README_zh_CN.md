@@ -32,6 +32,8 @@ ThkTree 是一款 AI 知识树 App，把 LLM 对话组织成可嵌套、可检�
 >
 > 2.x 并非替代1.x ，而是会增加的服务端，但应该不是传统的Web开发的简单call API的方式
 >
+> **项目状态：** 假期即将结束，生活重心会回到工作上，接下来一段时间更新节奏可能会慢一些。ThkTree 仍会持续维护，欢迎提 Issue 和 PR。如果你对这个方向感兴趣，愿意一起完善功能、修 bug、补文档或测试，非常欢迎一起协作。
+>
 > 关于Lab，它是各种实验性功能的入口，面向开发者
 >
 > 关于默认配色：临发布前发现莫兰迪色系跟我刚做 App 时选的配色很像，看起来比较舒服，于是让 AI 把它设为 App 的默认配色。
@@ -222,5 +224,14 @@ flutter run
 
 - 架构决策与文档地图：[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
 - 功能状态总表：[`docs/FEATURES.md`](../docs/FEATURES.md)
+
+## 开源协议
+
+ThkTree 以 [MIT 协议](../LICENSE) 开源发布。
+
+| 文档 | English | 中文 |
+|------|---------|------|
+| 隐私政策 | [privacy-policy-en.md](../docs/legal/privacy-policy-en.md) | [privacy-policy-zh.md](../docs/legal/privacy-policy-zh.md) |
+| 用户服务协议 | [terms-of-service-en.md](../docs/legal/terms-of-service-en.md) | [terms-of-service-zh.md](../docs/legal/terms-of-service-zh.md) |
 
 > 命名强制为 **ThkTree**（大驼峰），禁止 `thk_tree` / `thktree` / `Thk Tree` 等写法。

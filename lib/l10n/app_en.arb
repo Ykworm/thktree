@@ -1929,6 +1929,22 @@
   "@aboutContactEmail": {
     "description": "About page contact email label"
   },
+  "aboutVersion": "Version",
+  "@aboutVersion": {
+    "description": "About page version label"
+  },
+  "aboutPrivacyPolicy": "Privacy Policy",
+  "@aboutPrivacyPolicy": {
+    "description": "About page link to privacy policy"
+  },
+  "aboutTermsOfService": "Terms of Service",
+  "@aboutTermsOfService": {
+    "description": "About page link to terms of service"
+  },
+  "aboutOpenSourceLicense": "Open Source License",
+  "@aboutOpenSourceLicense": {
+    "description": "About page link to MIT license"
+  },
   "menuSettings": "Settings",
   "@menuSettings": {
     "description": "Settings option in the search page menu"

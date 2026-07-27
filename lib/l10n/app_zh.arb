@@ -923,6 +923,22 @@
   "@aboutContactEmail": {
     "description": "关于页面联系邮箱标签"
   },
+  "aboutVersion": "版本",
+  "@aboutVersion": {
+    "description": "关于页面版本号标签"
+  },
+  "aboutPrivacyPolicy": "隐私政策",
+  "@aboutPrivacyPolicy": {
+    "description": "关于页面隐私政策链接"
+  },
+  "aboutTermsOfService": "用户服务协议",
+  "@aboutTermsOfService": {
+    "description": "关于页面用户服务协议链接"
+  },
+  "aboutOpenSourceLicense": "开源许可",
+  "@aboutOpenSourceLicense": {
+    "description": "关于页面 MIT 开源许可链接"
+  },
   "menuSettings": "设置",
   "@menuSettings": {
     "description": "搜索页右上角菜单中的设置选项"

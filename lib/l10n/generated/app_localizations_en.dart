@@ -671,8 +671,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get networkInterrupted => 'Network interrupted. Please retry.';
 
   @override
-  String get replyInterrupted =>
-      'Reply incomplete — content may be truncated.';
+  String get replyInterrupted => 'Reply incomplete — content may be truncated.';
 
   @override
   String get replyInterruptedHint =>
@@ -1466,6 +1465,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutContactEmail => 'Contact Email';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get aboutTermsOfService => 'Terms of Service';
+
+  @override
+  String get aboutOpenSourceLicense => 'Open Source License';
 
   @override
   String get menuSettings => 'Settings';

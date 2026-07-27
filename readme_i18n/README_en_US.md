@@ -31,6 +31,8 @@ ThkTree is an AI knowledge-tree app that organizes LLM conversations into a nest
 >
 > 2.x doesn't replace 1.x—it adds a server side, but probably not the traditional web-dev pattern of simply calling APIs
 >
+> **Project status:** The holiday break is wrapping up and my focus is shifting back to work, so updates may come at a slower pace for a while. ThkTree is still actively maintained — issues and PRs are welcome. If you're interested in the idea and want to help polish features, fix bugs, or improve docs/tests, I'd love to collaborate.
+>
 > **About Lab:** it's the entry point for experimental features, aimed at developers
 >
 > **About the default palette:** Just before release I noticed the Morandi palette looked a lot like the colors I'd picked when I first started the app—it felt comfortable on the eyes—so I had AI set it as the default.
@@ -215,5 +217,14 @@ Most tools flatten chats, notes, and sources into one stream. ThkTree’s answer
 
 - Architecture & doc map: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
 - Feature status: [`docs/FEATURES.md`](../docs/FEATURES.md)
+
+## License
+
+ThkTree is released under the [MIT License](../LICENSE).
+
+| Document | English | 中文 |
+|----------|---------|------|
+| Privacy Policy | [privacy-policy-en.md](../docs/legal/privacy-policy-en.md) | [privacy-policy-zh.md](../docs/legal/privacy-policy-zh.md) |
+| Terms of Service | [terms-of-service-en.md](../docs/legal/terms-of-service-en.md) | [terms-of-service-zh.md](../docs/legal/terms-of-service-zh.md) |
 
 > Always **ThkTree** (PascalCase). Not `thk_tree`, `thktree`, or `Thk Tree`.
