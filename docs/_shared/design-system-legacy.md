@@ -26,7 +26,7 @@ ThkTree 全部视觉决策都基于这 7 条原则。改设计前先回看这里
 ### 0.5 节点色 ≠ 主题色
 **绝对解耦**。节点色基于 `nodeId`（5 套 `NodePalette`，定义在 `AppColors`），主题色基于 `themeId`（5 套典雅黑金色调）。
 
-### 0.6 iOS-first Cupertino
+### 0.6 纯 Cupertino
 - 走 `ThkNavBar` / `ThkListTile` / `ThkLargeTitlePage` 等自有组件，不直接用 `CupertinoNavigationBar` 等
 - 不引 Material 组件（`uses-material-design: false` 保持）
 - 触控热区：圆圈 44×44、拖拽手柄 52×52
@@ -39,7 +39,7 @@ ThkTree 全部视觉决策都基于这 7 条原则。改设计前先回看这里
 
 ## Summary
 
-ThkTree 采用 **iOS-first Cupertino** 视觉风格，融合 **典雅黑金色调**（5 色循环分配给主题）和 **serif 大标题**（Cormorant Garamond）形成差异化。设计系统分三层：
+ThkTree 采用 **纯 Cupertino** 视觉风格，融合 **典雅黑金色调**（5 色循环分配给主题）和 **serif 大标题**（Cormorant Garamond）形成差异化。设计系统分三层：
 
 1. **设计 Token**（颜色/字体/间距/圆角）—— 全部以静态常量暴露
 2. **基础组件**（`ThkNavBar` / `ThkListTile` / `ThkLargeTitlePage` / `SwipeableRow` / `ThkTextField`）—— 来自 `lib/ui/core/widgets/`

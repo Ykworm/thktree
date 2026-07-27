@@ -21,7 +21,7 @@
 | 项 | 要求 | 现状 | 结论 |
 |---|---|---|---|
 | iOS deployment target | ≥ 12.0 | 13.0 | ✅ |
-| Android（仅核对） | SDK 19+ / AGP 7.4+ / Kotlin 1.8+ | 项目偏好 iOS（`flutter_launcher_icons.android=false`） | ⚠️ 若仍出 Android 包需在实现时核 AGP/Kotlin；iOS 优先 |
+| Android（仅核对） | SDK 19+ / AGP 7.4+ / Kotlin 1.8+ | 项目偏好 iOS（`flutter_launcher_icons.android=false`） | ⚠️ 若仍出 Android 包需在实现时核 AGP/Kotlin |
 | 渲染器 | 单一 | 仅 `gpt_markdown`（`flutter_markdown` 声明但 lib 未用 `MarkdownBody`） | ✅ 单一接入面 |
 | 链接回调 | `onLinkTap(url, title)` | gpt_markdown 1.1.7 支持，仅单击 | ✅ |
 

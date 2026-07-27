@@ -22,7 +22,7 @@
   <g id="title-block" transform="translate(80 60)">
     <!-- 分类 -->
     <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
-          font-size="18" fill="#666666" font-weight="500">iOS 优先的 AI 知识树 App</text>
+          font-size="18" fill="#666666" font-weight="500">AI 知识树 App</text>
     
     <!-- 项目名称 -->
     <text x="0" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 

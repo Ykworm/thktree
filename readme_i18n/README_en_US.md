@@ -12,7 +12,7 @@
 
 ## What is ThkTree?
 
-ThkTree is an iOS-first AI knowledge-tree app that organizes LLM conversations into a nested, searchable, locally-grown tree — privacy-first, bring your own model.
+ThkTree is an AI knowledge-tree app that organizes LLM conversations into a nested, searchable, locally-grown tree — privacy-first, bring your own model.
 
 **Core value**: Human–AI collaboration to build a structured knowledge system that grows *on you* — organic like a tree, not drowned in information overload.
 
@@ -202,7 +202,7 @@ Most tools flatten chats, notes, and sources into one stream. ThkTree’s answer
 
 | Dimension | Stance |
 |-----------|--------|
-| Platform | iOS-first (TTS, background recovery are native iOS) |
+| Platform | iOS (TTS, background recovery are native iOS capabilities) |
 | Data | Local-first, privacy; API keys not stored in plain text |
 | Models | Your provider and model, not vendor lock-in |
 | Character | “Quiet, reliable architect” — restrained, ordered, human |

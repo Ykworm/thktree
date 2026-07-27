@@ -1,6 +1,6 @@
 {
   "name": "ThkTree Flutter UI - Figma Node Export",
-  "description": "从 ThkTree Flutter 项目 lib/ui 目录提取的 UI 结构。仅包含视觉/布局，业务逻辑与状态管理已剔除。坐标为相对父节点的逻辑像素，参照 iOS-first 移动端 390×844 viewport。",
+  "description": "从 ThkTree Flutter 项目 lib/ui 目录提取的 UI 结构。仅包含视觉/布局，业务逻辑与状态管理已剔除。坐标为相对父节点的逻辑像素，参照移动端 390×844 viewport。",
   "schemaVersion": 1,
   "document": {
     "id": "0:0",
@@ -946,7 +946,7 @@
   "meta": {
     "source": "lib/ui",
     "framework": "Flutter (Material 3)",
-    "platformTarget": "iOS-first (390×844 logical px)",
+    "platformTarget": "mobile (390×844 logical px)",
     "extractedAt": "2026-05-30",
     "filesProcessed": [
       "lib/ui/core/shared/chat_list_view.dart",

@@ -51,7 +51,7 @@ meta:
 principles:
   - "设置 = 单例持久化，写入后立即生效"
   - "外观与节点色解耦"
-  - "TTS iOS 优先 + 跨平台抽象（iOS AVSpeechSynthesizer / 其他 NoOpTtsService）"
+  - "TTS 跨平台抽象（iOS AVSpeechSynthesizer / 其他 NoOpTtsService）"
   - "危险操作二次确认"
 
 # ============================================================
