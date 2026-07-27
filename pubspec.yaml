@@ -136,12 +136,14 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# iOS App Icon 生成配置
+# App Icon 生成配置
 # - 源图：assets/icons/ThkTree_AppIcon.png（1024x1024）
-# - 改 logo 流程：替换源图 → 跑 `dart run flutter_launcher_icons` 即可重新生成全套 iOS 图标
-# - 仅生成 iOS（Android 端 mipmap 不在此处维护，符合项目仅 iOS 平台偏好）
+# - 改 logo：替换源图 → `dart run flutter_launcher_icons`
+# - iOS / Android 共用源图；Android 额外生成 adaptive icon（API 26+）
 flutter_launcher_icons:
   image_path: "assets/icons/ThkTree_AppIcon.png"
-  ios: true
-  android: false
+  ios: false
+  android: true
+  adaptive_icon_background: "#1E40AF"
+  adaptive_icon_foreground: "assets/icons/ThkTree_AppIcon.png"
   remove_alpha_ios: true
