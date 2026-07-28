@@ -15,7 +15,7 @@
 
 ### 不覆盖
 - **Widget 单元测试**（`test/` 目录）—— 那是另一套测试体系，速度更快、用 mock
-- **平台原生测试**（iOS XCTest / Android JUnit）—— 走 `test_driver/`
+- **平台原生测试**（iOS XCTest / Android JUnit）—— 独立于 `integration_test/`
 - **手动 QA 脚本**（`tools/check_*.py`）—— 那是脚本化的人工校验
 
 ---

@@ -663,12 +663,6 @@ testWidgets('自动备份原子写入中断自愈', (tester) async {
 # 单跑 backup_restore_test（当前会因 TODO 空壳通过但无实质覆盖）
 flutter test integration_test/backup_restore_test.dart -d "<iOS Simulator>"
 
-# 带 driver 跑（用于回传截图到 host）
-flutter drive \
-  --driver=test_driver/integration_test.dart \
-  --target=integration_test/backup_restore_test.dart \
-  -d "<iOS Simulator>"
-
 # 完整集成测试套件
 flutter test integration_test/ -d "<iOS Simulator>"
 ```

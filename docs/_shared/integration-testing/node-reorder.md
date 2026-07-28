@@ -502,12 +502,6 @@ testWidgets('拖拽后刷新保持顺序', (tester) async {
 # 单跑 node_reorder_test（当前 3 个测试都立即失败，但失败点都是 nodeId 不存在）
 flutter test integration_test/node_reorder_test.dart -d "<iOS Simulator>"
 
-# 带 driver 跑
-flutter drive \
-  --driver=test_driver/integration_test.dart \
-  --target=integration_test/node_reorder_test.dart \
-  -d "<iOS Simulator>"
-
 # 跑整套集成测试（避免遗漏依赖）
 flutter test integration_test/ -d "<iOS Simulator>"
 ```

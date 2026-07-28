@@ -45,6 +45,9 @@ migrate_working_dir/
 /dist/
 /video-intro/
 
+# Local integration-test LLM keys (generate via tools/gen_dart_define.dart → build/)
+/build/dart_define.json
+
 # Symbolication related
 app.*.symbols
 

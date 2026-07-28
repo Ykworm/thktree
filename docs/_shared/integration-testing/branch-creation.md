@@ -773,13 +773,6 @@ flutter test integration_test/branch_creation_test.dart \
   --dart-define-from-file=build/dart_define.json \
   -d "<iOS Simulator>"
 
-# 带 driver 跑
-flutter drive \
-  --driver=test_driver/integration_test.dart \
-  --target=integration_test/branch_creation_test.dart \
-  --dart-define-from-file=build/dart_define.json \
-  -d "<iOS Simulator>"
-
 # 仅跑不需要 LLM 的测试（1, 2, 3, 5, 6）节省时间
 flutter test integration_test/branch_creation_test.dart \
   --plain-name "raw|summarize|取消" \
