@@ -159,7 +159,8 @@ for dirpath, _, files in os.walk(LIB):
                     rows.append((rel, i, line.strip()[:120], " | ".join(found)))
 
 # 输出
-out = os.path.join(ROOT, "step4-bare-colors-inventory.md")
+out = os.path.join(ROOT, "build", "step4-bare-colors-inventory.md")
+os.makedirs(os.path.dirname(out), exist_ok=True)
 with open(out, "w", encoding="utf-8") as f:
     f.write("# Step 4 · Tier 1 裸色清单（code-first，源自 lib/ 实测）\n\n")
     f.write(f"总命中：{len(rows)} 处（排除 app_colors.dart 自身定义）\n\n")

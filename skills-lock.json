@@ -31,6 +31,7 @@
     "yk-frontend-merge": "harness",
     "yk-frontend-newmode": "harness",
     "yk-frontend-project-test": "harness",
-    "thktree-e2e-test": "projects"
+    "thktree-e2e-test": "projects",
+    "ui-ux-pro-max": "shared"
   }
 }
