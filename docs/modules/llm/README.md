@@ -31,6 +31,7 @@ LLM Provider 配置模块。负责管理所有 LLM 服务提供方（OpenAI / An
 
 ## 子文档
 
+- [模型白名单与清单策略](./specs/model-whitelist.md) — 哪些 Provider 用白名单、当前 modelId 列表、维护检查清单（**源码在 `model_fetcher.dart`，无 JSON 文件**）
 - [集成测试：LLM 配置注入原理与实践](./specs/integration-test-llm-injection.md) — 集成测试如何注入 LLM 配置到 Riverpod（详细版，208 行）
 - [集成测试总论 / fixtures / helpers](../../_shared/integration-testing/README.md) — 面向新成员的完整索引
 
@@ -142,7 +143,7 @@ OpenAI 兼容协议的 `reasoning_content` 在 `_extractDeltaFromMap` 已支持�
 - 注意 Provider 配置变更后，正在进行的对话不会被中断（chat 已缓存当时的 client）
 - Provider 列表页的标题、副标题和 chevron 是核心信息；厂商图标仅在拿到可信品牌资产时再加
 - 联网搜索：新增提供商时同步更新 `webSearchSupportMap` + `visibleProviderTypes`；模型级联网屏蔽用 `isModelWebSearchUnsupported`（如 `doubao-seed-2-0-pro` 无后缀旧 ID）
-- 模型清单过滤：KIMI 只保留 `k2.6`/`k2.5`、MiniMax 只保留 `M3`（白名单在 `model_fetcher._kimiWhitelist` / `_minimaxWhitelist`，与豆包同构）；新增模型白名单在 `model_fetcher` 维护
+- 模型清单过滤：见 [模型白名单 spec](./specs/model-whitelist.md)（KIMI / MiniMax / 豆包 / DeepSeek / xAI / TokenHub 等在 `model_fetcher.dart` 维护；OpenAI / Anthropic / Gemini / MIMO / 自定义走 API）
 
 ## 相关历史
 
